@@ -536,7 +536,7 @@ func (s *Service) GetPublicRaceReport(ctx context.Context, req *racesv1.GetPubli
 		AuthorName: profile.DisplayName,
 	}.Build()
 	if t != nil {
-		points, breaks := t.PublicPoints(trackZones(zones))
+		points, breaks := t.PublicPoints(track.HiddenZones(zones))
 		resp.SetTrack(points)
 		resp.SetTrackBreaks(breaks)
 	}
@@ -678,13 +678,4 @@ func (s *Service) toConnectError(ctx context.Context, err error, msg string) err
 		s.report.Report(ctx, msg, err)
 		return connect.NewError(connect.CodeInternal, msg).WithCause(err)
 	}
-}
-
-// trackZones returns privacy zones as the zones tracks are hidden in.
-func trackZones(zones []users.PrivacyZone) []track.Zone {
-	out := make([]track.Zone, len(zones))
-	for i, z := range zones {
-		out[i] = track.Zone{Center: z.Center, RadiusMeters: float64(z.RadiusMeters)}
-	}
-	return out
 }

@@ -320,7 +320,8 @@ export type TripPhoto = Message<"trips.v1.TripPhoto"> & {
   caption: string;
 
   /**
-   * Where the photo was taken. Unset if unknown.
+   * Where the photo was taken. Unset if unknown and, on public pages, if it
+   * was taken in a privacy zone of the author or is in a list of reports.
    *
    * @generated from field: geo.v1.LatLng location = 3;
    */
@@ -1150,7 +1151,8 @@ export type GetPublicProfileResponse = Message<"trips.v1.GetPublicProfileRespons
   profile?: Profile | undefined;
 
   /**
-   * The published trip reports, most recent trip first.
+   * The published trip reports, most recent trip first. Their photos have
+   * no locations; GetPublicTripReport has them, outside privacy zones.
    *
    * @generated from field: repeated trips.v1.TripReport reports = 2;
    */

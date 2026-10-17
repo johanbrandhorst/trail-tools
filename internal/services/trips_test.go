@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"io"
 	"io/fs"
+	"math"
 	"net/http"
 	"path/filepath"
 	"slices"
@@ -330,8 +331,9 @@ func TestTripReports(t *testing.T) {
 	if track := public.GetTrack(); len(track) != 101 || len(public.GetTrackBreaks()) != 0 {
 		t.Errorf("got %d public track points and breaks %v, want the whole track", len(track), public.GetTrackBreaks())
 	}
-	// Zones around the start and the middle hide the track there: of 101
-	// points 100 m apart, the first 5 and the 5 around 5 km, which splits
+	// Zones around the start and the middle hide the track there, and a
+	// little more, as the circles hidden are larger and moved: of 101 points
+	// 100 m apart, at least the first 5 and the 5 around 5 km, which splits
 	// the rest in two.
 	zone := func(lat float64, radius int32) *usersv1.PrivacyZone {
 		return usersv1.PrivacyZone_builder{Name: "Home", Lat: lat, Lng: 0, RadiusMeters: radius}.Build()
@@ -344,9 +346,14 @@ func TestTripReports(t *testing.T) {
 	if public, err = e.anonTrips.GetPublicTripReport(ctx, publicReq); err != nil {
 		t.Fatal(err)
 	}
-	if track, breaks := public.GetTrack(), public.GetTrackBreaks(); len(track) != 91 || track[0].GetDistanceMeters() != 500 ||
-		len(breaks) != 1 || track[breaks[0]].GetDistanceMeters() != 5300 {
-		t.Errorf("got %d public track points from %v m with breaks %v, want 91 from 500 m, broken at 5300 m", len(track), track[0].GetDistanceMeters(), breaks)
+	if track, breaks := public.GetTrack(), public.GetTrackBreaks(); len(track) > 91 || track[0].GetDistanceMeters() < 500 ||
+		len(breaks) != 1 || track[breaks[0]].GetDistanceMeters() < 5300 || track[breaks[0]-1].GetDistanceMeters() > 4700 {
+		t.Errorf("got %d public track points from %v m with breaks %v, want at most 91 from 500 m, broken around 4.5-5.3 km", len(track), track[0].GetDistanceMeters(), breaks)
+	}
+	for _, p := range public.GetTrack() {
+		if d := geo.Distance(geo.Point{Lat: p.GetLat(), Lng: p.GetLng()}, geo.Point{Lat: 0.045}); d < 250 {
+			t.Errorf("public track point %v is %.0f m from the middle zone's center, want at least its radius", p, d)
+		}
 	}
 	// A photo in a zone is shown without its place on the map.
 	photo, err := e.trips.UploadTripPhoto(ctx, tripsv1.UploadTripPhotoRequest_builder{
@@ -419,6 +426,157 @@ func TestTripReports(t *testing.T) {
 }
 
 // testJPEG returns a JPEG image of the size.
+// createActivityFrom stores an activity of the user starting at the
+// equator and the prime meridian, like at the user's home, heading 2 km in
+// a direction in degrees clockwise from north with a point every 10 meters.
+func (e *env) createActivityFrom(stravaID int64, name string, bearingDegrees float64) string {
+	e.t.Helper()
+	ctx := context.Background()
+	// Meters per degree on the equator, in either direction.
+	const metersPerDegree = 6371008.8 * math.Pi / 180
+	bearing := bearingDegrees * math.Pi / 180
+	end := geo.Point{Lat: 2000 * math.Cos(bearing) / metersPerDegree, Lng: 2000 * math.Sin(bearing) / metersPerDegree}
+	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+		StravaID:           stravaID,
+		Name:               name,
+		SportType:          "TrailRun",
+		StartTime:          tripStart,
+		StartDateLocal:     time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC),
+		Timezone:           "Europe/Zurich",
+		DistanceMeters:     2000,
+		MovingTimeSeconds:  800,
+		ElapsedTimeSeconds: 800,
+		SummaryPolyline:    geo.EncodePolyline([]geo.Point{{}, end}),
+		RawJSON:            []byte("{}"),
+	})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	streams := &activitiesv1.ActivityStreams{}
+	for i := range 201 {
+		streams.SetTimeSeconds(append(streams.GetTimeSeconds(), int32(i*4)))
+		streams.SetDistanceMeters(append(streams.GetDistanceMeters(), float64(i)*10))
+		streams.SetLat(append(streams.GetLat(), end.Lat*float64(i)/200))
+		streams.SetLng(append(streams.GetLng(), end.Lng*float64(i)/200))
+	}
+	data, err := proto.Marshal(streams)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	if err := e.activities.StoreActivityDetail(ctx, id, &activities.Detail{RawJSON: []byte("{}")}, data, nil); err != nil {
+		e.t.Fatal(err)
+	}
+	return store.UUIDToString(id)
+}
+
+// circumcenter returns the center of the circle through three points, in
+// meters east and north of the origin, treating the earth there as flat.
+func circumcenter(points [3]geo.Point) (x, y float64) {
+	const metersPerDegree = 6371008.8 * math.Pi / 180
+	var xs, ys [3]float64
+	for i, p := range points {
+		xs[i], ys[i] = p.Lng*metersPerDegree, p.Lat*metersPerDegree
+	}
+	d := 2 * (xs[0]*(ys[1]-ys[2]) + xs[1]*(ys[2]-ys[0]) + xs[2]*(ys[0]-ys[1]))
+	sq := func(i int) float64 { return xs[i]*xs[i] + ys[i]*ys[i] }
+	x = (sq(0)*(ys[1]-ys[2]) + sq(1)*(ys[2]-ys[0]) + sq(2)*(ys[0]-ys[1])) / d
+	y = (sq(0)*(xs[2]-xs[1]) + sq(1)*(xs[0]-xs[2]) + sq(2)*(xs[1]-xs[0])) / d
+	return x, y
+}
+
+// TestPublicTripReportsHideHome checks that anonymous visitors can't find
+// the center of a privacy zone, like the author's home, from their public
+// trip reports.
+func TestPublicTripReportsHideHome(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	e.createProfile("jane-doe")
+	const radiusMeters = 500
+	if _, err := e.users.SetPrivacyZones(ctx, usersv1.SetPrivacyZonesRequest_builder{
+		Zones: []*usersv1.PrivacyZone{usersv1.PrivacyZone_builder{Name: "Home", RadiusMeters: radiusMeters}.Build()},
+	}.Build()); err != nil {
+		t.Fatalf("SetPrivacyZones: %v", err)
+	}
+	home := geo.Point{}
+
+	// Four published reports of runs from home in different directions.
+	var firstPoints []geo.Point
+	var slugs []string
+	for i, bearing := range []float64{0, 120, 240, 60} {
+		activityID := e.createActivityFrom(int64(100+i), "Run from home", bearing)
+		created, err := e.trips.CreateTripReport(ctx, tripsv1.CreateTripReportRequest_builder{ActivityId: activityID}.Build())
+		if err != nil {
+			t.Fatalf("CreateTripReport: %v", err)
+		}
+		report := created.GetReport()
+		if _, err := e.trips.PublishTripReport(ctx, tripsv1.PublishTripReportRequest_builder{Id: report.GetId()}.Build()); err != nil {
+			t.Fatalf("PublishTripReport: %v", err)
+		}
+		slugs = append(slugs, report.GetSlug())
+		public, err := e.anonTrips.GetPublicTripReport(ctx, tripsv1.GetPublicTripReportRequest_builder{Handle: "jane-doe", Slug: report.GetSlug()}.Build())
+		if err != nil {
+			t.Fatalf("GetPublicTripReport: %v", err)
+		}
+		track := public.GetTrack()
+		if len(track) == 0 || len(public.GetTrackBreaks()) != 0 {
+			t.Fatalf("got %d public track points with breaks %v, want the end of the run", len(track), public.GetTrackBreaks())
+		}
+		for _, p := range track {
+			if d := geo.Distance(geo.Point{Lat: p.GetLat(), Lng: p.GetLng()}, home); d < radiusMeters {
+				t.Fatalf("public track point %v is %.0f m from home, want at least the zone's radius of %d m", p, d, radiusMeters)
+			}
+		}
+		firstPoints = append(firstPoints, geo.Point{Lat: track[0].GetLat(), Lng: track[0].GetLng()})
+	}
+	// The cuts of the first three runs, 10 m apart at most from where they
+	// leave the hidden circle, give away its center, which must be far from
+	// home: the circle is centered at least a quarter of the radius away.
+	x, y := circumcenter([3]geo.Point(firstPoints[:3]))
+	if offset := math.Hypot(x, y); offset < radiusMeters/8 {
+		t.Errorf("the public tracks are cut around a circle centered %.0f m from home, want more than %d m", offset, radiusMeters/8)
+	}
+	// The circle is the same for every report, so averaging them doesn't
+	// find home either: the fourth run is cut on it too.
+	const metersPerDegree = 6371008.8 * math.Pi / 180
+	circleRadius := math.Hypot(firstPoints[0].Lng*metersPerDegree-x, firstPoints[0].Lat*metersPerDegree-y)
+	if r := math.Hypot(firstPoints[3].Lng*metersPerDegree-x, firstPoints[3].Lat*metersPerDegree-y); !approx(r, circleRadius, 20) {
+		t.Errorf("the fourth run is cut %.0f m from the circle's center, want %.0f m like the others", r, circleRadius)
+	}
+
+	// Photo locations outside privacy zones are shown on the public report,
+	// but not in the public profile's list of reports.
+	public, err := e.anonTrips.GetPublicTripReport(ctx, tripsv1.GetPublicTripReportRequest_builder{Handle: "jane-doe", Slug: slugs[0]}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.trips.UploadTripPhoto(ctx, tripsv1.UploadTripPhotoRequest_builder{
+		ReportId: public.GetReport().GetId(),
+		Data:     testJPEG(t, 300, 200),
+		Location: geov1.LatLng_builder{Lat: 0.0179, Lng: 0}.Build(),
+	}.Build()); err != nil {
+		t.Fatalf("UploadTripPhoto: %v", err)
+	}
+	if public, err = e.anonTrips.GetPublicTripReport(ctx, tripsv1.GetPublicTripReportRequest_builder{Handle: "jane-doe", Slug: slugs[0]}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	if photos := public.GetReport().GetPhotos(); len(photos) != 1 || !photos[0].HasLocation() || !photos[0].HasTrackDistanceMeters() {
+		t.Errorf("got public photos %v, want the photo with its location", photos)
+	}
+	profile, err := e.anonTrips.GetPublicProfile(ctx, tripsv1.GetPublicProfileRequest_builder{Handle: "jane-doe"}.Build())
+	if err != nil {
+		t.Fatalf("GetPublicProfile: %v", err)
+	}
+	var photos []*tripsv1.TripPhoto
+	for _, r := range profile.GetReports() {
+		photos = append(photos, r.GetPhotos()...)
+	}
+	if len(photos) != 1 || photos[0].HasLocation() || photos[0].HasTrackDistanceMeters() ||
+		photos[0].GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_UNSPECIFIED {
+		t.Errorf("got photos %v in the public profile, want the photo without its location", photos)
+	}
+}
+
 func testJPEG(t *testing.T, w, h int) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))

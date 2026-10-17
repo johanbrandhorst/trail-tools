@@ -1095,7 +1095,8 @@ type TripPhoto_builder struct {
 	Id string
 	// The caption.
 	Caption string
-	// Where the photo was taken. Unset if unknown.
+	// Where the photo was taken. Unset if unknown and, on public pages, if it
+	// was taken in a privacy zone of the author or is in a list of reports.
 	Location *v1.LatLng
 	// Where the location comes from.
 	LocationSource LocationSource
@@ -3634,7 +3635,8 @@ type GetPublicProfileResponse_builder struct {
 
 	// The profile.
 	Profile *Profile
-	// The published trip reports, most recent trip first.
+	// The published trip reports, most recent trip first. Their photos have
+	// no locations; GetPublicTripReport has them, outside privacy zones.
 	Reports []*TripReport
 }
 
