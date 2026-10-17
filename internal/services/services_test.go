@@ -23,6 +23,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1/activitiesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1/geov1connect"
@@ -74,14 +75,16 @@ type env struct {
 	token      string
 	otherToken string
 	// The directory trip report photos are stored in.
-	photoDir   string
-	srv        *httptest.Server
-	mapData    *fakeMapData
-	router     *fakeRouter
-	activities *activities.Repository
-	syncer     *stravasvc.Syncer
-	strava     *fakeStrava
-	liveTrack  *fakeLiveTrack
+	photoDir string
+	// Stores activities' streams and Strava's responses.
+	activityBlobs *blob.Dir
+	srv           *httptest.Server
+	mapData       *fakeMapData
+	router        *fakeRouter
+	activities    *activities.Repository
+	syncer        *stravasvc.Syncer
+	strava        *fakeStrava
+	liveTrack     *fakeLiveTrack
 
 	users      usersv1connect.UserServiceClient
 	activity   activitiesv1connect.ActivityServiceClient
@@ -125,7 +128,11 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	activityRepo, err := activities.NewRepository(report, db)
+	activityBlobs, err := blob.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	activityRepo, err := activities.NewRepository(report, db, activityBlobs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +152,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := &env{t: t, db: db, mapData: &fakeMapData{}, router: &fakeRouter{}, activities: activityRepo, strava: newFakeStrava()}
+	e := &env{t: t, db: db, mapData: &fakeMapData{}, router: &fakeRouter{}, activities: activityRepo, activityBlobs: activityBlobs, strava: newFakeStrava()}
 	e.userID = storetest.NewUser(t, db)
 	_, e.token, err = userRepo.CreateAPIToken(ctx, e.userID, "test")
 	if err != nil {
@@ -480,4 +487,18 @@ func (f *fakeLiveTrack) Track(_ context.Context, s livetrack.Session) (livetrack
 
 func approx(a, b, tolerance float64) bool {
 	return math.Abs(a-b) <= tolerance
+}
+
+// storeActivityDetail stores the detail and streams of one of the user's
+// activities, as a sync does.
+func (e *env) storeActivityDetail(activityID pgtype.UUID, detail *activities.Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) {
+	e.t.Helper()
+	ctx := context.Background()
+	a, err := e.activities.GetActivity(ctx, e.userID, activityID)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, activityID, a.StravaID, detail, streams, bounds); err != nil {
+		e.t.Fatal(err)
+	}
 }

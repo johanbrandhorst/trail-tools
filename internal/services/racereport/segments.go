@@ -104,13 +104,9 @@ func (s *Service) SuggestRaceReportSegments(ctx context.Context, req *racesv1.Su
 // encoded. It returns nil if the activity has neither.
 func (s *Service) activityTrack(ctx context.Context, userID pgtype.UUID, activity *activities.Activity) ([]byte, error) {
 	var t *activitiesv1.ActivityStreams
-	data, err := s.activities.GetActivityStreams(ctx, userID, activity.ID)
+	streams, err := s.activities.GetActivityStreams(ctx, userID, activity.ID)
 	switch {
 	case err == nil:
-		streams := &activitiesv1.ActivityStreams{}
-		if err := proto.Unmarshal(data, streams); err != nil {
-			return nil, s.toConnectError(ctx, err, "failed to decode activity streams")
-		}
 		t = track.FromStreams(streams)
 	case !errors.Is(err, store.ErrNotFound):
 		return nil, s.toConnectError(ctx, err, "failed to get activity streams")

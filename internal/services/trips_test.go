@@ -23,7 +23,6 @@ import (
 	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -74,11 +73,7 @@ func (e *env) createActivityWithAltitudes(altitudes []float64) string {
 		streams.SetAltitudeMeters(append(streams.GetAltitudeMeters(), altitudes[i]))
 		streams.SetHeartrateBpm(append(streams.GetHeartrateBpm(), 150))
 	}
-	data, err := proto.Marshal(streams)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	if err := e.activities.StoreActivityDetail(ctx, id, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, data, &geo.Bounds{MaxLat: 0.09}); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, 4242, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, streams, &geo.Bounds{MaxLat: 0.09}); err != nil {
 		e.t.Fatal(err)
 	}
 	return store.UUIDToString(id)

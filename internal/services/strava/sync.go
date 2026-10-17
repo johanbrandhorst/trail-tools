@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,7 +16,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
-	"google.golang.org/protobuf/proto"
 )
 
 // SyncRepository stores synced activities and the sync state.
@@ -31,8 +31,9 @@ type SyncRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
 	RequestActivitySync(ctx context.Context, userID, activityID pgtype.UUID) error
 	CountActivities(ctx context.Context, userID pgtype.UUID) (total, pendingStreams int64, err error)
-	StoreActivityDetail(ctx context.Context, activityID pgtype.UUID, detail *activities.Detail, streams []byte, bounds *geo.Bounds) error
+	StoreActivityDetail(ctx context.Context, userID, activityID pgtype.UUID, stravaID int64, detail *activities.Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error
 	DeleteActivityByStravaID(ctx context.Context, userID pgtype.UUID, stravaID int64) error
+	MoveToBlobs(ctx context.Context) (bool, error)
 }
 
 // StravaClient is the Strava API.
@@ -93,6 +94,10 @@ type Syncer struct {
 	// The activities being synced, by Strava ID, closed when done.
 	claims map[int64]chan struct{}
 	wg     sync.WaitGroup
+
+	// Whether the activity data stored in the database has all moved to the
+	// blob store, so moving it needn't be tried again.
+	moved atomic.Bool
 }
 
 // NewSyncer creates a new Syncer. Syncs are stopped when ctx is cancelled.
@@ -226,7 +231,28 @@ func (s *Syncer) SyncDue(ctx context.Context) error {
 			s.SyncOnce(ctx, conn.UserID, false)
 		}
 	}
+	s.moveToBlobs(ctx)
 	return nil
+}
+
+// moveToBlobs moves the activity data stored in the database before it was
+// stored in the blob store, unless it has all moved already. It runs with
+// the scheduled and background syncs, as the server only runs between
+// requests on Cloud Run. It can be removed once the data has moved and its
+// columns are dropped.
+func (s *Syncer) moveToBlobs(ctx context.Context) {
+	if s.moved.Load() {
+		return
+	}
+	done, err := s.repo.MoveToBlobs(ctx)
+	if err != nil && ctx.Err() == nil {
+		s.report.Report(ctx, "Failed to move activity data to the blob store, trying again with the next sync", err)
+		return
+	}
+	if done {
+		s.log.InfoContext(ctx, "Moved all activity data to the blob store")
+		s.moved.Store(true)
+	}
 }
 
 // due returns whether a connection is due a sync.
@@ -272,6 +298,7 @@ func (s *Syncer) RunBackground(ctx context.Context) {
 				s.Start(conn.UserID, false)
 			}
 		}
+		s.moveToBlobs(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -515,7 +542,7 @@ func (s *Syncer) syncDetails(ctx context.Context, conn *activities.StravaConnect
 			return err
 		}
 	}
-	return s.store(ctx, p.ID, detail, photos, streams)
+	return s.store(ctx, conn.UserID, p, detail, photos, streams)
 }
 
 // fetchPhotos fetches the photos of an activity, if it has any.
@@ -565,22 +592,19 @@ func (s *Syncer) fetchStreams(ctx context.Context, conn *activities.StravaConnec
 	return streams, err
 }
 
-// store stores the detail of an activity, which is nil if Strava no
-// longer has it, with its photos, and its streams, which are nil if it has
-// none, and marks it synced.
-func (s *Syncer) store(ctx context.Context, activityID pgtype.UUID, detail *strava.Activity, photos []activities.Photo, streams *strava.Streams) error {
+// store stores the detail of one of the user's activities, which is nil if
+// Strava no longer has it, with its photos, and its streams, which are nil
+// if it has none, and marks it synced.
+func (s *Syncer) store(ctx context.Context, userID pgtype.UUID, a activities.PendingStreams, detail *strava.Activity, photos []activities.Photo, streams *strava.Streams) error {
 	var d *activities.Detail
 	if detail != nil {
 		d = &activities.Detail{Description: detail.Description, DeviceName: detail.DeviceName, RawJSON: detail.Raw, Photos: photos}
 	}
 	if streams == nil {
-		return s.repo.StoreActivityDetail(ctx, activityID, d, nil, nil)
+		return s.repo.StoreActivityDetail(ctx, userID, a.ID, a.StravaID, d, nil, nil)
 	}
-	encoded, bounds, err := encodeStreams(streams, detail != nil && detail.IsFootSport())
-	if err != nil {
-		return err
-	}
-	return s.repo.StoreActivityDetail(ctx, activityID, d, encoded, bounds)
+	msg, bounds := streamsFromStrava(streams, detail != nil && detail.IsFootSport())
+	return s.repo.StoreActivityDetail(ctx, userID, a.ID, a.StravaID, d, msg, bounds)
 }
 
 // SyncActivity syncs one of the user's activities from Strava right away:
@@ -636,7 +660,7 @@ func (s *Syncer) SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID 
 	if err := errors.Join(photosErr, streamsErr); err != nil {
 		return err
 	}
-	return s.store(ctx, id, detail, photos, streams)
+	return s.store(ctx, userID, activities.PendingStreams{ID: id, StravaID: stravaID}, detail, photos, streams)
 }
 
 // SyncPending syncs the details, photos and streams of one of the user's
@@ -799,9 +823,9 @@ func summaryFromStrava(a *strava.Activity) *activities.ActivitySummary {
 	}
 }
 
-// encodeStreams encodes streams as an activitiesv1.ActivityStreams message
-// and returns the bounds of the GPS track, if any.
-func encodeStreams(streams *strava.Streams, footSport bool) ([]byte, *geo.Bounds, error) {
+// streamsFromStrava converts streams to an activitiesv1.ActivityStreams
+// message and returns the bounds of the GPS track, if any.
+func streamsFromStrava(streams *strava.Streams, footSport bool) (*activitiesv1.ActivityStreams, *geo.Bounds) {
 	msg := activitiesv1.ActivityStreams_builder{
 		TimeSeconds:    streams.Time,
 		DistanceMeters: streams.Distance,
@@ -829,13 +853,9 @@ func encodeStreams(streams *strava.Streams, footSport bool) ([]byte, *geo.Bounds
 			points[i] = geo.Point{Lat: ll[0], Lng: ll[1]}
 		}
 	}
-	data, err := proto.Marshal(msg.Build())
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to encode streams: %w", err)
-	}
 	bounds, ok := geo.BoundsOf(points)
 	if !ok {
-		return data, nil, nil
+		return msg.Build(), nil
 	}
-	return data, &bounds, nil
+	return msg.Build(), &bounds
 }

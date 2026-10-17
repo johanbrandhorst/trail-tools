@@ -4,6 +4,7 @@ package activities
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -11,9 +12,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"google.golang.org/protobuf/proto"
 )
 
 // Repository stores activities and Strava connections.
@@ -21,15 +25,18 @@ type Repository struct {
 	report *errreport.Reporter
 	db     *store.DB
 	q      *gen.Queries
+	// Stores the activities' streams and Strava's responses about them.
+	blobs blob.Store
 }
 
-// NewRepository creates a new Repository on the database, reporting data it
-// can't decode.
-func NewRepository(report *errreport.Reporter, db *store.DB) (*Repository, error) {
+// NewRepository creates a new Repository on the database and blob store,
+// reporting data it can't decode.
+func NewRepository(report *errreport.Reporter, db *store.DB, blobs blob.Store) (*Repository, error) {
 	return &Repository{
 		report: report,
 		db:     db,
 		q:      gen.New(db),
+		blobs:  blobs,
 	}, nil
 }
 
@@ -86,6 +93,9 @@ type ActivitySummary struct {
 
 // UpsertActivity creates or updates an activity from Strava.
 func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (pgtype.UUID, error) {
+	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a}), false); err != nil {
+		return pgtype.UUID{}, fmt.Errorf("failed to store activity summary: %w", err)
+	}
 	id, err := r.q.UpsertActivity(ctx, upsertActivityParams(userID, a))
 	if err != nil {
 		return pgtype.UUID{}, fmt.Errorf("failed to upsert activity: %w", err)
@@ -96,8 +106,12 @@ func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *
 // StoreListedActivities creates or updates a page of the user's activities
 // listed from Strava, and records how far the listing got: the activities
 // that started before listBefore remain to be listed. A zero listBefore
-// records that the listing finished. It takes a single round trip.
+// records that the listing finished. It takes a single round trip to the
+// database.
 func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UUID, page []*ActivitySummary, listBefore time.Time) error {
+	if err := r.putObjects(ctx, summaryObjects(userID, page), false); err != nil {
+		return fmt.Errorf("failed to store activity summaries: %w", err)
+	}
 	var batch store.Batch
 	q := gen.New(&batch)
 	for _, a := range page {
@@ -115,6 +129,17 @@ func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UU
 		return fmt.Errorf("failed to store listed activities: %w", err)
 	}
 	return nil
+}
+
+// summaryObjects returns the objects of Strava's responses for summaries.
+func summaryObjects(userID pgtype.UUID, summaries []*ActivitySummary) []object {
+	objects := make([]object, 0, len(summaries))
+	for _, a := range summaries {
+		if len(a.RawJSON) > 0 {
+			objects = append(objects, responseObject(userID, a.StravaID, summaryResponse, a.RawJSON))
+		}
+	}
+	return objects
 }
 
 func upsertActivityParams(userID pgtype.UUID, a *ActivitySummary) *gen.UpsertActivityParams {
@@ -137,7 +162,6 @@ func upsertActivityParams(userID pgtype.UUID, a *ActivitySummary) *gen.UpsertAct
 		AverageCadenceSpm:   a.AverageCadenceSpm,
 		SummaryPolyline:     a.SummaryPolyline,
 		RelativeEffort:      a.RelativeEffort,
-		SummaryJSON:         a.RawJSON,
 		PhotoCount:          a.PhotoCount,
 	}
 	if a.SummaryPolyline != "" {
@@ -229,11 +253,57 @@ type Detail struct {
 	Photos []Photo
 }
 
-// StoreActivityDetail stores an activity's detail, replacing its photos,
-// unless detail is nil, and its encoded streams with its track, unless
-// streams is nil, as when it has none. It marks the activity's streams as
-// synced. It takes a single round trip, and stores all of it or none.
-func (r *Repository) StoreActivityDetail(ctx context.Context, activityID pgtype.UUID, detail *Detail, streams []byte, bounds *geo.Bounds) error {
+// StoreActivityDetail stores the detail of one of the user's activities,
+// replacing its photos, unless detail is nil, and its streams with its
+// track, unless streams is nil, as when it has none. It marks the
+// activity's streams as synced. stravaID is Strava's ID of the activity.
+//
+// The streams and Strava's responses are stored in the blob store first,
+// then the rest in a single round trip to the database, all or none of it.
+// If storing it fails, the activity isn't marked synced, and objects stored
+// meanwhile are replaced when it's synced again.
+func (r *Repository) StoreActivityDetail(ctx context.Context, userID, activityID pgtype.UUID, stravaID int64, detail *Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error {
+	var objects []object
+	var track string
+	if streams != nil {
+		encoded, err := encodeStreams(streams)
+		if err != nil {
+			return err
+		}
+		objects = append(objects, streamsObject(userID, activityID, encoded))
+		track = trackFromStreams(streams)
+	}
+	photosRemoved := false
+	if detail != nil {
+		if len(detail.RawJSON) > 0 {
+			objects = append(objects, responseObject(userID, stravaID, detailResponse, detail.RawJSON))
+		}
+		responses := make([]json.RawMessage, 0, len(detail.Photos))
+		for _, p := range detail.Photos {
+			if len(p.RawJSON) > 0 {
+				responses = append(responses, p.RawJSON)
+			}
+		}
+		if len(responses) > 0 {
+			data, err := json.Marshal(responses)
+			if err != nil {
+				return fmt.Errorf("failed to encode photo responses: %w", err)
+			}
+			objects = append(objects, responseObject(userID, stravaID, photosResponse, data))
+		} else {
+			photosRemoved = true
+		}
+	}
+	if err := r.putObjects(ctx, objects, false); err != nil {
+		return fmt.Errorf("failed to store activity detail: %w", err)
+	}
+	if photosRemoved {
+		// The photos were removed on Strava since the last sync.
+		if err := r.blobs.Delete(ctx, responseKey(userID, stravaID, photosResponse)); err != nil {
+			return fmt.Errorf("failed to delete photo responses: %w", err)
+		}
+	}
+
 	var batch store.Batch
 	q := gen.New(&batch)
 	if detail != nil {
@@ -241,7 +311,6 @@ func (r *Repository) StoreActivityDetail(ctx context.Context, activityID pgtype.
 			ID:          activityID,
 			Description: detail.Description,
 			DeviceName:  detail.DeviceName,
-			DetailJSON:  detail.RawJSON,
 		}); err != nil {
 			return err
 		}
@@ -263,11 +332,7 @@ func (r *Repository) StoreActivityDetail(ctx context.Context, activityID pgtype.
 		return err
 	}
 	if streams != nil {
-		track, err := trackFromStreams(streams)
-		if err != nil {
-			return err
-		}
-		if err := q.UpsertActivityStreams(ctx, &gen.UpsertActivityStreamsParams{ActivityID: activityID, Streams: streams, TrackPolyline: track}); err != nil {
+		if err := q.UpsertActivityStreams(ctx, &gen.UpsertActivityStreamsParams{ActivityID: activityID, TrackPolyline: track}); err != nil {
 			return err
 		}
 	}
@@ -338,15 +403,33 @@ func (r *Repository) GetActivity(ctx context.Context, userID, activityID pgtype.
 	return (*activityRow)(row).toActivity(), nil
 }
 
-// GetActivityStreams gets the encoded streams of one of the user's
-// activities. It returns store.ErrNotFound if the activity has no streams.
-func (r *Repository) GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error) {
-	streams, err := r.q.GetActivityStreams(ctx, &gen.GetActivityStreamsParams{ActivityID: activityID, UserID: userID})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
+// GetActivityStreams gets the streams of one of the user's activities. It
+// returns store.ErrNotFound if the activity has no streams.
+func (r *Repository) GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error) {
+	// The key has the user's ID, so other users' streams aren't found.
+	data, err := r.blobs.Get(ctx, streamsKey(userID, activityID))
+	switch {
+	case err == nil:
+		streams, err := decodeStreams(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode activity streams: %w", err)
 		}
+		return streams, nil
+	case !errors.Is(err, blob.ErrNotFound):
 		return nil, fmt.Errorf("failed to get activity streams: %w", err)
+	}
+	// Streams synced before they were stored in the blob store are in the
+	// database until they're moved.
+	data, err = r.q.GetActivityStreams(ctx, &gen.GetActivityStreamsParams{ActivityID: activityID, UserID: userID})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows), err == nil && data == nil:
+		return nil, store.ErrNotFound
+	case err != nil:
+		return nil, fmt.Errorf("failed to get activity streams: %w", err)
+	}
+	streams := &activitiesv1.ActivityStreams{}
+	if err := proto.Unmarshal(data, streams); err != nil {
+		return nil, fmt.Errorf("failed to decode activity streams: %w", err)
 	}
 	return streams, nil
 }

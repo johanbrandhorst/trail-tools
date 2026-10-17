@@ -12,10 +12,17 @@ import (
 // ErrNotFound is returned when an object doesn't exist.
 var ErrNotFound = errors.New("object not found")
 
+// ErrExists is returned by Create when an object already exists.
+var ErrExists = errors.New("object already exists")
+
 // Store stores objects by key.
 type Store interface {
 	// Put stores an object, replacing any object with the same key.
 	Put(ctx context.Context, key string, data []byte, contentType string) error
+	// Create stores an object unless one with the key exists, in which case
+	// it returns ErrExists. Copying data that may meanwhile be stored anew
+	// with Put uses it, so the copy never replaces newer data.
+	Create(ctx context.Context, key string, data []byte, contentType string) error
 	// Get returns the contents of an object, or ErrNotFound.
 	Get(ctx context.Context, key string) ([]byte, error)
 	// Delete deletes an object. Deleting an object that doesn't exist is not

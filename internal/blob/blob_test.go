@@ -37,6 +37,21 @@ func testStore(t *testing.T, s Store) {
 	if got, err := s.Get(ctx, "photos/a/large.jpg"); err != nil || string(got) != "replaced" {
 		t.Fatalf("Get = %q, %v, want replaced", got, err)
 	}
+	if err := s.Create(ctx, "photos/a/large.jpg", []byte("created"), "image/jpeg"); !errors.Is(err, ErrExists) {
+		t.Fatalf("Create of an existing object returned %v, want ErrExists", err)
+	}
+	if got, err := s.Get(ctx, "photos/a/large.jpg"); err != nil || string(got) != "replaced" {
+		t.Fatalf("Get after Create = %q, %v, want replaced", got, err)
+	}
+	if err := s.Create(ctx, "photos/b/large.jpg", []byte("created"), "image/jpeg"); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if got, err := s.Get(ctx, "photos/b/large.jpg"); err != nil || string(got) != "created" {
+		t.Fatalf("Get = %q, %v, want created", got, err)
+	}
+	if err := s.Delete(ctx, "photos/b/large.jpg"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
 	if err := s.Delete(ctx, "photos/a/large.jpg"); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
@@ -99,6 +114,10 @@ func (f *fakeGCS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		data, _ := io.ReadAll(r.Body)
 		name := r.URL.Query().Get("name")
+		if _, ok := f.objects[name]; ok && r.URL.Query().Get("ifGenerationMatch") == "0" {
+			http.Error(w, "precondition failed", http.StatusPreconditionFailed)
+			return
+		}
 		f.objects[name] = data
 		f.types[name] = r.Header.Get("Content-Type")
 		_, _ = io.WriteString(w, `{"name":"`+name+`"}`)

@@ -12,7 +12,6 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"google.golang.org/protobuf/proto"
 )
 
 // addTrackedActivity adds an activity with a summary polyline and streams
@@ -42,15 +41,11 @@ func (e *env) addTrackedActivity(stravaID int64, summary, track []geo.Point) pgt
 	if len(track) == 0 {
 		streams.SetTimeSeconds([]int32{0, 1, 2})
 	}
-	data, err := proto.Marshal(streams)
-	if err != nil {
-		e.t.Fatal(err)
-	}
 	var bounds *geo.Bounds
 	if b, ok := geo.BoundsOf(track); ok {
 		bounds = &b
 	}
-	if err := e.activities.StoreActivityDetail(ctx, id, nil, data, bounds); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, stravaID, nil, streams, bounds); err != nil {
 		e.t.Fatal(err)
 	}
 	return id
@@ -163,29 +158,13 @@ func TestHeatmapTracks(t *testing.T) {
 		t.Errorf("got tracks %v, want the summary polylines", tracks)
 	}
 
-	// Tracks of streams synced before tracks were stored are computed the
-	// first time they're listed, and stored.
-	if _, err := e.db.Exec(ctx, `update strava_activity_streams set track_polyline = null`); err != nil {
-		t.Fatal(err)
-	}
-	checkDetailed()
-	if backfilled, ok := e.storedTrack(run); !ok || backfilled != stored {
-		t.Errorf("got backfilled track %q, want %q", backfilled, stored)
-	}
-	if backfilled, ok := e.storedTrack(treadmillRun); !ok || backfilled != "" {
-		t.Errorf("got backfilled treadmill track %q, want an empty one", backfilled)
-	}
-
-	// Undecodable streams fall back to the summary polyline, and aren't
-	// decoded again.
-	if _, err := e.db.Exec(ctx, `update strava_activity_streams set track_polyline = null, streams = '\xffff' where activity_id = $1`, run); err != nil {
+	// Streams whose track isn't computed yet fall back to the summary
+	// polyline. MoveToBlobs computes them.
+	if _, err := e.db.Exec(ctx, `update strava_activity_streams set track_polyline = null where activity_id = $1`, run); err != nil {
 		t.Fatal(err)
 	}
 	if tracks := e.heatmapTracks(5); !summaryDrawn(tracks) {
 		t.Errorf("got tracks %v, want the summary polylines", tracks)
-	}
-	if backfilled, ok := e.storedTrack(run); !ok || backfilled != "" {
-		t.Errorf("got track %q for undecodable streams, want an empty one", backfilled)
 	}
 
 	// The personal heatmap counts the tracks too.

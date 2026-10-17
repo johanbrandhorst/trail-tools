@@ -38,7 +38,6 @@ func insertPhotoParams(activityID pgtype.UUID, position int, p *Photo) *gen.Inse
 		Width:      p.Width,
 		Height:     p.Height,
 		TakenTime:  pgtype.Timestamptz{Time: p.TakenTime, Valid: !p.TakenTime.IsZero()},
-		PhotoJSON:  p.RawJSON,
 	}
 	if p.Location != nil {
 		params.Lat = pgtype.Float8{Float64: p.Location.Lat, Valid: true}
