@@ -12,6 +12,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const clearMovedPhotoResponses = `-- name: ClearMovedPhotoResponses :exec
+update strava_activity_photos set photo_json = null
+where activity_id = any($1::uuid[])
+`
+
+func (q *Queries) ClearMovedPhotoResponses(ctx context.Context, activityIds []pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, clearMovedPhotoResponses, activityIds)
+	return err
+}
+
 const deleteActivityPhotos = `-- name: DeleteActivityPhotos :exec
 delete from strava_activity_photos
 where activity_id = $1
@@ -33,10 +43,9 @@ insert into strava_activity_photos (
   height,
   lat,
   lng,
-  taken_time,
-  photo_json
+  taken_time
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 on conflict (activity_id, strava_id) do nothing
 `
@@ -52,7 +61,6 @@ type InsertActivityPhotoParams struct {
 	Lat        pgtype.Float8
 	Lng        pgtype.Float8
 	TakenTime  pgtype.Timestamptz
-	PhotoJSON  json.RawMessage
 }
 
 func (q *Queries) InsertActivityPhoto(ctx context.Context, arg *InsertActivityPhotoParams) error {
@@ -67,7 +75,6 @@ func (q *Queries) InsertActivityPhoto(ctx context.Context, arg *InsertActivityPh
 		arg.Lat,
 		arg.Lng,
 		arg.TakenTime,
-		arg.PhotoJSON,
 	)
 	return err
 }
@@ -114,6 +121,48 @@ func (q *Queries) ListActivityPhotos(ctx context.Context, arg *ListActivityPhoto
 			&i.Lat,
 			&i.Lng,
 			&i.TakenTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnmovedPhotoResponses = `-- name: ListUnmovedPhotoResponses :many
+select p.activity_id, a.user_id, a.strava_id, jsonb_agg(p.photo_json order by p.position)::jsonb as responses
+from strava_activity_photos p
+join strava_activities a on a.id = p.activity_id
+where p.photo_json is not null
+group by p.activity_id, a.user_id, a.strava_id
+limit $1
+`
+
+type ListUnmovedPhotoResponsesRow struct {
+	ActivityID pgtype.UUID
+	UserID     pgtype.UUID
+	StravaID   int64
+	Responses  json.RawMessage
+}
+
+// Strava's responses for the photos of activities, as an array in order.
+func (q *Queries) ListUnmovedPhotoResponses(ctx context.Context, limit int32) ([]*ListUnmovedPhotoResponsesRow, error) {
+	rows, err := q.db.Query(ctx, listUnmovedPhotoResponses, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListUnmovedPhotoResponsesRow
+	for rows.Next() {
+		var i ListUnmovedPhotoResponsesRow
+		if err := rows.Scan(
+			&i.ActivityID,
+			&i.UserID,
+			&i.StravaID,
+			&i.Responses,
 		); err != nil {
 			return nil, err
 		}

@@ -33,6 +33,22 @@ func (d *Dir) path(key string) (string, error) {
 }
 
 func (d *Dir) Put(_ context.Context, key string, data []byte, _ string) error {
+	return d.write(key, data, os.Rename)
+}
+
+func (d *Dir) Create(_ context.Context, key string, data []byte, _ string) error {
+	// Linking the written file into place fails if the file exists, unlike
+	// renaming it.
+	err := d.write(key, data, os.Link)
+	if errors.Is(err, fs.ErrExist) {
+		return ErrExists
+	}
+	return err
+}
+
+// write writes an object to a temporary file first, so readers never see a
+// partial file, then moves it into place with place.
+func (d *Dir) write(key string, data []byte, place func(oldpath, newpath string) error) error {
 	path, err := d.path(key)
 	if err != nil {
 		return err
@@ -40,7 +56,6 @@ func (d *Dir) Put(_ context.Context, key string, data []byte, _ string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-	// Write to a temporary file first, so readers never see a partial file.
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".tmp-*")
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
@@ -53,7 +68,7 @@ func (d *Dir) Put(_ context.Context, key string, data []byte, _ string) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-	if err := os.Rename(tmp.Name(), path); err != nil {
+	if err := place(tmp.Name(), path); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil

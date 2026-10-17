@@ -6,3 +6,7 @@ localhost.pem
 
 # Trip report photos stored locally, see -photo-dir
 /photos/
+
+# Activities' streams and Strava's responses stored locally, see
+# -activity-dir
+/activity-data/

@@ -83,9 +83,7 @@ func TestStravaRequestedActivitiesSyncFirst(t *testing.T) {
 	}
 	// Syncing the activity clears the request, so when it's waiting for
 	// details again, e.g. as its photos changed, it's in date order.
-	if err := e.activities.StoreActivityDetail(ctx, ids[1000], nil, nil, nil); err != nil {
-		t.Fatal(err)
-	}
+	e.storeActivityDetail(ids[1000], nil, nil, nil)
 	if got := e.pendingStravaIDs(); !slices.Equal(got, []int64{1002, 1001}) {
 		t.Fatalf("got pending %v after syncing the requested activity", got)
 	}
@@ -97,7 +95,7 @@ func TestStravaRequestedActivitiesSyncFirst(t *testing.T) {
 		t.Fatalf("got pending %v, want the request cleared", got)
 	}
 	// Synced activities can't be requested.
-	if err := e.activities.StoreActivityDetail(ctx, ids[1002], nil, nil, nil); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, ids[1002], 1002, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.activities.RequestActivitySync(ctx, e.userID, ids[1002]); err != nil {

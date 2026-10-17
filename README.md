@@ -95,6 +95,12 @@ fully; the sync pauses and resumes automatically, and the app syncs new
 activities every few hours. The activities page checks for new activities
 every minute while it's open.
 
+The activities' detailed streams and Strava's raw responses are stored as
+files, not in the database: locally in the `activity-data` directory of the
+working directory, which is ignored by git, or elsewhere with
+`-activity-dir`, or in a Google Cloud Storage bucket with
+`-activity-bucket` (`TRAIL_TOOLS_ACTIVITY_BUCKET`).
+
 When the server is reachable from the internet, Strava can also push new,
 changed and deleted activities to it as they happen, so they appear within
 seconds: set `-strava-webhook-verify-token` to a random secret, and the
@@ -459,6 +465,16 @@ itself, so only the Cloud Run service account can read and write them
 account's application default credentials. Photos of published reports
 are served with long cache lifetimes, so they're mostly fetched once per
 visitor.
+
+### Activity data
+
+Activities' streams and Strava's raw responses about them are stored in the
+`<project>-activity-data` Cloud Storage bucket, where they cost much less
+than in the database: they're written once, read whole and never queried.
+It's set up like the photos bucket, private and in `us-west1`, and Terraform
+passes it to the service as `TRAIL_TOOLS_ACTIVITY_BUCKET`. Streams are
+stored compactly, at Strava's precision, in about a seventh of the space of
+the API's message.
 
 ### Elevation tiles
 

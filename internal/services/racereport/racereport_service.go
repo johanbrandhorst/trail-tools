@@ -25,7 +25,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/track"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
 	"github.com/johanbrandhorst/trail-tools/internal/users"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -70,7 +69,7 @@ type ReportRepository interface {
 // ActivityRepository gets activities.
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
 	ListActivities(ctx context.Context, userID pgtype.UUID, filter activities.ListActivitiesFilter) ([]*activities.Activity, error)
 }
 
@@ -577,13 +576,9 @@ func (s *Service) withComparison(ctx context.Context, report *races.RaceReport) 
 	}
 	var rec *recording
 	if report.ActivityID.Valid {
-		data, err := s.activities.GetActivityStreams(ctx, report.UserID, report.ActivityID)
+		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, report.ActivityID)
 		switch {
 		case err == nil:
-			streams := &activitiesv1.ActivityStreams{}
-			if err := proto.Unmarshal(data, streams); err != nil {
-				return nil, nil, s.toConnectError(ctx, err, "failed to decode activity streams")
-			}
 			rec = newRecording(streams)
 		case !errors.Is(err, store.ErrNotFound):
 			return nil, nil, s.toConnectError(ctx, err, "failed to get activity streams")

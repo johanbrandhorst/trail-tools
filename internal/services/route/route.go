@@ -17,7 +17,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/routes"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"gitlab.com/greyxor/slogor"
-	"google.golang.org/protobuf/proto"
 )
 
 func (s *Service) PreviewRoute(ctx context.Context, req *routesv1.PreviewRouteRequest) (*routesv1.PreviewRouteResponse, error) {
@@ -329,13 +328,10 @@ func (s *Service) activityTrack(ctx context.Context, userID, activityID pgtype.U
 		return nil, nil, s.toConnectError(ctx, err, "failed to get activity")
 	}
 	var points []geo.Point
-	data, err := s.activities.GetActivityStreams(ctx, userID, activityID)
+	streams, err := s.activities.GetActivityStreams(ctx, userID, activityID)
 	switch {
 	case err == nil:
-		points, err = decodeStreams(data)
-		if err != nil {
-			return nil, nil, s.toConnectError(ctx, err, "failed to decode activity streams")
-		}
+		points = streamPoints(streams)
 	case errors.Is(err, store.ErrNotFound):
 		if activity.SummaryPolyline != "" {
 			points, err = geo.DecodePolyline(activity.SummaryPolyline)
@@ -362,12 +358,8 @@ func (s *Service) fillMissingElevations(ctx context.Context, points []geo.Point)
 	return nil
 }
 
-// decodeStreams decodes stored activity streams into points.
-func decodeStreams(data []byte) ([]geo.Point, error) {
-	var streams activitiesv1.ActivityStreams
-	if err := proto.Unmarshal(data, &streams); err != nil {
-		return nil, fmt.Errorf("failed to decode streams: %w", err)
-	}
+// streamPoints returns the points of activity streams.
+func streamPoints(streams *activitiesv1.ActivityStreams) []geo.Point {
 	lats, lngs, alts := streams.GetLat(), streams.GetLng(), streams.GetAltitudeMeters()
 	points := make([]geo.Point, 0, len(lats))
 	for i := range lats {
@@ -380,7 +372,7 @@ func decodeStreams(data []byte) ([]geo.Point, error) {
 		}
 		points = append(points, geo.Point{Lat: lats[i], Lng: lngs[i], Ele: ele})
 	}
-	return points, nil
+	return points
 }
 
 func (s *Service) toConnectError(ctx context.Context, err error, msg string) error {

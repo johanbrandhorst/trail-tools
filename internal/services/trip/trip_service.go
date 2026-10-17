@@ -64,7 +64,7 @@ type TripRepository interface {
 // ActivityRepository gets the activities reports are made from.
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
 	ListActivityPhotos(ctx context.Context, userID, activityID pgtype.UUID) ([]activities.Photo, error)
 }
 
@@ -228,14 +228,10 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 
 	var t *activitiesv1.ActivityStreams
 	if a.StreamsSynced {
-		data, err := s.activities.GetActivityStreams(ctx, report.UserID, activityID)
+		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, activityID)
 		switch {
 		case err == nil:
-			var streams activitiesv1.ActivityStreams
-			if err := proto.Unmarshal(data, &streams); err != nil {
-				return "", s.toConnectError(ctx, err, "failed to decode streams")
-			}
-			t = track.FromStreams(&streams)
+			t = track.FromStreams(streams)
 		case errors.Is(err, store.ErrNotFound):
 			// The activity has no streams, e.g. a manual entry.
 		default:

@@ -19,7 +19,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1/activitiesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -28,7 +27,7 @@ var _ activitiesv1connect.ActivityServiceHandler = (*Service)(nil)
 type ActivityRepository interface {
 	ListActivities(ctx context.Context, userID pgtype.UUID, filter activities.ListActivitiesFilter) ([]*activities.Activity, error)
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
 	ListActivityPhotos(ctx context.Context, userID, activityID pgtype.UUID) ([]activities.Photo, error)
 	ListActivityTotals(ctx context.Context, userID pgtype.UUID, startDate, endDate time.Time, sportTypes []string) ([]activities.ActivityTotals, error)
 }
@@ -135,18 +134,14 @@ func (s *Service) GetActivity(ctx context.Context, req *activitiesv1.GetActivity
 	}
 	resp := activitiesv1.GetActivityResponse_builder{Activity: s.activityToProto(activity)}
 	if req.GetIncludeStreams() && activity.StreamsSynced {
-		data, err := s.activities.GetActivityStreams(ctx, userID, activityID)
+		streams, err := s.activities.GetActivityStreams(ctx, userID, activityID)
 		switch {
 		case err == nil:
-			var streams activitiesv1.ActivityStreams
-			if err := proto.Unmarshal(data, &streams); err != nil {
-				return nil, s.internalError(ctx, "failed to decode streams", err)
-			}
 			limit := defaultStreamPoints
 			if n := int(req.GetMaxStreamPoints()); n > 0 {
 				limit = min(n, maxStreamPoints)
 			}
-			resp.Streams = DownsampleStreams(&streams, limit)
+			resp.Streams = DownsampleStreams(streams, limit)
 		case errors.Is(err, store.ErrNotFound):
 			// The activity has no streams, e.g. a manual entry.
 		default:

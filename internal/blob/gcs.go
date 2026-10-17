@@ -51,10 +51,24 @@ func (g *GCS) objectURL(key string) string {
 }
 
 func (g *GCS) Put(ctx context.Context, key string, data []byte, contentType string) error {
+	return g.upload(ctx, key, data, contentType, false)
+}
+
+func (g *GCS) Create(ctx context.Context, key string, data []byte, contentType string) error {
+	return g.upload(ctx, key, data, contentType, true)
+}
+
+// upload stores an object. If create is set, it only stores it if no object
+// with the key exists, which Cloud Storage checks atomically.
+func (g *GCS) upload(ctx context.Context, key string, data []byte, contentType string, create bool) error {
 	if err := ValidateKey(key); err != nil {
 		return err
 	}
 	query := url.Values{"uploadType": {"media"}, "name": {key}}
+	if create {
+		// Generation 0 matches only objects that don't exist.
+		query.Set("ifGenerationMatch", "0")
+	}
 	u := g.baseURL + "/upload/storage/v1/b/" + url.PathEscape(g.bucket) + "/o?" + query.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(data))
 	if err != nil {
@@ -66,10 +80,15 @@ func (g *GCS) Put(ctx context.Context, key string, data []byte, contentType stri
 		return fmt.Errorf("failed to upload %s: %w", key, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to upload %s: %w", key, statusError(resp))
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusPreconditionFailed:
+		if create {
+			return ErrExists
+		}
 	}
-	return nil
+	return fmt.Errorf("failed to upload %s: %w", key, statusError(resp))
 }
 
 func (g *GCS) Get(ctx context.Context, key string) ([]byte, error) {
