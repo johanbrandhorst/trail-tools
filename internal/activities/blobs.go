@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
@@ -69,19 +68,11 @@ func responseObject(userID pgtype.UUID, stravaID int64, name string, response []
 	return object{key: responseKey(userID, stravaID, name), data: buf.Bytes(), contentType: "application/gzip"}
 }
 
-// putObjects stores objects, a few at a time. With create, objects that
-// exist are left as they are, as when moving data that a sync may meanwhile
-// have stored anew.
-func (r *Repository) putObjects(ctx context.Context, objects []object, create bool) error {
+// putObjects stores objects, a few at a time.
+func (r *Repository) putObjects(ctx context.Context, objects []object) error {
 	return forEach(len(objects), func(i int) error {
 		o := objects[i]
-		if !create {
-			return r.blobs.Put(ctx, o.key, o.data, o.contentType)
-		}
-		if err := r.blobs.Create(ctx, o.key, o.data, o.contentType); err != nil && !errors.Is(err, blob.ErrExists) {
-			return err
-		}
-		return nil
+		return r.blobs.Put(ctx, o.key, o.data, o.contentType)
 	})
 }
 

@@ -158,8 +158,7 @@ func TestHeatmapTracks(t *testing.T) {
 		t.Errorf("got tracks %v, want the summary polylines", tracks)
 	}
 
-	// Streams whose track isn't computed yet fall back to the summary
-	// polyline. MoveToBlobs computes them.
+	// Streams without a track fall back to the summary polyline.
 	if _, err := e.db.Exec(ctx, `update strava_activity_streams set track_polyline = null where activity_id = $1`, run); err != nil {
 		t.Fatal(err)
 	}

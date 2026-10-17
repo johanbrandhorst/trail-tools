@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -33,7 +32,6 @@ type SyncRepository interface {
 	CountActivities(ctx context.Context, userID pgtype.UUID) (total, pendingStreams int64, err error)
 	StoreActivityDetail(ctx context.Context, userID, activityID pgtype.UUID, stravaID int64, detail *activities.Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error
 	DeleteActivityByStravaID(ctx context.Context, userID pgtype.UUID, stravaID int64) error
-	MoveToBlobs(ctx context.Context) (bool, error)
 }
 
 // StravaClient is the Strava API.
@@ -94,10 +92,6 @@ type Syncer struct {
 	// The activities being synced, by Strava ID, closed when done.
 	claims map[int64]chan struct{}
 	wg     sync.WaitGroup
-
-	// Whether the activity data stored in the database has all moved to the
-	// blob store, so moving it needn't be tried again.
-	moved atomic.Bool
 }
 
 // NewSyncer creates a new Syncer. Syncs are stopped when ctx is cancelled.
@@ -231,28 +225,7 @@ func (s *Syncer) SyncDue(ctx context.Context) error {
 			s.SyncOnce(ctx, conn.UserID, false)
 		}
 	}
-	s.moveToBlobs(ctx)
 	return nil
-}
-
-// moveToBlobs moves the activity data stored in the database before it was
-// stored in the blob store, unless it has all moved already. It runs with
-// the scheduled and background syncs, as the server only runs between
-// requests on Cloud Run. It can be removed once the data has moved and its
-// columns are dropped.
-func (s *Syncer) moveToBlobs(ctx context.Context) {
-	if s.moved.Load() {
-		return
-	}
-	done, err := s.repo.MoveToBlobs(ctx)
-	if err != nil && ctx.Err() == nil {
-		s.report.Report(ctx, "Failed to move activity data to the blob store, trying again with the next sync", err)
-		return
-	}
-	if done {
-		s.log.InfoContext(ctx, "Moved all activity data to the blob store")
-		s.moved.Store(true)
-	}
 }
 
 // due returns whether a connection is due a sync.
@@ -298,7 +271,6 @@ func (s *Syncer) RunBackground(ctx context.Context) {
 				s.Start(conn.UserID, false)
 			}
 		}
-		s.moveToBlobs(ctx)
 		select {
 		case <-ctx.Done():
 			return

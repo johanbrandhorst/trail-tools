@@ -17,7 +17,6 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"google.golang.org/protobuf/proto"
 )
 
 // Repository stores activities and Strava connections.
@@ -93,7 +92,7 @@ type ActivitySummary struct {
 
 // UpsertActivity creates or updates an activity from Strava.
 func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (pgtype.UUID, error) {
-	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a}), false); err != nil {
+	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a})); err != nil {
 		return pgtype.UUID{}, fmt.Errorf("failed to store activity summary: %w", err)
 	}
 	id, err := r.q.UpsertActivity(ctx, upsertActivityParams(userID, a))
@@ -109,7 +108,7 @@ func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *
 // records that the listing finished. It takes a single round trip to the
 // database.
 func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UUID, page []*ActivitySummary, listBefore time.Time) error {
-	if err := r.putObjects(ctx, summaryObjects(userID, page), false); err != nil {
+	if err := r.putObjects(ctx, summaryObjects(userID, page)); err != nil {
 		return fmt.Errorf("failed to store activity summaries: %w", err)
 	}
 	var batch store.Batch
@@ -294,7 +293,7 @@ func (r *Repository) StoreActivityDetail(ctx context.Context, userID, activityID
 			photosRemoved = true
 		}
 	}
-	if err := r.putObjects(ctx, objects, false); err != nil {
+	if err := r.putObjects(ctx, objects); err != nil {
 		return fmt.Errorf("failed to store activity detail: %w", err)
 	}
 	if photosRemoved {
@@ -409,26 +408,13 @@ func (r *Repository) GetActivityStreams(ctx context.Context, userID, activityID 
 	// The key has the user's ID, so other users' streams aren't found.
 	data, err := r.blobs.Get(ctx, streamsKey(userID, activityID))
 	switch {
-	case err == nil:
-		streams, err := decodeStreams(data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode activity streams: %w", err)
-		}
-		return streams, nil
-	case !errors.Is(err, blob.ErrNotFound):
-		return nil, fmt.Errorf("failed to get activity streams: %w", err)
-	}
-	// Streams synced before they were stored in the blob store are in the
-	// database until they're moved.
-	data, err = r.q.GetActivityStreams(ctx, &gen.GetActivityStreamsParams{ActivityID: activityID, UserID: userID})
-	switch {
-	case errors.Is(err, pgx.ErrNoRows), err == nil && data == nil:
+	case errors.Is(err, blob.ErrNotFound):
 		return nil, store.ErrNotFound
 	case err != nil:
 		return nil, fmt.Errorf("failed to get activity streams: %w", err)
 	}
-	streams := &activitiesv1.ActivityStreams{}
-	if err := proto.Unmarshal(data, streams); err != nil {
+	streams, err := decodeStreams(data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to decode activity streams: %w", err)
 	}
 	return streams, nil

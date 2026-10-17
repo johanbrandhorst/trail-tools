@@ -7,20 +7,9 @@ package gen
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-const clearMovedPhotoResponses = `-- name: ClearMovedPhotoResponses :exec
-update strava_activity_photos set photo_json = null
-where activity_id = any($1::uuid[])
-`
-
-func (q *Queries) ClearMovedPhotoResponses(ctx context.Context, activityIds []pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, clearMovedPhotoResponses, activityIds)
-	return err
-}
 
 const deleteActivityPhotos = `-- name: DeleteActivityPhotos :exec
 delete from strava_activity_photos
@@ -121,48 +110,6 @@ func (q *Queries) ListActivityPhotos(ctx context.Context, arg *ListActivityPhoto
 			&i.Lat,
 			&i.Lng,
 			&i.TakenTime,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listUnmovedPhotoResponses = `-- name: ListUnmovedPhotoResponses :many
-select p.activity_id, a.user_id, a.strava_id, jsonb_agg(p.photo_json order by p.position)::jsonb as responses
-from strava_activity_photos p
-join strava_activities a on a.id = p.activity_id
-where p.photo_json is not null
-group by p.activity_id, a.user_id, a.strava_id
-limit $1
-`
-
-type ListUnmovedPhotoResponsesRow struct {
-	ActivityID pgtype.UUID
-	UserID     pgtype.UUID
-	StravaID   int64
-	Responses  json.RawMessage
-}
-
-// Strava's responses for the photos of activities, as an array in order.
-func (q *Queries) ListUnmovedPhotoResponses(ctx context.Context, limit int32) ([]*ListUnmovedPhotoResponsesRow, error) {
-	rows, err := q.db.Query(ctx, listUnmovedPhotoResponses, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*ListUnmovedPhotoResponsesRow
-	for rows.Next() {
-		var i ListUnmovedPhotoResponsesRow
-		if err := rows.Scan(
-			&i.ActivityID,
-			&i.UserID,
-			&i.StravaID,
-			&i.Responses,
 		); err != nil {
 			return nil, err
 		}

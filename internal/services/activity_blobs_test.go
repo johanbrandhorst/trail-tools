@@ -7,9 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
@@ -17,7 +15,6 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"google.golang.org/protobuf/proto"
 )
 
 // activityKey returns the key of an object of one of the user's activities.
@@ -82,27 +79,12 @@ func (e *env) apiStreams(activityID pgtype.UUID) *activitiesv1.ActivityStreams {
 	return resp.GetStreams()
 }
 
-// unmovedCount counts the activity data in the database.
-func (e *env) unmovedCount() int {
-	e.t.Helper()
-	var count int
-	if err := e.db.QueryRow(context.Background(), `
-		select
-			(select count(*) from strava_activity_streams where streams is not null) +
-			(select count(*) from strava_activities where summary_json is not null or detail_json is not null) +
-			(select count(*) from strava_activity_photos where photo_json is not null)`).Scan(&count); err != nil {
-		e.t.Fatal(err)
-	}
-	return count
-}
-
 func TestActivityBlobs(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	ctx := context.Background()
 
-	// An activity synced now: its streams and Strava's responses are in the
-	// blob store, not the database.
+	// An activity's streams and Strava's responses are in the blob store.
 	var track []geo.Point
 	for i := range 100 {
 		track = append(track, geo.Point{Lat: 46 + float64(i)*0.0001, Lng: 7.000123})
@@ -115,9 +97,6 @@ func TestActivityBlobs(t *testing.T) {
 			{StravaID: "p1", URL: "https://cdn.example/p1.jpg", RawJSON: []byte(`{"unique_id":"p1"}`)},
 		},
 	}, streamsOf(track), nil)
-	if got := e.unmovedCount(); got != 0 {
-		t.Errorf("%d rows have activity data in the database, want none", got)
-	}
 	if !e.exists(e.activityKey(run, "streams.pb")) {
 		t.Error("the streams weren't stored in the blob store")
 	}
@@ -137,82 +116,6 @@ func TestActivityBlobs(t *testing.T) {
 	e.storeActivityDetail(run, &activities.Detail{RawJSON: []byte(`{"id":7}`)}, streamsOf(track), nil)
 	if e.exists(e.responseKey("7", "photos")) {
 		t.Error("the photo responses are still stored after the photos were removed")
-	}
-
-	// Activities synced before: their data is in the database, the streams
-	// in the uncompact message, and without a track.
-	legacy := func(id pgtype.UUID, stravaID string, streams []byte) {
-		t.Helper()
-		for _, key := range []string{e.activityKey(id, "streams.pb"), e.responseKey(stravaID, "summary"), e.responseKey(stravaID, "detail"), e.responseKey(stravaID, "photos")} {
-			if err := e.activityBlobs.Delete(ctx, key); err != nil {
-				t.Fatal(err)
-			}
-		}
-		if _, err := e.db.Exec(ctx, `update strava_activity_streams set streams = $2, track_polyline = null where activity_id = $1`, id, streams); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := e.db.Exec(ctx, `update strava_activities set summary_json = '{"name": "Old run"}', detail_json = '{"id": 1}' where id = $1`, id); err != nil {
-			t.Fatal(err)
-		}
-	}
-	old, err := proto.Marshal(streamsOf(track))
-	if err != nil {
-		t.Fatal(err)
-	}
-	legacy(run, "7", old)
-	if _, err := e.db.Exec(ctx, `insert into strava_activity_photos (activity_id, strava_id, position, caption, url, width, height, photo_json) values ($1, 'p2', 0, '', 'https://cdn.example/p2.jpg', 0, 0, '{"unique_id": "p2"}')`, run); err != nil {
-		t.Fatal(err)
-	}
-	// An activity whose streams can't be decoded.
-	broken := e.addTrackedActivity(8, track[:2], track)
-	legacy(broken, "8", []byte{0xff, 0xff})
-	// An activity synced again since: its summary in the blob store is newer
-	// than the one in the database, and isn't replaced.
-	resynced := e.addTrackedActivity(9, track[:2], track)
-	legacy(resynced, "9", old)
-	if _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
-		StravaID: 9, Name: "New run", SportType: "TrailRun", StartTime: time.Now(), StartDateLocal: time.Now(),
-		RawJSON: []byte(`{"name":"New run"}`),
-	}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.db.Exec(ctx, `update strava_activities set summary_json = '{"name": "Old run"}' where id = $1`, resynced); err != nil {
-		t.Fatal(err)
-	}
-
-	// Until they're moved, their streams are read from the database.
-	if got := e.apiStreams(run).GetLat(); len(got) != 100 || got[99] != track[99].Lat {
-		t.Errorf("got %d latitudes from the database, want the track's 100", len(got))
-	}
-
-	done, err := e.activities.MoveToBlobs(ctx)
-	if err != nil || !done {
-		t.Fatalf("MoveToBlobs = %v, %v, want done", done, err)
-	}
-	if got := e.unmovedCount(); got != 0 {
-		t.Errorf("%d rows have activity data in the database after moving it, want none", got)
-	}
-	got := e.apiStreams(run).GetLat()
-	if len(got) != 100 || math.Abs(got[99]-track[99].Lat) > 1e-6 {
-		t.Errorf("got %d latitudes after moving them, want the track's 100", len(got))
-	}
-	if track, ok := e.storedTrack(run); !ok || track == "" {
-		t.Errorf("got track %q after moving the streams, want it computed", track)
-	}
-	if track, ok := e.storedTrack(broken); !ok || track != "" {
-		t.Errorf("got track %q for undecodable streams, want an empty one", track)
-	}
-	if got, ok := e.response(e.responseKey("7", "summary")).(map[string]any); !ok || got["name"] != "Old run" {
-		t.Errorf("got summary response %v, want the moved one", got)
-	}
-	if got, ok := e.response(e.responseKey("7", "photos")).([]any); !ok || len(got) != 1 {
-		t.Errorf("got photo responses %v, want the moved one", got)
-	}
-	if got, ok := e.response(e.responseKey("9", "summary")).(map[string]any); !ok || got["name"] != "New run" {
-		t.Errorf("got summary response %v, want the newer one kept", got)
-	}
-	if done, err := e.activities.MoveToBlobs(ctx); err != nil || !done {
-		t.Errorf("MoveToBlobs again = %v, %v, want done", done, err)
 	}
 
 	// Deleting an activity deletes its data.
