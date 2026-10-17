@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"connectrpc.com/connect/v2"
@@ -103,6 +104,9 @@ func (s *Service) SuggestRaceReportSegments(ctx context.Context, req *racesv1.Su
 // the positions of its streams, downsampled, or else its summary polyline,
 // encoded. It returns nil if the activity has neither.
 func (s *Service) activityTrack(ctx context.Context, userID pgtype.UUID, activity *activities.Activity) ([]byte, error) {
+	if !activity.StreamsSynced {
+		s.syncPending(ctx, userID, activity.ID)
+	}
 	var t *activitiesv1.ActivityStreams
 	streams, err := s.activities.GetActivityStreams(ctx, userID, activity.ID)
 	switch {
@@ -209,4 +213,23 @@ func segmentsToProto(segments []races.RaceReportSegment) []*racesv1.RaceReportSe
 		}.Build()
 	}
 	return out
+}
+
+// activitySyncBudget is how long a request waits for an activity's details
+// and streams to sync.
+const activitySyncBudget = 15 * time.Second
+
+// syncPending syncs the details and streams of an activity waiting for them,
+// as activities older than syncs fetch them for are, so a report gets its
+// whole track. If that fails or takes too long, the report gets the
+// activity's summary polyline instead, and the activity syncs later.
+func (s *Service) syncPending(ctx context.Context, userID, activityID pgtype.UUID) {
+	if s.syncer == nil {
+		return
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, activitySyncBudget)
+	defer cancel()
+	if _, _, err := s.syncer.SyncPending(syncCtx, userID, activityID); err != nil && syncCtx.Err() == nil {
+		s.report.Report(ctx, "Failed to sync an activity for a race report, using its summary polyline", err)
+	}
 }

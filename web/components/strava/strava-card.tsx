@@ -89,8 +89,9 @@ interface StravaCardProps {
 }
 
 /**
- * SyncProgress shows what a sync is doing, and how many activities have
- * their details synced.
+ * SyncProgress shows what a sync is doing, and how many activities are left
+ * to sync the details of. Older activities aren't counted, as their details
+ * are synced when they're opened.
  */
 const SyncProgress: React.FC<{ connection: StravaConnection }> = ({
   connection,
@@ -111,7 +112,7 @@ const SyncProgress: React.FC<{ connection: StravaConnection }> = ({
           <div
             className="h-1.5 flex-1 overflow-hidden rounded-full bg-sky-100"
             role="progressbar"
-            aria-label="Activities with details synced"
+            aria-label="Activities synced"
             aria-valuemin={0}
             aria-valuemax={total}
             aria-valuenow={done}
@@ -122,7 +123,7 @@ const SyncProgress: React.FC<{ connection: StravaConnection }> = ({
             />
           </div>
           <span className="tabular-nums">
-            {done} of {total} activities
+            {connection.pendingStreamCount} left
           </span>
         </div>
       )}
