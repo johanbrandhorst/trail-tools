@@ -43,8 +43,6 @@ on conflict (user_id, strava_id) do update set
   average_cadence_spm = excluded.average_cadence_spm,
   summary_polyline = excluded.summary_polyline,
   relative_effort = excluded.relative_effort,
-  -- Strava's response is stored in the blob store now.
-  summary_json = null,
   min_lat = coalesce(strava_activities.min_lat, excluded.min_lat),
   min_lng = coalesce(strava_activities.min_lng, excluded.min_lng),
   max_lat = coalesce(strava_activities.max_lat, excluded.max_lat),
@@ -88,8 +86,6 @@ where user_id = $1;
 update strava_activities set
   description = $2,
   device_name = $3,
-  -- Strava's response is stored in the blob store now.
-  detail_json = null,
   update_time = now()
 where id = $1;
 
@@ -115,7 +111,6 @@ insert into strava_activity_streams (
   sqlc.arg(track_polyline)::text
 )
 on conflict (activity_id) do update set
-  streams = null,
   track_polyline = excluded.track_polyline;
 
 -- name: ListActivities :many
@@ -144,12 +139,6 @@ select
   average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, photo_count
 from strava_activities
 where id = $1 and user_id = $2;
-
--- name: GetActivityStreams :one
--- The streams not moved to the blob store yet.
-select s.streams from strava_activity_streams s
-join strava_activities a on a.id = s.activity_id
-where s.activity_id = $1 and a.user_id = $2;
 
 -- name: ListActivityTotals :many
 select start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters
@@ -182,28 +171,3 @@ where user_id = $1
   and max_lng >= sqlc.arg(west)::double precision
   and (sqlc.narg(start_date)::date is null or start_date_local >= sqlc.narg(start_date)::date)
   and (sqlc.narg(end_date)::date is null or start_date_local <= sqlc.narg(end_date)::date);
-
--- name: ListUnmovedStreams :many
-select s.activity_id, a.user_id, s.streams, s.track_polyline
-from strava_activity_streams s
-join strava_activities a on a.id = s.activity_id
-where s.streams is not null
-limit $1;
-
--- name: ClearMovedStreams :exec
-update strava_activity_streams set
-  streams = null,
-  track_polyline = coalesce(track_polyline, sqlc.arg(track_polyline)::text)
-where activity_id = $1;
-
--- name: ListUnmovedResponses :many
-select id, user_id, strava_id, summary_json, detail_json
-from strava_activities
-where summary_json is not null or detail_json is not null
-limit $1;
-
--- name: ClearMovedResponses :exec
-update strava_activities set
-  summary_json = null,
-  detail_json = null
-where id = any(sqlc.arg(ids)::uuid[]);

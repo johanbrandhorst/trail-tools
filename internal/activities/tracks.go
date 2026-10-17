@@ -72,8 +72,7 @@ func (r *Repository) ListTracksInBounds(ctx context.Context, userID pgtype.UUID,
 	tracks := make([]Track, 0, len(rows))
 	for _, row := range rows {
 		polyline := row.TrackPolyline.String
-		// Streams without positions, none at all, or streams whose track
-		// MoveToBlobs hasn't computed yet.
+		// Streams without positions, or none at all.
 		if polyline == "" {
 			polyline = row.SummaryPolyline
 		}

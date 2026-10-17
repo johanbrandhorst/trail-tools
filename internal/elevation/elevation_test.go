@@ -171,10 +171,6 @@ func (failingStore) Put(context.Context, string, []byte, string) error {
 	return errors.New("bucket unavailable")
 }
 
-func (failingStore) Create(context.Context, string, []byte, string) error {
-	return errors.New("bucket unavailable")
-}
-
 func (failingStore) Get(context.Context, string) ([]byte, error) {
 	return nil, errors.New("bucket unavailable")
 }
