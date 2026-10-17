@@ -125,9 +125,9 @@ func (s *Service) GetInvitation(ctx context.Context, req *authv1.GetInvitationRe
 }
 
 func (s *Service) CreateInvitation(ctx context.Context, req *authv1.CreateInvitationRequest) (*authv1.CreateInvitationResponse, error) {
-	user, ok := authn.GetUser(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 	note := strings.TrimSpace(req.GetNote())
 	if len(note) > maxNameLength {
@@ -157,10 +157,11 @@ func (s *Service) CreateInvitation(ctx context.Context, req *authv1.CreateInvita
 }
 
 func (s *Service) ListInvitations(ctx context.Context, req *authv1.ListInvitationsRequest) (*authv1.ListInvitationsResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	invitations, err := s.repo.ListInvitations(ctx, userID)
 	if err != nil {
 		return nil, s.internalError(ctx, "failed to list invitations", err)
@@ -173,10 +174,11 @@ func (s *Service) ListInvitations(ctx context.Context, req *authv1.ListInvitatio
 }
 
 func (s *Service) DeleteInvitation(ctx context.Context, req *authv1.DeleteInvitationRequest) (*authv1.DeleteInvitationResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	id, err := store.StringToUUID(req.GetId())
 	if err != nil {
 		return nil, connect.Errorf(connect.CodeInvalidArgument, "invalid invitation ID: %v", err).WithCause(err)
@@ -188,10 +190,11 @@ func (s *Service) DeleteInvitation(ctx context.Context, req *authv1.DeleteInvita
 }
 
 func (s *Service) ListPasskeys(ctx context.Context, req *authv1.ListPasskeysRequest) (*authv1.ListPasskeysResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	passkeys, err := s.repo.ListPasskeys(ctx, userID)
 	if err != nil {
 		return nil, s.internalError(ctx, "failed to list passkeys", err)
@@ -213,10 +216,11 @@ func (s *Service) ListPasskeys(ctx context.Context, req *authv1.ListPasskeysRequ
 }
 
 func (s *Service) DeletePasskey(ctx context.Context, req *authv1.DeletePasskeyRequest) (*authv1.DeletePasskeyResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	id, err := base64.RawURLEncoding.DecodeString(req.GetId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "invalid passkey ID")
@@ -248,12 +252,17 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, req *authv1.Begi
 			target = inv.UserID
 		}
 	default:
-		userID, ok := authn.GetUserID(ctx)
-		if !ok {
+		// Adding a passkey to the account signs in with it, so only the
+		// web app may do it, not API clients with a bearer token.
+		if _, ok := authn.GetUserID(ctx); !ok {
 			return nil, connect.NewError(connect.CodeUnauthenticated, "an invitation is required to register")
 		}
-		challenge.UserID = userID
-		target = userID
+		user, err := authn.GetSessionUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		challenge.UserID = user.ID()
+		target = user.ID()
 	}
 
 	resp := authv1.BeginPasskeyRegistrationResponse_builder{

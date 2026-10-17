@@ -68,10 +68,12 @@ import (
 
 // env is a running server for a test, with clients authenticated as a user.
 type env struct {
-	t          *testing.T
-	db         *store.DB
-	userID     pgtype.UUID
+	t      *testing.T
+	db     *store.DB
+	userID pgtype.UUID
+	// The user's API token, and session ID.
 	token      string
+	session    string
 	otherToken string
 	// The directory trip report photos are stored in.
 	photoDir   string
@@ -83,6 +85,8 @@ type env struct {
 	strava     *fakeStrava
 	liveTrack  *fakeLiveTrack
 
+	// The user's settings, and OAuth connections below, are signed in with
+	// the session; the other clients with the API token.
 	users      usersv1connect.UserServiceClient
 	activity   activitiesv1connect.ActivityServiceClient
 	stravaAPI  stravav1connect.StravaServiceClient
@@ -148,6 +152,10 @@ func newEnv(t *testing.T) *env {
 	e := &env{t: t, db: db, mapData: &fakeMapData{}, router: &fakeRouter{}, activities: activityRepo, strava: newFakeStrava()}
 	e.userID = storetest.NewUser(t, db)
 	_, e.token, err = userRepo.CreateAPIToken(ctx, e.userID, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.session, err = userRepo.CreateSession(ctx, e.userID, time.Now().Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +256,10 @@ func newEnv(t *testing.T) *env {
 	client := e.srv.Client()
 	authed := connect.NewClient(connecthttp.NewTransport(client, e.srv.URL), bearerInterceptor(e.token))
 	anon := connect.NewClient(connecthttp.NewTransport(client, e.srv.URL))
-	e.users = usersv1connect.NewUserServiceClient(authed)
+	// Accounts are managed in the web app, which is signed in with a session
+	// cookie rather than a token.
+	signedIn := connect.NewClient(connecthttp.NewTransport(client, e.srv.URL), sessionInterceptor(e.session))
+	e.users = usersv1connect.NewUserServiceClient(signedIn)
 	e.activity = activitiesv1connect.NewActivityServiceClient(authed)
 	e.stravaAPI = stravav1connect.NewStravaServiceClient(authed)
 	e.routes = routesv1connect.NewRouteServiceClient(authed)
@@ -262,7 +273,7 @@ func newEnv(t *testing.T) *env {
 	e.otherRaces = racesv1connect.NewRaceServiceClient(other)
 	e.otherPlans = racesv1connect.NewRacePlanServiceClient(other)
 	e.otherTraining = plansv1connect.NewTrainingPlanServiceClient(other)
-	e.oauth = oauthv1connect.NewOAuthServiceClient(authed)
+	e.oauth = oauthv1connect.NewOAuthServiceClient(signedIn)
 	e.anonOAuth = oauthv1connect.NewOAuthServiceClient(anon)
 	e.trips = tripsv1connect.NewTripReportServiceClient(authed)
 	e.anonTrips = tripsv1connect.NewTripReportServiceClient(anon)
@@ -284,6 +295,19 @@ func bearerInterceptor(token string) connect.ClientInterceptor {
 		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
 			if info, ok := connect.CallInfoForClientContext(ctx); ok {
 				info.RequestHeader().Set("Authorization", "Bearer "+token)
+			}
+			return next(ctx, spec)
+		}
+	}
+}
+
+// sessionInterceptor authenticates requests with a session cookie, like the
+// web app.
+func sessionInterceptor(sessionID string) connect.ClientInterceptor {
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			if info, ok := connect.CallInfoForClientContext(ctx); ok {
+				info.RequestHeader().Set("Cookie", "session="+sessionID)
 			}
 			return next(ctx, spec)
 		}

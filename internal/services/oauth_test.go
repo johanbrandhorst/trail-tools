@@ -282,14 +282,12 @@ func TestOAuthFlow(t *testing.T) {
 		t.Errorf("got %+v for an expired code, want invalid_grant", res)
 	}
 
-	// A code can be exchanged once.
+	// A code is exchanged for tokens. Exchanging it again is tested in
+	// TestOAuthReplay.
 	code = c.authorize(t, verifier)
 	tokens := c.exchange(t, code, verifier)
 	if tokens.Error != "" || tokens.AccessToken == "" || tokens.RefreshToken == "" || tokens.TokenType != "Bearer" || tokens.ExpiresIn <= 0 {
 		t.Fatalf("got tokens %+v", tokens)
-	}
-	if res := c.exchange(t, code, verifier); res.Error != "invalid_grant" {
-		t.Errorf("got %+v when reusing a code, want invalid_grant", res)
 	}
 
 	// The access token works with the MCP server.
@@ -297,8 +295,9 @@ func TestOAuthFlow(t *testing.T) {
 		t.Errorf("got status %d with the access token, want 200", status)
 	}
 
-	// Refreshing rotates the refresh token. Refresh tokens are bound to the
-	// client.
+	// Refreshing rotates the refresh token, and revokes the previous access
+	// token. Refresh tokens are bound to the client. Reusing a refresh token
+	// is tested in TestOAuthReplay.
 	if res := other.refresh(t, tokens.RefreshToken); res.Error != "invalid_grant" {
 		t.Errorf("got %+v refreshing as another client, want invalid_grant", res)
 	}
@@ -306,11 +305,11 @@ func TestOAuthFlow(t *testing.T) {
 	if refreshed.Error != "" || refreshed.AccessToken == tokens.AccessToken || refreshed.RefreshToken == tokens.RefreshToken {
 		t.Fatalf("got refreshed tokens %+v", refreshed)
 	}
-	if res := c.refresh(t, tokens.RefreshToken); res.Error != "invalid_grant" {
-		t.Errorf("got %+v when reusing a refresh token, want invalid_grant", res)
-	}
 	if status, _ := mcpStatus(t, e, refreshed.AccessToken); status != http.StatusOK {
 		t.Errorf("got status %d with the refreshed access token, want 200", status)
+	}
+	if status, _ := mcpStatus(t, e, tokens.AccessToken); status != http.StatusUnauthorized {
+		t.Errorf("got status %d with the access token before refreshing, want 401", status)
 	}
 
 	// Expired access tokens are rejected, and can be refreshed.
@@ -369,6 +368,67 @@ func TestOAuthFlow(t *testing.T) {
 	}
 	_, err = e.oauth.DeleteConnection(ctx, oauthv1.DeleteConnectionRequest_builder{Id: connection.GetId()}.Build())
 	wantCode(t, err, connect.CodeNotFound)
+}
+
+// TestOAuthReplay checks that using an authorization code or refresh token
+// again, which means it was stolen, revokes the tokens issued for it: either
+// the thief or the client has them, and the server can't tell which.
+func TestOAuthReplay(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	c := registerClient(t, e, "Claude", claudeRedirectURI)
+	const verifier = "a-verifier-that-is-long-enough-to-be-a-real-pkce-verifier"
+
+	// Exchanging a code again fails, and revokes the tokens issued for it.
+	code := c.authorize(t, verifier)
+	tokens := c.exchange(t, code, verifier)
+	if tokens.Error != "" {
+		t.Fatalf("got %+v exchanging a code", tokens)
+	}
+	if res := c.exchange(t, code, verifier); res.Error != "invalid_grant" {
+		t.Errorf("got %+v when reusing a code, want invalid_grant", res)
+	}
+	if status, _ := mcpStatus(t, e, tokens.AccessToken); status != http.StatusUnauthorized {
+		t.Errorf("got status %d with the access token of a reused code, want 401", status)
+	}
+	if res := c.refresh(t, tokens.RefreshToken); res.Error != "invalid_grant" {
+		t.Errorf("got %+v with the refresh token of a reused code, want invalid_grant", res)
+	}
+	// Using it a third time does no harm.
+	if res := c.exchange(t, code, verifier); res.Error != "invalid_grant" {
+		t.Errorf("got %+v when reusing a code twice, want invalid_grant", res)
+	}
+
+	// The client authorizes again, and refreshes twice.
+	code = c.authorize(t, verifier)
+	first := c.exchange(t, code, verifier)
+	second := c.refresh(t, first.RefreshToken)
+	third := c.refresh(t, second.RefreshToken)
+	if first.Error != "" || second.Error != "" || third.Error != "" {
+		t.Fatalf("got tokens %+v, %+v and %+v", first, second, third)
+	}
+	if status, _ := mcpStatus(t, e, third.AccessToken); status != http.StatusOK {
+		t.Errorf("got status %d with the latest access token, want 200", status)
+	}
+	// Using any rotated-out refresh token, not only the last, revokes the
+	// grant.
+	if res := c.refresh(t, first.RefreshToken); res.Error != "invalid_grant" {
+		t.Errorf("got %+v when reusing a refresh token, want invalid_grant", res)
+	}
+	if status, _ := mcpStatus(t, e, third.AccessToken); status != http.StatusUnauthorized {
+		t.Errorf("got status %d with the latest access token after a refresh token was reused, want 401", status)
+	}
+	if res := c.refresh(t, third.RefreshToken); res.Error != "invalid_grant" {
+		t.Errorf("got %+v with the latest refresh token after a refresh token was reused, want invalid_grant", res)
+	}
+	connections, err := e.oauth.ListConnections(ctx, oauthv1.ListConnectionsRequest_builder{}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(connections.GetConnections()) != 0 {
+		t.Errorf("got connections %v after replays, want none", connections.GetConnections())
+	}
 }
 
 func TestOAuthDeny(t *testing.T) {

@@ -14,10 +14,11 @@ import (
 )
 
 func (s *Service) CreateAPIToken(ctx context.Context, req *usersv1.CreateAPITokenRequest) (*usersv1.CreateAPITokenResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	name := strings.TrimSpace(req.GetName())
 	if name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "name is required")
@@ -33,10 +34,11 @@ func (s *Service) CreateAPIToken(ctx context.Context, req *usersv1.CreateAPIToke
 }
 
 func (s *Service) ListAPITokens(ctx context.Context, req *usersv1.ListAPITokensRequest) (*usersv1.ListAPITokensResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	tokens, err := s.tokens.ListAPITokens(ctx, userID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, "failed to list API tokens").WithCause(err)
@@ -51,10 +53,11 @@ func (s *Service) ListAPITokens(ctx context.Context, req *usersv1.ListAPITokensR
 }
 
 func (s *Service) DeleteAPIToken(ctx context.Context, req *usersv1.DeleteAPITokenRequest) (*usersv1.DeleteAPITokenResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	tokenID, err := store.StringToUUID(req.GetId())
 	if err != nil {
 		return nil, connect.Errorf(connect.CodeInvalidArgument, "invalid token ID: %v", err).WithCause(err)
