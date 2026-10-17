@@ -68,6 +68,16 @@ resource "google_service_account" "run" {
   display_name = "Trail Tools Cloud Run service"
 }
 
+# The import job parses OpenStreetMap extracts downloaded from URLs given on
+# the map data page, so it gets its own account with only what imports need:
+# the database, the elevation tile cache, and reporting errors and traces. A
+# flaw in parsing an extract can't reach the service's other secrets, like
+# Strava's client secret and the admin bootstrap token, or the trip photos.
+resource "google_service_account" "import" {
+  account_id   = "trail-tools-import"
+  display_name = "Trail Tools OpenStreetMap import job"
+}
+
 resource "google_service_account" "scheduler" {
   account_id   = "trail-tools-scheduler"
   display_name = "Triggers Trail Tools Strava syncs"
@@ -89,6 +99,13 @@ resource "google_secret_manager_secret_iam_member" "run" {
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = google_service_account.run.member
+}
+
+# The import job only needs the database.
+resource "google_secret_manager_secret_iam_member" "import" {
+  secret_id = google_secret_manager_secret.secrets["database-url"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = google_service_account.import.member
 }
 
 resource "google_billing_budget" "budget" {

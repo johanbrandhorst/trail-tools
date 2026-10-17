@@ -20,8 +20,8 @@ resource "google_storage_bucket_iam_member" "run_photos" {
 
 # A cache of the elevation tiles downloaded from the AWS Terrain Tiles
 # dataset, as the file system of Cloud Run instances and job executions
-# doesn't outlive them. Only the service account, which the service and the
-# import job run as, can read and write it.
+# doesn't outlive them. Only the service's and the import job's service
+# accounts can read and write it.
 resource "google_storage_bucket" "dem" {
   name                        = "${var.project}-dem-tiles"
   location                    = upper(var.region)
@@ -37,6 +37,12 @@ resource "google_storage_bucket_iam_member" "run_dem" {
   bucket = google_storage_bucket.dem.name
   role   = "roles/storage.objectUser"
   member = google_service_account.run.member
+}
+
+resource "google_storage_bucket_iam_member" "import_dem" {
+  bucket = google_storage_bucket.dem.name
+  role   = "roles/storage.objectUser"
+  member = google_service_account.import.member
 }
 
 # Activities' streams and Strava's raw responses about them, which are

@@ -486,8 +486,9 @@ Elevation tiles are cached in the `<project>-dem-tiles` Cloud Storage
 bucket, so they're downloaded from AWS once rather than on every cold start
 of the service and every import. It's set up like the photos bucket, private
 and in `us-west1`, and Terraform passes it to the service and the import job
-as `TRAIL_TOOLS_DEM_BUCKET`. Both run as the Cloud Run service account, which
-can read and write its objects (`roles/storage.objectUser`). Tiles are
+as `TRAIL_TOOLS_DEM_BUCKET`. Their service accounts can read and write its
+objects (`roles/storage.objectUser`). The import job has its own service
+account, which can only read the database URL among the secrets. Tiles are
 stored gzipped as downloaded, at the same paths as on AWS, e.g.
 `skadi/N46/N46E007.hgt.gz`.
 
