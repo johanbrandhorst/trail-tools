@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"connectrpc.com/connect/v2"
@@ -90,26 +91,35 @@ type PrivacyZoneRepository interface {
 	ListPrivacyZones(ctx context.Context, userID pgtype.UUID) ([]users.PrivacyZone, error)
 }
 
+// ActivitySyncer syncs the details and streams of an activity from Strava.
+type ActivitySyncer interface {
+	SyncPending(ctx context.Context, userID, activityID pgtype.UUID) (synced bool, resumeTime time.Time, err error)
+}
+
 // Service implements API handlers for the race report service.
 type Service struct {
 	log        *slog.Logger
 	report     *errreport.Reporter
 	repo       ReportRepository
 	activities ActivityRepository
-	profiles   ProfileRepository
-	plans      Plans
-	zones      PrivacyZoneRepository
-	baseURL    string
+	// Syncs activities from Strava, if Strava is configured. May be nil.
+	syncer   ActivitySyncer
+	profiles ProfileRepository
+	plans    Plans
+	zones    PrivacyZoneRepository
+	baseURL  string
 }
 
-// NewService creates a new Service. baseURL is the public URL of the server,
-// used for the URLs of reports.
-func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, baseURL string) *Service {
+// NewService creates a new Service. syncer may be nil, if Strava isn't
+// configured. baseURL is the public URL of the server, used for the URLs of
+// reports.
+func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, syncer ActivitySyncer, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, baseURL string) *Service {
 	return &Service{
 		log:        log,
 		report:     report,
 		repo:       repo,
 		activities: activities,
+		syncer:     syncer,
 		profiles:   profiles,
 		plans:      plans,
 		zones:      zones,

@@ -77,6 +77,7 @@ type PrivacyZoneRepository interface {
 
 type ActivitySyncer interface {
 	SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID int64) error
+	SyncPending(ctx context.Context, userID, activityID pgtype.UUID) (synced bool, resumeTime time.Time, err error)
 }
 
 // Service implements API handlers for the trip report service.
@@ -201,6 +202,36 @@ func (s *Service) CreateTripReport(ctx context.Context, req *tripsv1.CreateTripR
 	return nil, connect.NewError(connect.CodeAlreadyExists, "too many trip reports have this title; choose another title")
 }
 
+// activitySyncBudget is how long a request waits for an activity's details
+// and streams to sync.
+const activitySyncBudget = 15 * time.Second
+
+// syncPending syncs the details and streams of an activity waiting for them,
+// as activities older than syncs fetch them for are, so a report gets its
+// description and whole track, and returns the activity again. If that
+// fails or takes too long, it returns the activity as it was, and the report
+// gets its summary polyline instead.
+func (s *Service) syncPending(ctx context.Context, userID pgtype.UUID, a *activities.Activity) *activities.Activity {
+	if s.syncer == nil {
+		return a
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, activitySyncBudget)
+	defer cancel()
+	synced, _, err := s.syncer.SyncPending(syncCtx, userID, a.ID)
+	if err != nil && syncCtx.Err() == nil {
+		s.report.Report(ctx, "Failed to sync an activity for a trip report, using its summary polyline", err)
+	}
+	if !synced {
+		return a
+	}
+	updated, err := s.activities.GetActivity(ctx, userID, a.ID)
+	if err != nil {
+		s.report.Report(ctx, "Failed to get a synced activity, using it as it was", err)
+		return a
+	}
+	return updated
+}
+
 // fillFromActivity copies the details of one of the user's activities into
 // a new report, and returns its description.
 func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, activityID pgtype.UUID) (string, error) {
@@ -210,6 +241,9 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 			return "", connect.NewError(connect.CodeNotFound, "activity not found")
 		}
 		return "", s.toConnectError(ctx, err, "failed to get activity")
+	}
+	if !a.StreamsSynced {
+		a = s.syncPending(ctx, report.UserID, a)
 	}
 	report.ActivityID = a.ID
 	if report.Title == "" {

@@ -581,13 +581,15 @@ func run(
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, livetrack.New("", telemetry.NewClient(liveTrackTimeout)), baseURL)
 	// Activities are synced from Strava before importing their photos into
-	// trip reports, if Strava is configured.
-	var activitySyncer trip.ActivitySyncer
+	// trip reports, and before copying the tracks of activities older than
+	// syncs fetch them for into reports, if Strava is configured.
+	var tripSyncer trip.ActivitySyncer
+	var raceReportSyncer racereport.ActivitySyncer
 	if stravaSyncer != nil {
-		activitySyncer = stravaSyncer
+		tripSyncer, raceReportSyncer = stravaSyncer, stravaSyncer
 	}
-	tripService := trip.NewService(log, report, tripRepo, activityRepo, activitySyncer, photos, users, telemetry.NewClient(0), baseURL)
-	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, tripRepo, racePlanService, users, baseURL)
+	tripService := trip.NewService(log, report, tripRepo, activityRepo, tripSyncer, photos, users, telemetry.NewClient(0), baseURL)
+	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, raceReportSyncer, tripRepo, racePlanService, users, baseURL)
 	lactateService := lactatesvc.NewService(log, report, lactateRepo, baseURL)
 	// MCP clients that require OAuth, like claude.ai, authorize with this
 	// authorization server instead of API tokens.

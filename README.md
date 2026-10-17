@@ -87,13 +87,17 @@ $ STRAVA_CLIENT_ID=12345 STRAVA_CLIENT_SECRET=... make run
 ```
 
 Connect your account under Settings. The first sync fetches all activities,
-then the details, photos and detailed streams of each activity, most recent
-first. Photos stay on Strava: only their captions, locations and links are
-stored, and they're only shown to you. Strava's API rate limits (100 requests
-per 15 minutes, 1000 per day) mean a long history takes a few days to sync
-fully; the sync pauses and resumes automatically, and the app syncs new
-activities every few hours. The activities page checks for new activities
-every minute while it's open.
+then the details, photos and detailed streams of the activities from the
+year before the latest one, most recent first. Older activities' details
+are fetched when you open them or create a report from them. Photos stay on
+Strava: only their captions, locations and links are stored, and they're
+only shown to you. Strava's API rate limits, by default 100 requests per 15
+minutes and 1000 per day, are shared by all users of the app, so a year of
+activities can take a day to sync; the sync pauses and resumes
+automatically, users take turns so one user's history doesn't hold up the
+others' new activities, and the app syncs new activities every few hours.
+The activities page checks for new activities every minute while it's
+open.
 
 The activities' detailed streams and Strava's raw responses are stored as
 files, not in the database: locally in the `activity-data` directory of the

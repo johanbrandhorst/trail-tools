@@ -74,6 +74,8 @@ type env struct {
 	userID     pgtype.UUID
 	token      string
 	otherToken string
+	// The other user, whose token is otherToken.
+	otherUserID pgtype.UUID
 	// The directory trip report photos are stored in.
 	photoDir string
 	// Stores activities' streams and Strava's responses.
@@ -158,8 +160,8 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	otherUser := storetest.NewUser(t, db)
-	_, e.otherToken, err = userRepo.CreateAPIToken(ctx, otherUser, "other")
+	e.otherUserID = storetest.NewUser(t, db)
+	_, e.otherToken, err = userRepo.CreateAPIToken(ctx, e.otherUserID, "other")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +192,7 @@ func newEnv(t *testing.T) *env {
 	}
 	userService := user.NewService(log, report, userRepo, userRepo, userRepo, photos)
 	tripService := trip.NewService(log, report, tripRepo, activityRepo, e.syncer, photos, userRepo, &http.Client{}, "https://trail.example")
-	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, tripRepo, racePlanService, userRepo, "https://trail.example")
+	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, e.syncer, tripRepo, racePlanService, userRepo, "https://trail.example")
 
 	// Start listening before creating the handler, as the OAuth server needs
 	// the URL of the server.

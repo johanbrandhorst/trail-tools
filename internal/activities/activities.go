@@ -209,9 +209,13 @@ type PendingStreams struct {
 
 // ListActivitiesWithoutStreams lists activities whose streams have not been
 // synced yet: those requested with RequestActivitySync first, then the most
-// recent first.
-func (r *Repository) ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, limit int32) ([]PendingStreams, error) {
-	rows, err := r.q.ListActivitiesWithoutStreams(ctx, &gen.ListActivitiesWithoutStreamsParams{UserID: userID, Limit: limit})
+// recent first, back to those that started window before the latest one.
+func (r *Repository) ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, window time.Duration, limit int32) ([]PendingStreams, error) {
+	rows, err := r.q.ListActivitiesWithoutStreams(ctx, &gen.ListActivitiesWithoutStreamsParams{
+		UserID:       userID,
+		RecentWindow: intervalOf(window),
+		Limit:        limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list activities without streams: %w", err)
 	}
@@ -233,13 +237,18 @@ func (r *Repository) RequestActivitySync(ctx context.Context, userID, activityID
 }
 
 // CountActivities returns the number of activities and the number waiting
-// for streams.
-func (r *Repository) CountActivities(ctx context.Context, userID pgtype.UUID) (total, pendingStreams int64, err error) {
-	row, err := r.q.CountActivities(ctx, userID)
+// for streams, as listed by ListActivitiesWithoutStreams with window.
+func (r *Repository) CountActivities(ctx context.Context, userID pgtype.UUID, window time.Duration) (total, pendingStreams int64, err error) {
+	row, err := r.q.CountActivities(ctx, &gen.CountActivitiesParams{UserID: userID, RecentWindow: intervalOf(window)})
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to count activities: %w", err)
 	}
 	return row.Total, row.PendingStreams, nil
+}
+
+// intervalOf converts a duration to an interval.
+func intervalOf(d time.Duration) pgtype.Interval {
+	return pgtype.Interval{Microseconds: d.Microseconds(), Valid: true}
 }
 
 // Detail is what Strava's detailed activity adds to an activity's summary.

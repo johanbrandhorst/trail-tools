@@ -65,9 +65,14 @@ select max(start_time)::timestamptz from strava_activities
 where user_id = $1;
 
 -- name: ListActivitiesWithoutStreams :many
-select id, strava_id from strava_activities
-where user_id = $1 and not streams_synced
-order by sync_requested desc, start_time desc
+-- Activities that started more than recent_window before the latest one are
+-- only listed when they're requested.
+select a.id, a.strava_id from strava_activities a
+where a.user_id = $1 and not a.streams_synced
+  and (a.sync_requested or a.start_time >= (
+    select max(latest.start_time) from strava_activities latest where latest.user_id = $1
+  ) - sqlc.arg(recent_window)::interval)
+order by a.sync_requested desc, a.start_time desc
 limit $2;
 
 -- name: RequestActivitySync :exec
@@ -78,9 +83,13 @@ where id = $1 and user_id = $2 and not streams_synced;
 -- name: CountActivities :one
 select
   count(*) as total,
-  count(*) filter (where not streams_synced) as pending_streams
-from strava_activities
-where user_id = $1;
+  count(*) filter (
+    where not a.streams_synced and (a.sync_requested or a.start_time >= (
+      select max(latest.start_time) from strava_activities latest where latest.user_id = $1
+    ) - sqlc.arg(recent_window)::interval)
+  ) as pending_streams
+from strava_activities a
+where a.user_id = $1;
 
 -- name: SetActivityDetail :exec
 update strava_activities set
