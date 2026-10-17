@@ -26,7 +26,7 @@ type RouteRepository interface {
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
 	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
-	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) ([]activities.Track, error)
+	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) (tracks []activities.Track, truncated bool, err error)
 }
 
 // Service implements API handlers for the route service.

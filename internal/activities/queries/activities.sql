@@ -168,7 +168,9 @@ where a.user_id = $1
   and a.min_lng <= sqlc.arg(east)::double precision
   and a.max_lng >= sqlc.arg(west)::double precision
   and (sqlc.narg(start_date)::date is null or a.start_date_local >= sqlc.narg(start_date)::date)
-  and (sqlc.narg(end_date)::date is null or a.start_date_local <= sqlc.narg(end_date)::date);
+  and (sqlc.narg(end_date)::date is null or a.start_date_local <= sqlc.narg(end_date)::date)
+order by a.start_date_local desc, a.id
+limit sqlc.arg(max_activities);
 
 -- name: ListActivitySummaryTracksInBounds :many
 select id, summary_polyline
@@ -179,7 +181,9 @@ where user_id = $1
   and min_lng <= sqlc.arg(east)::double precision
   and max_lng >= sqlc.arg(west)::double precision
   and (sqlc.narg(start_date)::date is null or start_date_local >= sqlc.narg(start_date)::date)
-  and (sqlc.narg(end_date)::date is null or start_date_local <= sqlc.narg(end_date)::date);
+  and (sqlc.narg(end_date)::date is null or start_date_local <= sqlc.narg(end_date)::date)
+order by start_date_local desc, id
+limit sqlc.arg(max_activities);
 
 -- name: ListStreamsWithoutTrack :many
 select activity_id, streams from strava_activity_streams

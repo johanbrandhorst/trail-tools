@@ -143,7 +143,7 @@ func TestProcessImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := processImage(encodeTestImage(t, tt.w, tt.h, tt.png))
+			got, err := processImage(t.Context(), encodeTestImage(t, tt.w, tt.h, tt.png))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -172,7 +172,7 @@ func TestProcessImage(t *testing.T) {
 		})
 	}
 	for _, data := range [][]byte{[]byte("not an image"), []byte("GIF89a")} {
-		if _, err := processImage(data); err == nil {
+		if _, err := processImage(t.Context(), data); err == nil {
 			t.Errorf("processImage(%q) succeeded", data)
 		}
 	}

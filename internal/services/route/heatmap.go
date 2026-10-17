@@ -32,7 +32,9 @@ type heatmap struct {
 func (s *Service) loadHeatmap(ctx context.Context, userID pgtype.UUID, points []geo.Point) (*heatmap, error) {
 	bounds, _ := geo.BoundsOf(points)
 	bounds = padBounds(bounds, heatmapPaddingMeters)
-	tracks, err := s.activities.ListTracksInBounds(ctx, userID, bounds, time.Time{}, time.Time{}, heatmapSimplifyMeters)
+	// Routing prefers the tracks of the most recent activities if there are
+	// too many to list.
+	tracks, _, err := s.activities.ListTracksInBounds(ctx, userID, bounds, time.Time{}, time.Time{}, heatmapSimplifyMeters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list activity tracks: %w", err)
 	}

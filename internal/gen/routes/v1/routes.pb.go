@@ -94,10 +94,12 @@ type TrackConversion int32
 const (
 	// Defaults to EXACT.
 	TrackConversion_TRACK_CONVERSION_UNSPECIFIED TrackConversion = 0
-	// Keep the recorded track exactly. Waypoints are placed about every
-	// kilometer, but the path between them is the recording, so the route can't
-	// be meaningfully redesigned by moving waypoints. Best for official race
-	// courses and routes that must match a recording.
+	// Keep the recorded track exactly, but for points within a meter, and 2
+	// meters of elevation, of the line through their neighbors. Waypoints are
+	// placed about every kilometer, but the path between them is the
+	// recording, so the route can't be meaningfully redesigned by moving
+	// waypoints. Best for official race courses and routes that must match a
+	// recording.
 	TrackConversion_TRACK_CONVERSION_EXACT TrackConversion = 1
 	// Fit an editable route to the track, with as few waypoints as possible.
 	// Legs are snapped to trails (or roads) that follow the track within about
@@ -996,7 +998,9 @@ func (x *PreviewRouteRequest) SetRouteId(v string) {
 type PreviewRouteRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The ordered waypoints. At least 2 are required.
+	// The ordered waypoints. At least 2 and at most 200 are required, and
+	// the waypoints of each leg that is routed must be at most 50 km apart:
+	// add waypoints in between for longer legs.
 	Waypoints []*v1.LatLng
 	// The default routing profile, used for legs without their own profile in
 	// leg_profiles. Defaults to TRAIL.
@@ -1170,7 +1174,9 @@ func (x *Waypoints) SetLegProfiles(v []RoutingProfile) {
 type Waypoints_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The ordered waypoints. At least 2 are required.
+	// The ordered waypoints. At least 2 and at most 200 are required, and
+	// the waypoints of each leg that is routed must be at most 50 km apart:
+	// add waypoints in between for longer legs.
 	Waypoints []*v1.LatLng
 	// The default routing profile, used for legs without their own profile in
 	// leg_profiles. Defaults to TRAIL.
@@ -1434,6 +1440,8 @@ type CreateRouteRequest_builder struct {
 	// Route between these waypoints.
 	Waypoints *Waypoints
 	// The contents of a GPX file. The first track (or route) is imported.
+	// Files can be at most 32 MB, and tracks at most 500,000 points and
+	// 5,000 km long.
 	Gpx *string
 	// The ID of a synced activity whose GPS track becomes the route.
 	ActivityId *string
@@ -1493,6 +1501,8 @@ type createRouteRequest_Waypoints struct {
 
 type createRouteRequest_Gpx struct {
 	// The contents of a GPX file. The first track (or route) is imported.
+	// Files can be at most 32 MB, and tracks at most 500,000 points and
+	// 5,000 km long.
 	Gpx string `protobuf:"bytes,4,opt,name=gpx,proto3,oneof"`
 }
 
@@ -2340,6 +2350,7 @@ type CheckTrackCoverageRequest_builder struct {
 
 	// Fields of oneof xxx_hidden_Source:
 	// The contents of a GPX file. The first track (or route) is checked.
+	// Files can be at most 32 MB.
 	Gpx *string
 	// The ID of a synced activity.
 	ActivityId *string
@@ -2380,6 +2391,7 @@ type isCheckTrackCoverageRequest_Source interface {
 
 type checkTrackCoverageRequest_Gpx struct {
 	// The contents of a GPX file. The first track (or route) is checked.
+	// Files can be at most 32 MB.
 	Gpx string `protobuf:"bytes,1,opt,name=gpx,proto3,oneof"`
 }
 
@@ -2675,6 +2687,8 @@ type GetRouteForecastRequest_builder struct {
 	// The ID of a saved route.
 	RouteId *string
 	// The contents of a GPX file. The first track (or route) is used.
+	// Files can be at most 32 MB, and tracks at most 500,000 points and
+	// 5,000 km long.
 	Gpx *string
 	// A path as a list of coordinates. Elevations are looked up.
 	Path *Path
@@ -2734,6 +2748,8 @@ type getRouteForecastRequest_RouteId struct {
 
 type getRouteForecastRequest_Gpx struct {
 	// The contents of a GPX file. The first track (or route) is used.
+	// Files can be at most 32 MB, and tracks at most 500,000 points and
+	// 5,000 km long.
 	Gpx string `protobuf:"bytes,2,opt,name=gpx,proto3,oneof"`
 }
 
