@@ -17,6 +17,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	stravav1 "github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1"
 	stravasvc "github.com/johanbrandhorst/trail-tools/internal/services/strava"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
@@ -91,7 +92,13 @@ func TestStravaWebhook(t *testing.T) {
 	// Skip the fake's rate limit, which is tested with the full sync.
 	e.strava.rateLimited = true
 	subs := &fakeSubscriptions{}
-	webhook := stravasvc.NewWebhook(log, errreport.NewLocal(log), e.activities, e.syncer, subs, "https://trail.example/strava/webhook", "verify-me")
+	webhook, err := stravasvc.NewWebhook(log, errreport.NewLocal(log), e.activities, e.syncer, subs, "https://trail.example/strava/webhook", "verify-me")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if webhook.Pattern() != stravasvc.WebhookPath+"/" {
+		t.Errorf("got pattern %q, want one below %s", webhook.Pattern(), stravasvc.WebhookPath)
+	}
 
 	// Strava validates the callback with the verify token.
 	validate := func(callbackURL, verifyToken string) error {
@@ -103,37 +110,53 @@ func TestStravaWebhook(t *testing.T) {
 		}
 		return nil
 	}
-	if err := validate("https://trail.example/strava/webhook", "wrong"); err == nil {
-		t.Error("validation with the wrong verify token should fail")
-	}
 	// A subscription to another URL is replaced, and an existing one kept.
+	// The URL has a secret path below the webhook's.
 	subs.validate = validate
 	subs.subs = []*strava.PushSubscription{{ID: 1, CallbackURL: "https://old.example/strava/webhook"}}
 	if err := webhook.Subscribe(ctx); err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
-	if len(subs.deleted) != 1 || len(subs.subs) != 1 || subs.subs[0].CallbackURL != "https://trail.example/strava/webhook" {
-		t.Errorf("unexpected subscriptions %v, deleted %v", subs.subs, subs.deleted)
+	if len(subs.deleted) != 1 || len(subs.subs) != 1 || !strings.HasPrefix(subs.subs[0].CallbackURL, "https://trail.example/strava/webhook/") {
+		t.Fatalf("unexpected subscriptions %v, deleted %v", subs.subs, subs.deleted)
+	}
+	callbackURL, subscriptionID := subs.subs[0].CallbackURL, subs.subs[0].ID
+	secret := strings.TrimPrefix(callbackURL, "https://trail.example/strava/webhook/")
+	if len(secret) < 32 || strings.Contains(secret, "verify-me") {
+		t.Errorf("got secret %q, want a long one not revealing the verify token", secret)
 	}
 	if err := webhook.Subscribe(ctx); err != nil || len(subs.subs) != 1 || len(subs.deleted) != 1 {
 		t.Errorf("Subscribe with an existing subscription: %v, %v", err, subs.subs)
 	}
-	local := stravasvc.NewWebhook(log, errreport.NewLocal(log), e.activities, e.syncer, subs, "http://localhost:8080/strava/webhook", "verify-me")
+	if err := validate(callbackURL, "wrong"); err == nil {
+		t.Error("validation with the wrong verify token should fail")
+	}
+	if err := validate("https://trail.example/strava/webhook", "verify-me"); err == nil {
+		t.Error("validation without the secret path should fail")
+	}
+	local, err := stravasvc.NewWebhook(log, errreport.NewLocal(log), e.activities, e.syncer, subs, "http://localhost:8080/strava/webhook", "verify-me")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := local.Subscribe(ctx); err == nil {
 		t.Error("Subscribe should fail without a public URL")
 	}
 
-	send := func(ev string) {
+	post := func(path, ev string) int {
 		t.Helper()
 		rec := httptest.NewRecorder()
-		webhook.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/strava/webhook", strings.NewReader(ev)))
-		if rec.Code != http.StatusOK {
-			t.Fatalf("event %s: got status %d", ev, rec.Code)
+		webhook.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, strings.NewReader(ev)))
+		return rec.Code
+	}
+	send := func(ev string) {
+		t.Helper()
+		if code := post(callbackURL, ev); code != http.StatusOK {
+			t.Fatalf("event %s: got status %d", ev, code)
 		}
 	}
 	activityEvent := func(aspect string, id, owner int64) string {
 		return fmt.Sprintf(`{"aspect_type": %q, "event_time": 1757232000, "object_id": %d, "object_type": "activity",
-			"owner_id": %d, "subscription_id": 100, "updates": {}}`, aspect, id, owner)
+			"owner_id": %d, "subscription_id": %d, "updates": {}}`, aspect, id, owner, subscriptionID)
 	}
 	getActivity := func(stravaID int64) (*activitiesv1.GetActivityResponse, bool) {
 		t.Helper()
@@ -208,8 +231,8 @@ func TestStravaWebhook(t *testing.T) {
 	}
 
 	// Revoking access disconnects Strava, once Strava rejects the token.
-	deauthorize := `{"aspect_type": "update", "event_time": 1757232000, "object_id": 7, "object_type": "athlete",
-		"owner_id": 7, "subscription_id": 100, "updates": {"authorized": "false"}}`
+	deauthorize := fmt.Sprintf(`{"aspect_type": "update", "event_time": 1757232000, "object_id": 7, "object_type": "athlete",
+		"owner_id": 7, "subscription_id": %d, "updates": {"authorized": "false"}}`, subscriptionID)
 	send(deauthorize)
 	if _, err := e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatalf("an authorized connection was removed: %v", err)
@@ -222,9 +245,87 @@ func TestStravaWebhook(t *testing.T) {
 		t.Errorf("got %v, want the connection removed", err)
 	}
 
-	rec := httptest.NewRecorder()
-	webhook.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/strava/webhook", strings.NewReader("not json")))
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("got status %d for an invalid event, want 400", rec.Code)
+	if code := post(callbackURL, "not json"); code != http.StatusBadRequest {
+		t.Errorf("got status %d for an invalid event, want 400", code)
+	}
+}
+
+func TestStravaWebhookAuthentication(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	e.connectStrava()
+	e.strava.rateLimited = true
+	subs := &fakeSubscriptions{validate: func(string, string) error { return nil }}
+	webhook, err := stravasvc.NewWebhook(log, errreport.NewLocal(log), e.activities, e.syncer, subs, "https://trail.example/strava/webhook", "verify-me")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := webhook.Subscribe(ctx); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+	callbackURL := subs.subs[0].CallbackURL
+	post := func(path string, subscriptionID, activityID int64) int {
+		t.Helper()
+		ev := fmt.Sprintf(`{"aspect_type": "create", "event_time": 1757232000, "object_id": %d, "object_type": "activity",
+			"owner_id": 7, "subscription_id": %d, "updates": {}}`, activityID, subscriptionID)
+		rec := httptest.NewRecorder()
+		webhook.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, strings.NewReader(ev)))
+		return rec.Code
+	}
+	activityCalls := func() int {
+		e.strava.mu.Lock()
+		defer e.strava.mu.Unlock()
+		return e.strava.activityCalls
+	}
+
+	// Events without the secret path, or of another subscription, are
+	// rejected without calling Strava.
+	for name, tc := range map[string]struct {
+		path           string
+		subscriptionID int64
+		want           int
+	}{
+		"no secret":            {"https://trail.example/strava/webhook", 100, http.StatusNotFound},
+		"wrong secret":         {"https://trail.example/strava/webhook/not-the-secret", 100, http.StatusNotFound},
+		"below the secret":     {callbackURL + "/more", 100, http.StatusNotFound},
+		"another subscription": {callbackURL, 101, http.StatusForbidden},
+	} {
+		if got := post(tc.path, tc.subscriptionID, 1000); got != tc.want {
+			t.Errorf("%s: got status %d, want %d", name, got, tc.want)
+		}
+	}
+	if n := activityCalls(); n != 0 {
+		t.Errorf("rejected events fetched %d activities, want none", n)
+	}
+
+	// An athlete's events are handled up to the limit. Beyond it, the
+	// activities sync with the next sync instead, which a background sync
+	// starts right away.
+	const limit = 20
+	for i := range limit {
+		if got := post(callbackURL, 100, 1000); got != http.StatusOK {
+			t.Fatalf("event %d: got status %d", i, got)
+		}
+	}
+	if n := activityCalls(); n != limit {
+		t.Fatalf("got %d activities fetched, want %d", n, limit)
+	}
+	for range 5 {
+		if got := post(callbackURL, 100, 1000); got != http.StatusOK {
+			t.Fatalf("got status %d beyond the limit, want 200 so Strava doesn't send it again", got)
+		}
+	}
+	conn := e.waitForSync()
+	if conn.GetSyncState() != stravav1.SyncState_SYNC_STATE_IDLE || conn.GetActivityCount() != 3 || !conn.HasLastSyncTime() {
+		t.Errorf("got connection %v, want it synced instead", conn)
+	}
+	e.strava.mu.Lock()
+	listed := len(e.strava.listed)
+	e.strava.mu.Unlock()
+	// A sync lists the activities, and the empty page after them.
+	if listed != 2 {
+		t.Errorf("got %d listings, want one sync for the events beyond the limit", listed)
 	}
 }

@@ -1075,6 +1075,7 @@ type StravaActivity struct {
 	CreateTime          pgtype.Timestamptz
 	UpdateTime          pgtype.Timestamptz
 	SyncRequested       bool
+	SyncFailures        int32
 }
 
 type StravaActivityPhoto struct {
@@ -1111,6 +1112,8 @@ type StravaConnection struct {
 	CreateTime    pgtype.Timestamptz
 	SyncStateTime pgtype.Timestamptz
 	ListBefore    pgtype.Timestamptz
+	SyncFailures  int32
+	SyncStartTime pgtype.Timestamptz
 }
 
 type TrainingPlan struct {

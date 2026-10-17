@@ -53,6 +53,11 @@ on conflict (user_id, strava_id) do update set
   -- Photos are synced with the details, so sync them again when photos
   -- are added or removed on Strava.
   streams_synced = strava_activities.streams_synced and strava_activities.photo_count = excluded.photo_count,
+  -- An activity that changed may sync now, so it's no longer skipped.
+  sync_failures = case
+    when strava_activities.photo_count = excluded.photo_count then strava_activities.sync_failures
+    else 0
+  end,
   update_time = now()
 returning id;
 
@@ -68,21 +73,28 @@ where user_id = $1;
 
 -- name: ListActivitiesWithoutStreams :many
 select id, strava_id from strava_activities
-where user_id = $1 and not streams_synced
-order by sync_requested desc, start_time desc
-limit $2;
+where user_id = sqlc.arg(user_id) and not streams_synced and sync_failures < sqlc.arg(max_failures)
+order by sync_requested desc, sync_failures, start_time desc
+limit sqlc.arg(row_limit);
 
 -- name: RequestActivitySync :exec
 update strava_activities set
-  sync_requested = true
+  sync_requested = true,
+  sync_failures = 0
 where id = $1 and user_id = $2 and not streams_synced;
+
+-- name: RecordActivitySyncFailure :exec
+update strava_activities set
+  sync_failures = sync_failures + 1
+where id = $1 and user_id = $2;
 
 -- name: CountActivities :one
 select
   count(*) as total,
-  count(*) filter (where not streams_synced) as pending_streams
+  count(*) filter (where not streams_synced and sync_failures < sqlc.arg(max_failures)) as pending_streams,
+  count(*) filter (where not streams_synced and sync_failures >= sqlc.arg(max_failures)) as failed_streams
 from strava_activities
-where user_id = $1;
+where user_id = sqlc.arg(user_id);
 
 -- name: SetActivityDetail :exec
 update strava_activities set
@@ -96,6 +108,7 @@ where id = $1;
 update strava_activities set
   streams_synced = true,
   sync_requested = false,
+  sync_failures = 0,
   min_lat = coalesce(sqlc.narg(min_lat)::double precision, strava_activities.min_lat),
   min_lng = coalesce(sqlc.narg(min_lng)::double precision, strava_activities.min_lng),
   max_lat = coalesce(sqlc.narg(max_lat)::double precision, strava_activities.max_lat),
