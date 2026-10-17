@@ -1,11 +1,17 @@
 version: 2
 # Each ecosystem's updates come in a single pull request, which CI merges once
 # its checks pass, see the merge-dependabot job in workflows/ci.yml.
+#
+# Updates wait until a release is a week old. Compromised releases of
+# packages and actions are usually found and pulled within days, and merged
+# updates are deployed without review. Security updates don't wait.
 updates:
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       npm:
         patterns: ["*"]
@@ -14,6 +20,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns: ["*"]
@@ -22,6 +30,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       go:
         patterns: ["*"]
