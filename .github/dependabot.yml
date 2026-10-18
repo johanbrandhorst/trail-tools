@@ -17,7 +17,9 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" only covers the workflows. The composite actions pin actions of
+    # their own.
+    directories: ["/", "/.github/actions/*"]
     schedule:
       interval: "weekly"
     cooldown:
@@ -34,4 +36,16 @@ updates:
       default-days: 7
     groups:
       go:
+        patterns: ["*"]
+
+  # The Google provider, in infra/.terraform.lock.hcl. Its pull request has
+  # a plan comment, but is applied once merged like any other update.
+  - package-ecosystem: "terraform"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      terraform:
         patterns: ["*"]
