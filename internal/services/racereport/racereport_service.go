@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"connectrpc.com/connect/v2"
@@ -25,7 +26,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/track"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
 	"github.com/johanbrandhorst/trail-tools/internal/users"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -70,7 +70,7 @@ type ReportRepository interface {
 // ActivityRepository gets activities.
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
 	ListActivities(ctx context.Context, userID pgtype.UUID, filter activities.ListActivitiesFilter) ([]*activities.Activity, error)
 }
 
@@ -91,26 +91,35 @@ type PrivacyZoneRepository interface {
 	ListPrivacyZones(ctx context.Context, userID pgtype.UUID) ([]users.PrivacyZone, error)
 }
 
+// ActivitySyncer syncs the details and streams of an activity from Strava.
+type ActivitySyncer interface {
+	SyncPending(ctx context.Context, userID, activityID pgtype.UUID) (synced bool, resumeTime time.Time, err error)
+}
+
 // Service implements API handlers for the race report service.
 type Service struct {
 	log        *slog.Logger
 	report     *errreport.Reporter
 	repo       ReportRepository
 	activities ActivityRepository
-	profiles   ProfileRepository
-	plans      Plans
-	zones      PrivacyZoneRepository
-	baseURL    string
+	// Syncs activities from Strava, if Strava is configured. May be nil.
+	syncer   ActivitySyncer
+	profiles ProfileRepository
+	plans    Plans
+	zones    PrivacyZoneRepository
+	baseURL  string
 }
 
-// NewService creates a new Service. baseURL is the public URL of the server,
-// used for the URLs of reports.
-func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, baseURL string) *Service {
+// NewService creates a new Service. syncer may be nil, if Strava isn't
+// configured. baseURL is the public URL of the server, used for the URLs of
+// reports.
+func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, syncer ActivitySyncer, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, baseURL string) *Service {
 	return &Service{
 		log:        log,
 		report:     report,
 		repo:       repo,
 		activities: activities,
+		syncer:     syncer,
 		profiles:   profiles,
 		plans:      plans,
 		zones:      zones,
@@ -577,13 +586,9 @@ func (s *Service) withComparison(ctx context.Context, report *races.RaceReport) 
 	}
 	var rec *recording
 	if report.ActivityID.Valid {
-		data, err := s.activities.GetActivityStreams(ctx, report.UserID, report.ActivityID)
+		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, report.ActivityID)
 		switch {
 		case err == nil:
-			streams := &activitiesv1.ActivityStreams{}
-			if err := proto.Unmarshal(data, streams); err != nil {
-				return nil, nil, s.toConnectError(ctx, err, "failed to decode activity streams")
-			}
 			rec = newRecording(streams)
 		case !errors.Is(err, store.ErrNotFound):
 			return nil, nil, s.toConnectError(ctx, err, "failed to get activity streams")

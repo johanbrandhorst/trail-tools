@@ -27,7 +27,7 @@ type ConnectionRepository interface {
 	GetStravaConnection(ctx context.Context, userID pgtype.UUID) (*activities.StravaConnection, error)
 	UpsertStravaConnection(ctx context.Context, conn *activities.StravaConnection) (*activities.StravaConnection, error)
 	DeleteStravaConnection(ctx context.Context, userID pgtype.UUID) error
-	CountActivities(ctx context.Context, userID pgtype.UUID) (total, pendingStreams int64, err error)
+	CountActivities(ctx context.Context, userID pgtype.UUID, window time.Duration) (total, pendingStreams int64, err error)
 }
 
 // Service implements API handlers for the Strava service. If the server is
@@ -179,7 +179,7 @@ func (s *Service) connection(ctx context.Context, userID pgtype.UUID) (*stravav1
 			}
 		}
 	}
-	total, pending, err := s.repo.CountActivities(ctx, userID)
+	total, pending, err := s.repo.CountActivities(ctx, userID, eagerSyncAge)
 	if err != nil {
 		return nil, s.internalError(ctx, "failed to count activities", err)
 	}

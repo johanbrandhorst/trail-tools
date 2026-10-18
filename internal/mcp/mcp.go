@@ -21,6 +21,7 @@ import (
 	"connectrpc.com/connect/v2"
 	"github.com/johanbrandhorst/trail-tools/internal/apidesc"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -231,16 +232,21 @@ func newToolHandler(log *slog.Logger, report *errreport.Reporter, impl any, md p
 			return nil, fmt.Errorf("%s returned a nil response", method)
 		}
 		msg := out[0].Interface().(proto.Message)
-		data, err := protojson.Marshal(msg)
+		images := takeImages(msg.ProtoReflect())
+		data, err := outputOptions.Marshal(msg)
 		if err != nil {
 			return nil, fmt.Errorf("marshaling %s response: %w", method, err)
 		}
+		// "For backwards compatibility, a tool that returns structured
+		// content SHOULD also return the serialized JSON in a TextContent
+		// block."
+		content := []mcp.Content{&mcp.TextContent{Text: string(data)}}
+		for _, img := range images {
+			content = append(content, &mcp.ImageContent{Data: img.GetData(), MIMEType: img.GetMimeType()})
+		}
 		return &mcp.CallToolResult{
 			StructuredContent: json.RawMessage(data),
-			// "For backwards compatibility, a tool that returns structured
-			// content SHOULD also return the serialized JSON in a
-			// TextContent block."
-			Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
+			Content:           content,
 		}, nil
 	}, nil
 }
@@ -261,6 +267,30 @@ func validateSignature(fnType reflect.Type, inType, outType protoreflect.Message
 		return fmt.Errorf("response type is %s, want %s", fnType.Out(0), want)
 	}
 	return nil
+}
+
+// outputOptions encode tool results. They include fields with their default
+// values, like false and 0, which protojson leaves out by default, so agents
+// can tell a draft report from a published one rather than seeing no status.
+// That makes results about 3% larger.
+var outputOptions = protojson.MarshalOptions{EmitDefaultValues: true}
+
+// takeImages clears the message's top-level mcp.v1.Image fields, and returns
+// the images they had, to return as image content instead of JSON.
+func takeImages(m protoreflect.Message) []*mcpv1.Image {
+	var images []*mcpv1.Image
+	fields := m.Descriptor().Fields()
+	for i := range fields.Len() {
+		fd := fields.Get(i)
+		if !isImage(fd) || !m.Has(fd) {
+			continue
+		}
+		if img, ok := m.Get(fd).Message().Interface().(*mcpv1.Image); ok && len(img.GetData()) > 0 {
+			images = append(images, img)
+		}
+		m.Clear(fd)
+	}
+	return images
 }
 
 // clearOutputOnly recursively clears all output only fields of the message.

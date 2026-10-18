@@ -29,8 +29,11 @@ insert into trip_photos (
 ) values (
   $1,
   $2,
-  (select coalesce(max(position) + 1, 0) from trip_photos where report_id = $1),
-  $3,
+  -- At the position if set, or else last.
+  coalesce(
+    $3::integer,
+    (select coalesce(max(position) + 1, 0) from trip_photos where report_id = $1)
+  ),
   $4,
   $5,
   $6,
@@ -39,7 +42,8 @@ insert into trip_photos (
   $9,
   $10,
   $11,
-  $12
+  $12,
+  $13
 )
 returning id, report_id, position, object_key, width, height, caption, lat, lng, location_source, track_distance_meters, taken_time, strava_photo_id, create_time, section_id
 `
@@ -47,6 +51,7 @@ returning id, report_id, position, object_key, width, height, caption, lat, lng,
 type AddPhotoParams struct {
 	ReportID            pgtype.UUID
 	SectionID           pgtype.UUID
+	Position            pgtype.Int4
 	ObjectKey           string
 	Width               int32
 	Height              int32
@@ -63,6 +68,7 @@ func (q *Queries) AddPhoto(ctx context.Context, arg *AddPhotoParams) (*TripPhoto
 	row := q.db.QueryRow(ctx, addPhoto,
 		arg.ReportID,
 		arg.SectionID,
+		arg.Position,
 		arg.ObjectKey,
 		arg.Width,
 		arg.Height,
@@ -806,6 +812,22 @@ func (q *Queries) SetReportPublished(ctx context.Context, arg *SetReportPublishe
 		&i.Tags,
 	)
 	return &i, err
+}
+
+const shiftPhotos = `-- name: ShiftPhotos :exec
+update trip_photos set position = position + 1
+where section_id = $1 and position >= $2
+`
+
+type ShiftPhotosParams struct {
+	SectionID pgtype.UUID
+	Position  int32
+}
+
+// Makes room for a photo at a position in a section.
+func (q *Queries) ShiftPhotos(ctx context.Context, arg *ShiftPhotosParams) error {
+	_, err := q.db.Exec(ctx, shiftPhotos, arg.SectionID, arg.Position)
+	return err
 }
 
 const touchReport = `-- name: TouchReport :exec
