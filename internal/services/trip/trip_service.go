@@ -333,7 +333,23 @@ func (s *Service) ListTripReports(ctx context.Context, req *tripsv1.ListTripRepo
 	if err != nil {
 		return nil, err
 	}
+	// Lists only show the cover photos. All of them would make the list too
+	// large for agents to read: hundreds of kilobytes for a few dozen reports.
+	for _, r := range result {
+		r.SetPhotos(coverPhoto(r))
+	}
 	return tripsv1.ListTripReportsResponse_builder{Reports: result}.Build(), nil
+}
+
+// coverPhoto returns the report's cover photo in a list, or none if it has
+// none.
+func coverPhoto(r *tripsv1.TripReport) []*tripsv1.TripPhoto {
+	for _, p := range r.GetPhotos() {
+		if p.GetId() == r.GetCoverPhotoId() {
+			return []*tripsv1.TripPhoto{p}
+		}
+	}
+	return nil
 }
 
 func (s *Service) UpdateTripReport(ctx context.Context, req *tripsv1.UpdateTripReportRequest) (*tripsv1.UpdateTripReportResponse, error) {
