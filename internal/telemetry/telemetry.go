@@ -45,12 +45,12 @@ type Config struct {
 // function sends the remaining traces and stops exporting; call it before
 // exiting.
 func Init(ctx context.Context, c *Config) (func(context.Context) error, error) {
-	// Trace context is propagated with requests to and from other
-	// services, in the W3C Trace Context format, which Cloud Run uses too.
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	))
+	// Trace context is propagated with requests to other services, in the
+	// W3C Trace Context format, which Cloud Run uses too. Baggage isn't:
+	// nothing sets it, and baggage from clients would be passed on to the
+	// APIs the server calls. Handler doesn't trust the trace context of
+	// requests to the server.
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	if c.Endpoint == "" {
 		return func(context.Context) error { return nil }, nil
 	}
@@ -100,10 +100,10 @@ func Init(ctx context.Context, c *Config) (func(context.Context) error, error) {
 	sampler := sdktrace.TraceIDRatioBased(c.SampleRate)
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
-		// Requests from Cloud Run's frontend come with its trace context,
-		// mostly marked as not sampled. Keep the trace, but make our own
-		// sampling decision.
-		sdktrace.WithSampler(sdktrace.ParentBased(sampler, sdktrace.WithRemoteParentNotSampled(sampler))),
+		// Requests to the server start new traces, as Handler doesn't trust
+		// the trace context they come with, so the sampler decides for each
+		// request, and its spans follow.
+		sdktrace.WithSampler(sdktrace.ParentBased(sampler)),
 		sdktrace.WithResource(res),
 	)
 	otel.SetTracerProvider(tp)

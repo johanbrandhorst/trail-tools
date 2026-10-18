@@ -419,16 +419,20 @@ func (r *Repository) GetUser(ctx context.Context, userID pgtype.UUID) (User, err
 	return r.loadUser(ctx, r.querier, userID)
 }
 
-// CreateSession creates a session for the user and returns its ID.
+// CreateSession creates a session for the user and returns its secret
+// token, for the session cookie. Only a hash of the token is stored.
 func (r *Repository) CreateSession(ctx context.Context, userID pgtype.UUID, expiry time.Time) (string, error) {
-	sessionID, err := r.querier.CreateSession(ctx, &gen.CreateSessionParams{
-		UserID: userID,
-		Expiry: pgtype.Timestamptz{Time: expiry, Valid: true},
+	token := rand.Text()
+	hash := sha256.Sum256([]byte(token))
+	err := r.querier.CreateSession(ctx, &gen.CreateSessionParams{
+		UserID:      userID,
+		TokenSHA256: hash[:],
+		Expiry:      pgtype.Timestamptz{Time: expiry, Valid: true},
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	return store.UUIDToString(sessionID), nil
+	return token, nil
 }
 
 func invitationFromDB(

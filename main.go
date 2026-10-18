@@ -769,8 +769,9 @@ func run(
 	protocols.SetUnencryptedHTTP2(true)
 
 	srv := &http.Server{
-		Addr:      address,
-		Handler:   telemetry.Handler(srvHandler),
+		Addr: address,
+		// The secret in the Strava webhook's path is left out of the traces.
+		Handler:   telemetry.Handler(srvHandler, stravasvc.WebhookPath+"/"),
 		Protocols: protocols,
 	}
 	serveFn := srv.ListenAndServe

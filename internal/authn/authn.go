@@ -23,8 +23,8 @@ const (
 )
 
 type SessionRepository interface {
-	GetSession(ctx context.Context, sessionID string) (users.User, error)
-	DeleteSession(ctx context.Context, sessionID string) error
+	GetSession(ctx context.Context, token string) (users.User, error)
+	DeleteSession(ctx context.Context, token string) error
 	GetAPITokenUser(ctx context.Context, secret string) (users.User, error)
 }
 
@@ -179,11 +179,11 @@ func bearerChallenge(resourceMetadataURL, errorCode string) string {
 	return "Bearer " + strings.Join(params, ", ")
 }
 
-// SessionCookie returns the session cookie for a session.
-func SessionCookie(sessionID string, expiry time.Time) *http.Cookie {
+// SessionCookie returns the session cookie for a session's token.
+func SessionCookie(token string, expiry time.Time) *http.Cookie {
 	return &http.Cookie{
 		Name:     sessionCookieName,
-		Value:    sessionID,
+		Value:    token,
 		MaxAge:   int(time.Until(expiry).Seconds()),
 		Secure:   true,
 		HttpOnly: true,

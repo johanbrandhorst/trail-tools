@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 	"unicode"
@@ -34,7 +35,62 @@ func Transport(base http.RoundTripper) http.RoundTripper {
 	if base == nil {
 		base = baseTransport
 	}
-	return otelhttp.NewTransport(base, otelhttp.WithSpanNameFormatter(clientSpanName))
+	return otelhttp.NewTransport(redactingTransport{base: base}, otelhttp.WithSpanNameFormatter(clientSpanName))
+}
+
+// secretQueryParameters are the query parameters whose values are secret,
+// like the client secret Strava's push subscriptions take in the query, and
+// the ones OpenTelemetry's semantic conventions redact by default.
+var secretQueryParameters = []string{
+	"access_token", "api_key", "client_secret", "code", "hub.verify_token", "key",
+	"refresh_token", "token", "verify_token",
+	"AWSAccessKeyId", "Signature", "sig", "X-Goog-Signature",
+}
+
+// redactedValue replaces secrets in span attributes, as in OpenTelemetry's
+// semantic conventions.
+const redactedValue = "REDACTED"
+
+// redactingTransport redacts the secrets in the query of the url.full
+// attribute of the client span otelhttp started, which it records as is.
+// Traces are readable by everyone with viewer access to the project, so
+// secrets would leak there. It runs inside otelhttp's transport, which
+// passes it the request with its span in the context.
+type redactingTransport struct {
+	base http.RoundTripper
+}
+
+func (t redactingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if u, ok := redactQuery(r.URL); ok {
+		// Setting an attribute again replaces its value.
+		trace.SpanFromContext(r.Context()).SetAttributes(semconv.URLFull(u))
+	}
+	return t.base.RoundTrip(r)
+}
+
+// redactQuery returns the URL without user info and with the values of
+// secret query parameters redacted, and whether it had any.
+func redactQuery(u *url.URL) (string, bool) {
+	if u == nil || u.RawQuery == "" {
+		return "", false
+	}
+	query := u.Query()
+	redacted := false
+	for _, name := range secretQueryParameters {
+		if values, ok := query[name]; ok {
+			for i := range values {
+				values[i] = redactedValue
+			}
+			redacted = true
+		}
+	}
+	if !redacted {
+		return "", false
+	}
+	c := *u
+	c.User = nil
+	c.RawQuery = query.Encode()
+	return c.String(), true
 }
 
 // clientSpanName names a request after its method and host, e.g. "GET
@@ -86,12 +142,38 @@ func (t reportingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 // Handler traces the requests to an HTTP server, except for static
-// assets, which would only add noise.
-func Handler(h http.Handler) http.Handler {
+// assets, which would only add noise. The rest of the paths starting with
+// one of secretPathPrefixes, like the secret in the Strava webhook's path,
+// are redacted from the url.path attribute.
+//
+// The server is on the public internet, so it doesn't trust the trace
+// context of requests: each request starts a new trace, linked to the trace
+// it came with, if any. Otherwise clients could choose to sample their
+// requests, and pick the trace IDs of others' requests.
+func Handler(h http.Handler, secretPathPrefixes ...string) http.Handler {
+	if len(secretPathPrefixes) > 0 {
+		h = redactPaths(h, secretPathPrefixes)
+	}
 	return otelhttp.NewHandler(h, "",
 		otelhttp.WithSpanNameFormatter(serverSpanName),
 		otelhttp.WithFilter(func(r *http.Request) bool { return !isStaticAsset(r.URL.Path) }),
+		otelhttp.WithPublicEndpointFn(func(*http.Request) bool { return true }),
 	)
+}
+
+// redactPaths redacts the rest of the paths starting with one of prefixes
+// from the url.path attribute of the server span otelhttp started.
+func redactPaths(h http.Handler, prefixes []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, prefix := range prefixes {
+			if len(r.URL.Path) > len(prefix) && strings.HasPrefix(r.URL.Path, prefix) {
+				// Setting an attribute again replaces its value.
+				trace.SpanFromContext(r.Context()).SetAttributes(semconv.URLPath(prefix + redactedValue))
+				break
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 // Routes names the server spans of the requests a mux serves after the

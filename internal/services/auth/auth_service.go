@@ -505,11 +505,11 @@ func (s *Service) takeChallenge(ctx context.Context, id string, ceremony users.C
 // signIn creates a session for the user and sets the session cookie.
 func (s *Service) signIn(ctx context.Context, header *connect.Header, userID pgtype.UUID) error {
 	expiry := s.nowFn().Add(sessionTTL)
-	sessionID, err := s.repo.CreateSession(ctx, userID, expiry)
+	token, err := s.repo.CreateSession(ctx, userID, expiry)
 	if err != nil {
 		return s.internalError(ctx, "failed to create session", err)
 	}
-	header.Add("Set-Cookie", authn.SessionCookie(sessionID, expiry).String())
+	header.Add("Set-Cookie", authn.SessionCookie(token, expiry).String())
 	return nil
 }
 
