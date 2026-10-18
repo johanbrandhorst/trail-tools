@@ -1,11 +1,6 @@
 package trip
 
 import (
-	"bytes"
-	"image"
-	"image/color"
-	"image/jpeg"
-	"image/png"
 	"strings"
 	"testing"
 	"time"
@@ -103,78 +98,6 @@ func TestParseLocalTime(t *testing.T) {
 	}
 	if _, err := parseLocalTime("2026:09:07 10:15:30", "UTC"); err == nil {
 		t.Error("parseLocalTime of an EXIF formatted time succeeded")
-	}
-}
-
-func encodeTestImage(t *testing.T, w, h int, asPNG bool) []byte {
-	t.Helper()
-	img := image.NewNRGBA(image.Rect(0, 0, w, h))
-	for y := range h {
-		for x := range w {
-			img.Set(x, y, color.NRGBA{R: uint8(x), G: uint8(y), B: 100, A: 255})
-		}
-	}
-	// A transparent corner, which must become white rather than black.
-	img.Set(0, 0, color.NRGBA{})
-	var buf bytes.Buffer
-	var err error
-	if asPNG {
-		err = png.Encode(&buf, img)
-	} else {
-		err = jpeg.Encode(&buf, img, nil)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	return buf.Bytes()
-}
-
-func TestProcessImage(t *testing.T) {
-	tests := []struct {
-		name                string
-		w, h                int
-		png                 bool
-		wantW, wantH        int
-		wantThumbW, wantThW int
-	}{
-		{name: "large landscape JPEG", w: 4000, h: 3000, wantW: 2048, wantH: 1536, wantThumbW: 480, wantThW: 360},
-		{name: "portrait PNG", w: 600, h: 1200, png: true, wantW: 600, wantH: 1200, wantThumbW: 240, wantThW: 480},
-		{name: "small", w: 300, h: 200, wantW: 300, wantH: 200, wantThumbW: 300, wantThW: 200},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := processImage(t.Context(), encodeTestImage(t, tt.w, tt.h, tt.png))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.width != tt.wantW || got.height != tt.wantH {
-				t.Errorf("large is %dx%d, want %dx%d", got.width, got.height, tt.wantW, tt.wantH)
-			}
-			large, err := jpeg.Decode(bytes.NewReader(got.large))
-			if err != nil {
-				t.Fatalf("large is not a JPEG: %v", err)
-			}
-			if b := large.Bounds(); b.Dx() != tt.wantW || b.Dy() != tt.wantH {
-				t.Errorf("decoded large is %v", b)
-			}
-			thumb, err := jpeg.Decode(bytes.NewReader(got.thumb))
-			if err != nil {
-				t.Fatalf("thumbnail is not a JPEG: %v", err)
-			}
-			if b := thumb.Bounds(); b.Dx() != tt.wantThumbW || b.Dy() != tt.wantThW {
-				t.Errorf("thumbnail is %dx%d, want %dx%d", b.Dx(), b.Dy(), tt.wantThumbW, tt.wantThW)
-			}
-			if tt.png {
-				if r, g, b, _ := large.At(0, 0).RGBA(); r>>8 < 200 || g>>8 < 200 || b>>8 < 200 {
-					t.Errorf("transparent pixel is %v, want white", large.At(0, 0))
-				}
-			}
-		})
-	}
-	for _, data := range [][]byte{[]byte("not an image"), []byte("GIF89a")} {
-		if _, err := processImage(t.Context(), data); err == nil {
-			t.Errorf("processImage(%q) succeeded", data)
-		}
 	}
 }
 

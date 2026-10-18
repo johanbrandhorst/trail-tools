@@ -45,6 +45,21 @@ const (
 	// RaceReportServiceSuggestRaceReportSegmentsProcedure is the procedure name of the
 	// RaceReportService's SuggestRaceReportSegments RPC.
 	RaceReportServiceSuggestRaceReportSegmentsProcedure = "/races.v1.RaceReportService/SuggestRaceReportSegments"
+	// RaceReportServiceUploadRaceReportPhotoProcedure is the procedure name of the RaceReportService's
+	// UploadRaceReportPhoto RPC.
+	RaceReportServiceUploadRaceReportPhotoProcedure = "/races.v1.RaceReportService/UploadRaceReportPhoto"
+	// RaceReportServiceCreateRaceReportPhotoUploadProcedure is the procedure name of the
+	// RaceReportService's CreateRaceReportPhotoUpload RPC.
+	RaceReportServiceCreateRaceReportPhotoUploadProcedure = "/races.v1.RaceReportService/CreateRaceReportPhotoUpload"
+	// RaceReportServiceUpdateRaceReportPhotoProcedure is the procedure name of the RaceReportService's
+	// UpdateRaceReportPhoto RPC.
+	RaceReportServiceUpdateRaceReportPhotoProcedure = "/races.v1.RaceReportService/UpdateRaceReportPhoto"
+	// RaceReportServiceDeleteRaceReportPhotoProcedure is the procedure name of the RaceReportService's
+	// DeleteRaceReportPhoto RPC.
+	RaceReportServiceDeleteRaceReportPhotoProcedure = "/races.v1.RaceReportService/DeleteRaceReportPhoto"
+	// RaceReportServiceGetRaceReportPhotoProcedure is the procedure name of the RaceReportService's
+	// GetRaceReportPhoto RPC.
+	RaceReportServiceGetRaceReportPhotoProcedure = "/races.v1.RaceReportService/GetRaceReportPhoto"
 	// RaceReportServicePublishRaceReportProcedure is the procedure name of the RaceReportService's
 	// PublishRaceReport RPC.
 	RaceReportServicePublishRaceReportProcedure = "/races.v1.RaceReportService/PublishRaceReport"
@@ -109,6 +124,41 @@ var (
 			Procedure:  RaceReportServiceSuggestRaceReportSegmentsProcedure,
 		}
 	})
+	raceReportServiceUploadRaceReportPhotoSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_races_v1_race_reports_proto.Services().ByName("RaceReportService").Methods().ByName("UploadRaceReportPhoto"),
+			Procedure:  RaceReportServiceUploadRaceReportPhotoProcedure,
+		}
+	})
+	raceReportServiceCreateRaceReportPhotoUploadSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_races_v1_race_reports_proto.Services().ByName("RaceReportService").Methods().ByName("CreateRaceReportPhotoUpload"),
+			Procedure:  RaceReportServiceCreateRaceReportPhotoUploadProcedure,
+		}
+	})
+	raceReportServiceUpdateRaceReportPhotoSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_races_v1_race_reports_proto.Services().ByName("RaceReportService").Methods().ByName("UpdateRaceReportPhoto"),
+			Procedure:  RaceReportServiceUpdateRaceReportPhotoProcedure,
+		}
+	})
+	raceReportServiceDeleteRaceReportPhotoSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_races_v1_race_reports_proto.Services().ByName("RaceReportService").Methods().ByName("DeleteRaceReportPhoto"),
+			Procedure:  RaceReportServiceDeleteRaceReportPhotoProcedure,
+		}
+	})
+	raceReportServiceGetRaceReportPhotoSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_races_v1_race_reports_proto.Services().ByName("RaceReportService").Methods().ByName("GetRaceReportPhoto"),
+			Procedure:  RaceReportServiceGetRaceReportPhotoProcedure,
+		}
+	})
 	raceReportServicePublishRaceReportSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -162,6 +212,49 @@ type RaceReportServiceClient interface {
 	// with FAILED_PRECONDITION if the report has no track, or the track has no
 	// elevations.
 	SuggestRaceReportSegments(context.Context, *v1.SuggestRaceReportSegmentsRequest) (*v1.SuggestRaceReportSegmentsResponse, error)
+	// Upload a photo to a race report. The image is stored as a JPEG of at
+	// most 2048 pixels and a thumbnail, without its metadata. It's placed on
+	// the track at the time it was taken, if that was during the activity, or
+	// else at its GPS position, and among the report's photos in the order
+	// they were taken.
+	UploadRaceReportPhoto(context.Context, *v1.UploadRaceReportPhotoRequest) (*v1.UploadRaceReportPhotoResponse, error)
+	// Create a link to upload photos to a race report with, for agents that
+	// can read the user's photo files and make HTTP requests, e.g. with a
+	// shell, as tools can't take files.
+	//
+	// Only JPEG, PNG and WebP files are accepted, of up to 20 MB and 40
+	// megapixels, or about 10 for progressive JPEGs. Check each file's format
+	// before uploading it, e.g. with `file IMG_1234.HEIC`, as extensions can be
+	// wrong. Convert other formats to JPEG first, keeping their metadata,
+	// which places the photo: HEIC and HEIF, as iPhones take them, AVIF, GIF,
+	// TIFF and camera raw files like DNG, e.g. with
+	// `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS or
+	// `magick IMG_1234.HEIC IMG_1234.jpg` with ImageMagick. Scale larger photos
+	// down, e.g. with `sips -Z 4096 IMG_1234.jpg`.
+	//
+	// Upload each photo with a POST request to the link's URL with the file as
+	// the body and the link's token in an Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=The last climb'`. Each upload
+	// responds with {"photo": RaceReportPhoto} as JSON, or with an error as
+	// {"code": "...", "message": "..."}.
+	//
+	// Each photo is placed on the track from the time and GPS position in its
+	// metadata, like photos uploaded in the app; look at them with
+	// GetRaceReportPhoto to write their captions. The link uploads any number
+	// of photos for an hour; create another one when it expires. Anyone with
+	// the token can add photos to the report, so don't share it.
+	CreateRaceReportPhotoUpload(context.Context, *v1.CreateRaceReportPhotoUploadRequest) (*v1.CreateRaceReportPhotoUploadResponse, error)
+	// Update the caption or the location of a photo of a race report.
+	UpdateRaceReportPhoto(context.Context, *v1.UpdateRaceReportPhotoRequest) (*v1.UpdateRaceReportPhotoResponse, error)
+	// Delete a photo of a race report.
+	DeleteRaceReportPhoto(context.Context, *v1.DeleteRaceReportPhotoRequest) (*v1.DeleteRaceReportPhotoResponse, error)
+	// Get a photo of one of the user's race reports with its image, to look
+	// at it, e.g. to write its caption or the story around it. The thumbnail
+	// is enough to see what's in a photo; get the large image for details.
+	GetRaceReportPhoto(context.Context, *v1.GetRaceReportPhotoRequest) (*v1.GetRaceReportPhotoResponse, error)
 	// Publish a race report on the user's public profile.
 	PublishRaceReport(context.Context, *v1.PublishRaceReportRequest) (*v1.PublishRaceReportResponse, error)
 	// Unpublish a race report, making it a private draft again.
@@ -203,6 +296,49 @@ type RaceReportServiceHandler interface {
 	// with FAILED_PRECONDITION if the report has no track, or the track has no
 	// elevations.
 	SuggestRaceReportSegments(context.Context, *v1.SuggestRaceReportSegmentsRequest) (*v1.SuggestRaceReportSegmentsResponse, error)
+	// Upload a photo to a race report. The image is stored as a JPEG of at
+	// most 2048 pixels and a thumbnail, without its metadata. It's placed on
+	// the track at the time it was taken, if that was during the activity, or
+	// else at its GPS position, and among the report's photos in the order
+	// they were taken.
+	UploadRaceReportPhoto(context.Context, *v1.UploadRaceReportPhotoRequest) (*v1.UploadRaceReportPhotoResponse, error)
+	// Create a link to upload photos to a race report with, for agents that
+	// can read the user's photo files and make HTTP requests, e.g. with a
+	// shell, as tools can't take files.
+	//
+	// Only JPEG, PNG and WebP files are accepted, of up to 20 MB and 40
+	// megapixels, or about 10 for progressive JPEGs. Check each file's format
+	// before uploading it, e.g. with `file IMG_1234.HEIC`, as extensions can be
+	// wrong. Convert other formats to JPEG first, keeping their metadata,
+	// which places the photo: HEIC and HEIF, as iPhones take them, AVIF, GIF,
+	// TIFF and camera raw files like DNG, e.g. with
+	// `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS or
+	// `magick IMG_1234.HEIC IMG_1234.jpg` with ImageMagick. Scale larger photos
+	// down, e.g. with `sips -Z 4096 IMG_1234.jpg`.
+	//
+	// Upload each photo with a POST request to the link's URL with the file as
+	// the body and the link's token in an Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=The last climb'`. Each upload
+	// responds with {"photo": RaceReportPhoto} as JSON, or with an error as
+	// {"code": "...", "message": "..."}.
+	//
+	// Each photo is placed on the track from the time and GPS position in its
+	// metadata, like photos uploaded in the app; look at them with
+	// GetRaceReportPhoto to write their captions. The link uploads any number
+	// of photos for an hour; create another one when it expires. Anyone with
+	// the token can add photos to the report, so don't share it.
+	CreateRaceReportPhotoUpload(context.Context, *v1.CreateRaceReportPhotoUploadRequest) (*v1.CreateRaceReportPhotoUploadResponse, error)
+	// Update the caption or the location of a photo of a race report.
+	UpdateRaceReportPhoto(context.Context, *v1.UpdateRaceReportPhotoRequest) (*v1.UpdateRaceReportPhotoResponse, error)
+	// Delete a photo of a race report.
+	DeleteRaceReportPhoto(context.Context, *v1.DeleteRaceReportPhotoRequest) (*v1.DeleteRaceReportPhotoResponse, error)
+	// Get a photo of one of the user's race reports with its image, to look
+	// at it, e.g. to write its caption or the story around it. The thumbnail
+	// is enough to see what's in a photo; get the large image for details.
+	GetRaceReportPhoto(context.Context, *v1.GetRaceReportPhotoRequest) (*v1.GetRaceReportPhotoResponse, error)
 	// Publish a race report on the user's public profile.
 	PublishRaceReport(context.Context, *v1.PublishRaceReportRequest) (*v1.PublishRaceReportResponse, error)
 	// Unpublish a race report, making it a private draft again.
@@ -227,6 +363,11 @@ func RegisterRaceReportServiceHandler(server *connect.Server, svc RaceReportServ
 		connect.Method{Spec: raceReportServiceDeleteRaceReportSpec(), Handler: adapter.deleteRaceReport},
 		connect.Method{Spec: raceReportServiceSetRaceReportSegmentsSpec(), Handler: adapter.setRaceReportSegments},
 		connect.Method{Spec: raceReportServiceSuggestRaceReportSegmentsSpec(), Handler: adapter.suggestRaceReportSegments},
+		connect.Method{Spec: raceReportServiceUploadRaceReportPhotoSpec(), Handler: adapter.uploadRaceReportPhoto},
+		connect.Method{Spec: raceReportServiceCreateRaceReportPhotoUploadSpec(), Handler: adapter.createRaceReportPhotoUpload},
+		connect.Method{Spec: raceReportServiceUpdateRaceReportPhotoSpec(), Handler: adapter.updateRaceReportPhoto},
+		connect.Method{Spec: raceReportServiceDeleteRaceReportPhotoSpec(), Handler: adapter.deleteRaceReportPhoto},
+		connect.Method{Spec: raceReportServiceGetRaceReportPhotoSpec(), Handler: adapter.getRaceReportPhoto},
 		connect.Method{Spec: raceReportServicePublishRaceReportSpec(), Handler: adapter.publishRaceReport},
 		connect.Method{Spec: raceReportServiceUnpublishRaceReportSpec(), Handler: adapter.unpublishRaceReport},
 		connect.Method{Spec: raceReportServiceListPublicRaceReportsSpec(), Handler: adapter.listPublicRaceReports},
@@ -263,6 +404,26 @@ func (UnimplementedRaceReportServiceHandler) SetRaceReportSegments(context.Conte
 
 func (UnimplementedRaceReportServiceHandler) SuggestRaceReportSegments(context.Context, *v1.SuggestRaceReportSegmentsRequest) (*v1.SuggestRaceReportSegmentsResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.SuggestRaceReportSegments is not implemented")
+}
+
+func (UnimplementedRaceReportServiceHandler) UploadRaceReportPhoto(context.Context, *v1.UploadRaceReportPhotoRequest) (*v1.UploadRaceReportPhotoResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.UploadRaceReportPhoto is not implemented")
+}
+
+func (UnimplementedRaceReportServiceHandler) CreateRaceReportPhotoUpload(context.Context, *v1.CreateRaceReportPhotoUploadRequest) (*v1.CreateRaceReportPhotoUploadResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.CreateRaceReportPhotoUpload is not implemented")
+}
+
+func (UnimplementedRaceReportServiceHandler) UpdateRaceReportPhoto(context.Context, *v1.UpdateRaceReportPhotoRequest) (*v1.UpdateRaceReportPhotoResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.UpdateRaceReportPhoto is not implemented")
+}
+
+func (UnimplementedRaceReportServiceHandler) DeleteRaceReportPhoto(context.Context, *v1.DeleteRaceReportPhotoRequest) (*v1.DeleteRaceReportPhotoResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.DeleteRaceReportPhoto is not implemented")
+}
+
+func (UnimplementedRaceReportServiceHandler) GetRaceReportPhoto(context.Context, *v1.GetRaceReportPhotoRequest) (*v1.GetRaceReportPhotoResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "races.v1.RaceReportService.GetRaceReportPhoto is not implemented")
 }
 
 func (UnimplementedRaceReportServiceHandler) PublishRaceReport(context.Context, *v1.PublishRaceReportRequest) (*v1.PublishRaceReportResponse, error) {
@@ -336,6 +497,46 @@ func (c *raceReportServiceClient) SetRaceReportSegments(ctx context.Context, req
 func (c *raceReportServiceClient) SuggestRaceReportSegments(ctx context.Context, req *v1.SuggestRaceReportSegmentsRequest) (*v1.SuggestRaceReportSegmentsResponse, error) {
 	var res v1.SuggestRaceReportSegmentsResponse
 	if err := c.client.CallUnary(ctx, raceReportServiceSuggestRaceReportSegmentsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *raceReportServiceClient) UploadRaceReportPhoto(ctx context.Context, req *v1.UploadRaceReportPhotoRequest) (*v1.UploadRaceReportPhotoResponse, error) {
+	var res v1.UploadRaceReportPhotoResponse
+	if err := c.client.CallUnary(ctx, raceReportServiceUploadRaceReportPhotoSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *raceReportServiceClient) CreateRaceReportPhotoUpload(ctx context.Context, req *v1.CreateRaceReportPhotoUploadRequest) (*v1.CreateRaceReportPhotoUploadResponse, error) {
+	var res v1.CreateRaceReportPhotoUploadResponse
+	if err := c.client.CallUnary(ctx, raceReportServiceCreateRaceReportPhotoUploadSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *raceReportServiceClient) UpdateRaceReportPhoto(ctx context.Context, req *v1.UpdateRaceReportPhotoRequest) (*v1.UpdateRaceReportPhotoResponse, error) {
+	var res v1.UpdateRaceReportPhotoResponse
+	if err := c.client.CallUnary(ctx, raceReportServiceUpdateRaceReportPhotoSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *raceReportServiceClient) DeleteRaceReportPhoto(ctx context.Context, req *v1.DeleteRaceReportPhotoRequest) (*v1.DeleteRaceReportPhotoResponse, error) {
+	var res v1.DeleteRaceReportPhotoResponse
+	if err := c.client.CallUnary(ctx, raceReportServiceDeleteRaceReportPhotoSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *raceReportServiceClient) GetRaceReportPhoto(ctx context.Context, req *v1.GetRaceReportPhotoRequest) (*v1.GetRaceReportPhotoResponse, error) {
+	var res v1.GetRaceReportPhotoResponse
+	if err := c.client.CallUnary(ctx, raceReportServiceGetRaceReportPhotoSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -453,6 +654,66 @@ func (h raceReportServiceHandler) suggestRaceReportSegments(ctx context.Context,
 		return err
 	}
 	res, err := h.svc.SuggestRaceReportSegments(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h raceReportServiceHandler) uploadRaceReportPhoto(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.UploadRaceReportPhotoRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UploadRaceReportPhoto(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h raceReportServiceHandler) createRaceReportPhotoUpload(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateRaceReportPhotoUploadRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateRaceReportPhotoUpload(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h raceReportServiceHandler) updateRaceReportPhoto(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.UpdateRaceReportPhotoRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UpdateRaceReportPhoto(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h raceReportServiceHandler) deleteRaceReportPhoto(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.DeleteRaceReportPhotoRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DeleteRaceReportPhoto(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h raceReportServiceHandler) getRaceReportPhoto(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetRaceReportPhotoRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetRaceReportPhoto(ctx, &req)
 	if err != nil {
 		return err
 	}

@@ -60,6 +60,9 @@ func (s *Service) SetRaceReportSegments(ctx context.Context, req *racesv1.SetRac
 	}
 	reportProto := s.reportToProto(updated, profile)
 	reportProto.SetSegments(segmentsToProto(segments))
+	if err := s.withPhotos(ctx, reportProto, report.ID, nil); err != nil {
+		return nil, err
+	}
 	return racesv1.SetRaceReportSegmentsResponse_builder{Report: reportProto}.Build(), nil
 }
 

@@ -256,3 +256,18 @@ where report_id = sqlc.arg(report_id) and not (id = any(sqlc.arg(kept_ids)::uuid
 select distinct on (report_id) report_id, body from trip_report_sections
 where report_id = any(sqlc.arg(report_ids)::uuid[]) and body <> ''
 order by report_id, position;
+
+-- name: CreatePhotoUploadLink :one
+-- Creates a link to upload photos to a report with, and deletes the user's
+-- expired links.
+with expired as (
+  delete from photo_upload_links
+  where user_id = sqlc.arg(user_id) and expire_time <= now()
+)
+insert into photo_upload_links (user_id, token_sha256, trip_report_id, race_report_id, expire_time)
+values (sqlc.arg(user_id), sqlc.arg(token_sha256), sqlc.narg(trip_report_id), sqlc.narg(race_report_id), sqlc.arg(expire_time))
+returning *;
+
+-- name: GetPhotoUploadLinkByToken :one
+select * from photo_upload_links
+where token_sha256 = $1 and expire_time > now();

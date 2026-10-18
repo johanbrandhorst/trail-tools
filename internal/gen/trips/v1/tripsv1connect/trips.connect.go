@@ -48,6 +48,9 @@ const (
 	// TripReportServiceUploadTripPhotoProcedure is the procedure name of the TripReportService's
 	// UploadTripPhoto RPC.
 	TripReportServiceUploadTripPhotoProcedure = "/trips.v1.TripReportService/UploadTripPhoto"
+	// TripReportServiceCreateTripPhotoUploadProcedure is the procedure name of the TripReportService's
+	// CreateTripPhotoUpload RPC.
+	TripReportServiceCreateTripPhotoUploadProcedure = "/trips.v1.TripReportService/CreateTripPhotoUpload"
 	// TripReportServiceImportStravaPhotosProcedure is the procedure name of the TripReportService's
 	// ImportStravaPhotos RPC.
 	TripReportServiceImportStravaPhotosProcedure = "/trips.v1.TripReportService/ImportStravaPhotos"
@@ -135,6 +138,13 @@ var (
 			StreamType: connect.StreamTypeUnary,
 			Schema:     v1.File_trips_v1_trips_proto.Services().ByName("TripReportService").Methods().ByName("UploadTripPhoto"),
 			Procedure:  TripReportServiceUploadTripPhotoProcedure,
+		}
+	})
+	tripReportServiceCreateTripPhotoUploadSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_trips_v1_trips_proto.Services().ByName("TripReportService").Methods().ByName("CreateTripPhotoUpload"),
+			Procedure:  TripReportServiceCreateTripPhotoUploadProcedure,
 		}
 	})
 	tripReportServiceImportStravaPhotosSpec = sync.OnceValue(func() connect.Spec {
@@ -237,6 +247,35 @@ type TripReportServiceClient interface {
 	// track at the time it was taken, if that was during the activity, or else
 	// at its GPS position.
 	UploadTripPhoto(context.Context, *v1.UploadTripPhotoRequest) (*v1.UploadTripPhotoResponse, error)
+	// Create a link to upload photos to a trip report with, for agents that
+	// can read the user's photo files and make HTTP requests, e.g. with a
+	// shell, as tools can't take files.
+	//
+	// Only JPEG, PNG and WebP files are accepted, of up to 20 MB and 40
+	// megapixels, or about 10 for progressive JPEGs. Check each file's format
+	// before uploading it, e.g. with `file IMG_1234.HEIC`, as extensions can be
+	// wrong. Convert other formats to JPEG first, keeping their metadata,
+	// which places the photo: HEIC and HEIF, as iPhones take them, AVIF, GIF,
+	// TIFF and camera raw files like DNG, e.g. with
+	// `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS or
+	// `magick IMG_1234.HEIC IMG_1234.jpg` with ImageMagick. Scale larger photos
+	// down, e.g. with `sips -Z 4096 IMG_1234.jpg`.
+	//
+	// Upload each photo with a POST request to the link's URL with the file as
+	// the body and the link's token in an Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=On the ridge'`. Each upload
+	// responds with {"photo": TripPhoto} as JSON, or with an error as
+	// {"code": "...", "message": "..."}.
+	//
+	// Each photo is placed on the track and in the story from the time and GPS
+	// position in its metadata, like photos uploaded in the app; look at them
+	// with GetTripPhoto to write their captions. The link uploads any number of
+	// photos for an hour; create another one when it expires. Anyone with the
+	// token can add photos to the report, so don't share it.
+	CreateTripPhotoUpload(context.Context, *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error)
 	// Import the photos of the report's activity from Strava that it doesn't
 	// have yet, e.g. ones added on Strava after the report was created, like
 	// uploaded photos and with their captions. Photos imported before are
@@ -313,6 +352,35 @@ type TripReportServiceHandler interface {
 	// track at the time it was taken, if that was during the activity, or else
 	// at its GPS position.
 	UploadTripPhoto(context.Context, *v1.UploadTripPhotoRequest) (*v1.UploadTripPhotoResponse, error)
+	// Create a link to upload photos to a trip report with, for agents that
+	// can read the user's photo files and make HTTP requests, e.g. with a
+	// shell, as tools can't take files.
+	//
+	// Only JPEG, PNG and WebP files are accepted, of up to 20 MB and 40
+	// megapixels, or about 10 for progressive JPEGs. Check each file's format
+	// before uploading it, e.g. with `file IMG_1234.HEIC`, as extensions can be
+	// wrong. Convert other formats to JPEG first, keeping their metadata,
+	// which places the photo: HEIC and HEIF, as iPhones take them, AVIF, GIF,
+	// TIFF and camera raw files like DNG, e.g. with
+	// `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS or
+	// `magick IMG_1234.HEIC IMG_1234.jpg` with ImageMagick. Scale larger photos
+	// down, e.g. with `sips -Z 4096 IMG_1234.jpg`.
+	//
+	// Upload each photo with a POST request to the link's URL with the file as
+	// the body and the link's token in an Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=On the ridge'`. Each upload
+	// responds with {"photo": TripPhoto} as JSON, or with an error as
+	// {"code": "...", "message": "..."}.
+	//
+	// Each photo is placed on the track and in the story from the time and GPS
+	// position in its metadata, like photos uploaded in the app; look at them
+	// with GetTripPhoto to write their captions. The link uploads any number of
+	// photos for an hour; create another one when it expires. Anyone with the
+	// token can add photos to the report, so don't share it.
+	CreateTripPhotoUpload(context.Context, *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error)
 	// Import the photos of the report's activity from Strava that it doesn't
 	// have yet, e.g. ones added on Strava after the report was created, like
 	// uploaded photos and with their captions. Photos imported before are
@@ -368,6 +436,7 @@ func RegisterTripReportServiceHandler(server *connect.Server, svc TripReportServ
 		connect.Method{Spec: tripReportServicePublishTripReportSpec(), Handler: adapter.publishTripReport},
 		connect.Method{Spec: tripReportServiceUnpublishTripReportSpec(), Handler: adapter.unpublishTripReport},
 		connect.Method{Spec: tripReportServiceUploadTripPhotoSpec(), Handler: adapter.uploadTripPhoto},
+		connect.Method{Spec: tripReportServiceCreateTripPhotoUploadSpec(), Handler: adapter.createTripPhotoUpload},
 		connect.Method{Spec: tripReportServiceImportStravaPhotosSpec(), Handler: adapter.importStravaPhotos},
 		connect.Method{Spec: tripReportServiceUpdateTripPhotoSpec(), Handler: adapter.updateTripPhoto},
 		connect.Method{Spec: tripReportServiceSetTripSectionsSpec(), Handler: adapter.setTripSections},
@@ -414,6 +483,10 @@ func (UnimplementedTripReportServiceHandler) UnpublishTripReport(context.Context
 
 func (UnimplementedTripReportServiceHandler) UploadTripPhoto(context.Context, *v1.UploadTripPhotoRequest) (*v1.UploadTripPhotoResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "trips.v1.TripReportService.UploadTripPhoto is not implemented")
+}
+
+func (UnimplementedTripReportServiceHandler) CreateTripPhotoUpload(context.Context, *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "trips.v1.TripReportService.CreateTripPhotoUpload is not implemented")
 }
 
 func (UnimplementedTripReportServiceHandler) ImportStravaPhotos(context.Context, *v1.ImportStravaPhotosRequest) (*v1.ImportStravaPhotosResponse, error) {
@@ -519,6 +592,14 @@ func (c *tripReportServiceClient) UnpublishTripReport(ctx context.Context, req *
 func (c *tripReportServiceClient) UploadTripPhoto(ctx context.Context, req *v1.UploadTripPhotoRequest) (*v1.UploadTripPhotoResponse, error) {
 	var res v1.UploadTripPhotoResponse
 	if err := c.client.CallUnary(ctx, tripReportServiceUploadTripPhotoSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *tripReportServiceClient) CreateTripPhotoUpload(ctx context.Context, req *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error) {
+	var res v1.CreateTripPhotoUploadResponse
+	if err := c.client.CallUnary(ctx, tripReportServiceCreateTripPhotoUploadSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -696,6 +777,18 @@ func (h tripReportServiceHandler) uploadTripPhoto(ctx context.Context, _ connect
 		return err
 	}
 	res, err := h.svc.UploadTripPhoto(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h tripReportServiceHandler) createTripPhotoUpload(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateTripPhotoUploadRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateTripPhotoUpload(ctx, &req)
 	if err != nil {
 		return err
 	}

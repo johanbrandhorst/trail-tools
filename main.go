@@ -588,7 +588,7 @@ func run(
 		tripSyncer, raceReportSyncer = stravaSyncer, stravaSyncer
 	}
 	tripService := trip.NewService(log, report, tripRepo, activityRepo, tripSyncer, photos, users, telemetry.NewClient(0), baseURL)
-	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, raceReportSyncer, tripRepo, racePlanService, users, baseURL)
+	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, raceReportSyncer, tripRepo, racePlanService, users, photos, tripRepo, baseURL)
 	lactateService := lactatesvc.NewService(log, report, lactateRepo, baseURL)
 	// MCP clients that require OAuth, like claude.ai, authorize with this
 	// authorization server instead of API tokens.
@@ -748,6 +748,11 @@ func run(
 	// Serve trip report photos, and the public trip report pages with their
 	// metadata for search engines and link previews.
 	mux.Handle(trip.PhotoPath, authenticate(tripService.PhotoHandler()))
+	mux.Handle(racereport.PhotoPath, authenticate(raceReportService.PhotoHandler()))
+	// The links AI agents upload photos with authenticate with their token
+	// instead.
+	mux.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
+	mux.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	// The guided lactate test as a Garmin workout. It holds no user data.
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())

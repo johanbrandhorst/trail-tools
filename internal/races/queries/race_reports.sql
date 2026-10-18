@@ -62,9 +62,18 @@ update race_reports set
 where id = sqlc.arg(id) and user_id = sqlc.arg(user_id)
 returning *;
 
--- name: DeleteRaceReport :execrows
-delete from race_reports
-where id = $1 and user_id = $2;
+-- name: DeleteRaceReport :many
+-- Deletes one of the user's reports, and returns the object keys of its
+-- photos: a row for each photo, or one row without a key for a report
+-- without photos, and no rows if there's no report. The select sees the
+-- photos as they were before the delete.
+with deleted as (
+  delete from race_reports r
+  where r.id = $1 and r.user_id = $2
+  returning r.id
+)
+select p.object_key from deleted d
+left join race_report_photos p on p.report_id = d.id;
 
 -- name: SetRaceReportTrack :exec
 -- Stores the track of a report made before reports had one.

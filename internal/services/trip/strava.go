@@ -13,6 +13,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/track"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
@@ -132,28 +133,34 @@ func (s *Service) importPhotos(ctx context.Context, report *trips.Report, activi
 			result.failed++
 			continue
 		}
+		upload := &PhotoUpload{Data: data, TakenTime: p.TakenTime}
+		if p.Location != nil {
+			upload.Location = geov1.LatLng_builder{Lat: p.Location.Lat, Lng: p.Location.Lng}.Build()
+		}
+		img, err := ProcessPhoto(ctx, upload)
+		if connect.CodeOf(err) == connect.CodeInvalidArgument {
+			log.WarnContext(ctx, "A photo from Strava isn't a supported image", slogor.Err(err))
+			result.failed++
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
 		photo := &trips.Photo{
 			ReportID:      reportID,
-			Caption:       truncateRunes(p.Caption, maxCaptionLength),
-			TakenTime:     p.TakenTime,
+			Caption:       truncateRunes(p.Caption, MaxCaptionLength),
+			TakenTime:     upload.TakenTime,
 			StravaPhotoID: p.StravaID,
 		}
-		var gps *geov1.LatLng
-		if p.Location != nil {
-			gps = geov1.LatLng_builder{Lat: p.Location.Lat, Lng: p.Location.Lng}.Build()
-		}
-		if photo.Location, err = placePhoto(report, t, gps, p.TakenTime); err != nil {
+		if photo.Location, err = PlacePhoto(report.StartTime, t, upload.Location, photo.TakenTime); err != nil {
 			// Strava's location is invalid, so place the photo by time.
-			photo.Location, _ = placePhoto(report, t, nil, p.TakenTime)
+			photo.Location, _ = PlacePhoto(report.StartTime, t, nil, photo.TakenTime)
 		}
-		created, err := s.storePhoto(ctx, userID, photo, data)
+		created, err := s.storePhoto(ctx, userID, photo, img)
 		switch {
 		case errors.Is(err, trips.ErrPhotoImported):
 			// Imported meanwhile.
 			result.skipped++
-		case connect.CodeOf(err) == connect.CodeInvalidArgument:
-			log.WarnContext(ctx, "A photo from Strava isn't a supported image", slogor.Err(err))
-			result.failed++
 		case err != nil:
 			return nil, err
 		default:
@@ -179,12 +186,12 @@ func (s *Service) downloadPhoto(ctx context.Context, imageURL string) ([]byte, e
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxPhotoBytes+1))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, photos.MaxBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read photo: %w", err)
 	}
-	if len(data) > maxPhotoBytes {
-		return nil, fmt.Errorf("the photo is larger than %d MB", maxPhotoBytes>>20)
+	if len(data) > photos.MaxBytes {
+		return nil, fmt.Errorf("the photo is larger than %d MB", photos.MaxBytes>>20)
 	}
 	return data, nil
 }

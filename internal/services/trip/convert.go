@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -154,12 +155,12 @@ func (s *Service) photoToProto(p *trips.Photo) *tripsv1.TripPhoto {
 		Caption:      p.Caption,
 		Width:        p.Width,
 		Height:       p.Height,
-		Url:          s.photoURL(id, sizeLarge),
-		ThumbnailUrl: s.photoURL(id, sizeThumb),
+		Url:          s.photoURL(id, photos.SizeLarge),
+		ThumbnailUrl: s.photoURL(id, photos.SizeThumb),
 	}
 	if loc := p.Location; loc != nil {
 		b.Location = geov1.LatLng_builder{Lat: loc.Lat, Lng: loc.Lng}.Build()
-		b.LocationSource = locationSourceToProto[loc.Source]
+		b.LocationSource = LocationSourceToProto(loc.Source)
 		if loc.HasTrackDistanceMeters {
 			b.TrackDistanceMeters = &loc.TrackDistanceMeters
 		}
@@ -168,12 +169,6 @@ func (s *Service) photoToProto(p *trips.Photo) *tripsv1.TripPhoto {
 		b.TakenTime = timestamppb.New(p.TakenTime)
 	}
 	return b.Build()
-}
-
-var locationSourceToProto = map[trips.LocationSource]tripsv1.LocationSource{
-	trips.LocationGPS:       tripsv1.LocationSource_LOCATION_SOURCE_GPS,
-	trips.LocationTrackTime: tripsv1.LocationSource_LOCATION_SOURCE_TRACK_TIME,
-	trips.LocationManual:    tripsv1.LocationSource_LOCATION_SOURCE_MANUAL,
 }
 
 func (s *Service) profileToProto(p *trips.Profile) *tripsv1.Profile {

@@ -37,8 +37,14 @@ const maxConcurrentDecodes = 1
 // decodeSlots holds a value for each image being decoded or used.
 var decodeSlots = make(chan struct{}, maxConcurrentDecodes)
 
-// ErrNotImage is returned for uploads that aren't a supported image.
-var ErrNotImage = errors.New("the file is not a JPEG, PNG or WebP image")
+var (
+	// ErrNotImage is returned for uploads that aren't a supported image.
+	ErrNotImage = errors.New("the file is not a JPEG, PNG or WebP image")
+	// ErrHEIF is returned for HEIC and AVIF images, as phones take them, which
+	// can't be decoded. Browsers that can show them convert them before
+	// uploading, but other clients upload them as they are.
+	ErrHEIF = errors.New("the image is HEIC or AVIF, which isn't supported; convert it to JPEG first, keeping its metadata")
+)
 
 // Decode decodes a JPEG, PNG or WebP image of at most MaxPixels pixels, that
 // takes at most maxDecodeBytes to decode, and calls use with it. At most
@@ -47,6 +53,9 @@ var ErrNotImage = errors.New("the file is not a JPEG, PNG or WebP image")
 func Decode(ctx context.Context, data []byte, use func(image.Image) error) error {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
+		if isHEIF(data) {
+			return ErrHEIF
+		}
 		return ErrNotImage
 	}
 	if cfg.Width <= 0 || cfg.Height <= 0 {
@@ -68,6 +77,19 @@ func Decode(ctx context.Context, data []byte, use func(image.Image) error) error
 		return ErrNotImage
 	}
 	return use(img)
+}
+
+// isHEIF reports whether data is a HEIF image, like HEIC or AVIF, from the
+// brand of its ftyp box.
+func isHEIF(data []byte) bool {
+	if len(data) < 12 || string(data[4:8]) != "ftyp" {
+		return false
+	}
+	switch string(data[8:12]) {
+	case "heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1", "avif", "avis":
+		return true
+	}
+	return false
 }
 
 // ScaleDown returns the image scaled to fit within size by size pixels, on
@@ -147,6 +169,14 @@ func halve(img image.Image, src image.Rectangle, w, h int) (image.Image, image.R
 		img, src = half, half.Bounds()
 	}
 	return img, src
+}
+
+// toRGBA returns a copy of the image as an RGBA image.
+func toRGBA(img image.Image) *image.RGBA {
+	b := img.Bounds()
+	dst := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	draw.Draw(dst, dst.Bounds(), img, b.Min, draw.Src)
+	return dst
 }
 
 // decodeBytesPerPixel returns the bytes per pixel that decoding an image of

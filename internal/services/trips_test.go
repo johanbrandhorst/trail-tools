@@ -46,13 +46,20 @@ func (e *env) createActivity() string {
 // the altitudes of its 101 points.
 func (e *env) createActivityWithAltitudes(altitudes []float64) string {
 	e.t.Helper()
+	return e.createActivityAt(4242, tripStart, altitudes)
+}
+
+// createActivityAt stores an activity like createActivity with Strava's ID,
+// starting at start, with the altitudes of its 101 points.
+func (e *env) createActivityAt(stravaID int64, start time.Time, altitudes []float64) string {
+	e.t.Helper()
 	ctx := context.Background()
 	points := []geo.Point{{Lat: 0, Lng: 0}, {Lat: 0.09, Lng: 0}}
 	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
-		StravaID:            4242,
+		StravaID:            stravaID,
 		Name:                "Ridge run",
 		SportType:           "TrailRun",
-		StartTime:           tripStart,
+		StartTime:           start,
 		StartDateLocal:      time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC),
 		Timezone:            "Europe/Zurich",
 		DistanceMeters:      10000,
@@ -74,7 +81,7 @@ func (e *env) createActivityWithAltitudes(altitudes []float64) string {
 		streams.SetAltitudeMeters(append(streams.GetAltitudeMeters(), altitudes[i]))
 		streams.SetHeartrateBpm(append(streams.GetHeartrateBpm(), 150))
 	}
-	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, 4242, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, streams, &geo.Bounds{MaxLat: 0.09}); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, stravaID, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, streams, &geo.Bounds{MaxLat: 0.09}); err != nil {
 		e.t.Fatal(err)
 	}
 	return store.UUIDToString(id)

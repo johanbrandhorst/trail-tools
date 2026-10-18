@@ -1,4 +1,5 @@
 import Loading from "@components/loading";
+import { RacePhotoGallery } from "@components/races/race-photos";
 import {
   Paragraphs,
   RaceComparisonView,
@@ -6,6 +7,8 @@ import {
   SECTIONS,
 } from "@components/races/race-report-bits";
 import { SegmentsView } from "@components/races/race-segments";
+import { mapPhotos } from "@components/trips/trip-bits";
+import Lightbox from "@components/ui/lightbox";
 import PublicFooter from "@components/ui/public-footer";
 import QueryError from "@components/ui/query-error";
 import { Code } from "@connectrpc/connect";
@@ -13,7 +16,7 @@ import { useQuery } from "@connectrpc/connect-query";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { getPublicRaceReport } from "gen/races/v1/race_reports-RaceReportService_connectquery";
 import { formatDate, formatKm } from "helpers/format";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 
 const NotAvailable: React.FC = () => (
@@ -40,6 +43,10 @@ const PublicRaceReportPage: React.FC = () => {
     }
   );
   const report = data?.report;
+  const photos = report?.photos;
+  const markers = useMemo(() => mapPhotos(photos ?? []), [photos]);
+  // The index of the photo shown full screen.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   useEffect(() => {
     if (report !== undefined) {
       document.title = `${report.title} · ${data?.authorName ?? ""}`;
@@ -75,16 +82,36 @@ const PublicRaceReportPage: React.FC = () => {
   const sections = SECTIONS.filter(
     (section) => section.key !== "summary" && report[section.key].trim() !== ""
   );
-  // The segments come after the race day, or after the sections without it.
-  const segments = report.segments.length > 0 && data.track.length > 1 && (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-xl font-semibold text-gray-900">Along the course</h2>
-      <SegmentsView
-        segments={report.segments}
-        track={data.track}
-        breaks={data.trackBreaks}
-      />
-    </section>
+  /*
+   * The segments and photos come after the race day, or after the sections
+   * without it.
+   */
+  const course = (
+    <>
+      {report.segments.length > 0 && data.track.length > 1 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Along the course
+          </h2>
+          <SegmentsView
+            segments={report.segments}
+            photos={markers}
+            onSelectPhoto={(id) => {
+              const index = report.photos.findIndex((photo) => photo.id === id);
+              setOpenIndex(index === -1 ? null : index);
+            }}
+            track={data.track}
+            breaks={data.trackBreaks}
+          />
+        </section>
+      )}
+      {report.photos.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-semibold text-gray-900">Photos</h2>
+          <RacePhotoGallery photos={report.photos} onOpen={setOpenIndex} />
+        </section>
+      )}
+    </>
   );
 
   return (
@@ -151,10 +178,15 @@ const PublicRaceReportPage: React.FC = () => {
               <Paragraphs text={report[section.key]} />
             </div>
           </section>
-          {section.key === "raceDay" && segments}
+          {section.key === "raceDay" && course}
         </React.Fragment>
       ))}
-      {!sections.some((section) => section.key === "raceDay") && segments}
+      {!sections.some((section) => section.key === "raceDay") && course}
+      <Lightbox
+        photos={report.photos}
+        index={openIndex}
+        onChange={setOpenIndex}
+      />
       <PublicFooter author={{ displayName: data.authorName, handle }} />
     </article>
   );

@@ -309,16 +309,24 @@ func (r *Repository) SetRaceReportSegments(ctx context.Context, reportID pgtype.
 	return nil
 }
 
-// DeleteRaceReport deletes one of the user's race reports.
-func (r *Repository) DeleteRaceReport(ctx context.Context, userID, reportID pgtype.UUID) error {
-	n, err := r.q.DeleteRaceReport(ctx, &gen.DeleteRaceReportParams{ID: reportID, UserID: userID})
+// DeleteRaceReport deletes one of the user's race reports and its photos.
+// It returns the photos' object keys, whose images should be deleted.
+func (r *Repository) DeleteRaceReport(ctx context.Context, userID, reportID pgtype.UUID) ([]string, error) {
+	rows, err := r.q.DeleteRaceReport(ctx, &gen.DeleteRaceReportParams{ID: reportID, UserID: userID})
 	if err != nil {
-		return fmt.Errorf("failed to delete race report: %w", err)
+		return nil, fmt.Errorf("failed to delete race report: %w", err)
 	}
-	if n == 0 {
-		return store.ErrNotFound
+	// A deleted report has a row even without photos.
+	if len(rows) == 0 {
+		return nil, store.ErrNotFound
 	}
-	return nil
+	var keys []string
+	for _, key := range rows {
+		if key.Valid {
+			keys = append(keys, key.String)
+		}
+	}
+	return keys, nil
 }
 
 func raceReportFromDB(row *gen.RaceReport) *RaceReport {

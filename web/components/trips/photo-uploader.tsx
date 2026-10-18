@@ -1,12 +1,11 @@
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { ConnectError } from "@connectrpc/connect";
-import { useMutation } from "@connectrpc/connect-query";
 import {
   ArrowUpTrayIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-import { uploadTripPhoto } from "gen/trips/v1/trips-TripReportService_connectquery";
 import { preparePhoto } from "helpers/photos";
 import type { DragEvent } from "react";
 import React, { useRef, useState } from "react";
@@ -38,8 +37,21 @@ const errorMessage = (err: unknown): string => {
   return "Upload failed";
 };
 
+/**
+ * UploadFields are the fields of a request to upload a photo, prepared in
+ * the browser, to a trip or race report.
+ */
+export interface UploadFields {
+  caption: string;
+  data: Uint8Array;
+  location: { lat: number; lng: number } | undefined;
+  takenLocalTime: string;
+  takenTime: Timestamp | undefined;
+}
+
 interface PhotoUploaderProps {
-  reportId: string;
+  // Uploads a photo to the report.
+  upload: (fields: UploadFields) => Promise<unknown>;
   // Called after each uploaded photo.
   onUploaded: () => Promise<void>;
 }
@@ -51,13 +63,12 @@ let nextKey = 0;
  * position and capture time and scaled down in the browser first.
  */
 const PhotoUploader: React.FC<PhotoUploaderProps> = ({
-  reportId,
+  upload,
   onUploaded,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
-  const upload = useMutation(uploadTripPhoto);
 
   const setItem = (key: string, status: UploadStatus, error = "") => {
     setItems((current) =>
@@ -72,11 +83,10 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       setItem(item.key, "preparing");
       const prepared = await preparePhoto(file);
       setItem(item.key, "uploading");
-      await upload.mutateAsync({
+      await upload({
         caption: "",
         data: prepared.data,
         location: prepared.location,
-        reportId,
         takenLocalTime: prepared.takenLocalTime,
         takenTime:
           prepared.takenTime === undefined

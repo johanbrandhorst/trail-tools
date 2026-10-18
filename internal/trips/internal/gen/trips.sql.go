@@ -101,6 +101,47 @@ func (q *Queries) AddPhoto(ctx context.Context, arg *AddPhotoParams) (*TripPhoto
 	return &i, err
 }
 
+const createPhotoUploadLink = `-- name: CreatePhotoUploadLink :one
+with expired as (
+  delete from photo_upload_links
+  where user_id = $1 and expire_time <= now()
+)
+insert into photo_upload_links (user_id, token_sha256, trip_report_id, race_report_id, expire_time)
+values ($1, $2, $3, $4, $5)
+returning id, user_id, token_sha256, trip_report_id, race_report_id, expire_time, create_time
+`
+
+type CreatePhotoUploadLinkParams struct {
+	UserID       pgtype.UUID
+	TokenSHA256  []byte
+	TripReportID pgtype.UUID
+	RaceReportID pgtype.UUID
+	ExpireTime   pgtype.Timestamptz
+}
+
+// Creates a link to upload photos to a report with, and deletes the user's
+// expired links.
+func (q *Queries) CreatePhotoUploadLink(ctx context.Context, arg *CreatePhotoUploadLinkParams) (*PhotoUploadLink, error) {
+	row := q.db.QueryRow(ctx, createPhotoUploadLink,
+		arg.UserID,
+		arg.TokenSHA256,
+		arg.TripReportID,
+		arg.RaceReportID,
+		arg.ExpireTime,
+	)
+	var i PhotoUploadLink
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenSHA256,
+		&i.TripReportID,
+		&i.RaceReportID,
+		&i.ExpireTime,
+		&i.CreateTime,
+	)
+	return &i, err
+}
+
 const createReport = `-- name: CreateReport :one
 insert into trip_reports (
   user_id,
@@ -335,6 +376,26 @@ func (q *Queries) GetPhotoAccess(ctx context.Context, id pgtype.UUID) (*GetPhoto
 		&i.CreateTime,
 		&i.UserID,
 		&i.Published,
+	)
+	return &i, err
+}
+
+const getPhotoUploadLinkByToken = `-- name: GetPhotoUploadLinkByToken :one
+select id, user_id, token_sha256, trip_report_id, race_report_id, expire_time, create_time from photo_upload_links
+where token_sha256 = $1 and expire_time > now()
+`
+
+func (q *Queries) GetPhotoUploadLinkByToken(ctx context.Context, tokenSha256 []byte) (*PhotoUploadLink, error) {
+	row := q.db.QueryRow(ctx, getPhotoUploadLinkByToken, tokenSha256)
+	var i PhotoUploadLink
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenSHA256,
+		&i.TripReportID,
+		&i.RaceReportID,
+		&i.ExpireTime,
+		&i.CreateTime,
 	)
 	return &i, err
 }

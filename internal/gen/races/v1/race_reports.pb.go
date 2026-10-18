@@ -7,8 +7,10 @@
 package racesv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
-	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	v13 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	v12 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	v11 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -103,6 +105,7 @@ type RaceReport struct {
 	xxx_hidden_StopSeconds         int32                  `protobuf:"varint,27,opt,name=stop_seconds,json=stopSeconds,proto3"`
 	xxx_hidden_Segments            *[]*RaceReportSegment  `protobuf:"bytes,28,rep,name=segments,proto3"`
 	xxx_hidden_HasTrack            bool                   `protobuf:"varint,29,opt,name=has_track,json=hasTrack,proto3"`
+	xxx_hidden_Photos              *[]*RaceReportPhoto    `protobuf:"bytes,30,rep,name=photos,proto3"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -337,6 +340,15 @@ func (x *RaceReport) GetHasTrack() bool {
 	return false
 }
 
+func (x *RaceReport) GetPhotos() []*RaceReportPhoto {
+	if x != nil {
+		if x.xxx_hidden_Photos != nil {
+			return *x.xxx_hidden_Photos
+		}
+	}
+	return nil
+}
+
 func (x *RaceReport) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -453,6 +465,10 @@ func (x *RaceReport) SetHasTrack(v bool) {
 	x.xxx_hidden_HasTrack = v
 }
 
+func (x *RaceReport) SetPhotos(v []*RaceReportPhoto) {
+	x.xxx_hidden_Photos = &v
+}
+
 func (x *RaceReport) HasPublishTime() bool {
 	if x == nil {
 		return false
@@ -555,6 +571,8 @@ type RaceReport_builder struct {
 	Segments []*RaceReportSegment
 	// Whether the report has a track, from its activity, which segments need.
 	HasTrack bool
+	// The photos, in the order they were taken. Not set in lists.
+	Photos []*RaceReportPhoto
 }
 
 func (b0 RaceReport_builder) Build() *RaceReport {
@@ -590,6 +608,243 @@ func (b0 RaceReport_builder) Build() *RaceReport {
 	x.xxx_hidden_StopSeconds = b.StopSeconds
 	x.xxx_hidden_Segments = &b.Segments
 	x.xxx_hidden_HasTrack = b.HasTrack
+	x.xxx_hidden_Photos = &b.Photos
+	return m0
+}
+
+// A photo of a race report.
+type RaceReportPhoto struct {
+	state                          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Caption             string                 `protobuf:"bytes,2,opt,name=caption,proto3"`
+	xxx_hidden_Location            *v1.LatLng             `protobuf:"bytes,3,opt,name=location,proto3"`
+	xxx_hidden_LocationSource      v11.LocationSource     `protobuf:"varint,4,opt,name=location_source,json=locationSource,proto3,enum=trips.v1.LocationSource"`
+	xxx_hidden_TrackDistanceMeters float64                `protobuf:"fixed64,5,opt,name=track_distance_meters,json=trackDistanceMeters,proto3,oneof"`
+	xxx_hidden_TakenTime           *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=taken_time,json=takenTime,proto3"`
+	xxx_hidden_Width               int32                  `protobuf:"varint,7,opt,name=width,proto3"`
+	xxx_hidden_Height              int32                  `protobuf:"varint,8,opt,name=height,proto3"`
+	xxx_hidden_Url                 string                 `protobuf:"bytes,9,opt,name=url,proto3"`
+	xxx_hidden_ThumbnailUrl        string                 `protobuf:"bytes,10,opt,name=thumbnail_url,json=thumbnailUrl,proto3"`
+	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
+	XXX_presence                   [1]uint32
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
+}
+
+func (x *RaceReportPhoto) Reset() {
+	*x = RaceReportPhoto{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RaceReportPhoto) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RaceReportPhoto) ProtoMessage() {}
+
+func (x *RaceReportPhoto) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RaceReportPhoto) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *RaceReportPhoto) GetCaption() string {
+	if x != nil {
+		return x.xxx_hidden_Caption
+	}
+	return ""
+}
+
+func (x *RaceReportPhoto) GetLocation() *v1.LatLng {
+	if x != nil {
+		return x.xxx_hidden_Location
+	}
+	return nil
+}
+
+func (x *RaceReportPhoto) GetLocationSource() v11.LocationSource {
+	if x != nil {
+		return x.xxx_hidden_LocationSource
+	}
+	return v11.LocationSource(0)
+}
+
+func (x *RaceReportPhoto) GetTrackDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_TrackDistanceMeters
+	}
+	return 0
+}
+
+func (x *RaceReportPhoto) GetTakenTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_TakenTime
+	}
+	return nil
+}
+
+func (x *RaceReportPhoto) GetWidth() int32 {
+	if x != nil {
+		return x.xxx_hidden_Width
+	}
+	return 0
+}
+
+func (x *RaceReportPhoto) GetHeight() int32 {
+	if x != nil {
+		return x.xxx_hidden_Height
+	}
+	return 0
+}
+
+func (x *RaceReportPhoto) GetUrl() string {
+	if x != nil {
+		return x.xxx_hidden_Url
+	}
+	return ""
+}
+
+func (x *RaceReportPhoto) GetThumbnailUrl() string {
+	if x != nil {
+		return x.xxx_hidden_ThumbnailUrl
+	}
+	return ""
+}
+
+func (x *RaceReportPhoto) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *RaceReportPhoto) SetCaption(v string) {
+	x.xxx_hidden_Caption = v
+}
+
+func (x *RaceReportPhoto) SetLocation(v *v1.LatLng) {
+	x.xxx_hidden_Location = v
+}
+
+func (x *RaceReportPhoto) SetLocationSource(v v11.LocationSource) {
+	x.xxx_hidden_LocationSource = v
+}
+
+func (x *RaceReportPhoto) SetTrackDistanceMeters(v float64) {
+	x.xxx_hidden_TrackDistanceMeters = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+}
+
+func (x *RaceReportPhoto) SetTakenTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_TakenTime = v
+}
+
+func (x *RaceReportPhoto) SetWidth(v int32) {
+	x.xxx_hidden_Width = v
+}
+
+func (x *RaceReportPhoto) SetHeight(v int32) {
+	x.xxx_hidden_Height = v
+}
+
+func (x *RaceReportPhoto) SetUrl(v string) {
+	x.xxx_hidden_Url = v
+}
+
+func (x *RaceReportPhoto) SetThumbnailUrl(v string) {
+	x.xxx_hidden_ThumbnailUrl = v
+}
+
+func (x *RaceReportPhoto) HasLocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Location != nil
+}
+
+func (x *RaceReportPhoto) HasTrackDistanceMeters() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *RaceReportPhoto) HasTakenTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TakenTime != nil
+}
+
+func (x *RaceReportPhoto) ClearLocation() {
+	x.xxx_hidden_Location = nil
+}
+
+func (x *RaceReportPhoto) ClearTrackDistanceMeters() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_TrackDistanceMeters = 0
+}
+
+func (x *RaceReportPhoto) ClearTakenTime() {
+	x.xxx_hidden_TakenTime = nil
+}
+
+type RaceReportPhoto_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the photo.
+	Id string
+	// The caption.
+	Caption string
+	// Where the photo was taken. Unset if unknown.
+	Location *v1.LatLng
+	// Where the location comes from.
+	LocationSource v11.LocationSource
+	// The distance along the report's track of the point nearest to the
+	// location, in meters. Unset if the photo has no location or the report
+	// has no track.
+	TrackDistanceMeters *float64
+	// When the photo was taken, if known.
+	TakenTime *timestamppb.Timestamp
+	// The width of the image in pixels.
+	Width int32
+	// The height of the image in pixels.
+	Height int32
+	// The URL of the image, at most 2048 pixels on the long side.
+	Url string
+	// The URL of a thumbnail, at most 480 pixels on the long side.
+	ThumbnailUrl string
+}
+
+func (b0 RaceReportPhoto_builder) Build() *RaceReportPhoto {
+	m0 := &RaceReportPhoto{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Caption = b.Caption
+	x.xxx_hidden_Location = b.Location
+	x.xxx_hidden_LocationSource = b.LocationSource
+	if b.TrackDistanceMeters != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		x.xxx_hidden_TrackDistanceMeters = *b.TrackDistanceMeters
+	}
+	x.xxx_hidden_TakenTime = b.TakenTime
+	x.xxx_hidden_Width = b.Width
+	x.xxx_hidden_Height = b.Height
+	x.xxx_hidden_Url = b.Url
+	x.xxx_hidden_ThumbnailUrl = b.ThumbnailUrl
 	return m0
 }
 
@@ -606,7 +861,7 @@ type RaceReportSegment struct {
 
 func (x *RaceReportSegment) Reset() {
 	*x = RaceReportSegment{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[1]
+	mi := &file_races_v1_race_reports_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -618,7 +873,7 @@ func (x *RaceReportSegment) String() string {
 func (*RaceReportSegment) ProtoMessage() {}
 
 func (x *RaceReportSegment) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[1]
+	mi := &file_races_v1_race_reports_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -712,7 +967,7 @@ type RaceComparison struct {
 
 func (x *RaceComparison) Reset() {
 	*x = RaceComparison{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[2]
+	mi := &file_races_v1_race_reports_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +979,7 @@ func (x *RaceComparison) String() string {
 func (*RaceComparison) ProtoMessage() {}
 
 func (x *RaceComparison) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[2]
+	mi := &file_races_v1_race_reports_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -852,7 +1107,7 @@ type GoalResult struct {
 
 func (x *GoalResult) Reset() {
 	*x = GoalResult{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[3]
+	mi := &file_races_v1_race_reports_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -864,7 +1119,7 @@ func (x *GoalResult) String() string {
 func (*GoalResult) ProtoMessage() {}
 
 func (x *GoalResult) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[3]
+	mi := &file_races_v1_race_reports_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -963,7 +1218,7 @@ type CheckpointResult struct {
 
 func (x *CheckpointResult) Reset() {
 	*x = CheckpointResult{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[4]
+	mi := &file_races_v1_race_reports_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -975,7 +1230,7 @@ func (x *CheckpointResult) String() string {
 func (*CheckpointResult) ProtoMessage() {}
 
 func (x *CheckpointResult) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[4]
+	mi := &file_races_v1_race_reports_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1142,7 +1397,7 @@ type CreateRaceReportRequest struct {
 
 func (x *CreateRaceReportRequest) Reset() {
 	*x = CreateRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[5]
+	mi := &file_races_v1_race_reports_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1154,7 +1409,7 @@ func (x *CreateRaceReportRequest) String() string {
 func (*CreateRaceReportRequest) ProtoMessage() {}
 
 func (x *CreateRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[5]
+	mi := &file_races_v1_race_reports_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1216,7 +1471,7 @@ type CreateRaceReportResponse struct {
 
 func (x *CreateRaceReportResponse) Reset() {
 	*x = CreateRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[6]
+	mi := &file_races_v1_race_reports_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1228,7 +1483,7 @@ func (x *CreateRaceReportResponse) String() string {
 func (*CreateRaceReportResponse) ProtoMessage() {}
 
 func (x *CreateRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[6]
+	mi := &file_races_v1_race_reports_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1311,7 +1566,7 @@ type GetRaceReportRequest struct {
 
 func (x *GetRaceReportRequest) Reset() {
 	*x = GetRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[7]
+	mi := &file_races_v1_race_reports_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1323,7 +1578,7 @@ func (x *GetRaceReportRequest) String() string {
 func (*GetRaceReportRequest) ProtoMessage() {}
 
 func (x *GetRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[7]
+	mi := &file_races_v1_race_reports_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,14 +1633,14 @@ type GetRaceReportResponse struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Report     *RaceReport            `protobuf:"bytes,1,opt,name=report,proto3"`
 	xxx_hidden_Comparison *RaceComparison        `protobuf:"bytes,2,opt,name=comparison,proto3"`
-	xxx_hidden_Track      *[]*v1.RoutePoint      `protobuf:"bytes,3,rep,name=track,proto3"`
+	xxx_hidden_Track      *[]*v12.RoutePoint     `protobuf:"bytes,3,rep,name=track,proto3"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
 
 func (x *GetRaceReportResponse) Reset() {
 	*x = GetRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[8]
+	mi := &file_races_v1_race_reports_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1397,7 +1652,7 @@ func (x *GetRaceReportResponse) String() string {
 func (*GetRaceReportResponse) ProtoMessage() {}
 
 func (x *GetRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[8]
+	mi := &file_races_v1_race_reports_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1422,7 +1677,7 @@ func (x *GetRaceReportResponse) GetComparison() *RaceComparison {
 	return nil
 }
 
-func (x *GetRaceReportResponse) GetTrack() []*v1.RoutePoint {
+func (x *GetRaceReportResponse) GetTrack() []*v12.RoutePoint {
 	if x != nil {
 		if x.xxx_hidden_Track != nil {
 			return *x.xxx_hidden_Track
@@ -1439,7 +1694,7 @@ func (x *GetRaceReportResponse) SetComparison(v *RaceComparison) {
 	x.xxx_hidden_Comparison = v
 }
 
-func (x *GetRaceReportResponse) SetTrack(v []*v1.RoutePoint) {
+func (x *GetRaceReportResponse) SetTrack(v []*v12.RoutePoint) {
 	x.xxx_hidden_Track = &v
 }
 
@@ -1474,7 +1729,7 @@ type GetRaceReportResponse_builder struct {
 	Comparison *RaceComparison
 	// The report's track, downsampled, if include_track was set and it has
 	// one.
-	Track []*v1.RoutePoint
+	Track []*v12.RoutePoint
 }
 
 func (b0 GetRaceReportResponse_builder) Build() *GetRaceReportResponse {
@@ -1496,7 +1751,7 @@ type ListRaceReportsRequest struct {
 
 func (x *ListRaceReportsRequest) Reset() {
 	*x = ListRaceReportsRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[9]
+	mi := &file_races_v1_race_reports_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1508,7 +1763,7 @@ func (x *ListRaceReportsRequest) String() string {
 func (*ListRaceReportsRequest) ProtoMessage() {}
 
 func (x *ListRaceReportsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[9]
+	mi := &file_races_v1_race_reports_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1554,7 +1809,7 @@ type ListRaceReportsResponse struct {
 
 func (x *ListRaceReportsResponse) Reset() {
 	*x = ListRaceReportsResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[10]
+	mi := &file_races_v1_race_reports_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1566,7 +1821,7 @@ func (x *ListRaceReportsResponse) String() string {
 func (*ListRaceReportsResponse) ProtoMessage() {}
 
 func (x *ListRaceReportsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[10]
+	mi := &file_races_v1_race_reports_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1632,7 +1887,7 @@ type UpdateRaceReportRequest struct {
 
 func (x *UpdateRaceReportRequest) Reset() {
 	*x = UpdateRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[11]
+	mi := &file_races_v1_race_reports_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1644,7 +1899,7 @@ func (x *UpdateRaceReportRequest) String() string {
 func (*UpdateRaceReportRequest) ProtoMessage() {}
 
 func (x *UpdateRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[11]
+	mi := &file_races_v1_race_reports_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2204,6 +2459,836 @@ func (b0 UpdateRaceReportRequest_builder) Build() *UpdateRaceReportRequest {
 	return m0
 }
 
+type UploadRaceReportPhotoRequest struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ReportId       string                 `protobuf:"bytes,1,opt,name=report_id,json=reportId,proto3"`
+	xxx_hidden_Data           []byte                 `protobuf:"bytes,2,opt,name=data,proto3"`
+	xxx_hidden_Caption        string                 `protobuf:"bytes,3,opt,name=caption,proto3"`
+	xxx_hidden_Location       *v1.LatLng             `protobuf:"bytes,4,opt,name=location,proto3"`
+	xxx_hidden_TakenTime      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=taken_time,json=takenTime,proto3"`
+	xxx_hidden_TakenLocalTime string                 `protobuf:"bytes,6,opt,name=taken_local_time,json=takenLocalTime,proto3"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *UploadRaceReportPhotoRequest) Reset() {
+	*x = UploadRaceReportPhotoRequest{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadRaceReportPhotoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadRaceReportPhotoRequest) ProtoMessage() {}
+
+func (x *UploadRaceReportPhotoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *UploadRaceReportPhotoRequest) GetReportId() string {
+	if x != nil {
+		return x.xxx_hidden_ReportId
+	}
+	return ""
+}
+
+func (x *UploadRaceReportPhotoRequest) GetData() []byte {
+	if x != nil {
+		return x.xxx_hidden_Data
+	}
+	return nil
+}
+
+func (x *UploadRaceReportPhotoRequest) GetCaption() string {
+	if x != nil {
+		return x.xxx_hidden_Caption
+	}
+	return ""
+}
+
+func (x *UploadRaceReportPhotoRequest) GetLocation() *v1.LatLng {
+	if x != nil {
+		return x.xxx_hidden_Location
+	}
+	return nil
+}
+
+func (x *UploadRaceReportPhotoRequest) GetTakenTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_TakenTime
+	}
+	return nil
+}
+
+func (x *UploadRaceReportPhotoRequest) GetTakenLocalTime() string {
+	if x != nil {
+		return x.xxx_hidden_TakenLocalTime
+	}
+	return ""
+}
+
+func (x *UploadRaceReportPhotoRequest) SetReportId(v string) {
+	x.xxx_hidden_ReportId = v
+}
+
+func (x *UploadRaceReportPhotoRequest) SetData(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Data = v
+}
+
+func (x *UploadRaceReportPhotoRequest) SetCaption(v string) {
+	x.xxx_hidden_Caption = v
+}
+
+func (x *UploadRaceReportPhotoRequest) SetLocation(v *v1.LatLng) {
+	x.xxx_hidden_Location = v
+}
+
+func (x *UploadRaceReportPhotoRequest) SetTakenTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_TakenTime = v
+}
+
+func (x *UploadRaceReportPhotoRequest) SetTakenLocalTime(v string) {
+	x.xxx_hidden_TakenLocalTime = v
+}
+
+func (x *UploadRaceReportPhotoRequest) HasLocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Location != nil
+}
+
+func (x *UploadRaceReportPhotoRequest) HasTakenTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TakenTime != nil
+}
+
+func (x *UploadRaceReportPhotoRequest) ClearLocation() {
+	x.xxx_hidden_Location = nil
+}
+
+func (x *UploadRaceReportPhotoRequest) ClearTakenTime() {
+	x.xxx_hidden_TakenTime = nil
+}
+
+type UploadRaceReportPhotoRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the report.
+	ReportId string
+	// The image, as a JPEG, PNG or WebP file.
+	Data []byte
+	// The caption.
+	Caption string
+	// The GPS position recorded in the photo, if any.
+	Location *v1.LatLng
+	// When the photo was taken, if the time and its UTC offset are known.
+	TakenTime *timestamppb.Timestamp
+	// When the photo was taken as a local time without an offset
+	// (YYYY-MM-DDTHH:MM:SS), as recorded by most cameras. It is interpreted in
+	// the timezone of the report's activity, or else as UTC. Ignored if
+	// taken_time is set.
+	TakenLocalTime string
+}
+
+func (b0 UploadRaceReportPhotoRequest_builder) Build() *UploadRaceReportPhotoRequest {
+	m0 := &UploadRaceReportPhotoRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ReportId = b.ReportId
+	x.xxx_hidden_Data = b.Data
+	x.xxx_hidden_Caption = b.Caption
+	x.xxx_hidden_Location = b.Location
+	x.xxx_hidden_TakenTime = b.TakenTime
+	x.xxx_hidden_TakenLocalTime = b.TakenLocalTime
+	return m0
+}
+
+type UploadRaceReportPhotoResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Photo *RaceReportPhoto       `protobuf:"bytes,1,opt,name=photo,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UploadRaceReportPhotoResponse) Reset() {
+	*x = UploadRaceReportPhotoResponse{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadRaceReportPhotoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadRaceReportPhotoResponse) ProtoMessage() {}
+
+func (x *UploadRaceReportPhotoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *UploadRaceReportPhotoResponse) GetPhoto() *RaceReportPhoto {
+	if x != nil {
+		return x.xxx_hidden_Photo
+	}
+	return nil
+}
+
+func (x *UploadRaceReportPhotoResponse) SetPhoto(v *RaceReportPhoto) {
+	x.xxx_hidden_Photo = v
+}
+
+func (x *UploadRaceReportPhotoResponse) HasPhoto() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Photo != nil
+}
+
+func (x *UploadRaceReportPhotoResponse) ClearPhoto() {
+	x.xxx_hidden_Photo = nil
+}
+
+type UploadRaceReportPhotoResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The uploaded photo.
+	Photo *RaceReportPhoto
+}
+
+func (b0 UploadRaceReportPhotoResponse_builder) Build() *UploadRaceReportPhotoResponse {
+	m0 := &UploadRaceReportPhotoResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Photo = b.Photo
+	return m0
+}
+
+type CreateRaceReportPhotoUploadRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ReportId string                 `protobuf:"bytes,1,opt,name=report_id,json=reportId,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *CreateRaceReportPhotoUploadRequest) Reset() {
+	*x = CreateRaceReportPhotoUploadRequest{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRaceReportPhotoUploadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRaceReportPhotoUploadRequest) ProtoMessage() {}
+
+func (x *CreateRaceReportPhotoUploadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CreateRaceReportPhotoUploadRequest) GetReportId() string {
+	if x != nil {
+		return x.xxx_hidden_ReportId
+	}
+	return ""
+}
+
+func (x *CreateRaceReportPhotoUploadRequest) SetReportId(v string) {
+	x.xxx_hidden_ReportId = v
+}
+
+type CreateRaceReportPhotoUploadRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the report.
+	ReportId string
+}
+
+func (b0 CreateRaceReportPhotoUploadRequest_builder) Build() *CreateRaceReportPhotoUploadRequest {
+	m0 := &CreateRaceReportPhotoUploadRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ReportId = b.ReportId
+	return m0
+}
+
+type CreateRaceReportPhotoUploadResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Upload *v11.PhotoUpload       `protobuf:"bytes,1,opt,name=upload,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) Reset() {
+	*x = CreateRaceReportPhotoUploadResponse{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRaceReportPhotoUploadResponse) ProtoMessage() {}
+
+func (x *CreateRaceReportPhotoUploadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) GetUpload() *v11.PhotoUpload {
+	if x != nil {
+		return x.xxx_hidden_Upload
+	}
+	return nil
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) SetUpload(v *v11.PhotoUpload) {
+	x.xxx_hidden_Upload = v
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) HasUpload() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Upload != nil
+}
+
+func (x *CreateRaceReportPhotoUploadResponse) ClearUpload() {
+	x.xxx_hidden_Upload = nil
+}
+
+type CreateRaceReportPhotoUploadResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The link to upload photos with.
+	Upload *v11.PhotoUpload
+}
+
+func (b0 CreateRaceReportPhotoUploadResponse_builder) Build() *CreateRaceReportPhotoUploadResponse {
+	m0 := &CreateRaceReportPhotoUploadResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Upload = b.Upload
+	return m0
+}
+
+type UpdateRaceReportPhotoRequest struct {
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id            string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Caption       *string                `protobuf:"bytes,2,opt,name=caption,proto3,oneof"`
+	xxx_hidden_Location      *v1.LatLng             `protobuf:"bytes,3,opt,name=location,proto3"`
+	xxx_hidden_ClearLocation bool                   `protobuf:"varint,4,opt,name=clear_location,json=clearLocation,proto3"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *UpdateRaceReportPhotoRequest) Reset() {
+	*x = UpdateRaceReportPhotoRequest{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRaceReportPhotoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRaceReportPhotoRequest) ProtoMessage() {}
+
+func (x *UpdateRaceReportPhotoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *UpdateRaceReportPhotoRequest) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *UpdateRaceReportPhotoRequest) GetCaption() string {
+	if x != nil {
+		if x.xxx_hidden_Caption != nil {
+			return *x.xxx_hidden_Caption
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *UpdateRaceReportPhotoRequest) GetLocation() *v1.LatLng {
+	if x != nil {
+		return x.xxx_hidden_Location
+	}
+	return nil
+}
+
+func (x *UpdateRaceReportPhotoRequest) GetClearLocation() bool {
+	if x != nil {
+		return x.xxx_hidden_ClearLocation
+	}
+	return false
+}
+
+func (x *UpdateRaceReportPhotoRequest) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *UpdateRaceReportPhotoRequest) SetCaption(v string) {
+	x.xxx_hidden_Caption = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *UpdateRaceReportPhotoRequest) SetLocation(v *v1.LatLng) {
+	x.xxx_hidden_Location = v
+}
+
+func (x *UpdateRaceReportPhotoRequest) SetClearLocation(v bool) {
+	x.xxx_hidden_ClearLocation = v
+}
+
+func (x *UpdateRaceReportPhotoRequest) HasCaption() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *UpdateRaceReportPhotoRequest) HasLocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Location != nil
+}
+
+func (x *UpdateRaceReportPhotoRequest) ClearCaption() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Caption = nil
+}
+
+func (x *UpdateRaceReportPhotoRequest) ClearLocation() {
+	x.xxx_hidden_Location = nil
+}
+
+type UpdateRaceReportPhotoRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the photo.
+	Id string
+	// The new caption, if set. At most 2000 characters.
+	Caption *string
+	// The new location, if set. The location is then manual.
+	Location *v1.LatLng
+	// Remove the location.
+	ClearLocation bool
+}
+
+func (b0 UpdateRaceReportPhotoRequest_builder) Build() *UpdateRaceReportPhotoRequest {
+	m0 := &UpdateRaceReportPhotoRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	if b.Caption != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_Caption = b.Caption
+	}
+	x.xxx_hidden_Location = b.Location
+	x.xxx_hidden_ClearLocation = b.ClearLocation
+	return m0
+}
+
+type UpdateRaceReportPhotoResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Photo *RaceReportPhoto       `protobuf:"bytes,1,opt,name=photo,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UpdateRaceReportPhotoResponse) Reset() {
+	*x = UpdateRaceReportPhotoResponse{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRaceReportPhotoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRaceReportPhotoResponse) ProtoMessage() {}
+
+func (x *UpdateRaceReportPhotoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *UpdateRaceReportPhotoResponse) GetPhoto() *RaceReportPhoto {
+	if x != nil {
+		return x.xxx_hidden_Photo
+	}
+	return nil
+}
+
+func (x *UpdateRaceReportPhotoResponse) SetPhoto(v *RaceReportPhoto) {
+	x.xxx_hidden_Photo = v
+}
+
+func (x *UpdateRaceReportPhotoResponse) HasPhoto() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Photo != nil
+}
+
+func (x *UpdateRaceReportPhotoResponse) ClearPhoto() {
+	x.xxx_hidden_Photo = nil
+}
+
+type UpdateRaceReportPhotoResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The updated photo.
+	Photo *RaceReportPhoto
+}
+
+func (b0 UpdateRaceReportPhotoResponse_builder) Build() *UpdateRaceReportPhotoResponse {
+	m0 := &UpdateRaceReportPhotoResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Photo = b.Photo
+	return m0
+}
+
+type DeleteRaceReportPhotoRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRaceReportPhotoRequest) Reset() {
+	*x = DeleteRaceReportPhotoRequest{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRaceReportPhotoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRaceReportPhotoRequest) ProtoMessage() {}
+
+func (x *DeleteRaceReportPhotoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DeleteRaceReportPhotoRequest) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *DeleteRaceReportPhotoRequest) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+type DeleteRaceReportPhotoRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the photo.
+	Id string
+}
+
+func (b0 DeleteRaceReportPhotoRequest_builder) Build() *DeleteRaceReportPhotoRequest {
+	m0 := &DeleteRaceReportPhotoRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	return m0
+}
+
+type DeleteRaceReportPhotoResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRaceReportPhotoResponse) Reset() {
+	*x = DeleteRaceReportPhotoResponse{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRaceReportPhotoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRaceReportPhotoResponse) ProtoMessage() {}
+
+func (x *DeleteRaceReportPhotoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type DeleteRaceReportPhotoResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 DeleteRaceReportPhotoResponse_builder) Build() *DeleteRaceReportPhotoResponse {
+	m0 := &DeleteRaceReportPhotoResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetRaceReportPhotoRequest struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id   string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Size v11.PhotoSize          `protobuf:"varint,2,opt,name=size,proto3,enum=trips.v1.PhotoSize"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetRaceReportPhotoRequest) Reset() {
+	*x = GetRaceReportPhotoRequest{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRaceReportPhotoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRaceReportPhotoRequest) ProtoMessage() {}
+
+func (x *GetRaceReportPhotoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetRaceReportPhotoRequest) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *GetRaceReportPhotoRequest) GetSize() v11.PhotoSize {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return v11.PhotoSize(0)
+}
+
+func (x *GetRaceReportPhotoRequest) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *GetRaceReportPhotoRequest) SetSize(v v11.PhotoSize) {
+	x.xxx_hidden_Size = v
+}
+
+type GetRaceReportPhotoRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the photo.
+	Id string
+	// The size of the image. Defaults to the thumbnail.
+	Size v11.PhotoSize
+}
+
+func (b0 GetRaceReportPhotoRequest_builder) Build() *GetRaceReportPhotoRequest {
+	m0 := &GetRaceReportPhotoRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Size = b.Size
+	return m0
+}
+
+type GetRaceReportPhotoResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Photo *RaceReportPhoto       `protobuf:"bytes,1,opt,name=photo,proto3"`
+	xxx_hidden_Image *v13.Image             `protobuf:"bytes,2,opt,name=image,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetRaceReportPhotoResponse) Reset() {
+	*x = GetRaceReportPhotoResponse{}
+	mi := &file_races_v1_race_reports_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRaceReportPhotoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRaceReportPhotoResponse) ProtoMessage() {}
+
+func (x *GetRaceReportPhotoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_races_v1_race_reports_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetRaceReportPhotoResponse) GetPhoto() *RaceReportPhoto {
+	if x != nil {
+		return x.xxx_hidden_Photo
+	}
+	return nil
+}
+
+func (x *GetRaceReportPhotoResponse) GetImage() *v13.Image {
+	if x != nil {
+		return x.xxx_hidden_Image
+	}
+	return nil
+}
+
+func (x *GetRaceReportPhotoResponse) SetPhoto(v *RaceReportPhoto) {
+	x.xxx_hidden_Photo = v
+}
+
+func (x *GetRaceReportPhotoResponse) SetImage(v *v13.Image) {
+	x.xxx_hidden_Image = v
+}
+
+func (x *GetRaceReportPhotoResponse) HasPhoto() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Photo != nil
+}
+
+func (x *GetRaceReportPhotoResponse) HasImage() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Image != nil
+}
+
+func (x *GetRaceReportPhotoResponse) ClearPhoto() {
+	x.xxx_hidden_Photo = nil
+}
+
+func (x *GetRaceReportPhotoResponse) ClearImage() {
+	x.xxx_hidden_Image = nil
+}
+
+type GetRaceReportPhotoResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The photo.
+	Photo *RaceReportPhoto
+	// The photo's image, a JPEG.
+	Image *v13.Image
+}
+
+func (b0 GetRaceReportPhotoResponse_builder) Build() *GetRaceReportPhotoResponse {
+	m0 := &GetRaceReportPhotoResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Photo = b.Photo
+	x.xxx_hidden_Image = b.Image
+	return m0
+}
+
 type SetRaceReportSegmentsRequest struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_ReportId string                 `protobuf:"bytes,1,opt,name=report_id,json=reportId,proto3"`
@@ -2214,7 +3299,7 @@ type SetRaceReportSegmentsRequest struct {
 
 func (x *SetRaceReportSegmentsRequest) Reset() {
 	*x = SetRaceReportSegmentsRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[12]
+	mi := &file_races_v1_race_reports_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2226,7 +3311,7 @@ func (x *SetRaceReportSegmentsRequest) String() string {
 func (*SetRaceReportSegmentsRequest) ProtoMessage() {}
 
 func (x *SetRaceReportSegmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[12]
+	mi := &file_races_v1_race_reports_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2288,7 +3373,7 @@ type SetRaceReportSegmentsResponse struct {
 
 func (x *SetRaceReportSegmentsResponse) Reset() {
 	*x = SetRaceReportSegmentsResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[13]
+	mi := &file_races_v1_race_reports_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2300,7 +3385,7 @@ func (x *SetRaceReportSegmentsResponse) String() string {
 func (*SetRaceReportSegmentsResponse) ProtoMessage() {}
 
 func (x *SetRaceReportSegmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[13]
+	mi := &file_races_v1_race_reports_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2357,7 +3442,7 @@ type SuggestRaceReportSegmentsRequest struct {
 
 func (x *SuggestRaceReportSegmentsRequest) Reset() {
 	*x = SuggestRaceReportSegmentsRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[14]
+	mi := &file_races_v1_race_reports_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2369,7 +3454,7 @@ func (x *SuggestRaceReportSegmentsRequest) String() string {
 func (*SuggestRaceReportSegmentsRequest) ProtoMessage() {}
 
 func (x *SuggestRaceReportSegmentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[14]
+	mi := &file_races_v1_race_reports_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2415,7 +3500,7 @@ type SuggestRaceReportSegmentsResponse struct {
 
 func (x *SuggestRaceReportSegmentsResponse) Reset() {
 	*x = SuggestRaceReportSegmentsResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[15]
+	mi := &file_races_v1_race_reports_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2427,7 +3512,7 @@ func (x *SuggestRaceReportSegmentsResponse) String() string {
 func (*SuggestRaceReportSegmentsResponse) ProtoMessage() {}
 
 func (x *SuggestRaceReportSegmentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[15]
+	mi := &file_races_v1_race_reports_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2476,7 +3561,7 @@ type UpdateRaceReportResponse struct {
 
 func (x *UpdateRaceReportResponse) Reset() {
 	*x = UpdateRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[16]
+	mi := &file_races_v1_race_reports_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2488,7 +3573,7 @@ func (x *UpdateRaceReportResponse) String() string {
 func (*UpdateRaceReportResponse) ProtoMessage() {}
 
 func (x *UpdateRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[16]
+	mi := &file_races_v1_race_reports_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2570,7 +3655,7 @@ type DeleteRaceReportRequest struct {
 
 func (x *DeleteRaceReportRequest) Reset() {
 	*x = DeleteRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[17]
+	mi := &file_races_v1_race_reports_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2582,7 +3667,7 @@ func (x *DeleteRaceReportRequest) String() string {
 func (*DeleteRaceReportRequest) ProtoMessage() {}
 
 func (x *DeleteRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[17]
+	mi := &file_races_v1_race_reports_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2627,7 +3712,7 @@ type DeleteRaceReportResponse struct {
 
 func (x *DeleteRaceReportResponse) Reset() {
 	*x = DeleteRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[18]
+	mi := &file_races_v1_race_reports_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2639,7 +3724,7 @@ func (x *DeleteRaceReportResponse) String() string {
 func (*DeleteRaceReportResponse) ProtoMessage() {}
 
 func (x *DeleteRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[18]
+	mi := &file_races_v1_race_reports_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2671,7 +3756,7 @@ type PublishRaceReportRequest struct {
 
 func (x *PublishRaceReportRequest) Reset() {
 	*x = PublishRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[19]
+	mi := &file_races_v1_race_reports_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2683,7 +3768,7 @@ func (x *PublishRaceReportRequest) String() string {
 func (*PublishRaceReportRequest) ProtoMessage() {}
 
 func (x *PublishRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[19]
+	mi := &file_races_v1_race_reports_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2729,7 +3814,7 @@ type PublishRaceReportResponse struct {
 
 func (x *PublishRaceReportResponse) Reset() {
 	*x = PublishRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[20]
+	mi := &file_races_v1_race_reports_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2741,7 +3826,7 @@ func (x *PublishRaceReportResponse) String() string {
 func (*PublishRaceReportResponse) ProtoMessage() {}
 
 func (x *PublishRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[20]
+	mi := &file_races_v1_race_reports_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2798,7 +3883,7 @@ type UnpublishRaceReportRequest struct {
 
 func (x *UnpublishRaceReportRequest) Reset() {
 	*x = UnpublishRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[21]
+	mi := &file_races_v1_race_reports_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2810,7 +3895,7 @@ func (x *UnpublishRaceReportRequest) String() string {
 func (*UnpublishRaceReportRequest) ProtoMessage() {}
 
 func (x *UnpublishRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[21]
+	mi := &file_races_v1_race_reports_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2856,7 +3941,7 @@ type UnpublishRaceReportResponse struct {
 
 func (x *UnpublishRaceReportResponse) Reset() {
 	*x = UnpublishRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[22]
+	mi := &file_races_v1_race_reports_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2868,7 +3953,7 @@ func (x *UnpublishRaceReportResponse) String() string {
 func (*UnpublishRaceReportResponse) ProtoMessage() {}
 
 func (x *UnpublishRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[22]
+	mi := &file_races_v1_race_reports_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2925,7 +4010,7 @@ type ListPublicRaceReportsRequest struct {
 
 func (x *ListPublicRaceReportsRequest) Reset() {
 	*x = ListPublicRaceReportsRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[23]
+	mi := &file_races_v1_race_reports_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2937,7 +4022,7 @@ func (x *ListPublicRaceReportsRequest) String() string {
 func (*ListPublicRaceReportsRequest) ProtoMessage() {}
 
 func (x *ListPublicRaceReportsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[23]
+	mi := &file_races_v1_race_reports_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2983,7 +4068,7 @@ type ListPublicRaceReportsResponse struct {
 
 func (x *ListPublicRaceReportsResponse) Reset() {
 	*x = ListPublicRaceReportsResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[24]
+	mi := &file_races_v1_race_reports_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2995,7 +4080,7 @@ func (x *ListPublicRaceReportsResponse) String() string {
 func (*ListPublicRaceReportsResponse) ProtoMessage() {}
 
 func (x *ListPublicRaceReportsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[24]
+	mi := &file_races_v1_race_reports_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3044,7 +4129,7 @@ type GetPublicRaceReportRequest struct {
 
 func (x *GetPublicRaceReportRequest) Reset() {
 	*x = GetPublicRaceReportRequest{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[25]
+	mi := &file_races_v1_race_reports_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3056,7 +4141,7 @@ func (x *GetPublicRaceReportRequest) String() string {
 func (*GetPublicRaceReportRequest) ProtoMessage() {}
 
 func (x *GetPublicRaceReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[25]
+	mi := &file_races_v1_race_reports_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3112,7 +4197,7 @@ type GetPublicRaceReportResponse struct {
 	xxx_hidden_Report      *RaceReport            `protobuf:"bytes,1,opt,name=report,proto3"`
 	xxx_hidden_Comparison  *RaceComparison        `protobuf:"bytes,2,opt,name=comparison,proto3"`
 	xxx_hidden_AuthorName  string                 `protobuf:"bytes,3,opt,name=author_name,json=authorName,proto3"`
-	xxx_hidden_Track       *[]*v1.RoutePoint      `protobuf:"bytes,4,rep,name=track,proto3"`
+	xxx_hidden_Track       *[]*v12.RoutePoint     `protobuf:"bytes,4,rep,name=track,proto3"`
 	xxx_hidden_TrackBreaks []int32                `protobuf:"varint,5,rep,packed,name=track_breaks,json=trackBreaks,proto3"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -3120,7 +4205,7 @@ type GetPublicRaceReportResponse struct {
 
 func (x *GetPublicRaceReportResponse) Reset() {
 	*x = GetPublicRaceReportResponse{}
-	mi := &file_races_v1_race_reports_proto_msgTypes[26]
+	mi := &file_races_v1_race_reports_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3132,7 +4217,7 @@ func (x *GetPublicRaceReportResponse) String() string {
 func (*GetPublicRaceReportResponse) ProtoMessage() {}
 
 func (x *GetPublicRaceReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_races_v1_race_reports_proto_msgTypes[26]
+	mi := &file_races_v1_race_reports_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3164,7 +4249,7 @@ func (x *GetPublicRaceReportResponse) GetAuthorName() string {
 	return ""
 }
 
-func (x *GetPublicRaceReportResponse) GetTrack() []*v1.RoutePoint {
+func (x *GetPublicRaceReportResponse) GetTrack() []*v12.RoutePoint {
 	if x != nil {
 		if x.xxx_hidden_Track != nil {
 			return *x.xxx_hidden_Track
@@ -3192,7 +4277,7 @@ func (x *GetPublicRaceReportResponse) SetAuthorName(v string) {
 	x.xxx_hidden_AuthorName = v
 }
 
-func (x *GetPublicRaceReportResponse) SetTrack(v []*v1.RoutePoint) {
+func (x *GetPublicRaceReportResponse) SetTrack(v []*v12.RoutePoint) {
 	x.xxx_hidden_Track = &v
 }
 
@@ -3225,7 +4310,7 @@ func (x *GetPublicRaceReportResponse) ClearComparison() {
 type GetPublicRaceReportResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The report.
+	// The report. Photos taken in the author's privacy zones have no location.
 	Report *RaceReport
 	// The comparison with the race plan.
 	Comparison *RaceComparison
@@ -3234,7 +4319,7 @@ type GetPublicRaceReportResponse_builder struct {
 	// The report's track, without the stretches in the author's privacy
 	// zones, see UserService. Its distances are along the whole track, like the
 	// segments'.
-	Track []*v1.RoutePoint
+	Track []*v12.RoutePoint
 	// The indexes of the track's points that start a new piece of it, after a
 	// stretch hidden in a privacy zone. Don't join them to the point before.
 	TrackBreaks []int32
@@ -3256,7 +4341,7 @@ var File_races_v1_race_reports_proto protoreflect.FileDescriptor
 
 const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\n" +
-	"\x1braces/v1/race_reports.proto\x12\braces.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\x1a\x16routes/v1/routes.proto\"\xf2\b\n" +
+	"\x1braces/v1/race_reports.proto\x12\braces.v1\x1a\x10geo/v1/geo.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12mcp/v1/image.proto\x1a\x14mcp/v1/options.proto\x1a\x16routes/v1/routes.proto\x1a\x14trips/v1/trips.proto\"\xad\t\n" +
 	"\n" +
 	"RaceReport\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x02id\x12\x1f\n" +
@@ -3292,7 +4377,22 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\x0fstop_checkpoint\x18\x1a \x01(\tR\x0estopCheckpoint\x12!\n" +
 	"\fstop_seconds\x18\x1b \x01(\x05R\vstopSeconds\x12?\n" +
 	"\bsegments\x18\x1c \x03(\v2\x1b.races.v1.RaceReportSegmentB\x06\xaa\x9f\x19\x02\b\x01R\bsegments\x12#\n" +
-	"\thas_track\x18\x1d \x01(\bB\x06\xaa\x9f\x19\x02\b\x01R\bhasTrack\"\xa1\x01\n" +
+	"\thas_track\x18\x1d \x01(\bB\x06\xaa\x9f\x19\x02\b\x01R\bhasTrack\x129\n" +
+	"\x06photos\x18\x1e \x03(\v2\x19.races.v1.RaceReportPhotoB\x06\xaa\x9f\x19\x02\b\x01R\x06photos\"\xdd\x03\n" +
+	"\x0fRaceReportPhoto\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x02id\x12\x18\n" +
+	"\acaption\x18\x02 \x01(\tR\acaption\x12*\n" +
+	"\blocation\x18\x03 \x01(\v2\x0e.geo.v1.LatLngR\blocation\x12I\n" +
+	"\x0flocation_source\x18\x04 \x01(\x0e2\x18.trips.v1.LocationSourceB\x06\xaa\x9f\x19\x02\b\x01R\x0elocationSource\x12?\n" +
+	"\x15track_distance_meters\x18\x05 \x01(\x01B\x06\xaa\x9f\x19\x02\b\x01H\x00R\x13trackDistanceMeters\x88\x01\x01\x12A\n" +
+	"\n" +
+	"taken_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\ttakenTime\x12\x1c\n" +
+	"\x05width\x18\a \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x05width\x12\x1e\n" +
+	"\x06height\x18\b \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x06height\x12\x18\n" +
+	"\x03url\x18\t \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x03url\x12+\n" +
+	"\rthumbnail_url\x18\n" +
+	" \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\fthumbnailUrlB\x18\n" +
+	"\x16_track_distance_meters\"\xa1\x01\n" +
 	"\x11RaceReportSegment\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x12\n" +
 	"\x04body\x18\x02 \x01(\tR\x04body\x122\n" +
@@ -3386,7 +4486,39 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\x0f_did_not_finishB\x17\n" +
 	"\x15_stop_distance_metersB\x12\n" +
 	"\x10_stop_checkpointB\x0f\n" +
-	"\r_stop_seconds\"t\n" +
+	"\r_stop_seconds\"\xfa\x01\n" +
+	"\x1cUploadRaceReportPhotoRequest\x12\x1b\n" +
+	"\treport_id\x18\x01 \x01(\tR\breportId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\x12\x18\n" +
+	"\acaption\x18\x03 \x01(\tR\acaption\x12*\n" +
+	"\blocation\x18\x04 \x01(\v2\x0e.geo.v1.LatLngR\blocation\x129\n" +
+	"\n" +
+	"taken_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\ttakenTime\x12(\n" +
+	"\x10taken_local_time\x18\x06 \x01(\tR\x0etakenLocalTime\"P\n" +
+	"\x1dUploadRaceReportPhotoResponse\x12/\n" +
+	"\x05photo\x18\x01 \x01(\v2\x19.races.v1.RaceReportPhotoR\x05photo\"A\n" +
+	"\"CreateRaceReportPhotoUploadRequest\x12\x1b\n" +
+	"\treport_id\x18\x01 \x01(\tR\breportId\"T\n" +
+	"#CreateRaceReportPhotoUploadResponse\x12-\n" +
+	"\x06upload\x18\x01 \x01(\v2\x15.trips.v1.PhotoUploadR\x06upload\"\xac\x01\n" +
+	"\x1cUpdateRaceReportPhotoRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\acaption\x18\x02 \x01(\tH\x00R\acaption\x88\x01\x01\x12*\n" +
+	"\blocation\x18\x03 \x01(\v2\x0e.geo.v1.LatLngR\blocation\x12%\n" +
+	"\x0eclear_location\x18\x04 \x01(\bR\rclearLocationB\n" +
+	"\n" +
+	"\b_caption\"P\n" +
+	"\x1dUpdateRaceReportPhotoResponse\x12/\n" +
+	"\x05photo\x18\x01 \x01(\v2\x19.races.v1.RaceReportPhotoR\x05photo\".\n" +
+	"\x1cDeleteRaceReportPhotoRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x1f\n" +
+	"\x1dDeleteRaceReportPhotoResponse\"T\n" +
+	"\x19GetRaceReportPhotoRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
+	"\x04size\x18\x02 \x01(\x0e2\x13.trips.v1.PhotoSizeR\x04size\"r\n" +
+	"\x1aGetRaceReportPhotoResponse\x12/\n" +
+	"\x05photo\x18\x01 \x01(\v2\x19.races.v1.RaceReportPhotoR\x05photo\x12#\n" +
+	"\x05image\x18\x02 \x01(\v2\r.mcp.v1.ImageR\x05image\"t\n" +
 	"\x1cSetRaceReportSegmentsRequest\x12\x1b\n" +
 	"\treport_id\x18\x01 \x01(\tR\breportId\x127\n" +
 	"\bsegments\x18\x02 \x03(\v2\x1b.races.v1.RaceReportSegmentR\bsegments\"M\n" +
@@ -3431,7 +4563,7 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\x11ActualTimesSource\x12#\n" +
 	"\x1fACTUAL_TIMES_SOURCE_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cACTUAL_TIMES_SOURCE_ACTIVITY\x10\x01\x12 \n" +
-	"\x1cACTUAL_TIMES_SOURCE_RACE_DAY\x10\x022\xde\b\n" +
+	"\x1cACTUAL_TIMES_SOURCE_RACE_DAY\x10\x022\x81\r\n" +
 	"\x11RaceReportService\x12Y\n" +
 	"\x10CreateRaceReport\x12!.races.v1.CreateRaceReportRequest\x1a\".races.v1.CreateRaceReportResponse\x12P\n" +
 	"\rGetRaceReport\x12\x1e.races.v1.GetRaceReportRequest\x1a\x1f.races.v1.GetRaceReportResponse\x12V\n" +
@@ -3439,7 +4571,12 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\x10UpdateRaceReport\x12!.races.v1.UpdateRaceReportRequest\x1a\".races.v1.UpdateRaceReportResponse\x12Y\n" +
 	"\x10DeleteRaceReport\x12!.races.v1.DeleteRaceReportRequest\x1a\".races.v1.DeleteRaceReportResponse\x12h\n" +
 	"\x15SetRaceReportSegments\x12&.races.v1.SetRaceReportSegmentsRequest\x1a'.races.v1.SetRaceReportSegmentsResponse\x12t\n" +
-	"\x19SuggestRaceReportSegments\x12*.races.v1.SuggestRaceReportSegmentsRequest\x1a+.races.v1.SuggestRaceReportSegmentsResponse\x12d\n" +
+	"\x19SuggestRaceReportSegments\x12*.races.v1.SuggestRaceReportSegmentsRequest\x1a+.races.v1.SuggestRaceReportSegmentsResponse\x12p\n" +
+	"\x15UploadRaceReportPhoto\x12&.races.v1.UploadRaceReportPhotoRequest\x1a'.races.v1.UploadRaceReportPhotoResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12z\n" +
+	"\x1bCreateRaceReportPhotoUpload\x12,.races.v1.CreateRaceReportPhotoUploadRequest\x1a-.races.v1.CreateRaceReportPhotoUploadResponse\x12h\n" +
+	"\x15UpdateRaceReportPhoto\x12&.races.v1.UpdateRaceReportPhotoRequest\x1a'.races.v1.UpdateRaceReportPhotoResponse\x12h\n" +
+	"\x15DeleteRaceReportPhoto\x12&.races.v1.DeleteRaceReportPhotoRequest\x1a'.races.v1.DeleteRaceReportPhotoResponse\x12_\n" +
+	"\x12GetRaceReportPhoto\x12#.races.v1.GetRaceReportPhotoRequest\x1a$.races.v1.GetRaceReportPhotoResponse\x12d\n" +
 	"\x11PublishRaceReport\x12\".races.v1.PublishRaceReportRequest\x1a#.races.v1.PublishRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12j\n" +
 	"\x13UnpublishRaceReport\x12$.races.v1.UnpublishRaceReportRequest\x1a%.races.v1.UnpublishRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12p\n" +
 	"\x15ListPublicRaceReports\x12&.races.v1.ListPublicRaceReportsRequest\x1a'.races.v1.ListPublicRaceReportsResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12j\n" +
@@ -3447,91 +4584,130 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\fcom.races.v1B\x10RaceReportsProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
 
 var file_races_v1_race_reports_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_races_v1_race_reports_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_races_v1_race_reports_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_races_v1_race_reports_proto_goTypes = []any{
-	(ActualTimesSource)(0),                    // 0: races.v1.ActualTimesSource
-	(*RaceReport)(nil),                        // 1: races.v1.RaceReport
-	(*RaceReportSegment)(nil),                 // 2: races.v1.RaceReportSegment
-	(*RaceComparison)(nil),                    // 3: races.v1.RaceComparison
-	(*GoalResult)(nil),                        // 4: races.v1.GoalResult
-	(*CheckpointResult)(nil),                  // 5: races.v1.CheckpointResult
-	(*CreateRaceReportRequest)(nil),           // 6: races.v1.CreateRaceReportRequest
-	(*CreateRaceReportResponse)(nil),          // 7: races.v1.CreateRaceReportResponse
-	(*GetRaceReportRequest)(nil),              // 8: races.v1.GetRaceReportRequest
-	(*GetRaceReportResponse)(nil),             // 9: races.v1.GetRaceReportResponse
-	(*ListRaceReportsRequest)(nil),            // 10: races.v1.ListRaceReportsRequest
-	(*ListRaceReportsResponse)(nil),           // 11: races.v1.ListRaceReportsResponse
-	(*UpdateRaceReportRequest)(nil),           // 12: races.v1.UpdateRaceReportRequest
-	(*SetRaceReportSegmentsRequest)(nil),      // 13: races.v1.SetRaceReportSegmentsRequest
-	(*SetRaceReportSegmentsResponse)(nil),     // 14: races.v1.SetRaceReportSegmentsResponse
-	(*SuggestRaceReportSegmentsRequest)(nil),  // 15: races.v1.SuggestRaceReportSegmentsRequest
-	(*SuggestRaceReportSegmentsResponse)(nil), // 16: races.v1.SuggestRaceReportSegmentsResponse
-	(*UpdateRaceReportResponse)(nil),          // 17: races.v1.UpdateRaceReportResponse
-	(*DeleteRaceReportRequest)(nil),           // 18: races.v1.DeleteRaceReportRequest
-	(*DeleteRaceReportResponse)(nil),          // 19: races.v1.DeleteRaceReportResponse
-	(*PublishRaceReportRequest)(nil),          // 20: races.v1.PublishRaceReportRequest
-	(*PublishRaceReportResponse)(nil),         // 21: races.v1.PublishRaceReportResponse
-	(*UnpublishRaceReportRequest)(nil),        // 22: races.v1.UnpublishRaceReportRequest
-	(*UnpublishRaceReportResponse)(nil),       // 23: races.v1.UnpublishRaceReportResponse
-	(*ListPublicRaceReportsRequest)(nil),      // 24: races.v1.ListPublicRaceReportsRequest
-	(*ListPublicRaceReportsResponse)(nil),     // 25: races.v1.ListPublicRaceReportsResponse
-	(*GetPublicRaceReportRequest)(nil),        // 26: races.v1.GetPublicRaceReportRequest
-	(*GetPublicRaceReportResponse)(nil),       // 27: races.v1.GetPublicRaceReportResponse
-	(*timestamppb.Timestamp)(nil),             // 28: google.protobuf.Timestamp
-	(*v1.RoutePoint)(nil),                     // 29: routes.v1.RoutePoint
+	(ActualTimesSource)(0),                      // 0: races.v1.ActualTimesSource
+	(*RaceReport)(nil),                          // 1: races.v1.RaceReport
+	(*RaceReportPhoto)(nil),                     // 2: races.v1.RaceReportPhoto
+	(*RaceReportSegment)(nil),                   // 3: races.v1.RaceReportSegment
+	(*RaceComparison)(nil),                      // 4: races.v1.RaceComparison
+	(*GoalResult)(nil),                          // 5: races.v1.GoalResult
+	(*CheckpointResult)(nil),                    // 6: races.v1.CheckpointResult
+	(*CreateRaceReportRequest)(nil),             // 7: races.v1.CreateRaceReportRequest
+	(*CreateRaceReportResponse)(nil),            // 8: races.v1.CreateRaceReportResponse
+	(*GetRaceReportRequest)(nil),                // 9: races.v1.GetRaceReportRequest
+	(*GetRaceReportResponse)(nil),               // 10: races.v1.GetRaceReportResponse
+	(*ListRaceReportsRequest)(nil),              // 11: races.v1.ListRaceReportsRequest
+	(*ListRaceReportsResponse)(nil),             // 12: races.v1.ListRaceReportsResponse
+	(*UpdateRaceReportRequest)(nil),             // 13: races.v1.UpdateRaceReportRequest
+	(*UploadRaceReportPhotoRequest)(nil),        // 14: races.v1.UploadRaceReportPhotoRequest
+	(*UploadRaceReportPhotoResponse)(nil),       // 15: races.v1.UploadRaceReportPhotoResponse
+	(*CreateRaceReportPhotoUploadRequest)(nil),  // 16: races.v1.CreateRaceReportPhotoUploadRequest
+	(*CreateRaceReportPhotoUploadResponse)(nil), // 17: races.v1.CreateRaceReportPhotoUploadResponse
+	(*UpdateRaceReportPhotoRequest)(nil),        // 18: races.v1.UpdateRaceReportPhotoRequest
+	(*UpdateRaceReportPhotoResponse)(nil),       // 19: races.v1.UpdateRaceReportPhotoResponse
+	(*DeleteRaceReportPhotoRequest)(nil),        // 20: races.v1.DeleteRaceReportPhotoRequest
+	(*DeleteRaceReportPhotoResponse)(nil),       // 21: races.v1.DeleteRaceReportPhotoResponse
+	(*GetRaceReportPhotoRequest)(nil),           // 22: races.v1.GetRaceReportPhotoRequest
+	(*GetRaceReportPhotoResponse)(nil),          // 23: races.v1.GetRaceReportPhotoResponse
+	(*SetRaceReportSegmentsRequest)(nil),        // 24: races.v1.SetRaceReportSegmentsRequest
+	(*SetRaceReportSegmentsResponse)(nil),       // 25: races.v1.SetRaceReportSegmentsResponse
+	(*SuggestRaceReportSegmentsRequest)(nil),    // 26: races.v1.SuggestRaceReportSegmentsRequest
+	(*SuggestRaceReportSegmentsResponse)(nil),   // 27: races.v1.SuggestRaceReportSegmentsResponse
+	(*UpdateRaceReportResponse)(nil),            // 28: races.v1.UpdateRaceReportResponse
+	(*DeleteRaceReportRequest)(nil),             // 29: races.v1.DeleteRaceReportRequest
+	(*DeleteRaceReportResponse)(nil),            // 30: races.v1.DeleteRaceReportResponse
+	(*PublishRaceReportRequest)(nil),            // 31: races.v1.PublishRaceReportRequest
+	(*PublishRaceReportResponse)(nil),           // 32: races.v1.PublishRaceReportResponse
+	(*UnpublishRaceReportRequest)(nil),          // 33: races.v1.UnpublishRaceReportRequest
+	(*UnpublishRaceReportResponse)(nil),         // 34: races.v1.UnpublishRaceReportResponse
+	(*ListPublicRaceReportsRequest)(nil),        // 35: races.v1.ListPublicRaceReportsRequest
+	(*ListPublicRaceReportsResponse)(nil),       // 36: races.v1.ListPublicRaceReportsResponse
+	(*GetPublicRaceReportRequest)(nil),          // 37: races.v1.GetPublicRaceReportRequest
+	(*GetPublicRaceReportResponse)(nil),         // 38: races.v1.GetPublicRaceReportResponse
+	(*timestamppb.Timestamp)(nil),               // 39: google.protobuf.Timestamp
+	(*v1.LatLng)(nil),                           // 40: geo.v1.LatLng
+	(v11.LocationSource)(0),                     // 41: trips.v1.LocationSource
+	(*v12.RoutePoint)(nil),                      // 42: routes.v1.RoutePoint
+	(*v11.PhotoUpload)(nil),                     // 43: trips.v1.PhotoUpload
+	(v11.PhotoSize)(0),                          // 44: trips.v1.PhotoSize
+	(*v13.Image)(nil),                           // 45: mcp.v1.Image
 }
 var file_races_v1_race_reports_proto_depIdxs = []int32{
-	28, // 0: races.v1.RaceReport.publish_time:type_name -> google.protobuf.Timestamp
-	28, // 1: races.v1.RaceReport.create_time:type_name -> google.protobuf.Timestamp
-	28, // 2: races.v1.RaceReport.update_time:type_name -> google.protobuf.Timestamp
-	2,  // 3: races.v1.RaceReport.segments:type_name -> races.v1.RaceReportSegment
-	4,  // 4: races.v1.RaceComparison.goals:type_name -> races.v1.GoalResult
-	5,  // 5: races.v1.RaceComparison.checkpoints:type_name -> races.v1.CheckpointResult
-	0,  // 6: races.v1.RaceComparison.actual_times_source:type_name -> races.v1.ActualTimesSource
-	1,  // 7: races.v1.CreateRaceReportResponse.report:type_name -> races.v1.RaceReport
-	3,  // 8: races.v1.CreateRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
-	1,  // 9: races.v1.GetRaceReportResponse.report:type_name -> races.v1.RaceReport
-	3,  // 10: races.v1.GetRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
-	29, // 11: races.v1.GetRaceReportResponse.track:type_name -> routes.v1.RoutePoint
-	1,  // 12: races.v1.ListRaceReportsResponse.reports:type_name -> races.v1.RaceReport
-	2,  // 13: races.v1.SetRaceReportSegmentsRequest.segments:type_name -> races.v1.RaceReportSegment
-	1,  // 14: races.v1.SetRaceReportSegmentsResponse.report:type_name -> races.v1.RaceReport
-	2,  // 15: races.v1.SuggestRaceReportSegmentsResponse.segments:type_name -> races.v1.RaceReportSegment
-	1,  // 16: races.v1.UpdateRaceReportResponse.report:type_name -> races.v1.RaceReport
-	3,  // 17: races.v1.UpdateRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
-	1,  // 18: races.v1.PublishRaceReportResponse.report:type_name -> races.v1.RaceReport
-	1,  // 19: races.v1.UnpublishRaceReportResponse.report:type_name -> races.v1.RaceReport
-	1,  // 20: races.v1.ListPublicRaceReportsResponse.reports:type_name -> races.v1.RaceReport
-	1,  // 21: races.v1.GetPublicRaceReportResponse.report:type_name -> races.v1.RaceReport
-	3,  // 22: races.v1.GetPublicRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
-	29, // 23: races.v1.GetPublicRaceReportResponse.track:type_name -> routes.v1.RoutePoint
-	6,  // 24: races.v1.RaceReportService.CreateRaceReport:input_type -> races.v1.CreateRaceReportRequest
-	8,  // 25: races.v1.RaceReportService.GetRaceReport:input_type -> races.v1.GetRaceReportRequest
-	10, // 26: races.v1.RaceReportService.ListRaceReports:input_type -> races.v1.ListRaceReportsRequest
-	12, // 27: races.v1.RaceReportService.UpdateRaceReport:input_type -> races.v1.UpdateRaceReportRequest
-	18, // 28: races.v1.RaceReportService.DeleteRaceReport:input_type -> races.v1.DeleteRaceReportRequest
-	13, // 29: races.v1.RaceReportService.SetRaceReportSegments:input_type -> races.v1.SetRaceReportSegmentsRequest
-	15, // 30: races.v1.RaceReportService.SuggestRaceReportSegments:input_type -> races.v1.SuggestRaceReportSegmentsRequest
-	20, // 31: races.v1.RaceReportService.PublishRaceReport:input_type -> races.v1.PublishRaceReportRequest
-	22, // 32: races.v1.RaceReportService.UnpublishRaceReport:input_type -> races.v1.UnpublishRaceReportRequest
-	24, // 33: races.v1.RaceReportService.ListPublicRaceReports:input_type -> races.v1.ListPublicRaceReportsRequest
-	26, // 34: races.v1.RaceReportService.GetPublicRaceReport:input_type -> races.v1.GetPublicRaceReportRequest
-	7,  // 35: races.v1.RaceReportService.CreateRaceReport:output_type -> races.v1.CreateRaceReportResponse
-	9,  // 36: races.v1.RaceReportService.GetRaceReport:output_type -> races.v1.GetRaceReportResponse
-	11, // 37: races.v1.RaceReportService.ListRaceReports:output_type -> races.v1.ListRaceReportsResponse
-	17, // 38: races.v1.RaceReportService.UpdateRaceReport:output_type -> races.v1.UpdateRaceReportResponse
-	19, // 39: races.v1.RaceReportService.DeleteRaceReport:output_type -> races.v1.DeleteRaceReportResponse
-	14, // 40: races.v1.RaceReportService.SetRaceReportSegments:output_type -> races.v1.SetRaceReportSegmentsResponse
-	16, // 41: races.v1.RaceReportService.SuggestRaceReportSegments:output_type -> races.v1.SuggestRaceReportSegmentsResponse
-	21, // 42: races.v1.RaceReportService.PublishRaceReport:output_type -> races.v1.PublishRaceReportResponse
-	23, // 43: races.v1.RaceReportService.UnpublishRaceReport:output_type -> races.v1.UnpublishRaceReportResponse
-	25, // 44: races.v1.RaceReportService.ListPublicRaceReports:output_type -> races.v1.ListPublicRaceReportsResponse
-	27, // 45: races.v1.RaceReportService.GetPublicRaceReport:output_type -> races.v1.GetPublicRaceReportResponse
-	35, // [35:46] is the sub-list for method output_type
-	24, // [24:35] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	39, // 0: races.v1.RaceReport.publish_time:type_name -> google.protobuf.Timestamp
+	39, // 1: races.v1.RaceReport.create_time:type_name -> google.protobuf.Timestamp
+	39, // 2: races.v1.RaceReport.update_time:type_name -> google.protobuf.Timestamp
+	3,  // 3: races.v1.RaceReport.segments:type_name -> races.v1.RaceReportSegment
+	2,  // 4: races.v1.RaceReport.photos:type_name -> races.v1.RaceReportPhoto
+	40, // 5: races.v1.RaceReportPhoto.location:type_name -> geo.v1.LatLng
+	41, // 6: races.v1.RaceReportPhoto.location_source:type_name -> trips.v1.LocationSource
+	39, // 7: races.v1.RaceReportPhoto.taken_time:type_name -> google.protobuf.Timestamp
+	5,  // 8: races.v1.RaceComparison.goals:type_name -> races.v1.GoalResult
+	6,  // 9: races.v1.RaceComparison.checkpoints:type_name -> races.v1.CheckpointResult
+	0,  // 10: races.v1.RaceComparison.actual_times_source:type_name -> races.v1.ActualTimesSource
+	1,  // 11: races.v1.CreateRaceReportResponse.report:type_name -> races.v1.RaceReport
+	4,  // 12: races.v1.CreateRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
+	1,  // 13: races.v1.GetRaceReportResponse.report:type_name -> races.v1.RaceReport
+	4,  // 14: races.v1.GetRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
+	42, // 15: races.v1.GetRaceReportResponse.track:type_name -> routes.v1.RoutePoint
+	1,  // 16: races.v1.ListRaceReportsResponse.reports:type_name -> races.v1.RaceReport
+	40, // 17: races.v1.UploadRaceReportPhotoRequest.location:type_name -> geo.v1.LatLng
+	39, // 18: races.v1.UploadRaceReportPhotoRequest.taken_time:type_name -> google.protobuf.Timestamp
+	2,  // 19: races.v1.UploadRaceReportPhotoResponse.photo:type_name -> races.v1.RaceReportPhoto
+	43, // 20: races.v1.CreateRaceReportPhotoUploadResponse.upload:type_name -> trips.v1.PhotoUpload
+	40, // 21: races.v1.UpdateRaceReportPhotoRequest.location:type_name -> geo.v1.LatLng
+	2,  // 22: races.v1.UpdateRaceReportPhotoResponse.photo:type_name -> races.v1.RaceReportPhoto
+	44, // 23: races.v1.GetRaceReportPhotoRequest.size:type_name -> trips.v1.PhotoSize
+	2,  // 24: races.v1.GetRaceReportPhotoResponse.photo:type_name -> races.v1.RaceReportPhoto
+	45, // 25: races.v1.GetRaceReportPhotoResponse.image:type_name -> mcp.v1.Image
+	3,  // 26: races.v1.SetRaceReportSegmentsRequest.segments:type_name -> races.v1.RaceReportSegment
+	1,  // 27: races.v1.SetRaceReportSegmentsResponse.report:type_name -> races.v1.RaceReport
+	3,  // 28: races.v1.SuggestRaceReportSegmentsResponse.segments:type_name -> races.v1.RaceReportSegment
+	1,  // 29: races.v1.UpdateRaceReportResponse.report:type_name -> races.v1.RaceReport
+	4,  // 30: races.v1.UpdateRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
+	1,  // 31: races.v1.PublishRaceReportResponse.report:type_name -> races.v1.RaceReport
+	1,  // 32: races.v1.UnpublishRaceReportResponse.report:type_name -> races.v1.RaceReport
+	1,  // 33: races.v1.ListPublicRaceReportsResponse.reports:type_name -> races.v1.RaceReport
+	1,  // 34: races.v1.GetPublicRaceReportResponse.report:type_name -> races.v1.RaceReport
+	4,  // 35: races.v1.GetPublicRaceReportResponse.comparison:type_name -> races.v1.RaceComparison
+	42, // 36: races.v1.GetPublicRaceReportResponse.track:type_name -> routes.v1.RoutePoint
+	7,  // 37: races.v1.RaceReportService.CreateRaceReport:input_type -> races.v1.CreateRaceReportRequest
+	9,  // 38: races.v1.RaceReportService.GetRaceReport:input_type -> races.v1.GetRaceReportRequest
+	11, // 39: races.v1.RaceReportService.ListRaceReports:input_type -> races.v1.ListRaceReportsRequest
+	13, // 40: races.v1.RaceReportService.UpdateRaceReport:input_type -> races.v1.UpdateRaceReportRequest
+	29, // 41: races.v1.RaceReportService.DeleteRaceReport:input_type -> races.v1.DeleteRaceReportRequest
+	24, // 42: races.v1.RaceReportService.SetRaceReportSegments:input_type -> races.v1.SetRaceReportSegmentsRequest
+	26, // 43: races.v1.RaceReportService.SuggestRaceReportSegments:input_type -> races.v1.SuggestRaceReportSegmentsRequest
+	14, // 44: races.v1.RaceReportService.UploadRaceReportPhoto:input_type -> races.v1.UploadRaceReportPhotoRequest
+	16, // 45: races.v1.RaceReportService.CreateRaceReportPhotoUpload:input_type -> races.v1.CreateRaceReportPhotoUploadRequest
+	18, // 46: races.v1.RaceReportService.UpdateRaceReportPhoto:input_type -> races.v1.UpdateRaceReportPhotoRequest
+	20, // 47: races.v1.RaceReportService.DeleteRaceReportPhoto:input_type -> races.v1.DeleteRaceReportPhotoRequest
+	22, // 48: races.v1.RaceReportService.GetRaceReportPhoto:input_type -> races.v1.GetRaceReportPhotoRequest
+	31, // 49: races.v1.RaceReportService.PublishRaceReport:input_type -> races.v1.PublishRaceReportRequest
+	33, // 50: races.v1.RaceReportService.UnpublishRaceReport:input_type -> races.v1.UnpublishRaceReportRequest
+	35, // 51: races.v1.RaceReportService.ListPublicRaceReports:input_type -> races.v1.ListPublicRaceReportsRequest
+	37, // 52: races.v1.RaceReportService.GetPublicRaceReport:input_type -> races.v1.GetPublicRaceReportRequest
+	8,  // 53: races.v1.RaceReportService.CreateRaceReport:output_type -> races.v1.CreateRaceReportResponse
+	10, // 54: races.v1.RaceReportService.GetRaceReport:output_type -> races.v1.GetRaceReportResponse
+	12, // 55: races.v1.RaceReportService.ListRaceReports:output_type -> races.v1.ListRaceReportsResponse
+	28, // 56: races.v1.RaceReportService.UpdateRaceReport:output_type -> races.v1.UpdateRaceReportResponse
+	30, // 57: races.v1.RaceReportService.DeleteRaceReport:output_type -> races.v1.DeleteRaceReportResponse
+	25, // 58: races.v1.RaceReportService.SetRaceReportSegments:output_type -> races.v1.SetRaceReportSegmentsResponse
+	27, // 59: races.v1.RaceReportService.SuggestRaceReportSegments:output_type -> races.v1.SuggestRaceReportSegmentsResponse
+	15, // 60: races.v1.RaceReportService.UploadRaceReportPhoto:output_type -> races.v1.UploadRaceReportPhotoResponse
+	17, // 61: races.v1.RaceReportService.CreateRaceReportPhotoUpload:output_type -> races.v1.CreateRaceReportPhotoUploadResponse
+	19, // 62: races.v1.RaceReportService.UpdateRaceReportPhoto:output_type -> races.v1.UpdateRaceReportPhotoResponse
+	21, // 63: races.v1.RaceReportService.DeleteRaceReportPhoto:output_type -> races.v1.DeleteRaceReportPhotoResponse
+	23, // 64: races.v1.RaceReportService.GetRaceReportPhoto:output_type -> races.v1.GetRaceReportPhotoResponse
+	32, // 65: races.v1.RaceReportService.PublishRaceReport:output_type -> races.v1.PublishRaceReportResponse
+	34, // 66: races.v1.RaceReportService.UnpublishRaceReport:output_type -> races.v1.UnpublishRaceReportResponse
+	36, // 67: races.v1.RaceReportService.ListPublicRaceReports:output_type -> races.v1.ListPublicRaceReportsResponse
+	38, // 68: races.v1.RaceReportService.GetPublicRaceReport:output_type -> races.v1.GetPublicRaceReportResponse
+	53, // [53:69] is the sub-list for method output_type
+	37, // [37:53] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_races_v1_race_reports_proto_init() }
@@ -3539,15 +4715,17 @@ func file_races_v1_race_reports_proto_init() {
 	if File_races_v1_race_reports_proto != nil {
 		return
 	}
-	file_races_v1_race_reports_proto_msgTypes[4].OneofWrappers = []any{}
-	file_races_v1_race_reports_proto_msgTypes[11].OneofWrappers = []any{}
+	file_races_v1_race_reports_proto_msgTypes[1].OneofWrappers = []any{}
+	file_races_v1_race_reports_proto_msgTypes[5].OneofWrappers = []any{}
+	file_races_v1_race_reports_proto_msgTypes[12].OneofWrappers = []any{}
+	file_races_v1_race_reports_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_races_v1_race_reports_proto_rawDesc), len(file_races_v1_race_reports_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   27,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

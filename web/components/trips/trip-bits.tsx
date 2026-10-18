@@ -5,7 +5,7 @@ import { Badge } from "@components/ui/misc";
 import { cardClass } from "@components/ui/styles";
 import { MapIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import type { RoutePoint } from "gen/routes/v1/routes_pb";
-import type { TripPhoto, TripReport, TripStats } from "gen/trips/v1/trips_pb";
+import type { TripReport, TripStats } from "gen/trips/v1/trips_pb";
 import { LocationSource } from "gen/trips/v1/trips_pb";
 import {
   formatDate,
@@ -35,8 +35,19 @@ export const profilePoints = (track: RoutePoint[]): ProfilePoint[] => {
   }));
 };
 
+/**
+ * PhotoOnMap is what's needed to show a photo of a trip or race report on a
+ * map.
+ */
+export interface PhotoOnMap {
+  id: string;
+  caption: string;
+  thumbnailUrl: string;
+  location?: { lat: number; lng: number } | undefined;
+}
+
 // MapPhotos returns the photos with a location, numbered in report order.
-export const mapPhotos = (photos: TripPhoto[]): MapPhoto[] => {
+export const mapPhotos = (photos: PhotoOnMap[]): MapPhoto[] => {
   const result: MapPhoto[] = [];
   for (const [index, photo] of photos.entries()) {
     if (photo.location !== undefined) {

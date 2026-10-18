@@ -1,5 +1,6 @@
 import type { ProfileRange } from "@components/charts/elevation-profile";
 import ElevationProfile from "@components/charts/elevation-profile";
+import type { MapPhoto } from "@components/map/photo-markers";
 import {
   formatRange,
   sectionSummary,
@@ -34,7 +35,8 @@ import type {
 } from "gen/races/v1/race_reports_pb";
 import type { RoutePoint } from "gen/routes/v1/routes_pb";
 import type { PrivacyZone } from "gen/users/v1/users_pb";
-import React, { useMemo, useState } from "react";
+import type { LatLng } from "leaflet";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 // NEW_SEGMENT_METERS is the length of a new segment.
 const NEW_SEGMENT_METERS = 1000;
@@ -99,7 +101,21 @@ interface SegmentsEditorProps {
   track: RoutePoint[];
   // The user's privacy zones, shown on the map.
   privacyZones: PrivacyZone[];
+  // The report's photos with a location, shown on the map.
+  photos: MapPhoto[];
+  // Called when a photo is dragged on the map.
+  onMovePhoto: (id: string, position: LatLng) => void;
+  // The photo being placed by clicking the map, if any.
+  placing?: PlacingPhoto | undefined;
   onSaved: () => Promise<void>;
+}
+
+// PlacingPhoto is a photo being placed by clicking the map.
+export interface PlacingPhoto {
+  // The photo's number, as on the map.
+  number: number;
+  onPlace: (position: LatLng) => void;
+  onCancel: () => void;
 }
 
 /**
@@ -112,8 +128,19 @@ export const SegmentsEditor: React.FC<SegmentsEditorProps> = ({
   report,
   track,
   privacyZones,
+  photos,
+  onMovePhoto,
+  placing,
   onSaved,
 }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const isPlacing = placing !== undefined;
+  // The map is above the photos, so bring it into view to place one.
+  useEffect(() => {
+    if (isPlacing) {
+      mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isPlacing]);
   const [drafts, setDrafts] = useState<Draft[]>(() =>
     report.segments.map(toDraft)
   );
@@ -212,23 +239,39 @@ export const SegmentsEditor: React.FC<SegmentsEditorProps> = ({
         or the descent where you made up time. They're highlighted on the map
         and profile of your race.
       </p>
-      <TripMap
-        track={positions}
-        photos={[]}
-        selectedId={null}
-        privacyZones={privacyZones}
-        hoverPosition={
-          hovered === undefined || hovered === null
-            ? null
-            : [hovered.lat, hovered.lng]
-        }
-        highlight={
-          activeRange === undefined ? [] : trackSlice(track, activeRange)
-        }
-        highlightKey={activeKey}
-        fitKey={report.id}
-        className="h-72"
-      />
+      {placing !== undefined && (
+        <p className="flex items-center justify-between gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Click the map where photo {placing.number} was taken.
+          <button
+            type="button"
+            className={ghostButton}
+            onClick={placing.onCancel}
+          >
+            Cancel
+          </button>
+        </p>
+      )}
+      <div ref={mapRef}>
+        <TripMap
+          track={positions}
+          photos={photos}
+          selectedId={null}
+          onMovePhoto={onMovePhoto}
+          onMapClick={placing?.onPlace}
+          privacyZones={privacyZones}
+          hoverPosition={
+            hovered === undefined || hovered === null
+              ? null
+              : [hovered.lat, hovered.lng]
+          }
+          highlight={
+            activeRange === undefined ? [] : trackSlice(track, activeRange)
+          }
+          highlightKey={activeKey}
+          fitKey={report.id}
+          className="h-72"
+        />
+      </div>
       {points.length > 0 && (
         <ElevationProfile
           points={points}
@@ -387,6 +430,10 @@ export const SegmentsEditor: React.FC<SegmentsEditorProps> = ({
 
 interface SegmentsViewProps {
   segments: RaceReportSegment[];
+  // The report's photos with a location, shown on the map.
+  photos: MapPhoto[];
+  // Called when a photo's marker is clicked.
+  onSelectPhoto: (id: string) => void;
   // The track, which the segments are distances along.
   track: RoutePoint[];
   /**
@@ -402,6 +449,8 @@ interface SegmentsViewProps {
  */
 export const SegmentsView: React.FC<SegmentsViewProps> = ({
   segments,
+  photos,
+  onSelectPhoto,
   track,
   breaks,
 }) => {
@@ -418,8 +467,9 @@ export const SegmentsView: React.FC<SegmentsViewProps> = ({
     <div className="flex flex-col gap-4">
       <TripMap
         track={positions}
-        photos={[]}
+        photos={photos}
         selectedId={null}
+        onSelectPhoto={onSelectPhoto}
         hoverPosition={
           hovered === undefined ? null : [hovered.lat, hovered.lng]
         }
