@@ -78,3 +78,8 @@ it's excluded:
 - Mark fields the server sets, like `create_time`, `update_time` and computed
   values, with `[(mcp.v1.field).output_only = true]`, which hides them from
   tool inputs.
+- Return images agents should look at in a top-level `mcp.v1.Image` field of
+  the response. Tools return them as image content, which clients show to the
+  model, and leave them out of the JSON. Return URLs instead for images agents
+  only link to: they can't see draft photos through them, as those need the
+  user's session.
