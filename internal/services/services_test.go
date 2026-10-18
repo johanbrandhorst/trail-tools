@@ -38,6 +38,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1/tripsv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
 	"github.com/johanbrandhorst/trail-tools/internal/lactate"
 	"github.com/johanbrandhorst/trail-tools/internal/livetrack"
 	"github.com/johanbrandhorst/trail-tools/internal/mapdata"
@@ -239,7 +240,8 @@ func newEnv(t *testing.T) *env {
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
-	mux.Handle(lactatesvc.SharePath, lactateService.ShareHandler())
+	mux.Handle("GET "+raceplan.LegacySharePath+"{token}", html.RedirectTokenToFragment(raceplan.SharePath))
+	mux.Handle("GET "+lactatesvc.LegacySharePath+"{token}", html.RedirectTokenToFragment(lactatesvc.RecordPath))
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
 
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))
@@ -527,5 +529,27 @@ func (e *env) storeActivityDetail(activityID pgtype.UUID, detail *activities.Det
 	}
 	if err := e.activities.StoreActivityDetail(ctx, e.userID, activityID, a.StravaID, detail, streams, bounds); err != nil {
 		e.t.Fatal(err)
+	}
+}
+
+// TestLegacyShareLinks checks that share links that carried their token in
+// the path redirect to their pages with the token in the fragment.
+func TestLegacyShareLinks(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	client := *e.srv.Client()
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	for path, want := range map[string]string{
+		"/share/race-plans/ABC123":   "/share/race-plans#ABC123",
+		"/share/lactate-tests/DEF45": "/record/lactate-test#DEF45",
+	} {
+		resp, err := client.Get(e.srv.URL + path)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != want {
+			t.Errorf("%s: got status %d to %q, want a redirect to %q", path, resp.StatusCode, resp.Header.Get("Location"), want)
+		}
 	}
 }

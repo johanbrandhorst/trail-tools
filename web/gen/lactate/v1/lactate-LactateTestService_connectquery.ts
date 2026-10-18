@@ -66,6 +66,16 @@ export const listLactateTestShares = LactateTestService.method.listLactateTestSh
 export const deleteLactateTestShare = LactateTestService.method.deleteLactateTestShare;
 
 /**
+ * Open a recording link in this browser, with the token from the link's
+ * fragment. The first browser to open a link gets a cookie it records with
+ * until the link expires, and may open it again. Fails with
+ * PERMISSION_DENIED for other browsers, and for expired or deleted links.
+ *
+ * @generated from rpc lactate.v1.LactateTestService.CreateLactateTestRecording
+ */
+export const createLactateTestRecording = LactateTestService.method.createLactateTestRecording;
+
+/**
  * Get the recording of the browser that opened a recording link, which
  * the link's page records with. Authenticated by the browser's cookie, not
  * the user's.

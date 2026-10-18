@@ -2,13 +2,14 @@ import Loading from "@components/loading";
 import { TextField } from "@components/ui/fields";
 import { cardClass, primaryButton } from "@components/ui/styles";
 import { Code, createClient } from "@connectrpc/connect";
-import { useQuery, useTransport } from "@connectrpc/connect-query";
+import { skipToken, useQuery, useTransport } from "@connectrpc/connect-query";
 import { KeyIcon } from "@heroicons/react/24/outline";
 import { useQueryClient } from "@tanstack/react-query";
 import { getInvitation } from "gen/auth/v1/auth-AuthService_connectquery";
 import type { Invitation } from "gen/auth/v1/auth_pb";
 import { AuthService, InvitationKind } from "gen/auth/v1/auth_pb";
 import { UserService } from "gen/users/v1/users_pb";
+import { useFragmentToken } from "helpers/hooks";
 import {
   errorMessage,
   isCancelled,
@@ -18,7 +19,7 @@ import {
 import { invalidateServices } from "helpers/query";
 import type { ReactNode } from "react";
 import React, { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 
 interface InviteFrameProps {
   title: string;
@@ -136,12 +137,22 @@ const InviteForm: React.FC<InviteFormProps> = ({ token, invitation }) => {
 
 // InvitePage lets someone with an invitation link register a passkey.
 const InvitePage: React.FC = () => {
-  const { token = "" } = useParams();
+  const token = useFragmentToken();
   const { isPending, isError, data, error } = useQuery(
     getInvitation,
-    { token },
+    token === "" ? skipToken : { token },
     { retry: false }
   );
+  if (token === "") {
+    return (
+      <InviteFrame title="Invitation not found">
+        <p className="text-sm text-gray-600">
+          The link is incomplete. Open the whole link you were sent, or ask for
+          a new one.
+        </p>
+      </InviteFrame>
+    );
+  }
   if (isPending) {
     return <Loading />;
   }

@@ -154,7 +154,7 @@ func TestPasskeysAndInvitations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateInvitation: %v", err)
 	}
-	token, ok := strings.CutPrefix(created.GetUrl(), "http://localhost:8080/invite/")
+	token, ok := strings.CutPrefix(created.GetUrl(), "http://localhost:8080/invite#")
 	if !ok {
 		t.Fatalf("unexpected invitation URL %q", created.GetUrl())
 	}
@@ -189,7 +189,7 @@ func TestPasskeysAndInvitations(t *testing.T) {
 	}
 	tablet := newAuthenticator(t, "http://localhost:8080", "localhost")
 	tabletBrowser := e.newBrowser()
-	addToken := strings.TrimPrefix(addDevice.GetUrl(), "http://localhost:8080/invite/")
+	addToken := strings.TrimPrefix(addDevice.GetUrl(), "http://localhost:8080/invite#")
 	if _, err := tabletBrowser.register(t, tablet, addToken, ""); err != nil {
 		t.Fatalf("adding a device: %v", err)
 	}

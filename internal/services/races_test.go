@@ -198,7 +198,7 @@ func TestRacesAndRacePlans(t *testing.T) {
 		t.Fatalf("ShareRacePlan: %v", err)
 	}
 	shareURL := shared.GetShareUrl()
-	token, ok := strings.CutPrefix(shareURL, "https://trail.example/share/race-plans/")
+	token, ok := strings.CutPrefix(shareURL, "https://trail.example/share/race-plans#")
 	if !ok || token == "" {
 		t.Fatalf("unexpected share URL %q", shareURL)
 	}

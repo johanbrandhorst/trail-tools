@@ -57,7 +57,7 @@ func TestBootstrapHandler(t *testing.T) {
 			rec := httptest.NewRecorder()
 			s.BootstrapHandler(index).ServeHTTP(rec, req)
 			if tt.redirect {
-				if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/invite/"+tt.token {
+				if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/invite#"+tt.token {
 					t.Errorf("got status %d to %q, want a redirect to the invitation", rec.Code, rec.Header().Get("Location"))
 				}
 			} else if rec.Code != http.StatusOK || rec.Body.String() != "index" {

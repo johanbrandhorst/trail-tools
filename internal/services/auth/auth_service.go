@@ -25,6 +25,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	authv1 "github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/users"
 	"gitlab.com/greyxor/slogor"
@@ -42,8 +43,13 @@ const (
 	sessionTTL = 30 * 24 * time.Hour
 	// maxNameLength limits user names and invitation notes.
 	maxNameLength = 100
-	// invitePath is the path of the frontend page for invitations.
-	invitePath = "/invite/"
+	// InvitePath is the frontend page for invitations. Their links carry
+	// the token in the fragment, which browsers don't send, so it doesn't
+	// end up in request logs.
+	InvitePath = "/invite"
+	// LegacyInvitePath is where invitation links carried their token
+	// before, as LegacyInvitePath + token. They redirect to InvitePath.
+	LegacyInvitePath = "/invite/"
 )
 
 // Repository stores users, passkeys and invitations.
@@ -152,7 +158,7 @@ func (s *Service) CreateInvitation(ctx context.Context, req *authv1.CreateInvita
 	}
 	return authv1.CreateInvitationResponse_builder{
 		Invitation: invitationToProto(inv),
-		Url:        s.baseURL + invitePath + token,
+		Url:        s.baseURL + html.TokenURL(InvitePath, token),
 	}.Build(), nil
 }
 
@@ -441,7 +447,7 @@ func (s *Service) BootstrapHandler(next http.Handler) http.Handler {
 			case err != nil:
 				s.report.Report(r.Context(), "Failed to check for administrators", err)
 			case !hasAdmin:
-				http.Redirect(w, r, "/invite/"+url.PathEscape(s.bootstrapToken), http.StatusFound)
+				http.Redirect(w, r, html.TokenURL(InvitePath, s.bootstrapToken), http.StatusFound)
 				return
 			}
 		}
