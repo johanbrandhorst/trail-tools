@@ -73,3 +73,33 @@ func TestRepeatedDistance(t *testing.T) {
 		})
 	}
 }
+
+func TestRepeatedDistanceBoundsSamples(t *testing.T) {
+	t.Parallel()
+	// A tiny track around the world, back and forth: its lines aren't
+	// sampled.
+	var hops []Point
+	for i := range 50 {
+		hops = append(hops, Point{Lng: float64(i%2) * 180})
+	}
+	if n := len(resample(hops, repeatSpacing)); n != len(hops) {
+		t.Errorf("got %d samples of a track around the world, want one per point", n)
+	}
+	if got := RepeatedDistance(hops); got != 0 {
+		t.Errorf("RepeatedDistance of a track around the world = %.0f m, want 0", got)
+	}
+
+	// A 10,000 km track along the equator, with a point every 4 km, is
+	// sampled further apart than every 10 m.
+	var long []Point
+	for i := range 2501 {
+		long = append(long, Point{Lng: float64(i) * 4000 / metersPerDegreeLat})
+	}
+	spacing := math.Max(repeatSpacing, sampledDistance(long)/maxRepeatSamples)
+	if n := len(resample(long, spacing)); n > maxRepeatSamples+1 {
+		t.Errorf("got %d samples of a 10,000 km track, want at most %d", n, maxRepeatSamples+1)
+	}
+	if got := RepeatedDistance(long); got != 0 {
+		t.Errorf("RepeatedDistance of a 10,000 km straight track = %.0f m, want 0", got)
+	}
+}

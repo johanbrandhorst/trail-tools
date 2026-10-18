@@ -22,6 +22,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1/tripsv1connect"
@@ -49,7 +50,7 @@ type TripRepository interface {
 	UpdateReport(ctx context.Context, u *trips.ReportUpdate) (*trips.Report, error)
 	SetReportPublished(ctx context.Context, userID, reportID pgtype.UUID, published bool) (*trips.Report, error)
 	DeleteReport(ctx context.Context, userID, reportID pgtype.UUID) ([]string, error)
-	AddPhoto(ctx context.Context, userID pgtype.UUID, p *trips.Photo) (*trips.Photo, error)
+	AddPhoto(ctx context.Context, userID pgtype.UUID, p *trips.Photo, before trips.PhotoOrder) (*trips.Photo, error)
 	ListPhotos(ctx context.Context, reportIDs ...pgtype.UUID) (map[pgtype.UUID][]*trips.Photo, error)
 	GetPhoto(ctx context.Context, userID, photoID pgtype.UUID) (*trips.Photo, error)
 	GetPhotoAccess(ctx context.Context, photoID pgtype.UUID) (*trips.PhotoAccess, error)
@@ -64,7 +65,7 @@ type TripRepository interface {
 // ActivityRepository gets the activities reports are made from.
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
 	ListActivityPhotos(ctx context.Context, userID, activityID pgtype.UUID) ([]activities.Photo, error)
 }
 
@@ -77,6 +78,7 @@ type PrivacyZoneRepository interface {
 
 type ActivitySyncer interface {
 	SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID int64) error
+	SyncPending(ctx context.Context, userID, activityID pgtype.UUID) (synced bool, resumeTime time.Time, err error)
 }
 
 // Service implements API handlers for the trip report service.
@@ -201,6 +203,36 @@ func (s *Service) CreateTripReport(ctx context.Context, req *tripsv1.CreateTripR
 	return nil, connect.NewError(connect.CodeAlreadyExists, "too many trip reports have this title; choose another title")
 }
 
+// activitySyncBudget is how long a request waits for an activity's details
+// and streams to sync.
+const activitySyncBudget = 15 * time.Second
+
+// syncPending syncs the details and streams of an activity waiting for them,
+// as activities older than syncs fetch them for are, so a report gets its
+// description and whole track, and returns the activity again. If that
+// fails or takes too long, it returns the activity as it was, and the report
+// gets its summary polyline instead.
+func (s *Service) syncPending(ctx context.Context, userID pgtype.UUID, a *activities.Activity) *activities.Activity {
+	if s.syncer == nil {
+		return a
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, activitySyncBudget)
+	defer cancel()
+	synced, _, err := s.syncer.SyncPending(syncCtx, userID, a.ID)
+	if err != nil && syncCtx.Err() == nil {
+		s.report.Report(ctx, "Failed to sync an activity for a trip report, using its summary polyline", err)
+	}
+	if !synced {
+		return a
+	}
+	updated, err := s.activities.GetActivity(ctx, userID, a.ID)
+	if err != nil {
+		s.report.Report(ctx, "Failed to get a synced activity, using it as it was", err)
+		return a
+	}
+	return updated
+}
+
 // fillFromActivity copies the details of one of the user's activities into
 // a new report, and returns its description.
 func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, activityID pgtype.UUID) (string, error) {
@@ -210,6 +242,9 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 			return "", connect.NewError(connect.CodeNotFound, "activity not found")
 		}
 		return "", s.toConnectError(ctx, err, "failed to get activity")
+	}
+	if !a.StreamsSynced {
+		a = s.syncPending(ctx, report.UserID, a)
 	}
 	report.ActivityID = a.ID
 	if report.Title == "" {
@@ -228,14 +263,10 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 
 	var t *activitiesv1.ActivityStreams
 	if a.StreamsSynced {
-		data, err := s.activities.GetActivityStreams(ctx, report.UserID, activityID)
+		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, activityID)
 		switch {
 		case err == nil:
-			var streams activitiesv1.ActivityStreams
-			if err := proto.Unmarshal(data, &streams); err != nil {
-				return "", s.toConnectError(ctx, err, "failed to decode streams")
-			}
-			t = track.FromStreams(&streams)
+			t = track.FromStreams(streams)
 		case errors.Is(err, store.ErrNotFound):
 			// The activity has no streams, e.g. a manual entry.
 		default:
@@ -303,7 +334,23 @@ func (s *Service) ListTripReports(ctx context.Context, req *tripsv1.ListTripRepo
 	if err != nil {
 		return nil, err
 	}
+	// Lists only show the cover photos. All of them would make the list too
+	// large for agents to read: hundreds of kilobytes for a few dozen reports.
+	for _, r := range result {
+		r.SetPhotos(coverPhoto(r))
+	}
 	return tripsv1.ListTripReportsResponse_builder{Reports: result}.Build(), nil
+}
+
+// coverPhoto returns the report's cover photo in a list, or none if it has
+// none.
+func coverPhoto(r *tripsv1.TripReport) []*tripsv1.TripPhoto {
+	for _, p := range r.GetPhotos() {
+		if p.GetId() == r.GetCoverPhotoId() {
+			return []*tripsv1.TripPhoto{p}
+		}
+	}
+	return nil
 }
 
 func (s *Service) UpdateTripReport(ctx context.Context, req *tripsv1.UpdateTripReportRequest) (*tripsv1.UpdateTripReportResponse, error) {
@@ -505,11 +552,26 @@ func placePhoto(report *trips.Report, t *track.Track, gps *geov1.LatLng, takenTi
 	return nil, nil
 }
 
-// storePhoto re-encodes a photo, stores its images and adds it to the end
-// of its report. It returns trips.ErrPhotoImported for a photo from Strava
+// takenBefore reports whether photo a was taken before photo b on the trip:
+// by the times they were taken, if both are known, or else by how far along
+// the track they were taken. Times come first, as on an out-and-back the
+// same place is passed twice, and a photo's GPS position may be matched to
+// the wrong way.
+func takenBefore(a, b *trips.Photo) bool {
+	if !a.TakenTime.IsZero() && !b.TakenTime.IsZero() {
+		return a.TakenTime.Before(b.TakenTime)
+	}
+	if a.Location != nil && a.Location.HasTrackDistanceMeters && b.Location != nil && b.Location.HasTrackDistanceMeters {
+		return a.Location.TrackDistanceMeters < b.Location.TrackDistanceMeters
+	}
+	return false
+}
+
+// storePhoto re-encodes a photo, stores its images and adds it to its
+// section of the report, in the order it was taken. It returns trips.ErrPhotoImported for a photo from Strava
 // the report already has, and otherwise connect errors.
 func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *trips.Photo, data []byte) (*trips.Photo, error) {
-	img, err := processImage(data)
+	img, err := processImage(ctx, data)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
@@ -522,7 +584,7 @@ func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *tri
 		s.deleteImages(ctx, photo.ObjectKey)
 		return nil, s.toConnectError(ctx, err, "failed to store photo")
 	}
-	created, err := s.repo.AddPhoto(ctx, userID, photo)
+	created, err := s.repo.AddPhoto(ctx, userID, photo, takenBefore)
 	if err != nil {
 		s.deleteImages(ctx, photo.ObjectKey)
 		if errors.Is(err, trips.ErrPhotoImported) {
@@ -579,6 +641,33 @@ func (s *Service) UpdateTripPhoto(ctx context.Context, req *tripsv1.UpdateTripPh
 		}
 	}
 	return tripsv1.UpdateTripPhotoResponse_builder{Photo: s.photoToProto(photo)}.Build(), nil
+}
+
+func (s *Service) GetTripPhoto(ctx context.Context, req *tripsv1.GetTripPhotoRequest) (*tripsv1.GetTripPhotoResponse, error) {
+	userID, photoID, err := s.parsePhotoID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	size := sizeThumb
+	switch req.GetSize() {
+	case tripsv1.PhotoSize_PHOTO_SIZE_UNSPECIFIED, tripsv1.PhotoSize_PHOTO_SIZE_THUMBNAIL:
+	case tripsv1.PhotoSize_PHOTO_SIZE_LARGE:
+		size = sizeLarge
+	default:
+		return nil, connect.Errorf(connect.CodeInvalidArgument, "unknown size %v; use PHOTO_SIZE_THUMBNAIL or PHOTO_SIZE_LARGE", req.GetSize())
+	}
+	photo, err := s.repo.GetPhoto(ctx, userID, photoID)
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to get photo")
+	}
+	data, err := s.blobs.Get(ctx, imageKey(photo.ObjectKey, size))
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to read the photo's image")
+	}
+	return tripsv1.GetTripPhotoResponse_builder{
+		Photo: s.photoToProto(photo),
+		Image: mcpv1.Image_builder{MimeType: "image/jpeg", Data: data}.Build(),
+	}.Build(), nil
 }
 
 func (s *Service) DeleteTripPhoto(ctx context.Context, req *tripsv1.DeleteTripPhotoRequest) (*tripsv1.DeleteTripPhotoResponse, error) {

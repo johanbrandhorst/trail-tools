@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
@@ -50,10 +51,23 @@ type fakeStrava struct {
 	// If set, listing activities fails at the rate limit once, after
 	// listing this many pages.
 	listLimitAfter int
+	// If set, listing activities fails with it.
+	listErr error
+	// Fetching the streams of these activities fails.
+	failStreams map[int64]bool
+	// The number of activities fetched.
+	activityCalls int
+	// If set, each refresh replaces the refresh token, and refreshing with
+	// a replaced one fails as if access was revoked, as Strava may. The
+	// current refresh token is validRefreshToken, or any if unset.
+	rotateTokens      bool
+	validRefreshToken string
+	// How long refreshing takes, to let concurrent refreshes overlap.
+	refreshDelay time.Duration
 }
 
 func newFakeStrava() *fakeStrava {
-	f := &fakeStrava{photos: map[int64][]*strava.Photo{}}
+	f := &fakeStrava{photos: map[int64][]*strava.Photo{}, failStreams: map[int64]bool{}}
 	start := time.Date(2026, 9, 7, 8, 0, 0, 0, time.UTC) // A Monday.
 	for i := range 3 {
 		a := &strava.Activity{
@@ -89,11 +103,19 @@ func newFakeStrava() *fakeStrava {
 
 func (f *fakeStrava) Refresh(_ context.Context, refreshToken string) (*strava.Token, error) {
 	f.mu.Lock()
+	delay := f.refreshDelay
+	f.mu.Unlock()
+	time.Sleep(delay)
+	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.revoked {
+	if f.revoked || f.validRefreshToken != "" && refreshToken != f.validRefreshToken {
 		return nil, strava.ErrUnauthorized
 	}
 	f.refreshes++
+	if f.rotateTokens {
+		refreshToken = fmt.Sprintf("refresh-%d", f.refreshes)
+		f.validRefreshToken = refreshToken
+	}
 	return &strava.Token{AccessToken: "fresh", RefreshToken: refreshToken, Expiry: time.Now().Add(6 * time.Hour)}, nil
 }
 
@@ -108,6 +130,9 @@ func (f *fakeStrava) ListActivities(_ context.Context, token string, before time
 		return nil, &strava.RateLimitError{ResetAt: time.Now()}
 	}
 	f.listed = append(f.listed, before)
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
 	if f.pageSize > 0 {
 		perPage = f.pageSize
 	}
@@ -127,6 +152,7 @@ func (f *fakeStrava) ListActivities(_ context.Context, token string, before time
 func (f *fakeStrava) GetActivity(_ context.Context, _ string, id int64) (*strava.Activity, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.activityCalls++
 	for _, a := range f.activities {
 		if a.ID == id {
 			detail := *a
@@ -143,7 +169,11 @@ func (f *fakeStrava) GetStreams(ctx context.Context, _ string, id int64) (*strav
 		f.blockStreams = 0
 		f.mu.Unlock()
 		f.streamsBlocked <- struct{}{}
-		<-f.unblockStreams
+		select {
+		case <-f.unblockStreams:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		f.mu.Lock()
 	}
 	defer f.mu.Unlock()
@@ -153,6 +183,9 @@ func (f *fakeStrava) GetStreams(ctx context.Context, _ string, id int64) (*strav
 	if !f.rateLimited {
 		f.rateLimited = true
 		return nil, &strava.RateLimitError{ResetAt: time.Now()}
+	}
+	if f.failStreams[id] {
+		return nil, fmt.Errorf("unexpected status 500 from Strava for activity %d", id)
 	}
 	if id == 1002 {
 		return nil, strava.ErrNotFound
@@ -172,9 +205,16 @@ func (f *fakeStrava) GetStreams(ctx context.Context, _ string, id int64) (*strav
 // user.
 func (e *env) connectStrava() {
 	e.t.Helper()
+	e.connectStravaAs(e.userID, 7)
+}
+
+// connectStravaAs stores a Strava connection with an expired token for a
+// user, as the athlete.
+func (e *env) connectStravaAs(userID pgtype.UUID, athleteID int64) {
+	e.t.Helper()
 	if _, err := e.activities.UpsertStravaConnection(context.Background(), &activities.StravaConnection{
-		UserID:       e.userID,
-		AthleteID:    7,
+		UserID:       userID,
+		AthleteID:    athleteID,
 		AthleteName:  "Test Runner",
 		AccessToken:  "expired",
 		RefreshToken: "refresh",
@@ -482,7 +522,7 @@ func TestScheduledStravaSync(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	total, pending, err := e.activities.CountActivities(ctx, e.userID)
+	total, pending, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -506,7 +546,7 @@ func TestScheduledStravaSync(t *testing.T) {
 	if !syncer.SyncOnce(ctx, e.userID, false) {
 		t.Fatal("SyncOnce didn't run")
 	}
-	if total, _, err = e.activities.CountActivities(ctx, e.userID); err != nil || total != 4 {
+	if total, _, err = e.activities.CountActivities(ctx, e.userID, allActivities); err != nil || total != 4 {
 		t.Errorf("got %d activities (%v), want 4", total, err)
 	}
 	// The oldest activity is before the overlap, so the second page isn't
@@ -533,7 +573,7 @@ func TestStravaSyncResumesListing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	total, _, err := e.activities.CountActivities(ctx, e.userID)
+	total, _, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -549,7 +589,7 @@ func TestStravaSyncResumesListing(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	if total, _, err = e.activities.CountActivities(ctx, e.userID); err != nil {
+	if total, _, err = e.activities.CountActivities(ctx, e.userID, allActivities); err != nil {
 		t.Fatal(err)
 	}
 	if conn.SyncState != activities.SyncStateIdle || total != 3 || !conn.ListBefore.IsZero() {
@@ -630,7 +670,7 @@ func TestTriggeredStravaSync(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	total, pending, err := e.activities.CountActivities(ctx, e.userID)
+	total, pending, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}

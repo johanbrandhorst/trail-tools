@@ -120,6 +120,15 @@ export const suggestTripSections = TripReportService.method.suggestTripSections;
 export const deleteTripPhoto = TripReportService.method.deleteTripPhoto;
 
 /**
+ * Get a photo of one of the user's trip reports with its image, to look at
+ * it, e.g. to write its caption or the story around it. The thumbnail is
+ * enough to see what's in a photo; get the large image for details.
+ *
+ * @generated from rpc trips.v1.TripReportService.GetTripPhoto
+ */
+export const getTripPhoto = TripReportService.method.getTripPhoto;
+
+/**
  * Get the user's public profile. The profile is unset if the user hasn't
  * created one yet.
  *

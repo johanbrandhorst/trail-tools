@@ -63,6 +63,9 @@ const (
 	// TripReportServiceDeleteTripPhotoProcedure is the procedure name of the TripReportService's
 	// DeleteTripPhoto RPC.
 	TripReportServiceDeleteTripPhotoProcedure = "/trips.v1.TripReportService/DeleteTripPhoto"
+	// TripReportServiceGetTripPhotoProcedure is the procedure name of the TripReportService's
+	// GetTripPhoto RPC.
+	TripReportServiceGetTripPhotoProcedure = "/trips.v1.TripReportService/GetTripPhoto"
 	// TripReportServiceGetProfileProcedure is the procedure name of the TripReportService's GetProfile
 	// RPC.
 	TripReportServiceGetProfileProcedure = "/trips.v1.TripReportService/GetProfile"
@@ -169,6 +172,13 @@ var (
 			Procedure:  TripReportServiceDeleteTripPhotoProcedure,
 		}
 	})
+	tripReportServiceGetTripPhotoSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_trips_v1_trips_proto.Services().ByName("TripReportService").Methods().ByName("GetTripPhoto"),
+			Procedure:  TripReportServiceGetTripPhotoProcedure,
+		}
+	})
 	tripReportServiceGetProfileSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -251,6 +261,10 @@ type TripReportServiceClient interface {
 	SuggestTripSections(context.Context, *v1.SuggestTripSectionsRequest) (*v1.SuggestTripSectionsResponse, error)
 	// Delete a photo.
 	DeleteTripPhoto(context.Context, *v1.DeleteTripPhotoRequest) (*v1.DeleteTripPhotoResponse, error)
+	// Get a photo of one of the user's trip reports with its image, to look at
+	// it, e.g. to write its caption or the story around it. The thumbnail is
+	// enough to see what's in a photo; get the large image for details.
+	GetTripPhoto(context.Context, *v1.GetTripPhotoRequest) (*v1.GetTripPhotoResponse, error)
 	// Get the user's public profile. The profile is unset if the user hasn't
 	// created one yet.
 	GetProfile(context.Context, *v1.GetProfileRequest) (*v1.GetProfileResponse, error)
@@ -323,6 +337,10 @@ type TripReportServiceHandler interface {
 	SuggestTripSections(context.Context, *v1.SuggestTripSectionsRequest) (*v1.SuggestTripSectionsResponse, error)
 	// Delete a photo.
 	DeleteTripPhoto(context.Context, *v1.DeleteTripPhotoRequest) (*v1.DeleteTripPhotoResponse, error)
+	// Get a photo of one of the user's trip reports with its image, to look at
+	// it, e.g. to write its caption or the story around it. The thumbnail is
+	// enough to see what's in a photo; get the large image for details.
+	GetTripPhoto(context.Context, *v1.GetTripPhotoRequest) (*v1.GetTripPhotoResponse, error)
 	// Get the user's public profile. The profile is unset if the user hasn't
 	// created one yet.
 	GetProfile(context.Context, *v1.GetProfileRequest) (*v1.GetProfileResponse, error)
@@ -355,6 +373,7 @@ func RegisterTripReportServiceHandler(server *connect.Server, svc TripReportServ
 		connect.Method{Spec: tripReportServiceSetTripSectionsSpec(), Handler: adapter.setTripSections},
 		connect.Method{Spec: tripReportServiceSuggestTripSectionsSpec(), Handler: adapter.suggestTripSections},
 		connect.Method{Spec: tripReportServiceDeleteTripPhotoSpec(), Handler: adapter.deleteTripPhoto},
+		connect.Method{Spec: tripReportServiceGetTripPhotoSpec(), Handler: adapter.getTripPhoto},
 		connect.Method{Spec: tripReportServiceGetProfileSpec(), Handler: adapter.getProfile},
 		connect.Method{Spec: tripReportServiceUpdateProfileSpec(), Handler: adapter.updateProfile},
 		connect.Method{Spec: tripReportServiceGetPublicProfileSpec(), Handler: adapter.getPublicProfile},
@@ -415,6 +434,10 @@ func (UnimplementedTripReportServiceHandler) SuggestTripSections(context.Context
 
 func (UnimplementedTripReportServiceHandler) DeleteTripPhoto(context.Context, *v1.DeleteTripPhotoRequest) (*v1.DeleteTripPhotoResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "trips.v1.TripReportService.DeleteTripPhoto is not implemented")
+}
+
+func (UnimplementedTripReportServiceHandler) GetTripPhoto(context.Context, *v1.GetTripPhotoRequest) (*v1.GetTripPhotoResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "trips.v1.TripReportService.GetTripPhoto is not implemented")
 }
 
 func (UnimplementedTripReportServiceHandler) GetProfile(context.Context, *v1.GetProfileRequest) (*v1.GetProfileResponse, error) {
@@ -536,6 +559,14 @@ func (c *tripReportServiceClient) SuggestTripSections(ctx context.Context, req *
 func (c *tripReportServiceClient) DeleteTripPhoto(ctx context.Context, req *v1.DeleteTripPhotoRequest) (*v1.DeleteTripPhotoResponse, error) {
 	var res v1.DeleteTripPhotoResponse
 	if err := c.client.CallUnary(ctx, tripReportServiceDeleteTripPhotoSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *tripReportServiceClient) GetTripPhoto(ctx context.Context, req *v1.GetTripPhotoRequest) (*v1.GetTripPhotoResponse, error) {
+	var res v1.GetTripPhotoResponse
+	if err := c.client.CallUnary(ctx, tripReportServiceGetTripPhotoSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -725,6 +756,18 @@ func (h tripReportServiceHandler) deleteTripPhoto(ctx context.Context, _ connect
 		return err
 	}
 	res, err := h.svc.DeleteTripPhoto(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h tripReportServiceHandler) getTripPhoto(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetTripPhotoRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetTripPhoto(ctx, &req)
 	if err != nil {
 		return err
 	}

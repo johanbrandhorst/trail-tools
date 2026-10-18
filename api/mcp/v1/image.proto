@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package mcp.v1;
+
+// An image in a response. MCP tools return the images in a response's
+// top-level Image fields as image content, which clients show to the model,
+// rather than in the response's JSON, where a model would only see the
+// encoded bytes.
+message Image {
+  // The media type of the image, e.g. "image/jpeg".
+  string mime_type = 1;
+  // The encoded image.
+  bytes data = 2;
+}

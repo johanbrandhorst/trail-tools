@@ -38,7 +38,7 @@ func TestImportStravaPhotos(t *testing.T) {
 	}
 	// The activity isn't connected to Strava here, so the photos from the
 	// last sync are imported.
-	if err := e.activities.StoreActivityDetail(ctx, id, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}"), Photos: []activities.Photo{
+	e.storeActivityDetail(id, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}"), Photos: []activities.Photo{
 		{StravaID: "p1", Caption: "Halfway", URL: cdn.URL + "/p1.jpg", Location: &geo.Point{Lat: 0.045, Lng: 0}, RawJSON: []byte("{}")},
 		// 18 minutes in, 30 points along the track.
 		{StravaID: "p2", URL: cdn.URL + "/p2.jpg", TakenTime: tripStart.Add(18 * time.Minute), RawJSON: []byte("{}")},
@@ -50,9 +50,7 @@ func TestImportStravaPhotos(t *testing.T) {
 		},
 		{StravaID: "gone", URL: cdn.URL + "/gone.jpg", RawJSON: []byte("{}")},
 		{StravaID: "text", URL: cdn.URL + "/text.jpg", RawJSON: []byte("{}")},
-	}}, nil, nil); err != nil {
-		t.Fatal(err)
-	}
+	}}, nil, nil)
 	created, err := e.trips.CreateTripReport(ctx, tripsv1.CreateTripReportRequest_builder{ActivityId: activityID}.Build())
 	if err != nil {
 		t.Fatal(err)
@@ -68,14 +66,15 @@ func TestImportStravaPhotos(t *testing.T) {
 	if len(photos) != 3 {
 		t.Fatalf("got %d photos, want the 3 importable ones", len(photos))
 	}
-	// Without a time, a photo is placed at its GPS position.
-	if p := photos[0]; p.GetCaption() != "Halfway" || p.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_GPS ||
-		!approx(p.GetTrackDistanceMeters(), 5000, 1) || p.GetWidth() != 300 {
-		t.Errorf("unexpected photo with a location %v", p)
-	}
-	if p := photos[1]; p.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_TRACK_TIME ||
+	// They're in order along the track: at 3, 5 and 6 km.
+	if p := photos[0]; p.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_TRACK_TIME ||
 		!approx(p.GetLocation().GetLat(), 0.027, 1e-6) || !approx(p.GetTrackDistanceMeters(), 3000, 1) {
 		t.Errorf("unexpected photo placed by time %v", p)
+	}
+	// Without a time, a photo is placed at its GPS position.
+	if p := photos[1]; p.GetCaption() != "Halfway" || p.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_GPS ||
+		!approx(p.GetTrackDistanceMeters(), 5000, 1) || p.GetWidth() != 300 {
+		t.Errorf("unexpected photo with a location %v", p)
 	}
 	// With a time during the activity, the track is trusted over a GPS
 	// position.

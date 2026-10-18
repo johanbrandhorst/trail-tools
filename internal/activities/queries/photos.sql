@@ -13,10 +13,9 @@ insert into strava_activity_photos (
   height,
   lat,
   lng,
-  taken_time,
-  photo_json
+  taken_time
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 on conflict (activity_id, strava_id) do nothing;
 

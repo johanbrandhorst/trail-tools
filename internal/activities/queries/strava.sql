@@ -19,7 +19,14 @@ on conflict (user_id) do update set
   athlete_name = excluded.athlete_name,
   access_token = excluded.access_token,
   refresh_token = excluded.refresh_token,
-  expiry = excluded.expiry
+  expiry = excluded.expiry,
+  -- Reconnecting starts afresh, rather than keeping a failed sync waiting
+  -- for the reconnection.
+  sync_state = 'idle',
+  sync_message = '',
+  sync_failures = 0,
+  resume_time = null,
+  sync_state_time = current_timestamp
 returning *;
 
 -- name: GetStravaConnection :one
@@ -27,7 +34,13 @@ select * from strava_connections
 where user_id = $1;
 
 -- name: ListStravaConnections :many
-select * from strava_connections;
+select * from strava_connections
+order by sync_start_time nulls first, user_id;
+
+-- name: GetStravaConnectionForUpdate :one
+select * from strava_connections
+where user_id = $1
+for update;
 
 -- name: UpdateStravaTokens :exec
 update strava_connections set
@@ -45,6 +58,34 @@ update strava_connections set
   sync_state_time = current_timestamp
 where user_id = $1;
 
+-- name: StartStravaSync :exec
+update strava_connections set
+  sync_state = 'running',
+  sync_message = $2,
+  resume_time = null,
+  sync_start_time = current_timestamp,
+  sync_state_time = current_timestamp
+where user_id = $1;
+
+-- name: FinishStravaSync :exec
+update strava_connections set
+  sync_state = 'idle',
+  sync_message = $2,
+  last_sync_time = $3,
+  sync_failures = 0,
+  resume_time = null,
+  sync_state_time = current_timestamp
+where user_id = $1;
+
+-- name: FailStravaSync :exec
+update strava_connections set
+  sync_state = 'failed',
+  sync_message = $2,
+  sync_failures = $3,
+  resume_time = $4,
+  sync_state_time = current_timestamp
+where user_id = $1;
+
 -- name: UpdateStravaListBefore :exec
 update strava_connections set
   list_before = $2
@@ -57,6 +98,10 @@ where user_id = $1;
 -- name: ListStravaConnectionsByAthlete :many
 select * from strava_connections
 where athlete_id = $1;
+
+-- name: GetActivityIDByStravaID :one
+select id from strava_activities
+where user_id = $1 and strava_id = $2;
 
 -- name: DeleteActivityByStravaID :exec
 delete from strava_activities

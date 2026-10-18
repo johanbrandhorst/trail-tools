@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1/routesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/routes"
@@ -25,8 +26,8 @@ type RouteRepository interface {
 
 type ActivityRepository interface {
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
-	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) ([]byte, error)
-	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) ([]activities.Track, error)
+	GetActivityStreams(ctx context.Context, userID, activityID pgtype.UUID) (*activitiesv1.ActivityStreams, error)
+	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) (tracks []activities.Track, truncated bool, err error)
 }
 
 // Service implements API handlers for the route service.

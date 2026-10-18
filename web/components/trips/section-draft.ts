@@ -99,9 +99,29 @@ export const rangeError = (section: DraftSection): string | undefined => {
 };
 
 /**
+ * InsertionPoint returns where the photo at index among a saved section's
+ * photos goes among a draft section's: after the nearest photo before it
+ * that the draft section has, or else first.
+ */
+const insertionPoint = (
+  photoIds: string[],
+  saved: string[],
+  index: number
+): number => {
+  let at = 0;
+  for (const previous of saved.slice(0, index)) {
+    const found = photoIds.indexOf(previous);
+    if (found >= 0) {
+      at = found + 1;
+    }
+  }
+  return at;
+};
+
+/**
  * Reconcile fits a draft to the report's current photos: deleted photos are
  * dropped, and photos the draft doesn't have yet, e.g. just uploaded, go
- * where the server put them.
+ * where the server put them: after the photo before them, or first.
  */
 export const reconcile = (
   sections: DraftSection[],
@@ -120,11 +140,15 @@ export const reconcile = (
     }),
   }));
   for (const saved of report.sections) {
-    for (const id of saved.photoIds) {
+    for (const [index, id] of saved.photoIds.entries()) {
       if (!listed.has(id)) {
         const target =
           result.find((section) => section.id === saved.id) ?? result.at(-1);
-        target?.photoIds.push(id);
+        target?.photoIds.splice(
+          insertionPoint(target.photoIds, saved.photoIds, index),
+          0,
+          id
+        );
         listed.add(id);
       }
     }
@@ -298,6 +322,31 @@ export const movePhotoToSection = (
       ? { ...section, photoIds: [...without, photoId] }
       : { ...section, photoIds: without };
   });
+
+/**
+ * MovePhotoTo moves a photo to a place in a section, e.g. where it was
+ * dropped: index is the place among the section's photos as they are, before
+ * the photo moves.
+ */
+export const movePhotoTo = (
+  sections: DraftSection[],
+  photoId: string,
+  key: string,
+  index: number
+): DraftSection[] => {
+  const from =
+    sections
+      .find((section) => section.key === key)
+      ?.photoIds.indexOf(photoId) ?? -1;
+  // Moving down a section, the photo's old place is taken out first.
+  const at = from >= 0 && from < index ? index - 1 : index;
+  return sections.map((section) => {
+    const without = section.photoIds.filter((id) => id !== photoId);
+    return section.key === key
+      ? { ...section, photoIds: spliced(without, at, 0, photoId) }
+      : { ...section, photoIds: without };
+  });
+};
 
 // MovePhotoWithin moves a photo by delta places within its section.
 export const movePhotoWithin = (

@@ -29,8 +29,9 @@ const DefaultBaseURL = "https://www.strava.com/api/v3"
 // /activities/<id> and athletes at /athletes/<id>.
 const WebURL = "https://www.strava.com"
 
-// ErrUnauthorized is returned when Strava rejects the access token, for
-// example because the user revoked access.
+// ErrUnauthorized is returned when Strava rejects the access token, or the
+// refresh token when refreshing it, for example because the user revoked
+// access.
 var ErrUnauthorized = errors.New("strava authorization was revoked or expired, reconnect Strava")
 
 // ErrNotFound is returned when a resource does not exist.
@@ -204,13 +205,45 @@ func (c *Client) Refresh(ctx context.Context, refreshToken string) (*Token, erro
 	token, err := src.Token()
 	if err != nil {
 		var retrieveErr *oauth2.RetrieveError
-		if errors.As(err, &retrieveErr) && retrieveErr.Response != nil &&
-			(retrieveErr.Response.StatusCode == http.StatusUnauthorized || retrieveErr.Response.StatusCode == http.StatusBadRequest) {
+		if errors.As(err, &retrieveErr) && refreshTokenRejected(retrieveErr) {
 			return nil, ErrUnauthorized
 		}
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 	return &Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, Expiry: token.Expiry}, nil
+}
+
+// fault is the body of Strava's error responses.
+type fault struct {
+	Message string `json:"message"`
+	Errors  []struct {
+		Resource string `json:"resource"`
+		Field    string `json:"field"`
+		Code     string `json:"code"`
+	} `json:"errors"`
+}
+
+// refreshTokenRejected returns whether the token endpoint rejected the
+// refresh token itself, as once the athlete revokes access, rather than
+// failing otherwise. Strava responds to many problems with a 400, such as
+// an invalid client ID or secret, which would make every connection look
+// revoked, so only the refresh token being invalid counts: Strava reports
+// it as an invalid "refresh_token" field, and OAuth servers as an
+// invalid_grant.
+func refreshTokenRejected(err *oauth2.RetrieveError) bool {
+	if err.ErrorCode == "invalid_grant" {
+		return true
+	}
+	var f fault
+	if json.Unmarshal(err.Body, &f) != nil {
+		return false
+	}
+	for _, e := range f.Errors {
+		if e.Field == "refresh_token" && e.Code == "invalid" {
+			return true
+		}
+	}
+	return false
 }
 
 // get performs an authenticated GET request and returns the response body.

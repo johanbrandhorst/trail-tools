@@ -1073,8 +1073,6 @@ type StravaActivity struct {
 	DeviceName          string
 	RelativeEffort      int32
 	PhotoCount          int32
-	SummaryJSON         json.RawMessage
-	DetailJSON          json.RawMessage
 	MinLat              pgtype.Float8
 	MinLng              pgtype.Float8
 	MaxLat              pgtype.Float8
@@ -1083,6 +1081,7 @@ type StravaActivity struct {
 	CreateTime          pgtype.Timestamptz
 	UpdateTime          pgtype.Timestamptz
 	SyncRequested       bool
+	SyncFailures        int32
 }
 
 type StravaActivityPhoto struct {
@@ -1096,12 +1095,10 @@ type StravaActivityPhoto struct {
 	Lat        pgtype.Float8
 	Lng        pgtype.Float8
 	TakenTime  pgtype.Timestamptz
-	PhotoJSON  json.RawMessage
 }
 
 type StravaActivityStream struct {
 	ActivityID    pgtype.UUID
-	Streams       []byte
 	TrackPolyline pgtype.Text
 }
 
@@ -1119,6 +1116,8 @@ type StravaConnection struct {
 	CreateTime    pgtype.Timestamptz
 	SyncStateTime pgtype.Timestamptz
 	ListBefore    pgtype.Timestamptz
+	SyncFailures  int32
+	SyncStartTime pgtype.Timestamptz
 }
 
 type TrainingPlan struct {
