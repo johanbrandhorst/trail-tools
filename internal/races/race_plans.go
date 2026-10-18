@@ -295,6 +295,26 @@ func (r *Repository) GetRacePlan(ctx context.Context, userID, planID pgtype.UUID
 	return p.plan()
 }
 
+// GetRacePlanForRace gets the plan of one of the user's races, the first one
+// created if it has several. It returns store.ErrNotFound if the race has no
+// plan.
+func (r *Repository) GetRacePlanForRace(ctx context.Context, userID, raceID pgtype.UUID) (*RacePlan, error) {
+	var p planReader
+	err := r.db.ReadSnapshot(ctx, func(b *store.Batch) error {
+		p.queueRow(b, func(q *gen.Queries) (*gen.RacePlan, error) {
+			return q.GetRacePlanForRace(ctx, &gen.GetRacePlanForRaceParams{RaceID: raceID, UserID: userID})
+		})
+		return nil
+	}, func(b *store.Batch) error {
+		p.queueChildren(ctx, b, []pgtype.UUID{p.rows[0].ID})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return p.plan()
+}
+
 // GetSharedRacePlan gets a shared race plan and its race by share token.
 func (r *Repository) GetSharedRacePlan(ctx context.Context, token string) (*RacePlan, *Race, error) {
 	if token == "" {
