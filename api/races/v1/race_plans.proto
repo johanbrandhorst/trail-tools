@@ -40,7 +40,8 @@ service RacePlanService {
   // Delete a race plan.
   rpc DeleteRacePlan(DeleteRacePlanRequest) returns (DeleteRacePlanResponse);
   // Create a share link for a race plan. Anyone with the link can view the
-  // plan. Calling this again returns the existing link.
+  // plan, and record race day data: the start time, the LiveTrack link and
+  // checkpoint times. Calling this again returns the existing link.
   rpc ShareRacePlan(ShareRacePlanRequest) returns (ShareRacePlanResponse);
   // Revoke a race plan's share link.
   rpc UnshareRacePlan(UnshareRacePlanRequest) returns (UnshareRacePlanResponse);
@@ -622,7 +623,9 @@ message GetSharedRacePlanRequest {
 message GetSharedRacePlanResponse {
   // The plan.
   RacePlan plan = 1;
-  // The race.
+  // The race, with only what crew need: its name, date, start time,
+  // location, website, distance, elevation gain, cutoff and priority. Its
+  // notes and IDs are the owner's own and aren't shared.
   Race race = 2;
   // The analysis of the plan.
   RacePlanAnalysis analysis = 3;

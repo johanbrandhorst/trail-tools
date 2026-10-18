@@ -153,11 +153,15 @@ func eventFromProto(userID pgtype.UUID, e *racesv1.RaceEvent) (*races.Event, err
 	if name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "name is required")
 	}
+	website, err := parseWebsiteURL(e.GetWebsiteUrl())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error())
+	}
 	return &races.Event{
 		UserID:     userID,
 		Name:       name,
 		Location:   strings.TrimSpace(e.GetLocation()),
-		WebsiteURL: strings.TrimSpace(e.GetWebsiteUrl()),
+		WebsiteURL: website,
 		Notes:      e.GetNotes(),
 	}, nil
 }
@@ -178,7 +182,7 @@ func eventToProto(e *races.Event, eventRaces []*races.Race) *racesv1.RaceEvent {
 		Id:         store.UUIDToString(e.ID),
 		Name:       e.Name,
 		Location:   e.Location,
-		WebsiteUrl: e.WebsiteURL,
+		WebsiteUrl: websiteURL(e.WebsiteURL),
 		Notes:      e.Notes,
 		RaceIds:    raceIDs,
 		StartDate:  startDate,

@@ -756,6 +756,52 @@ func (q *Queries) GetRacePlanByShareToken(ctx context.Context, shareToken pgtype
 	return &i, err
 }
 
+const getRacePlanForRace = `-- name: GetRacePlanForRace :one
+select id, user_id, race_id, share_token, goals_a_finish_seconds, goals_b_finish_seconds, goals_c_finish_seconds, goals_notes, pacing_strategy, pacing_hike_grade_percent, pacing_heart_rate_cap_bpm, pacing_notes, nutrition_carbs_grams_per_hour, nutrition_fluid_ml_per_hour, nutrition_sodium_mg_per_hour, nutrition_notes, crew_has_crew, crew_members, crew_notes, mental_mantras, mental_notes, notes, create_time, update_time, race_day_livetrack_url, race_day_start_time from race_plans
+where race_id = $1 and user_id = $2
+order by create_time, id
+limit 1
+`
+
+type GetRacePlanForRaceParams struct {
+	RaceID pgtype.UUID
+	UserID pgtype.UUID
+}
+
+func (q *Queries) GetRacePlanForRace(ctx context.Context, arg *GetRacePlanForRaceParams) (*RacePlan, error) {
+	row := q.db.QueryRow(ctx, getRacePlanForRace, arg.RaceID, arg.UserID)
+	var i RacePlan
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.RaceID,
+		&i.ShareToken,
+		&i.GoalsAFinishSeconds,
+		&i.GoalsBFinishSeconds,
+		&i.GoalsCFinishSeconds,
+		&i.GoalsNotes,
+		&i.PacingStrategy,
+		&i.PacingHikeGradePercent,
+		&i.PacingHeartRateCapBpm,
+		&i.PacingNotes,
+		&i.NutritionCarbsGramsPerHour,
+		&i.NutritionFluidMlPerHour,
+		&i.NutritionSodiumMgPerHour,
+		&i.NutritionNotes,
+		&i.CrewHasCrew,
+		&i.CrewMembers,
+		&i.CrewNotes,
+		&i.MentalMantras,
+		&i.MentalNotes,
+		&i.Notes,
+		&i.CreateTime,
+		&i.UpdateTime,
+		&i.RaceDayLivetrackURL,
+		&i.RaceDayStartTime,
+	)
+	return &i, err
+}
+
 const listRaceEvents = `-- name: ListRaceEvents :many
 select id, user_id, name, location, website_url, notes, create_time, update_time from race_events
 where user_id = $1
