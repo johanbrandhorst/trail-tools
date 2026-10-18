@@ -43,10 +43,13 @@ const (
 	// Strava calls the webhook.
 	subscribeTimeout = 30 * time.Second
 	// ownerEventLimit is the most events of an athlete handled in each
-	// ownerEventWindow. Each event spends requests of the application's
-	// rate limit, which all users share, so beyond the limit, as in a bulk
-	// upload, the athlete's activities sync with the next sync instead.
-	ownerEventLimit  = 20
+	// ownerEventWindow. Each event spends two or three requests of the
+	// application's rate limit, which all users share, and Strava's default
+	// is 100 reads in 15 minutes, so beyond the limit, as in a bulk upload,
+	// the athlete's activities sync with the next sync instead, which lists
+	// them in a request. An athlete uploading and editing activities stays
+	// well within it.
+	ownerEventLimit  = 10
 	ownerEventWindow = 10 * time.Minute
 	// maxTrackedOwners is how many athletes' events are counted before
 	// forgetting the counts of windows that ended, to bound their memory.

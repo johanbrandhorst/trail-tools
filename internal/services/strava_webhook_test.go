@@ -303,7 +303,7 @@ func TestStravaWebhookAuthentication(t *testing.T) {
 	// An athlete's events are handled up to the limit. Beyond it, the
 	// activities sync with the next sync instead, which a background sync
 	// starts right away.
-	const limit = 20
+	const limit = 10
 	for i := range limit {
 		if got := post(callbackURL, 100, 1000); got != http.StatusOK {
 			t.Fatalf("event %d: got status %d", i, got)
