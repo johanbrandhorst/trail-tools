@@ -1,6 +1,7 @@
 package track
 
 import (
+	"math"
 	"slices"
 	"testing"
 
@@ -39,6 +40,35 @@ func TestPublicPoints(t *testing.T) {
 			if i > 0 && p.GetDistanceMeters() <= got[i-1].GetDistanceMeters() {
 				t.Errorf("%s: distances aren't along the whole track: %v", name, got)
 			}
+		}
+	}
+}
+
+func TestHiddenZone(t *testing.T) {
+	t.Parallel()
+	center := geo.Point{Lat: 47.37, Lng: 8.54}
+	const radius = 500
+	var bearings []float64
+	for i := range 200 {
+		seed := [16]byte{byte(i), byte(i >> 8)}
+		z := hiddenZone(center, radius, seed)
+		// It always covers the zone, centered a quarter to half the radius
+		// away.
+		offset := geo.Distance(z.Center, center)
+		if offset < radius/4-1 || offset > radius/2+1 || offset+radius > z.RadiusMeters+1 {
+			t.Fatalf("seed %d: got a circle of %v m centered %v m away, want it to cover the zone from %v to %v m away", i, z.RadiusMeters, offset, radius/4, radius/2)
+		}
+		// It's the same every time.
+		if again := hiddenZone(center, radius, seed); again != z {
+			t.Fatalf("seed %d: got %v, then %v", i, z, again)
+		}
+		bearings = append(bearings, math.Atan2(z.Center.Lng-center.Lng, z.Center.Lat-center.Lat))
+	}
+	// The directions differ between seeds, all around the zone.
+	slices.Sort(bearings)
+	for i := 1; i < len(bearings); i++ {
+		if gap := bearings[i] - bearings[i-1]; gap > math.Pi/4 {
+			t.Errorf("no circle is centered in a direction between %.2f and %.2f radians", bearings[i-1], bearings[i])
 		}
 	}
 }

@@ -1178,10 +1178,11 @@ type TripReportSection struct {
 }
 
 type User struct {
-	ID         pgtype.UUID
-	CreateTime pgtype.Timestamptz
-	IsAdmin    bool
-	AvatarKey  pgtype.Text
+	ID          pgtype.UUID
+	CreateTime  pgtype.Timestamptz
+	IsAdmin     bool
+	AvatarKey   pgtype.Text
+	PrivacySeed pgtype.UUID
 }
 
 type Workout struct {

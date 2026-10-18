@@ -330,7 +330,7 @@ func (s *Service) ListTripReports(ctx context.Context, req *tripsv1.ListTripRepo
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.reportsToProto(ctx, reports, profile)
+	result, err := s.reportsToProto(ctx, reports, profile, false)
 	if err != nil {
 		return nil, err
 	}
@@ -744,7 +744,7 @@ func (s *Service) GetPublicProfile(ctx context.Context, req *tripsv1.GetPublicPr
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list trip reports")
 	}
-	result, err := s.reportsToProto(ctx, reports, profile)
+	result, err := s.reportsToProto(ctx, reports, profile, true)
 	if err != nil {
 		return nil, err
 	}
@@ -777,21 +777,15 @@ func (s *Service) GetPublicTripReport(ctx context.Context, req *tripsv1.GetPubli
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list privacy zones")
 	}
-	zones := trackZones(zoneList)
+	zones := track.HiddenZones(zoneList)
 	var points []*routesv1.RoutePoint
 	var breaks []int32
 	if t != nil {
 		points, breaks = t.PublicPoints(zones)
 	}
-	visible := make([]*trips.Photo, len(photos[report.ID]))
-	for i, p := range photos[report.ID] {
-		visible[i] = p
-		if p.Location != nil && track.InZones(geo.Point{Lat: p.Location.Lat, Lng: p.Location.Lng}, zones) {
-			hidden := *p
-			hidden.Location = nil
-			visible[i] = &hidden
-		}
-	}
+	visible := hidePhotoLocations(photos[report.ID], func(loc *trips.Location) bool {
+		return track.InZones(geo.Point{Lat: loc.Lat, Lng: loc.Lng}, zones)
+	})
 	sections, err := s.repo.ListSections(ctx, report.ID)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list sections")
@@ -855,8 +849,10 @@ func (s *Service) reportWithStory(ctx context.Context, report *trips.Report) (*t
 }
 
 // reportsToProto converts reports of one author for lists, with their
-// photos and excerpts but without their sections.
-func (s *Service) reportsToProto(ctx context.Context, reports []*trips.Report, profile *trips.Profile) ([]*tripsv1.TripReport, error) {
+// photos and excerpts but without their sections. Public lists leave out
+// where the photos were taken: lists don't show it, and leaving it out saves
+// hiding the photos in the author's privacy zones.
+func (s *Service) reportsToProto(ctx context.Context, reports []*trips.Report, profile *trips.Profile, public bool) ([]*tripsv1.TripReport, error) {
 	ids := make([]pgtype.UUID, len(reports))
 	for i, r := range reports {
 		ids[i] = r.ID
@@ -871,9 +867,29 @@ func (s *Service) reportsToProto(ctx context.Context, reports []*trips.Report, p
 	}
 	result := make([]*tripsv1.TripReport, len(reports))
 	for i, r := range reports {
-		result[i] = s.reportToProto(r, &story{photos: photos[r.ID], excerpt: excerpts[r.ID]}, profile)
+		reportPhotos := photos[r.ID]
+		if public {
+			reportPhotos = hidePhotoLocations(reportPhotos, func(*trips.Location) bool { return true })
+		}
+		result[i] = s.reportToProto(r, &story{photos: reportPhotos, excerpt: excerpts[r.ID]}, profile)
 	}
 	return result, nil
+}
+
+// hidePhotoLocations returns the photos with the locations removed of those
+// taken where hide reports true, for public pages. It copies the photos it
+// changes, as the others may share them.
+func hidePhotoLocations(photos []*trips.Photo, hide func(*trips.Location) bool) []*trips.Photo {
+	visible := make([]*trips.Photo, len(photos))
+	for i, p := range photos {
+		visible[i] = p
+		if p.Location != nil && hide(p.Location) {
+			hidden := *p
+			hidden.Location = nil
+			visible[i] = &hidden
+		}
+	}
+	return visible
 }
 
 // deleteImages deletes the images of a photo. Failures are logged, as the
@@ -973,13 +989,4 @@ func (s *Service) toConnectError(ctx context.Context, err error, msg string) err
 		s.report.Report(ctx, msg, err)
 		return connect.NewError(connect.CodeInternal, msg).WithCause(err)
 	}
-}
-
-// trackZones returns privacy zones as the zones tracks are hidden in.
-func trackZones(zones []users.PrivacyZone) []track.Zone {
-	out := make([]track.Zone, len(zones))
-	for i, z := range zones {
-		out[i] = track.Zone{Center: z.Center, RadiusMeters: float64(z.RadiusMeters)}
-	}
-	return out
 }

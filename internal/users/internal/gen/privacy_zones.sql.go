@@ -51,20 +51,32 @@ func (q *Queries) InsertPrivacyZones(ctx context.Context, arg *InsertPrivacyZone
 }
 
 const listPrivacyZones = `-- name: ListPrivacyZones :many
-select id, user_id, name, lat, lng, radius_meters, create_time from privacy_zones
-where user_id = $1
-order by create_time, id
+select z.id, z.user_id, z.name, z.lat, z.lng, z.radius_meters, z.create_time, u.privacy_seed from privacy_zones z
+join users u on u.id = z.user_id
+where z.user_id = $1
+order by z.create_time, z.id
 `
 
-func (q *Queries) ListPrivacyZones(ctx context.Context, userID pgtype.UUID) ([]*PrivacyZone, error) {
+type ListPrivacyZonesRow struct {
+	ID           pgtype.UUID
+	UserID       pgtype.UUID
+	Name         string
+	Lat          float64
+	Lng          float64
+	RadiusMeters int32
+	CreateTime   pgtype.Timestamptz
+	PrivacySeed  pgtype.UUID
+}
+
+func (q *Queries) ListPrivacyZones(ctx context.Context, userID pgtype.UUID) ([]*ListPrivacyZonesRow, error) {
 	rows, err := q.db.Query(ctx, listPrivacyZones, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*PrivacyZone
+	var items []*ListPrivacyZonesRow
 	for rows.Next() {
-		var i PrivacyZone
+		var i ListPrivacyZonesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -73,6 +85,7 @@ func (q *Queries) ListPrivacyZones(ctx context.Context, userID pgtype.UUID) ([]*
 			&i.Lng,
 			&i.RadiusMeters,
 			&i.CreateTime,
+			&i.PrivacySeed,
 		); err != nil {
 			return nil, err
 		}
