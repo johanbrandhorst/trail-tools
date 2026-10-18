@@ -1,7 +1,8 @@
 -- name: ListPrivacyZones :many
-select * from privacy_zones
-where user_id = $1
-order by create_time, id;
+select z.*, u.privacy_seed from privacy_zones z
+join users u on u.id = z.user_id
+where z.user_id = $1
+order by z.create_time, z.id;
 
 -- name: DeletePrivacyZones :exec
 delete from privacy_zones

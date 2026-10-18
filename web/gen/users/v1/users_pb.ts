@@ -18,7 +18,10 @@ export const file_users_v1_users: GenFile = /*@__PURE__*/
 /**
  * A privacy zone: a circle around a place, like the user's home, within
  * which their tracks and photos are hidden on public pages, like trip and
- * race reports.
+ * race reports. The circle hidden is half the radius larger, and centered a
+ * quarter to half the radius away from the zone's center, in a secret
+ * direction that stays the same on every page. Otherwise the place at the
+ * center could be found from where several public tracks are cut.
  *
  * @generated from message users.v1.PrivacyZone
  */

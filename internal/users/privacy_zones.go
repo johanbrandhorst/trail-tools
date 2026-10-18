@@ -18,6 +18,10 @@ type PrivacyZone struct {
 	Name         string
 	Center       geo.Point
 	RadiusMeters int32
+	// Seed is the user's secret that public pages derive the circle they
+	// hide from, so it isn't centered on the zone; see track.HiddenZones.
+	// Set by ListPrivacyZones, and ignored by SetPrivacyZones.
+	Seed [16]byte
 }
 
 // ListPrivacyZones lists the user's privacy zones, the oldest first.
@@ -33,6 +37,7 @@ func (r *Repository) ListPrivacyZones(ctx context.Context, userID pgtype.UUID) (
 			Name:         row.Name,
 			Center:       geo.Point{Lat: row.Lat, Lng: row.Lng},
 			RadiusMeters: row.RadiusMeters,
+			Seed:         row.PrivacySeed.Bytes,
 		}
 	}
 	return zones, nil

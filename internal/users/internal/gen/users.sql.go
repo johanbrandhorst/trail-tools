@@ -23,7 +23,7 @@ func (q *Queries) GetAvatarKeyForUpdate(ctx context.Context, id pgtype.UUID) (pg
 }
 
 const getUser = `-- name: GetUser :one
-select id, create_time, is_admin, avatar_key from users where id = $1
+select id, create_time, is_admin, avatar_key, privacy_seed from users where id = $1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (*User, error) {
@@ -34,6 +34,7 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (*User, error) {
 		&i.CreateTime,
 		&i.IsAdmin,
 		&i.AvatarKey,
+		&i.PrivacySeed,
 	)
 	return &i, err
 }
