@@ -192,8 +192,8 @@ type PhotoUploadLinkRepository interface {
 
 // CreatePhotoUploadLink stores a new link to upload photos to the report of
 // link with, expiring PhotoUploadLinkLifetime after now, and returns it with
-// its URL: url followed by its secret token. The caller must check that the
-// report is the user's.
+// its URL and secret token. The caller must check that the report is the
+// user's.
 func CreatePhotoUploadLink(ctx context.Context, links PhotoUploadLinkRepository, link *trips.PhotoUploadLink, url string, now time.Time) (*tripsv1.PhotoUpload, error) {
 	token, hash := photos.NewUploadToken()
 	link.TokenSHA256 = hash
@@ -203,7 +203,8 @@ func CreatePhotoUploadLink(ctx context.Context, links PhotoUploadLinkRepository,
 		return nil, err
 	}
 	return tripsv1.PhotoUpload_builder{
-		Url:        url + token,
+		Url:        url,
 		ExpireTime: timestamppb.New(created.ExpireTime),
+		Token:      token,
 	}.Build(), nil
 }

@@ -108,13 +108,16 @@ func exifJPEG(t *testing.T, w, h int, x testEXIF) []byte {
 	return append(out, jpg[2:]...)
 }
 
-// post sends a photo to an upload link, and returns the response with its
-// body read.
-func (e *env) post(url string, body io.Reader, contentType string) (*http.Response, []byte) {
+// post sends a photo to an upload link's URL with its token, and returns
+// the response with its body read.
+func (e *env) post(url, token string, body io.Reader, contentType string) (*http.Response, []byte) {
 	e.t.Helper()
 	req, err := http.NewRequest(http.MethodPost, e.srv.URL+strings.TrimPrefix(url, "https://trail.example"), body)
 	if err != nil {
 		e.t.Fatal(err)
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
@@ -170,13 +173,13 @@ func TestTripPhotoUploadLinks(t *testing.T) {
 		t.Fatalf("CreateTripPhotoUpload: %v", err)
 	}
 	link := resp.GetUpload()
-	if !strings.HasPrefix(link.GetUrl(), "https://trail.example/trip-photo-uploads/") ||
+	if link.GetUrl() != "https://trail.example/trip-photo-uploads" || link.GetToken() == "" ||
 		link.GetExpireTime().AsTime().Before(before.Add(59*time.Minute)) || link.GetExpireTime().AsTime().After(time.Now().Add(time.Hour)) {
 		t.Errorf("unexpected upload link %v", link)
 	}
 	upload := func(body io.Reader, contentType, query string) *tripsv1.TripPhoto {
 		t.Helper()
-		resp, data := e.post(link.GetUrl()+query, body, contentType)
+		resp, data := e.post(link.GetUrl()+query, link.GetToken(), body, contentType)
 		if resp.StatusCode != http.StatusCreated {
 			t.Fatalf("upload: status %d: %s", resp.StatusCode, data)
 		}
@@ -226,18 +229,20 @@ func TestTripPhotoUploadLinks(t *testing.T) {
 
 	// Errors say what to do.
 	heic := append([]byte{0, 0, 0, 24}, "ftypheic\x00\x00\x00\x00mif1heic"...)
+	photo := string(testJPEG(t, 10, 10))
 	for name, tt := range map[string]struct {
-		url, body  string
-		wantStatus int
-		wantText   string
+		url, token, body string
+		wantStatus       int
+		wantText         string
 	}{
-		"HEIC":           {link.GetUrl(), string(heic), http.StatusBadRequest, "convert it to JPEG"},
-		"empty":          {link.GetUrl(), "", http.StatusBadRequest, "curl --data-binary"},
-		"long caption":   {link.GetUrl() + "?caption=" + strings.Repeat("a", 2001), string(testJPEG(t, 10, 10)), http.StatusBadRequest, "caption"},
-		"unknown link":   {"/trip-photo-uploads/guess", string(testJPEG(t, 10, 10)), http.StatusNotFound, "CreateTripPhotoUpload"},
-		"race link path": {strings.Replace(link.GetUrl(), "/trip-photo-uploads/", "/race-report-photo-uploads/", 1), string(testJPEG(t, 10, 10)), http.StatusNotFound, "CreateRaceReportPhotoUpload"},
+		"HEIC":          {link.GetUrl(), link.GetToken(), string(heic), http.StatusBadRequest, "convert it to JPEG"},
+		"empty":         {link.GetUrl(), link.GetToken(), "", http.StatusBadRequest, "--data-binary"},
+		"long caption":  {link.GetUrl() + "?caption=" + strings.Repeat("a", 2001), link.GetToken(), photo, http.StatusBadRequest, "caption"},
+		"no token":      {link.GetUrl(), "", photo, http.StatusUnauthorized, "Authorization: Bearer"},
+		"unknown token": {link.GetUrl(), "guess", photo, http.StatusNotFound, "CreateTripPhotoUpload"},
+		"race path":     {"/race-report-photo-uploads", link.GetToken(), photo, http.StatusNotFound, "CreateRaceReportPhotoUpload"},
 	} {
-		resp, data := e.post(tt.url, strings.NewReader(tt.body), "")
+		resp, data := e.post(tt.url, tt.token, strings.NewReader(tt.body), "")
 		if resp.StatusCode != tt.wantStatus || !strings.Contains(string(data), tt.wantText) {
 			t.Errorf("%s: status %d: %s, want %d with %q", name, resp.StatusCode, data, tt.wantStatus, tt.wantText)
 		}
@@ -256,7 +261,7 @@ func TestTripPhotoUploadLinks(t *testing.T) {
 	if _, err := e.db.Exec(ctx, "update photo_upload_links set expire_time = now() - interval '1 minute'"); err != nil {
 		t.Fatal(err)
 	}
-	if resp, data := e.post(link.GetUrl(), bytes.NewReader(testJPEG(t, 10, 10)), ""); resp.StatusCode != http.StatusNotFound {
+	if resp, data := e.post(link.GetUrl(), link.GetToken(), bytes.NewReader(testJPEG(t, 10, 10)), ""); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("expired link: status %d: %s, want 404", resp.StatusCode, data)
 	}
 	// Creating a link deletes the user's expired ones.

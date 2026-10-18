@@ -31,8 +31,8 @@ const (
 	// /race-report-photos/<id>/<size>.jpg.
 	PhotoPath = "/race-report-photos/"
 	// PhotoUploadPath is the path of the links agents upload photos to race
-	// reports with, followed by their secret token.
-	PhotoUploadPath = "/race-report-photo-uploads/"
+	// reports with.
+	PhotoUploadPath = "/race-report-photo-uploads"
 	// maxPhotosPerReport is the most photos a race report can have.
 	maxPhotosPerReport = 200
 )
@@ -192,7 +192,7 @@ func (s *Service) CreateRaceReportPhotoUpload(ctx context.Context, req *racesv1.
 // PhotoUploadHandler serves the links agents upload photos to race reports
 // with, at PhotoUploadPath. See photos.UploadHandler.
 func (s *Service) PhotoUploadHandler() http.Handler {
-	return photos.UploadHandler(s.report, PhotoUploadPath, s.findUploadLink, s.uploadWithLink)
+	return photos.UploadHandler(s.report, s.findUploadLink, s.uploadWithLink)
 }
 
 // findUploadLink returns the race report upload link with the token.

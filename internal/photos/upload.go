@@ -36,30 +36,36 @@ type Upload struct {
 	Caption string
 }
 
-// UploadHandler serves the links AI agents upload photos with, at path
-// followed by a link's secret token. Agents can't send files to MCP tools,
-// but those with a shell can send them to a link with curl. Each POST or PUT
-// request uploads one photo, as the request body or the file of a multipart
-// form, with an optional caption in the caption query parameter or form
-// field.
+// UploadHandler serves the links AI agents upload photos with. Agents can't
+// send files to MCP tools, but those with a shell can send them to a link
+// with curl. Each POST or PUT request uploads one photo, as the request body
+// or the file of a multipart form, with an optional caption in the caption
+// query parameter or form field, and the link's secret token in an
+// "Authorization: Bearer <token>" header. The token isn't in the URL, as
+// request logs record URLs, and curl doesn't send fragments.
 //
 // find returns what the link with a token uploads to, and upload adds a
 // photo to it and returns the response to send as JSON. They return Connect
 // errors, which are sent as JSON with their HTTP status, as their messages
 // tell agents what to do. Other errors are reported. The token is the only
 // authentication, like a password, so the handler isn't behind the authn
-// middleware.
-func UploadHandler[L any](report *errreport.Reporter, path string, find func(ctx context.Context, token string) (L, error), upload func(ctx context.Context, link L, u *Upload) (proto.Message, error)) http.Handler {
+// middleware, which would take it for an API token.
+func UploadHandler[L any](report *errreport.Reporter, find func(ctx context.Context, token string) (L, error), upload func(ctx context.Context, link L, u *Upload) (proto.Message, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		if r.Method != http.MethodPost && r.Method != http.MethodPut {
 			w.Header().Set("Allow", "POST, PUT")
 			writeError(w, report, r, connect.NewError(connect.CodeUnimplemented,
-				"upload a photo with a POST request with the file as the body, e.g. curl --data-binary @photo.jpg '<link>'"),
+				"upload a photo with a POST request with the file as the body, e.g. curl -H 'Authorization: Bearer <token>' --data-binary @photo.jpg '<url>'"),
 				http.StatusMethodNotAllowed)
 			return
 		}
-		token := strings.TrimPrefix(r.URL.Path, path)
+		token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if !ok || token == "" {
+			writeError(w, report, r, connect.NewError(connect.CodeUnauthenticated,
+				"send the upload link's token in an Authorization header, e.g. curl -H 'Authorization: Bearer <token>' --data-binary @photo.jpg '<url>'"), 0)
+			return
+		}
 		link, err := find(r.Context(), token)
 		if err != nil {
 			writeError(w, report, r, err, 0)
@@ -148,7 +154,7 @@ func checkSize(data []byte) error {
 	switch {
 	case len(data) == 0:
 		return connect.NewError(connect.CodeInvalidArgument,
-			"the request has no photo; send the file as the request body, e.g. curl --data-binary @photo.jpg '<link>', or as a file of a multipart form")
+			"the request has no photo; send the file as the request body, e.g. curl -H 'Authorization: Bearer <token>' --data-binary @photo.jpg '<url>', or as a file of a multipart form")
 	case len(data) > MaxBytes:
 		return connect.Errorf(connect.CodeInvalidArgument, "the photo must be at most %d MB; scale it down first", MaxBytes>>20).WithCause(errTooLarge)
 	}
@@ -170,7 +176,7 @@ func writeError(w http.ResponseWriter, report *errreport.Reporter, r *http.Reque
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	// Messages show agents commands like curl ... '<link>', which read
+	// Messages show agents commands like curl ... '<url>', which read
 	// better without escaping for HTML.
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)

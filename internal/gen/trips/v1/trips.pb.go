@@ -2577,6 +2577,7 @@ type PhotoUpload struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Url        string                 `protobuf:"bytes,1,opt,name=url,proto3"`
 	xxx_hidden_ExpireTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3"`
+	xxx_hidden_Token      string                 `protobuf:"bytes,3,opt,name=token,proto3"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -2620,12 +2621,23 @@ func (x *PhotoUpload) GetExpireTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *PhotoUpload) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
 func (x *PhotoUpload) SetUrl(v string) {
 	x.xxx_hidden_Url = v
 }
 
 func (x *PhotoUpload) SetExpireTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_ExpireTime = v
+}
+
+func (x *PhotoUpload) SetToken(v string) {
+	x.xxx_hidden_Token = v
 }
 
 func (x *PhotoUpload) HasExpireTime() bool {
@@ -2642,11 +2654,14 @@ func (x *PhotoUpload) ClearExpireTime() {
 type PhotoUpload_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The URL to upload photos to. It includes a secret token, which is all
-	// that's needed to upload.
+	// The URL to upload photos to.
 	Url string
 	// When the link expires.
 	ExpireTime *timestamppb.Timestamp
+	// The link's secret token, which is all that's needed to upload, sent in
+	// an "Authorization: Bearer <token>" header. It isn't in the URL, so that
+	// it isn't in request logs.
+	Token string
 }
 
 func (b0 PhotoUpload_builder) Build() *PhotoUpload {
@@ -2655,6 +2670,7 @@ func (b0 PhotoUpload_builder) Build() *PhotoUpload {
 	_, _ = b, x
 	x.xxx_hidden_Url = b.Url
 	x.xxx_hidden_ExpireTime = b.ExpireTime
+	x.xxx_hidden_Token = b.Token
 	return m0
 }
 
@@ -4398,11 +4414,12 @@ const file_trips_v1_trips_proto_rawDesc = "" +
 	"taken_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\ttakenTime\x12(\n" +
 	"\x10taken_local_time\x18\x06 \x01(\tR\x0etakenLocalTime\"D\n" +
 	"\x17UploadTripPhotoResponse\x12)\n" +
-	"\x05photo\x18\x01 \x01(\v2\x13.trips.v1.TripPhotoR\x05photo\"\\\n" +
+	"\x05photo\x18\x01 \x01(\v2\x13.trips.v1.TripPhotoR\x05photo\"r\n" +
 	"\vPhotoUpload\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12;\n" +
 	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"expireTime\";\n" +
+	"expireTime\x12\x14\n" +
+	"\x05token\x18\x03 \x01(\tR\x05token\";\n" +
 	"\x1cCreateTripPhotoUploadRequest\x12\x1b\n" +
 	"\treport_id\x18\x01 \x01(\tR\breportId\"N\n" +
 	"\x1dCreateTripPhotoUploadResponse\x12-\n" +

@@ -125,8 +125,8 @@ const (
 	// /photos/<id>/<size>.jpg.
 	PhotoPath = "/photos/"
 	// PhotoUploadPath is the path of the links agents upload photos to trip
-	// reports with, followed by their secret token.
-	PhotoUploadPath = "/trip-photo-uploads/"
+	// reports with.
+	PhotoUploadPath = "/trip-photo-uploads"
 
 	maxTitleLength = 200
 	// maxBodyLength is the most characters of text of all of a report's
@@ -582,7 +582,7 @@ func (s *Service) CreateTripPhotoUpload(ctx context.Context, req *tripsv1.Create
 // PhotoUploadHandler serves the links agents upload photos to trip reports
 // with, at PhotoUploadPath. See photos.UploadHandler.
 func (s *Service) PhotoUploadHandler() http.Handler {
-	return photos.UploadHandler(s.report, PhotoUploadPath, s.findUploadLink, s.uploadWithLink)
+	return photos.UploadHandler(s.report, s.findUploadLink, s.uploadWithLink)
 }
 
 // findUploadLink returns the trip report upload link with the token.

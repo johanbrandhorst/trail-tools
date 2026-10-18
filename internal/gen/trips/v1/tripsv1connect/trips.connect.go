@@ -250,12 +250,13 @@ type TripReportServiceClient interface {
 	// Create a link to upload photos to a trip report with, for agents that
 	// can read the user's photo files and make HTTP requests, e.g. with a
 	// shell, as tools can't take files. Upload each photo with a POST request
-	// to the link with the file as the body, e.g.
-	// `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
-	// form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
-	// caption query parameter or form field, e.g.
-	// `--url-query 'caption=On the ridge'`. Each upload responds with
-	// {"photo": TripPhoto} as JSON, or with an error as
+	// to the link's URL with the file as the body and the link's token in an
+	// Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=On the ridge'`. Each upload
+	// responds with {"photo": TripPhoto} as JSON, or with an error as
 	// {"code": "...", "message": "..."}.
 	//
 	// JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
@@ -265,7 +266,7 @@ type TripReportServiceClient interface {
 	// position in its metadata, like photos uploaded in the app; look at them
 	// with GetTripPhoto to write their captions. The link uploads any number of
 	// photos for an hour; create another one when it expires. Anyone with the
-	// link can add photos to the report, so don't share it.
+	// token can add photos to the report, so don't share it.
 	CreateTripPhotoUpload(context.Context, *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error)
 	// Import the photos of the report's activity from Strava that it doesn't
 	// have yet, e.g. ones added on Strava after the report was created, like
@@ -346,12 +347,13 @@ type TripReportServiceHandler interface {
 	// Create a link to upload photos to a trip report with, for agents that
 	// can read the user's photo files and make HTTP requests, e.g. with a
 	// shell, as tools can't take files. Upload each photo with a POST request
-	// to the link with the file as the body, e.g.
-	// `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
-	// form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
-	// caption query parameter or form field, e.g.
-	// `--url-query 'caption=On the ridge'`. Each upload responds with
-	// {"photo": TripPhoto} as JSON, or with an error as
+	// to the link's URL with the file as the body and the link's token in an
+	// Authorization header, e.g.
+	// `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
+	// or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
+	// of `--data-binary`. Set a caption with the caption query parameter or
+	// form field, e.g. `--url-query 'caption=On the ridge'`. Each upload
+	// responds with {"photo": TripPhoto} as JSON, or with an error as
 	// {"code": "...", "message": "..."}.
 	//
 	// JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
@@ -361,7 +363,7 @@ type TripReportServiceHandler interface {
 	// position in its metadata, like photos uploaded in the app; look at them
 	// with GetTripPhoto to write their captions. The link uploads any number of
 	// photos for an hour; create another one when it expires. Anyone with the
-	// link can add photos to the report, so don't share it.
+	// token can add photos to the report, so don't share it.
 	CreateTripPhotoUpload(context.Context, *v1.CreateTripPhotoUploadRequest) (*v1.CreateTripPhotoUploadResponse, error)
 	// Import the photos of the report's activity from Strava that it doesn't
 	// have yet, e.g. ones added on Strava after the report was created, like

@@ -238,8 +238,6 @@ func newEnv(t *testing.T) *env {
 	apilimit.Mount(mux, srv2)
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(racereport.PhotoPath, raceReportService.PhotoHandler())
-	mux.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
-	mux.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
@@ -262,7 +260,14 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.srv.Config.Handler = handler
+	// Upload links authenticate with their own token, which the authn
+	// middleware would take for an API token, so they aren't behind it, as
+	// in main.go.
+	root := http.NewServeMux()
+	root.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
+	root.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
+	root.Handle("/", handler)
+	e.srv.Config.Handler = root
 	e.srv.Start()
 
 	client := e.srv.Client()

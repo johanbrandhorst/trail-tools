@@ -190,11 +190,11 @@ func TestRaceReportPhotos(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateRaceReportPhotoUpload: %v", err)
 	}
-	url := link.GetUpload().GetUrl()
-	if !strings.HasPrefix(url, "https://trail.example/race-report-photo-uploads/") {
+	url, token := link.GetUpload().GetUrl(), link.GetUpload().GetToken()
+	if url != "https://trail.example/race-report-photo-uploads" || token == "" {
 		t.Errorf("unexpected upload link %v", link.GetUpload())
 	}
-	resp, body := e.post(url+"?caption=The+finish", bytes.NewReader(exifJPEG(t, 400, 300, testEXIF{
+	resp, body := e.post(url+"?caption=The+finish", token, bytes.NewReader(exifJPEG(t, 400, 300, testEXIF{
 		orientation: 8, taken: "2026:09:07 08:59:00", offset: "Z", lat: 0.01,
 	})), "image/jpeg")
 	if resp.StatusCode != http.StatusCreated {
@@ -213,8 +213,7 @@ func TestRaceReportPhotos(t *testing.T) {
 		t.Errorf("unexpected uploaded photo %v", finish)
 	}
 	// A race report's link doesn't upload to trip reports.
-	tripURL := strings.Replace(url, "/race-report-photo-uploads/", "/trip-photo-uploads/", 1)
-	if resp, body := e.post(tripURL, bytes.NewReader(testJPEG(t, 10, 10)), ""); resp.StatusCode != http.StatusNotFound {
+	if resp, body := e.post("/trip-photo-uploads", token, bytes.NewReader(testJPEG(t, 10, 10)), ""); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("race link on the trip path: status %d: %s, want 404", resp.StatusCode, body)
 	}
 

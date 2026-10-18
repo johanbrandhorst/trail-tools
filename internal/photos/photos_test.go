@@ -147,7 +147,7 @@ type testLink struct {
 
 func TestUploadHandler(t *testing.T) {
 	t.Parallel()
-	const path = "/uploads/"
+	const path = "/uploads"
 	photo := encodeTestImage(t, 20, 10, false)
 	find := func(_ context.Context, token string) (*testLink, error) {
 		if token != "secret" {
@@ -169,7 +169,7 @@ func TestUploadHandler(t *testing.T) {
 		return geov1.LatLng_builder{Lat: float64(len(u.Caption)), Lng: float64(len(u.Data))}.Build(), nil
 	}
 	report := errreport.NewLocal(slog.New(slog.DiscardHandler))
-	handler := UploadHandler(report, path, find, upload)
+	handler := UploadHandler(report, find, upload)
 
 	multipartBody := func(caption string) (io.Reader, string) {
 		var buf bytes.Buffer
@@ -189,9 +189,11 @@ func TestUploadHandler(t *testing.T) {
 	}
 
 	for _, tt := range []struct {
-		name        string
-		method      string
-		target      string
+		name   string
+		method string
+		target string
+		// The link's token, sent in the Authorization header if set.
+		token       string
 		body        func() (io.Reader, string)
 		wantStatus  int
 		wantCode    string
@@ -200,7 +202,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "body",
 			method: http.MethodPost,
-			target: path + "secret?caption=On+the+ridge",
+			target: path + "?caption=On+the+ridge",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return bytes.NewReader(photo), "application/octet-stream"
 			},
@@ -210,7 +213,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "multipart form",
 			method: http.MethodPut,
-			target: path + "secret",
+			target: path + "",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return multipartBody("The summit")
 			},
@@ -220,7 +224,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "unknown link",
 			method: http.MethodPost,
-			target: path + "guess",
+			target: path,
+			token:  "guess",
 			body: func() (io.Reader, string) {
 				return bytes.NewReader(photo), ""
 			},
@@ -228,9 +233,20 @@ func TestUploadHandler(t *testing.T) {
 			wantCode:   "not_found",
 		},
 		{
+			name:   "no token",
+			method: http.MethodPost,
+			target: path,
+			body: func() (io.Reader, string) {
+				return bytes.NewReader(photo), ""
+			},
+			wantStatus: http.StatusUnauthorized,
+			wantCode:   "unauthenticated",
+		},
+		{
 			name:   "get",
 			method: http.MethodGet,
-			target: path + "secret",
+			target: path + "",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return http.NoBody, ""
 			},
@@ -240,7 +256,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "empty",
 			method: http.MethodPost,
-			target: path + "secret",
+			target: path + "",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return http.NoBody, ""
 			},
@@ -250,7 +267,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "too large",
 			method: http.MethodPost,
-			target: path + "secret",
+			target: path + "",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return bytes.NewReader(make([]byte, maxUploadRequestBytes+1)), ""
 			},
@@ -260,7 +278,8 @@ func TestUploadHandler(t *testing.T) {
 		{
 			name:   "internal error",
 			method: http.MethodPost,
-			target: path + "secret?caption=fail",
+			target: path + "?caption=fail",
+			token:  "secret",
 			body: func() (io.Reader, string) {
 				return bytes.NewReader(photo), ""
 			},
@@ -272,6 +291,9 @@ func TestUploadHandler(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), tt.method, tt.target, body)
 		if contentType != "" {
 			req.Header.Set("Content-Type", contentType)
+		}
+		if tt.token != "" {
+			req.Header.Set("Authorization", "Bearer "+tt.token)
 		}
 		rec := httptest.NewRecorder()
 		uploaded = nil
