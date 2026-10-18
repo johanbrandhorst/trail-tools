@@ -133,7 +133,8 @@ message TripReport {
   // reachable by others once published.
   string url = 10 [(mcp.v1.field).output_only = true];
   // The photos in the order of the story: by section, and in order within
-  // each section.
+  // each section. Lists of reports only include the cover photo; get a
+  // report for all of them.
   repeated TripPhoto photos = 11 [(mcp.v1.field).output_only = true];
   // When the report was created.
   google.protobuf.Timestamp create_time = 12 [(mcp.v1.field).output_only = true];

@@ -466,7 +466,8 @@ type TripReport_builder struct {
 	// reachable by others once published.
 	Url string
 	// The photos in the order of the story: by section, and in order within
-	// each section.
+	// each section. Lists of reports only include the cover photo; get a
+	// report for all of them.
 	Photos []*TripPhoto
 	// When the report was created.
 	CreateTime *timestamppb.Timestamp

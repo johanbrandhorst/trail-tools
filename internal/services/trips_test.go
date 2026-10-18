@@ -696,6 +696,10 @@ func TestTripPhotos(t *testing.T) {
 	if cover := listed.GetReports()[0].GetCoverPhotoId(); cover != local.GetId() {
 		t.Errorf("listed cover photo %q, want %q", cover, local.GetId())
 	}
+	// Lists only include the cover photo.
+	if photos := listed.GetReports()[0].GetPhotos(); len(photos) != 1 || photos[0].GetId() != local.GetId() {
+		t.Errorf("listed %d photos, want only the cover photo", len(photos))
+	}
 	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "nope"} {
 		_, err = setCover(id)
 		wantCode(t, err, connect.CodeInvalidArgument)
