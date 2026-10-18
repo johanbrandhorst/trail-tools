@@ -23,10 +23,6 @@ const (
 	// browsers don't send, so it doesn't end up in request logs. The page
 	// opens the link with CreateLactateTestRecording.
 	RecordPath = "/record/lactate-test"
-	// LegacySharePath is where recording links carried their token before,
-	// as LegacySharePath + token. They redirect to RecordPath. They expire
-	// within shareLifetime, after which this can go.
-	LegacySharePath = "/share/lactate-tests/"
 	// recorderCookie holds the secret of the browser that opened a
 	// recording link.
 	recorderCookie = "lactate_recorder"

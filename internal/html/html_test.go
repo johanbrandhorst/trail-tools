@@ -79,18 +79,3 @@ func TestRenderDefault(t *testing.T) {
 		t.Errorf("not found page: %d\n%s", rec.Code, rec.Body.String())
 	}
 }
-
-func TestRedirectTokenToFragment(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.Handle("GET /invite/{token}", RedirectTokenToFragment("/invite"))
-	for path, want := range map[string]string{
-		"/invite/abc123":    "/invite#abc123",
-		"/invite/a%20b%23c": "/invite#a%20b%23c",
-	} {
-		rec := httptest.NewRecorder()
-		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
-		if rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != want {
-			t.Errorf("%s: got status %d to %q, want a redirect to %q", path, rec.Code, rec.Header().Get("Location"), want)
-		}
-	}
-}

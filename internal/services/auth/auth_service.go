@@ -47,9 +47,6 @@ const (
 	// the token in the fragment, which browsers don't send, so it doesn't
 	// end up in request logs.
 	InvitePath = "/invite"
-	// LegacyInvitePath is where invitation links carried their token
-	// before, as LegacyInvitePath + token. They redirect to InvitePath.
-	LegacyInvitePath = "/invite/"
 )
 
 // Repository stores users, passkeys and invitations.

@@ -751,12 +751,6 @@ func run(
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	// The guided lactate test as a Garmin workout. It holds no user data.
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
-	// Invitations and share links carry their tokens in the fragment, where
-	// they stay out of request logs. Links that carried them in the path, as
-	// they used to, redirect there.
-	mux.Handle("GET "+auth.LegacyInvitePath+"{token}", html.RedirectTokenToFragment(auth.InvitePath))
-	mux.Handle("GET "+raceplan.LegacySharePath+"{token}", html.RedirectTokenToFragment(raceplan.SharePath))
-	mux.Handle("GET "+lactatesvc.LegacySharePath+"{token}", html.RedirectTokenToFragment(lactatesvc.RecordPath))
 	mux.Handle(trip.ProfilePath, authenticate(raceReportService.PageHandler(serveDir != "", tripService.PageHandler(serveDir != ""))))
 
 	// Requests are traced, and named after the routes they match.

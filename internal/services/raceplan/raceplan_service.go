@@ -75,15 +75,10 @@ func NewService(log *slog.Logger, report *errreport.Reporter, repo RacePlanRepos
 	}
 }
 
-const (
-	// SharePath is the shared race plan page. Its links carry the share
-	// token in the fragment, which browsers don't send, so it doesn't end up
-	// in request logs.
-	SharePath = "/share/race-plans"
-	// LegacySharePath is where share links carried their token before, as
-	// LegacySharePath + token. They redirect to SharePath.
-	LegacySharePath = "/share/race-plans/"
-)
+// SharePath is the shared race plan page. Its links carry the share token in
+// the fragment, which browsers don't send, so it doesn't end up in request
+// logs.
+const SharePath = "/share/race-plans"
 
 // maxSharedCoursePoints is the number of course points in shared plans.
 const maxSharedCoursePoints = 1000
