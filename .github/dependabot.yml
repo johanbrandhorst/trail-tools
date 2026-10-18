@@ -50,10 +50,10 @@ updates:
       terraform:
         patterns: ["*"]
 
-  # The container images in images/Dockerfile, which the Makefile and CI
-  # read, and the local and test database's in test/postgres. Not new major
-  # versions of Postgres, which follows Neon's, or of Node, whose
-  # odd-numbered versions aren't long-term supported.
+  # The images and Terraform version in images/Dockerfile, which the
+  # Makefile and CI read, and the local and test database's image in
+  # test/postgres. Not new major versions of Postgres, which follows Neon's,
+  # where a project's major version never changes.
   - package-ecosystem: "docker"
     directories: ["/images", "/test/postgres"]
     schedule:
@@ -62,8 +62,6 @@ updates:
       default-days: 7
     ignore:
       - dependency-name: "postgres"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "node"
         update-types: ["version-update:semver-major"]
     groups:
       docker:

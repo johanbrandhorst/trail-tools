@@ -21,7 +21,7 @@ UID_GID := $(shell id -u):$(shell id -g)
 
 # The image of a stage in images/Dockerfile, by its name, e.g.
 # $(call image,node). The images are kept there for Dependabot to update.
-image = $(shell awk '$$1 == "FROM" && $$NF == "$(1)" { print $$2 }' images/Dockerfile)
+image = $(shell images/image.sh $(1))
 
 # Boilerplate for running a one-off node tool against ./web in a container, as
 # the host user so written files aren't owned by root. Append the command, e.g.
@@ -97,7 +97,7 @@ grafana: ## Start Grafana with Tempo, which the server sends traces to, on http:
 	@if $(CONTAINER_RUNNING) | grep -qx otel-lgtm; then \
 		echo "otel-lgtm already running"; \
 	else \
-		$(CONTAINER_BIN) run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 $(call image,otel-lgtm) >/dev/null && \
+		$(CONTAINER_BIN) run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:latest >/dev/null && \
 		echo "Grafana is starting on http://localhost:3000"; \
 	fi
 
@@ -150,6 +150,43 @@ import-osm: db ## Import OpenStreetMap data for routing, e.g. make import-osm RE
 	go run . import-osm \
 		-database-url postgres://postgres:password@localhost:5432/postgres?sslmode=disable \
 		-region "$(REGION)" -pbf "$(PBF)" $(if $(BOUNDS),-bounds "$(BOUNDS)")
+
+# The Terraform CI plans and applies with, in images/Dockerfile, where
+# Dependabot updates it. Local applies use the same version, downloaded into
+# .bin on first use: Terraform refuses to read state written by a newer
+# version, so applying with another version breaks either CI's deployments
+# or local applies. Terraform can't be installed with go install, as its
+# go.mod has replace directives.
+TERRAFORM_VERSION := $(shell images/image.sh --tag terraform)
+TERRAFORM := $(CURDIR)/.bin/terraform-$(TERRAFORM_VERSION)
+TERRAFORM_RELEASE := https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)
+
+$(TERRAFORM):
+	rm -rf $(CURDIR)/.bin/download && mkdir -p $(CURDIR)/.bin/download && cd $(CURDIR)/.bin/download && \
+		zip=terraform_$(TERRAFORM_VERSION)_$$(uname -s | tr '[:upper:]' '[:lower:]')_$$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/').zip && \
+		curl -fsSLO $(TERRAFORM_RELEASE)/$$zip && \
+		curl -fsSL $(TERRAFORM_RELEASE)/terraform_$(TERRAFORM_VERSION)_SHA256SUMS | grep " $$zip$$" | shasum -a 256 -c && \
+		unzip -q $$zip terraform && \
+		mv terraform $@
+	rm -rf $(CURDIR)/.bin/download
+
+.PHONY: infra-plan
+infra-plan: $(TERRAFORM) ## Plan changes to the Google Cloud project, with your gcloud credentials
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false && \
+		$(TERRAFORM) -chdir=infra plan
+
+.PHONY: infra-apply
+infra-apply: $(TERRAFORM) ## Apply changes to the Google Cloud project, with your gcloud credentials
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false && \
+		$(TERRAFORM) -chdir=infra apply
+
+.PHONY: infra-output
+infra-output: $(TERRAFORM) ## Print Terraform's outputs, e.g. make infra-output NAME=domain_records
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false >/dev/null && \
+		$(TERRAFORM) -chdir=infra output $(NAME)
 
 .PHONY: web-deps
 web-deps: ## Install web dependencies

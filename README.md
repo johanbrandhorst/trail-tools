@@ -249,12 +249,11 @@ $ make grafana
 $ make watch
 ```
 
-`make grafana` runs the container like this, with the image in
-[`images/Dockerfile`](images/Dockerfile) and 4 GB of memory, as it bundles
-several services and stalls under the default 1 GB after a while:
+`make grafana` runs the container like this, with 4 GB of memory, as it
+bundles several services and stalls under the default 1 GB after a while:
 
 ```sh
-$ container run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:<version>
+$ container run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:latest
 ```
 
 Open Grafana on http://localhost:3000; there's no need to sign in.
@@ -393,13 +392,17 @@ Pull requests that change `infra/` get a comment with the Terraform plan,
 from the [Terraform plan](.github/workflows/terraform.yml) workflow. It
 doesn't lock the state.
 
-To apply changes locally:
+To apply changes locally, with your gcloud credentials:
 
 ```sh
-$ export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token)
-$ terraform -chdir=infra init
-$ terraform -chdir=infra apply
+$ make infra-apply
 ```
+
+`make infra-plan` only plans them. Both use the Terraform version CI applies
+with, the `terraform` stage in [`images/Dockerfile`](images/Dockerfile),
+which Dependabot updates, and download it into `.bin` the first time:
+Terraform refuses to read state written by a newer version, so a local
+apply with another version than CI's breaks one or the other.
 
 ### Traces and errors
 
@@ -500,11 +503,11 @@ The app is served on `trailrunn.ing`, set as `domain` in
 
 1. Verify the domain with `gcloud domains verify <domain>`.
 2. Set `domain_enabled = true` in [`terraform.tfvars`](infra/terraform.tfvars)
-   and apply it locally with `terraform -chdir=infra apply`. Only a verified
+   and apply it locally with `make infra-apply`. Only a verified
    owner of the domain can map it, and the GitHub service account is not one,
    so the first apply runs with your own credentials. Later applies from CI
    leave the existing mapping alone.
-3. Create the DNS records from `terraform -chdir=infra output domain_records`.
+3. Create the DNS records from `make infra-output NAME=domain_records`.
    Cloud Run provisions and renews the TLS certificate, which takes up to
    about 15 minutes after the records resolve.
 
