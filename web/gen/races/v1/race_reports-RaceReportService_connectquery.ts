@@ -61,6 +61,65 @@ export const setRaceReportSegments = RaceReportService.method.setRaceReportSegme
 export const suggestRaceReportSegments = RaceReportService.method.suggestRaceReportSegments;
 
 /**
+ * Upload a photo to a race report. The image is stored as a JPEG of at
+ * most 2048 pixels and a thumbnail, without its metadata. It's placed on
+ * the track at the time it was taken, if that was during the activity, or
+ * else at its GPS position, and among the report's photos in the order
+ * they were taken.
+ *
+ * @generated from rpc races.v1.RaceReportService.UploadRaceReportPhoto
+ */
+export const uploadRaceReportPhoto = RaceReportService.method.uploadRaceReportPhoto;
+
+/**
+ * Create a link to upload photos to a race report with, for agents that
+ * can read the user's photo files and make HTTP requests, e.g. with a
+ * shell, as tools can't take files. Upload each photo with a POST request
+ * to the link with the file as the body, e.g.
+ * `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
+ * form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
+ * caption query parameter or form field, e.g.
+ * `--url-query 'caption=The last climb'`. Each upload responds with
+ * {"photo": RaceReportPhoto} as JSON, or with an error as
+ * {"code": "...", "message": "..."}.
+ *
+ * JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
+ * photos, as iPhones take them, to JPEG first, keeping their metadata, e.g.
+ * with `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS. Each
+ * photo is placed on the track from the time and GPS position in its
+ * metadata, like photos uploaded in the app; look at them with
+ * GetRaceReportPhoto to write their captions. The link uploads any number
+ * of photos for an hour; create another one when it expires. Anyone with
+ * the link can add photos to the report, so don't share it.
+ *
+ * @generated from rpc races.v1.RaceReportService.CreateRaceReportPhotoUpload
+ */
+export const createRaceReportPhotoUpload = RaceReportService.method.createRaceReportPhotoUpload;
+
+/**
+ * Update the caption or the location of a photo of a race report.
+ *
+ * @generated from rpc races.v1.RaceReportService.UpdateRaceReportPhoto
+ */
+export const updateRaceReportPhoto = RaceReportService.method.updateRaceReportPhoto;
+
+/**
+ * Delete a photo of a race report.
+ *
+ * @generated from rpc races.v1.RaceReportService.DeleteRaceReportPhoto
+ */
+export const deleteRaceReportPhoto = RaceReportService.method.deleteRaceReportPhoto;
+
+/**
+ * Get a photo of one of the user's race reports with its image, to look
+ * at it, e.g. to write its caption or the story around it. The thumbnail
+ * is enough to see what's in a photo; get the large image for details.
+ *
+ * @generated from rpc races.v1.RaceReportService.GetRaceReportPhoto
+ */
+export const getRaceReportPhoto = RaceReportService.method.getRaceReportPhoto;
+
+/**
  * Publish a race report on the user's public profile.
  *
  * @generated from rpc races.v1.RaceReportService.PublishRaceReport

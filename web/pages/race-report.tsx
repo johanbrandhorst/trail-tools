@@ -1,4 +1,5 @@
 import Loading from "@components/loading";
+import { RacePhotosEditor } from "@components/races/race-photos";
 import {
   DnfBadge,
   RaceComparisonView,
@@ -6,6 +7,7 @@ import {
 } from "@components/races/race-report-bits";
 import type { SectionKey } from "@components/races/race-report-bits";
 import { SegmentsEditor } from "@components/races/race-segments";
+import { mapPhotos } from "@components/trips/trip-bits";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
 import { CheckboxField, TextField } from "@components/ui/fields";
@@ -33,6 +35,7 @@ import {
   publishRaceReport,
   unpublishRaceReport,
   updateRaceReport,
+  updateRaceReportPhoto,
 } from "gen/races/v1/race_reports-RaceReportService_connectquery";
 import type { RaceReport } from "gen/races/v1/race_reports_pb";
 import { RaceReportService } from "gen/races/v1/race_reports_pb";
@@ -43,7 +46,7 @@ import { formatDate, formatKm } from "helpers/format";
 import { durationInput, kmInput, parseDuration, parseKm } from "helpers/parse";
 import { invalidateServices } from "helpers/query";
 import { isValidSlug, slugify } from "helpers/slug";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 interface ReportFormProps {
@@ -365,6 +368,13 @@ const RaceReportPage: React.FC = () => {
       await invalidate();
     },
   });
+  const movePhoto = useMutation(updateRaceReportPhoto, {
+    onSuccess: invalidate,
+  });
+  const photos = data?.report?.photos;
+  const markers = useMemo(() => mapPhotos(photos ?? []), [photos]);
+  // The photo being placed by clicking the map, if any.
+  const [placingId, setPlacingId] = useState<string | null>(null);
 
   if (isPending) {
     return <Loading />;
@@ -385,6 +395,9 @@ const RaceReportPage: React.FC = () => {
   }
   const publicPath =
     handle === undefined ? "" : `/u/${handle}/races/${report.slug}`;
+  const placingIndex = report.photos.findIndex(
+    (photo) => photo.id === placingId
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -523,6 +536,30 @@ const RaceReportPage: React.FC = () => {
             report={report}
             track={data.track}
             privacyZones={zonesQuery.data?.zones ?? NO_ZONES}
+            photos={markers}
+            onMovePhoto={(photoId, position) => {
+              movePhoto.mutate({
+                id: photoId,
+                location: { lat: position.lat, lng: position.lng },
+              });
+            }}
+            placing={
+              placingId === null || placingIndex === -1
+                ? undefined
+                : {
+                    number: placingIndex + 1,
+                    onCancel: () => {
+                      setPlacingId(null);
+                    },
+                    onPlace: (position) => {
+                      movePhoto.mutate({
+                        id: placingId,
+                        location: { lat: position.lat, lng: position.lng },
+                      });
+                      setPlacingId(null);
+                    },
+                  }
+            }
             onSaved={invalidate}
           />
         ) : (
@@ -531,6 +568,21 @@ const RaceReportPage: React.FC = () => {
             track.
           </p>
         )}
+        <ErrorText error={movePhoto.error} />
+      </Card>
+      <Card title={`Photos (${String(report.photos.length)})`}>
+        <RacePhotosEditor
+          report={report}
+          placingId={placingId}
+          onPlace={
+            report.hasTrack
+              ? (photoId) => {
+                  setPlacingId(photoId === placingId ? null : photoId);
+                }
+              : undefined
+          }
+          onChanged={invalidate}
+        />
       </Card>
     </div>
   );

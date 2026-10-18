@@ -192,7 +192,7 @@ func newEnv(t *testing.T) *env {
 	}
 	userService := user.NewService(log, report, userRepo, userRepo, userRepo, photos)
 	tripService := trip.NewService(log, report, tripRepo, activityRepo, e.syncer, photos, userRepo, &http.Client{}, "https://trail.example")
-	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, e.syncer, tripRepo, racePlanService, userRepo, "https://trail.example")
+	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, e.syncer, tripRepo, racePlanService, userRepo, photos, tripRepo, "https://trail.example")
 
 	// Start listening before creating the handler, as the OAuth server needs
 	// the URL of the server.
@@ -228,6 +228,9 @@ func newEnv(t *testing.T) *env {
 	lactatev1connect.RegisterLactateTestServiceHandler(srv2, lactateService)
 	connecthttp.Mount(mux, srv2)
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
+	mux.Handle(racereport.PhotoPath, raceReportService.PhotoHandler())
+	mux.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
+	mux.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(lactatesvc.SharePath, lactateService.ShareHandler())

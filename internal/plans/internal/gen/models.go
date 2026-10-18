@@ -767,6 +767,16 @@ type PasskeyUser struct {
 	Name       string
 }
 
+type PhotoUploadLink struct {
+	ID           pgtype.UUID
+	UserID       pgtype.UUID
+	TokenSHA256  []byte
+	TripReportID pgtype.UUID
+	RaceReportID pgtype.UUID
+	ExpireTime   pgtype.Timestamptz
+	CreateTime   pgtype.Timestamptz
+}
+
 type PlanPeriod struct {
 	ID                        pgtype.UUID
 	PlanID                    pgtype.UUID
@@ -965,6 +975,22 @@ type RaceReport struct {
 	StopCheckpoint      string
 	StopSeconds         int32
 	Track               []byte
+}
+
+type RaceReportPhoto struct {
+	ID                  pgtype.UUID
+	ReportID            pgtype.UUID
+	Position            int32
+	ObjectKey           string
+	Width               int32
+	Height              int32
+	Caption             string
+	Lat                 pgtype.Float8
+	Lng                 pgtype.Float8
+	LocationSource      NullPhotoLocationSource
+	TrackDistanceMeters pgtype.Float8
+	TakenTime           pgtype.Timestamptz
+	CreateTime          pgtype.Timestamptz
 }
 
 type RaceReportSegment struct {

@@ -15,10 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/races/v1/racesv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/races"
 	"github.com/johanbrandhorst/trail-tools/internal/services/raceplan"
 	"github.com/johanbrandhorst/trail-tools/internal/services/trip"
@@ -61,10 +63,18 @@ type ReportRepository interface {
 	ListRaceReports(ctx context.Context, userID pgtype.UUID, filter races.RaceReportFilter) ([]*races.RaceReport, error)
 	UpdateRaceReport(ctx context.Context, update *races.RaceReportUpdate) (*races.RaceReport, error)
 	SetRaceReportPublished(ctx context.Context, userID, reportID pgtype.UUID, published bool) (*races.RaceReport, error)
-	DeleteRaceReport(ctx context.Context, userID, reportID pgtype.UUID) error
+	DeleteRaceReport(ctx context.Context, userID, reportID pgtype.UUID) ([]string, error)
 	SetRaceReportTrack(ctx context.Context, userID, reportID pgtype.UUID, track []byte) error
 	ListRaceReportSegments(ctx context.Context, reportID pgtype.UUID) ([]races.RaceReportSegment, error)
 	SetRaceReportSegments(ctx context.Context, reportID pgtype.UUID, segments []races.RaceReportSegment) error
+	AddRaceReportPhoto(ctx context.Context, userID pgtype.UUID, p *races.RaceReportPhoto, before races.RaceReportPhotoOrder) (*races.RaceReportPhoto, error)
+	ListRaceReportPhotos(ctx context.Context, reportID pgtype.UUID) ([]*races.RaceReportPhoto, error)
+	GetRaceReportPhoto(ctx context.Context, userID, photoID pgtype.UUID) (*races.RaceReportPhoto, error)
+	GetRaceReportPhotoAccess(ctx context.Context, photoID pgtype.UUID) (*races.RaceReportPhotoAccess, error)
+	UpdateRaceReportPhotoCaption(ctx context.Context, userID, photoID pgtype.UUID, caption string) (*races.RaceReportPhoto, error)
+	UpdateRaceReportPhotoLocation(ctx context.Context, userID, photoID pgtype.UUID, loc *trips.Location) (*races.RaceReportPhoto, error)
+	DeleteRaceReportPhoto(ctx context.Context, userID, photoID pgtype.UUID) (string, error)
+	SetRaceReportPhotoLocations(ctx context.Context, reportID pgtype.UUID, photos []*races.RaceReportPhoto) error
 }
 
 // ActivityRepository gets activities.
@@ -107,13 +117,19 @@ type Service struct {
 	profiles ProfileRepository
 	plans    Plans
 	zones    PrivacyZoneRepository
-	baseURL  string
+	// Stores the images of photos.
+	photoStore *photos.Store
+	// Stores the links agents upload photos with.
+	links   trip.PhotoUploadLinkRepository
+	baseURL string
+	nowFn   func() time.Time
 }
 
 // NewService creates a new Service. syncer may be nil, if Strava isn't
-// configured. baseURL is the public URL of the server, used for the URLs of
-// reports.
-func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, syncer ActivitySyncer, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, baseURL string) *Service {
+// configured. Photos are stored in blobs, and the links agents upload them
+// with in links. baseURL is the public URL of the server, used for the URLs
+// of reports and photos.
+func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportRepository, activities ActivityRepository, syncer ActivitySyncer, profiles ProfileRepository, plans Plans, zones PrivacyZoneRepository, blobs blob.Store, links trip.PhotoUploadLinkRepository, baseURL string) *Service {
 	return &Service{
 		log:        log,
 		report:     report,
@@ -123,7 +139,10 @@ func NewService(log *slog.Logger, report *errreport.Reporter, repo ReportReposit
 		profiles:   profiles,
 		plans:      plans,
 		zones:      zones,
+		photoStore: photos.NewStore(blobs, "race-report-photos"),
+		links:      links,
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
+		nowFn:      time.Now,
 	}
 }
 
@@ -231,6 +250,9 @@ func (s *Service) GetRaceReport(ctx context.Context, req *racesv1.GetRaceReportR
 	if err := s.withSegments(ctx, reportProto, report.ID); err != nil {
 		return nil, err
 	}
+	if err := s.withPhotos(ctx, reportProto, report.ID, nil); err != nil {
+		return nil, err
+	}
 	resp := racesv1.GetRaceReportResponse_builder{Report: reportProto, Comparison: comparison}.Build()
 	if req.GetIncludeTrack() {
 		t, err := track.Decode(report.Track)
@@ -297,6 +319,9 @@ func (s *Service) UpdateRaceReport(ctx context.Context, req *racesv1.UpdateRaceR
 		update.Slug = &slug
 	}
 	activityID := current.ActivityID
+	// The start of the new activity, if it changes, which places photos on
+	// its track.
+	var activityStart time.Time
 	if req.HasActivityId() {
 		update.SetActivity = true
 		activityID = pgtype.UUID{}
@@ -309,7 +334,7 @@ func (s *Service) UpdateRaceReport(ctx context.Context, req *racesv1.UpdateRaceR
 			if err != nil {
 				return nil, s.toConnectError(ctx, err, "failed to get activity")
 			}
-			activityID = id
+			activityID, activityStart = id, activity.StartTime
 			// Segments keep their distances along the new activity's track.
 			if update.Track, err = s.activityTrack(ctx, current.UserID, activity); err != nil {
 				return nil, err
@@ -360,11 +385,19 @@ func (s *Service) UpdateRaceReport(ctx context.Context, req *racesv1.UpdateRaceR
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to update race report")
 	}
+	if update.SetActivity {
+		if err := s.replacePhotos(ctx, updated, activityStart); err != nil {
+			return nil, err
+		}
+	}
 	reportProto, comparison, err := s.withComparison(ctx, updated)
 	if err != nil {
 		return nil, err
 	}
 	if err := s.withSegments(ctx, reportProto, updated.ID); err != nil {
+		return nil, err
+	}
+	if err := s.withPhotos(ctx, reportProto, updated.ID, nil); err != nil {
 		return nil, err
 	}
 	return racesv1.UpdateRaceReportResponse_builder{Report: reportProto, Comparison: comparison}.Build(), nil
@@ -453,8 +486,12 @@ func (s *Service) DeleteRaceReport(ctx context.Context, req *racesv1.DeleteRaceR
 	if err != nil {
 		return nil, err
 	}
-	if err := s.repo.DeleteRaceReport(ctx, report.UserID, report.ID); err != nil {
+	keys, err := s.repo.DeleteRaceReport(ctx, report.UserID, report.ID)
+	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to delete race report")
+	}
+	for _, key := range keys {
+		s.deleteImages(ctx, key)
 	}
 	return racesv1.DeleteRaceReportResponse_builder{}.Build(), nil
 }
@@ -534,10 +571,15 @@ func (s *Service) GetPublicRaceReport(ctx context.Context, req *racesv1.GetPubli
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to decode race report track")
 	}
-	// The track is hidden in the author's privacy zones.
-	zones, err := s.zones.ListPrivacyZones(ctx, report.UserID)
+	// The track is hidden in the author's privacy zones, and so are the
+	// locations of the photos taken there.
+	zoneList, err := s.zones.ListPrivacyZones(ctx, report.UserID)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list privacy zones")
+	}
+	zones := trackZones(zoneList)
+	if err := s.withPhotos(ctx, reportProto, report.ID, zones); err != nil {
+		return nil, err
 	}
 	resp := racesv1.GetPublicRaceReportResponse_builder{
 		Report:     reportProto,
@@ -545,7 +587,7 @@ func (s *Service) GetPublicRaceReport(ctx context.Context, req *racesv1.GetPubli
 		AuthorName: profile.DisplayName,
 	}.Build()
 	if t != nil {
-		points, breaks := t.PublicPoints(trackZones(zones))
+		points, breaks := t.PublicPoints(zones)
 		resp.SetTrack(points)
 		resp.SetTrackBreaks(breaks)
 	}

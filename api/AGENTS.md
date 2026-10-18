@@ -75,6 +75,9 @@ it's excluded:
 - Exclude methods that only make sense in the web app, upload files, manage
   credentials or serve the public with
   `option (mcp.v1.method).exclude = true;`.
+- Tools can't take files, and base64 in arguments costs agents a token per
+  few bytes, so give agents a link to upload files to over HTTP instead, like
+  `CreateTripPhotoUpload` (see `internal/photos`).
 - Mark fields the server sets, like `create_time`, `update_time` and computed
   values, with `[(mcp.v1.field).output_only = true]`, which hides them from
   tool inputs.

@@ -2,12 +2,15 @@ syntax = "proto3";
 
 package races.v1;
 
+import "geo/v1/geo.proto";
 import "google/protobuf/timestamp.proto";
+import "mcp/v1/image.proto";
 import "mcp/v1/options.proto";
 import "routes/v1/routes.proto";
+import "trips/v1/trips.proto";
 
 // RaceReportService manages race reports: the story of a race the user ran,
-// focused on how it was prepared for and executed rather than on photos.
+// focused on how it was prepared for and executed.
 // A report has a result and sections of text: a summary, preparation, race
 // day, nutrition, what went well and badly, and lessons. The result is a
 // finish time, or, if the runner did not finish (DNF), where and when they
@@ -23,6 +26,12 @@ import "routes/v1/routes.proto";
 // the activity is set; segments are distances along it. SuggestRaceReportSegments
 // suggests segments from the climbs and descents of the track, to write
 // about.
+//
+// A report can also have photos, shown in the order they were taken, with
+// captions, and on the map of its track. The author uploads them in the app,
+// and agents can upload the user's photo files with
+// CreateRaceReportPhotoUpload; each photo is placed on the track at the time
+// it was taken, or else at its GPS position.
 //
 // Reports are private drafts until the author publishes them in the app,
 // which requires a public profile (see TripReportService). Help the author
@@ -50,6 +59,42 @@ service RaceReportService {
   // with FAILED_PRECONDITION if the report has no track, or the track has no
   // elevations.
   rpc SuggestRaceReportSegments(SuggestRaceReportSegmentsRequest) returns (SuggestRaceReportSegmentsResponse);
+  // Upload a photo to a race report. The image is stored as a JPEG of at
+  // most 2048 pixels and a thumbnail, without its metadata. It's placed on
+  // the track at the time it was taken, if that was during the activity, or
+  // else at its GPS position, and among the report's photos in the order
+  // they were taken.
+  rpc UploadRaceReportPhoto(UploadRaceReportPhotoRequest) returns (UploadRaceReportPhotoResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+  // Create a link to upload photos to a race report with, for agents that
+  // can read the user's photo files and make HTTP requests, e.g. with a
+  // shell, as tools can't take files. Upload each photo with a POST request
+  // to the link with the file as the body, e.g.
+  // `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
+  // form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
+  // caption query parameter or form field, e.g.
+  // `--url-query 'caption=The last climb'`. Each upload responds with
+  // {"photo": RaceReportPhoto} as JSON, or with an error as
+  // {"code": "...", "message": "..."}.
+  //
+  // JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
+  // photos, as iPhones take them, to JPEG first, keeping their metadata, e.g.
+  // with `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS. Each
+  // photo is placed on the track from the time and GPS position in its
+  // metadata, like photos uploaded in the app; look at them with
+  // GetRaceReportPhoto to write their captions. The link uploads any number
+  // of photos for an hour; create another one when it expires. Anyone with
+  // the link can add photos to the report, so don't share it.
+  rpc CreateRaceReportPhotoUpload(CreateRaceReportPhotoUploadRequest) returns (CreateRaceReportPhotoUploadResponse);
+  // Update the caption or the location of a photo of a race report.
+  rpc UpdateRaceReportPhoto(UpdateRaceReportPhotoRequest) returns (UpdateRaceReportPhotoResponse);
+  // Delete a photo of a race report.
+  rpc DeleteRaceReportPhoto(DeleteRaceReportPhotoRequest) returns (DeleteRaceReportPhotoResponse);
+  // Get a photo of one of the user's race reports with its image, to look
+  // at it, e.g. to write its caption or the story around it. The thumbnail
+  // is enough to see what's in a photo; get the large image for details.
+  rpc GetRaceReportPhoto(GetRaceReportPhotoRequest) returns (GetRaceReportPhotoResponse);
   // Publish a race report on the user's public profile.
   rpc PublishRaceReport(PublishRaceReportRequest) returns (PublishRaceReportResponse) {
     option (mcp.v1.method).exclude = true;
@@ -138,6 +183,34 @@ message RaceReport {
   repeated RaceReportSegment segments = 28 [(mcp.v1.field).output_only = true];
   // Whether the report has a track, from its activity, which segments need.
   bool has_track = 29 [(mcp.v1.field).output_only = true];
+  // The photos, in the order they were taken. Not set in lists.
+  repeated RaceReportPhoto photos = 30 [(mcp.v1.field).output_only = true];
+}
+
+// A photo of a race report.
+message RaceReportPhoto {
+  // The ID of the photo.
+  string id = 1 [(mcp.v1.field).output_only = true];
+  // The caption.
+  string caption = 2;
+  // Where the photo was taken. Unset if unknown.
+  geo.v1.LatLng location = 3;
+  // Where the location comes from.
+  trips.v1.LocationSource location_source = 4 [(mcp.v1.field).output_only = true];
+  // The distance along the report's track of the point nearest to the
+  // location, in meters. Unset if the photo has no location or the report
+  // has no track.
+  optional double track_distance_meters = 5 [(mcp.v1.field).output_only = true];
+  // When the photo was taken, if known.
+  google.protobuf.Timestamp taken_time = 6 [(mcp.v1.field).output_only = true];
+  // The width of the image in pixels.
+  int32 width = 7 [(mcp.v1.field).output_only = true];
+  // The height of the image in pixels.
+  int32 height = 8 [(mcp.v1.field).output_only = true];
+  // The URL of the image, at most 2048 pixels on the long side.
+  string url = 9 [(mcp.v1.field).output_only = true];
+  // The URL of a thumbnail, at most 480 pixels on the long side.
+  string thumbnail_url = 10 [(mcp.v1.field).output_only = true];
 }
 
 // A stretch of a race report's track the runner comments on.
@@ -304,6 +377,76 @@ message UpdateRaceReportRequest {
   optional int32 stop_seconds = 17;
 }
 
+message UploadRaceReportPhotoRequest {
+  // The ID of the report.
+  string report_id = 1;
+  // The image, as a JPEG, PNG or WebP file.
+  bytes data = 2;
+  // The caption.
+  string caption = 3;
+  // The GPS position recorded in the photo, if any.
+  geo.v1.LatLng location = 4;
+  // When the photo was taken, if the time and its UTC offset are known.
+  google.protobuf.Timestamp taken_time = 5;
+  // When the photo was taken as a local time without an offset
+  // (YYYY-MM-DDTHH:MM:SS), as recorded by most cameras. It is interpreted in
+  // the timezone of the report's activity, or else as UTC. Ignored if
+  // taken_time is set.
+  string taken_local_time = 6;
+}
+
+message UploadRaceReportPhotoResponse {
+  // The uploaded photo.
+  RaceReportPhoto photo = 1;
+}
+
+message CreateRaceReportPhotoUploadRequest {
+  // The ID of the report.
+  string report_id = 1;
+}
+
+message CreateRaceReportPhotoUploadResponse {
+  // The link to upload photos with.
+  trips.v1.PhotoUpload upload = 1;
+}
+
+message UpdateRaceReportPhotoRequest {
+  // The ID of the photo.
+  string id = 1;
+  // The new caption, if set. At most 2000 characters.
+  optional string caption = 2;
+  // The new location, if set. The location is then manual.
+  geo.v1.LatLng location = 3;
+  // Remove the location.
+  bool clear_location = 4;
+}
+
+message UpdateRaceReportPhotoResponse {
+  // The updated photo.
+  RaceReportPhoto photo = 1;
+}
+
+message DeleteRaceReportPhotoRequest {
+  // The ID of the photo.
+  string id = 1;
+}
+
+message DeleteRaceReportPhotoResponse {}
+
+message GetRaceReportPhotoRequest {
+  // The ID of the photo.
+  string id = 1;
+  // The size of the image. Defaults to the thumbnail.
+  trips.v1.PhotoSize size = 2;
+}
+
+message GetRaceReportPhotoResponse {
+  // The photo.
+  RaceReportPhoto photo = 1;
+  // The photo's image, a JPEG.
+  mcp.v1.Image image = 2;
+}
+
 message SetRaceReportSegmentsRequest {
   // The ID of the report.
   string report_id = 1;
@@ -378,7 +521,7 @@ message GetPublicRaceReportRequest {
 }
 
 message GetPublicRaceReportResponse {
-  // The report.
+  // The report. Photos taken in the author's privacy zones have no location.
   RaceReport report = 1;
   // The comparison with the race plan.
   RaceComparison comparison = 2;

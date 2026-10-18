@@ -1,7 +1,7 @@
 package trip
 
 import (
-	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -11,82 +11,23 @@ import (
 	"unicode"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/html"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
 )
 
-// The sizes photos are stored and served in.
-const (
-	sizeLarge = "large"
-	sizeThumb = "thumb"
-)
-
-// imageKey returns the key of a photo's image of a size.
-func imageKey(objectKey, size string) string {
-	return objectKey + "/" + size + ".jpg"
-}
-
 // PhotoHandler serves photos at /photos/<id>/<size>.jpg, where size is
 // "large" or "thumb". It must be mounted at /photos/ behind the authn
 // middleware. Photos of published reports are served to anyone, photos of
-// drafts only to their author. A photo's images never change, so they can be
-// cached for a long time.
+// drafts only to their author.
 func (s *Service) PhotoHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			w.Header().Set("Allow", "GET, HEAD")
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		id, file, ok := strings.Cut(strings.TrimPrefix(r.URL.Path, PhotoPath), "/")
-		size, isJPEG := strings.CutSuffix(file, ".jpg")
-		if !ok || !isJPEG || (size != sizeLarge && size != sizeThumb) {
-			http.NotFound(w, r)
-			return
-		}
-		photoID, err := store.StringToUUID(id)
+	return s.photoStore.Handler(s.report, PhotoPath, func(ctx context.Context, photoID pgtype.UUID) (*photos.Access, error) {
+		a, err := s.repo.GetPhotoAccess(ctx, photoID)
 		if err != nil {
-			http.NotFound(w, r)
-			return
+			return nil, err
 		}
-		access, err := s.repo.GetPhotoAccess(r.Context(), photoID)
-		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				http.NotFound(w, r)
-				return
-			}
-			s.report.Report(r.Context(), "Failed to get photo", err)
-			http.Error(w, "failed to get photo", http.StatusInternalServerError)
-			return
-		}
-		cacheControl := "public, max-age=31536000, immutable"
-		if !access.Published {
-			// Drafts are only visible to their author, as if they didn't
-			// exist for anyone else.
-			if userID, ok := authn.GetUserID(r.Context()); !ok || userID != access.UserID {
-				http.NotFound(w, r)
-				return
-			}
-			cacheControl = "private, max-age=31536000, immutable"
-		}
-		data, err := s.blobs.Get(r.Context(), imageKey(access.ObjectKey, size))
-		if err != nil {
-			if errors.Is(err, blob.ErrNotFound) {
-				http.NotFound(w, r)
-				return
-			}
-			s.report.Report(r.Context(), "Failed to read photo", err)
-			http.Error(w, "failed to read photo", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "image/jpeg")
-		w.Header().Set("Cache-Control", cacheControl)
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("ETag", `"`+id+"-"+size+`"`)
-		http.ServeContent(w, r, "", access.CreateTime, bytes.NewReader(data))
+		return &photos.Access{ObjectKey: a.ObjectKey, CreateTime: a.CreateTime, UserID: a.UserID, Published: a.Published}, nil
 	})
 }
 
@@ -150,13 +91,13 @@ func (s *Service) profilePage(r *http.Request, handle string) (html.Page, error)
 		for i, report := range reports {
 			ids[i] = report.ID
 		}
-		photos, err := s.repo.ListPhotos(r.Context(), ids...)
+		reportPhotos, err := s.repo.ListPhotos(r.Context(), ids...)
 		if err != nil {
 			return html.Page{}, err
 		}
 		for _, report := range reports {
-			if cover := trips.CoverPhoto(report, photos[report.ID]); cover != nil {
-				page.Image = s.photoURL(store.UUIDToString(cover.ID), sizeLarge)
+			if cover := trips.CoverPhoto(report, reportPhotos[report.ID]); cover != nil {
+				page.Image = s.photoURL(store.UUIDToString(cover.ID), photos.SizeLarge)
 				break
 			}
 		}
@@ -185,12 +126,12 @@ func (s *Service) reportPage(r *http.Request, handle, slug string) (html.Page, e
 	if page.Description == "" {
 		page.Description = summarize(report, profile)
 	}
-	photos, err := s.repo.ListPhotos(r.Context(), report.ID)
+	reportPhotos, err := s.repo.ListPhotos(r.Context(), report.ID)
 	if err != nil {
 		return html.Page{}, err
 	}
-	if cover := trips.CoverPhoto(report, photos[report.ID]); cover != nil {
-		page.Image = s.photoURL(store.UUIDToString(cover.ID), sizeLarge)
+	if cover := trips.CoverPhoto(report, reportPhotos[report.ID]); cover != nil {
+		page.Image = s.photoURL(store.UUIDToString(cover.ID), photos.SizeLarge)
 	}
 	return page, nil
 }

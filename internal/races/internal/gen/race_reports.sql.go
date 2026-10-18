@@ -92,9 +92,14 @@ func (q *Queries) CreateRaceReport(ctx context.Context, arg *CreateRaceReportPar
 	return &i, err
 }
 
-const deleteRaceReport = `-- name: DeleteRaceReport :execrows
-delete from race_reports
-where id = $1 and user_id = $2
+const deleteRaceReport = `-- name: DeleteRaceReport :many
+with deleted as (
+  delete from race_reports r
+  where r.id = $1 and r.user_id = $2
+  returning r.id
+)
+select p.object_key from deleted d
+left join race_report_photos p on p.report_id = d.id
 `
 
 type DeleteRaceReportParams struct {
@@ -102,12 +107,28 @@ type DeleteRaceReportParams struct {
 	UserID pgtype.UUID
 }
 
-func (q *Queries) DeleteRaceReport(ctx context.Context, arg *DeleteRaceReportParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteRaceReport, arg.ID, arg.UserID)
+// Deletes one of the user's reports, and returns the object keys of its
+// photos: a row for each photo, or one row without a key for a report
+// without photos, and no rows if there's no report. The select sees the
+// photos as they were before the delete.
+func (q *Queries) DeleteRaceReport(ctx context.Context, arg *DeleteRaceReportParams) ([]pgtype.Text, error) {
+	rows, err := q.db.Query(ctx, deleteRaceReport, arg.ID, arg.UserID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected(), nil
+	defer rows.Close()
+	var items []pgtype.Text
+	for rows.Next() {
+		var object_key pgtype.Text
+		if err := rows.Scan(&object_key); err != nil {
+			return nil, err
+		}
+		items = append(items, object_key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteRaceReportSegments = `-- name: DeleteRaceReportSegments :exec

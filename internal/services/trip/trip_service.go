@@ -4,11 +4,9 @@ package trip
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -21,12 +19,12 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
-	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1/tripsv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/track"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
@@ -60,6 +58,7 @@ type TripRepository interface {
 	ListSections(ctx context.Context, reportIDs ...pgtype.UUID) (map[pgtype.UUID][]*trips.Section, error)
 	ListExcerpts(ctx context.Context, reportIDs ...pgtype.UUID) (map[pgtype.UUID]string, error)
 	DeletePhoto(ctx context.Context, userID, photoID pgtype.UUID) (string, error)
+	PhotoUploadLinkRepository
 }
 
 // ActivityRepository gets the activities reports are made from.
@@ -88,7 +87,7 @@ type Service struct {
 	repo       TripRepository
 	activities ActivityRepository
 	syncer     ActivitySyncer
-	blobs      blob.Store
+	photoStore *photos.Store
 	zones      PrivacyZoneRepository
 	baseURL    string
 	nowFn      func() time.Time
@@ -111,7 +110,7 @@ func NewService(log *slog.Logger, report *errreport.Reporter, repo TripRepositor
 		repo:       repo,
 		activities: activities,
 		syncer:     syncer,
-		blobs:      blobs,
+		photoStore: photos.NewStore(blobs, "trip-photos"),
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
 		nowFn:      time.Now,
 		httpClient: client,
@@ -125,6 +124,9 @@ const (
 	// PhotoPath is the path photos are served at:
 	// /photos/<id>/<size>.jpg.
 	PhotoPath = "/photos/"
+	// PhotoUploadPath is the path of the links agents upload photos to trip
+	// reports with, followed by their secret token.
+	PhotoUploadPath = "/trip-photo-uploads/"
 
 	maxTitleLength = 200
 	// maxBodyLength is the most characters of text of all of a report's
@@ -134,7 +136,6 @@ const (
 	maxSections = 50
 	// excerptLength is the length of the excerpts of reports in lists.
 	excerptLength        = 220
-	maxCaptionLength     = 2000
 	maxDisplayNameLength = 80
 	maxPhotosPerReport   = 200
 	// maxSlugAttempts is how many numbered slugs are tried when creating a
@@ -479,13 +480,29 @@ func (s *Service) UploadTripPhoto(ctx context.Context, req *tripsv1.UploadTripPh
 	if err != nil {
 		return nil, err
 	}
-	switch {
-	case len(req.GetData()) == 0:
-		return nil, connect.NewError(connect.CodeInvalidArgument, "the photo is empty")
-	case len(req.GetData()) > maxPhotoBytes:
-		return nil, connect.Errorf(connect.CodeInvalidArgument, "the photo must be at most %d MB", maxPhotoBytes>>20)
-	case utf8.RuneCountInString(req.GetCaption()) > maxCaptionLength:
-		return nil, connect.Errorf(connect.CodeInvalidArgument, "the caption must be at most %d characters", maxCaptionLength)
+	upload := &PhotoUpload{
+		Data:           req.GetData(),
+		Caption:        req.GetCaption(),
+		TakenLocalTime: req.GetTakenLocalTime(),
+	}
+	if req.HasLocation() {
+		upload.Location = req.GetLocation()
+	}
+	if req.HasTakenTime() {
+		upload.TakenTime = req.GetTakenTime().AsTime()
+	}
+	created, err := s.addPhoto(ctx, userID, reportID, upload)
+	if err != nil {
+		return nil, err
+	}
+	return tripsv1.UploadTripPhotoResponse_builder{Photo: s.photoToProto(created)}.Build(), nil
+}
+
+// addPhoto adds an uploaded photo to one of the user's reports, placed on
+// the track and in the story where and when it was taken.
+func (s *Service) addPhoto(ctx context.Context, userID, reportID pgtype.UUID, upload *PhotoUpload) (*trips.Photo, error) {
+	if err := upload.Validate(); err != nil {
+		return nil, err
 	}
 	report, err := s.repo.GetReport(ctx, userID, reportID)
 	if err != nil {
@@ -498,92 +515,42 @@ func (s *Service) UploadTripPhoto(ctx context.Context, req *tripsv1.UploadTripPh
 	if len(existing[reportID]) >= maxPhotosPerReport {
 		return nil, connect.Errorf(connect.CodeFailedPrecondition, "a report can have at most %d photos", maxPhotosPerReport)
 	}
+	img, err := ProcessPhoto(ctx, upload)
+	if err != nil {
+		return nil, err
+	}
 	photo := &trips.Photo{
 		ReportID: reportID,
-		Caption:  strings.TrimSpace(req.GetCaption()),
+		Caption:  strings.TrimSpace(upload.Caption),
 	}
-	switch {
-	case req.HasTakenTime():
-		photo.TakenTime = req.GetTakenTime().AsTime()
-	case req.GetTakenLocalTime() != "":
-		photo.TakenTime, err = parseLocalTime(req.GetTakenLocalTime(), report.Timezone)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
-		}
+	if photo.TakenTime, err = upload.Taken(report.Timezone); err != nil {
+		return nil, err
 	}
 	t, err := track.Decode(report.Track)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get track")
 	}
-	var gps *geov1.LatLng
-	if req.HasLocation() {
-		gps = req.GetLocation()
-	}
-	if photo.Location, err = placePhoto(report, t, gps, photo.TakenTime); err != nil {
+	if photo.Location, err = PlacePhoto(report.StartTime, t, upload.Location, photo.TakenTime); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
-	created, err := s.storePhoto(ctx, userID, photo, req.GetData())
-	if err != nil {
-		return nil, err
-	}
-	return tripsv1.UploadTripPhotoResponse_builder{Photo: s.photoToProto(created)}.Build(), nil
+	return s.storePhoto(ctx, userID, photo, img)
 }
 
-// placePhoto returns where a photo was taken: on the track at the time it
-// was taken if that was during the activity, or else at its GPS position if
-// it has one. Photo GPS positions are often far off, e.g. from a phone in a
-// pocket, while the track records where the activity went. It returns nil if
-// neither is known.
-func placePhoto(report *trips.Report, t *track.Track, gps *geov1.LatLng, takenTime time.Time) (*trips.Location, error) {
-	if !takenTime.IsZero() && !report.StartTime.IsZero() {
-		if p, dist, ok := t.PositionAt(takenTime.Sub(report.StartTime).Seconds()); ok {
-			return &trips.Location{
-				Lat:                    p.Lat,
-				Lng:                    p.Lng,
-				Source:                 trips.LocationTrackTime,
-				TrackDistanceMeters:    dist,
-				HasTrackDistanceMeters: true,
-			}, nil
-		}
-	}
-	if gps != nil {
-		return locationFromProto(gps, trips.LocationGPS, t)
-	}
-	return nil, nil
-}
-
-// takenBefore reports whether photo a was taken before photo b on the trip:
-// by the times they were taken, if both are known, or else by how far along
-// the track they were taken. Times come first, as on an out-and-back the
-// same place is passed twice, and a photo's GPS position may be matched to
-// the wrong way.
+// takenBefore reports whether photo a was taken before photo b on the trip.
 func takenBefore(a, b *trips.Photo) bool {
-	if !a.TakenTime.IsZero() && !b.TakenTime.IsZero() {
-		return a.TakenTime.Before(b.TakenTime)
-	}
-	if a.Location != nil && a.Location.HasTrackDistanceMeters && b.Location != nil && b.Location.HasTrackDistanceMeters {
-		return a.Location.TrackDistanceMeters < b.Location.TrackDistanceMeters
-	}
-	return false
+	return TakenBefore(a.TakenTime, a.Location, b.TakenTime, b.Location)
 }
 
-// storePhoto re-encodes a photo, stores its images and adds it to its
-// section of the report, in the order it was taken. It returns trips.ErrPhotoImported for a photo from Strava
-// the report already has, and otherwise connect errors.
-func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *trips.Photo, data []byte) (*trips.Photo, error) {
-	img, err := processImage(data)
+// storePhoto stores a photo's images and adds it to its section of the
+// report, in the order it was taken. It returns trips.ErrPhotoImported for a
+// photo from Strava the report already has, and otherwise connect errors.
+func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *trips.Photo, img *photos.Processed) (*trips.Photo, error) {
+	photo.Width, photo.Height = int32(img.Width), int32(img.Height)
+	key, err := s.photoStore.Put(ctx, img)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
-	}
-	photo.Width, photo.Height = int32(img.width), int32(img.height)
-	photo.ObjectKey = "trip-photos/" + strings.ToLower(rand.Text())
-	if err := s.blobs.Put(ctx, imageKey(photo.ObjectKey, sizeLarge), img.large, "image/jpeg"); err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to store photo")
 	}
-	if err := s.blobs.Put(ctx, imageKey(photo.ObjectKey, sizeThumb), img.thumb, "image/jpeg"); err != nil {
-		s.deleteImages(ctx, photo.ObjectKey)
-		return nil, s.toConnectError(ctx, err, "failed to store photo")
-	}
+	photo.ObjectKey = key
 	created, err := s.repo.AddPhoto(ctx, userID, photo, takenBefore)
 	if err != nil {
 		s.deleteImages(ctx, photo.ObjectKey)
@@ -595,6 +562,50 @@ func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *tri
 	return created, nil
 }
 
+func (s *Service) CreateTripPhotoUpload(ctx context.Context, req *tripsv1.CreateTripPhotoUploadRequest) (*tripsv1.CreateTripPhotoUploadResponse, error) {
+	userID, reportID, err := s.parseReportID(ctx, req.GetReportId())
+	if err != nil {
+		return nil, err
+	}
+	report, err := s.repo.GetReport(ctx, userID, reportID)
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to get trip report")
+	}
+	link := &trips.PhotoUploadLink{UserID: userID, TripReportID: report.ID}
+	upload, err := CreatePhotoUploadLink(ctx, s.repo, link, s.baseURL+PhotoUploadPath, s.nowFn())
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to create the upload link")
+	}
+	return tripsv1.CreateTripPhotoUploadResponse_builder{Upload: upload}.Build(), nil
+}
+
+// PhotoUploadHandler serves the links agents upload photos to trip reports
+// with, at PhotoUploadPath. See photos.UploadHandler.
+func (s *Service) PhotoUploadHandler() http.Handler {
+	return photos.UploadHandler(s.report, PhotoUploadPath, s.findUploadLink, s.uploadWithLink)
+}
+
+// findUploadLink returns the trip report upload link with the token.
+func (s *Service) findUploadLink(ctx context.Context, token string) (*trips.PhotoUploadLink, error) {
+	link, err := s.repo.GetPhotoUploadLink(ctx, photos.HashUploadToken(token))
+	if errors.Is(err, store.ErrNotFound) || (err == nil && !link.TripReportID.Valid) {
+		return nil, connect.NewError(connect.CodeNotFound, "this upload link doesn't exist or has expired; create a new one with CreateTripPhotoUpload")
+	}
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to get the upload link")
+	}
+	return link, nil
+}
+
+// uploadWithLink adds a photo uploaded with a link to its report.
+func (s *Service) uploadWithLink(ctx context.Context, link *trips.PhotoUploadLink, u *photos.Upload) (proto.Message, error) {
+	created, err := s.addPhoto(ctx, link.UserID, link.TripReportID, &PhotoUpload{Data: u.Data, Caption: u.Caption})
+	if err != nil {
+		return nil, err
+	}
+	return tripsv1.UploadTripPhotoResponse_builder{Photo: s.photoToProto(created)}.Build(), nil
+}
+
 func (s *Service) UpdateTripPhoto(ctx context.Context, req *tripsv1.UpdateTripPhotoRequest) (*tripsv1.UpdateTripPhotoResponse, error) {
 	userID, photoID, err := s.parsePhotoID(ctx, req.GetId())
 	if err != nil {
@@ -603,8 +614,8 @@ func (s *Service) UpdateTripPhoto(ctx context.Context, req *tripsv1.UpdateTripPh
 	if req.HasLocation() && req.GetClearLocation() {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "set either location or clear_location, not both")
 	}
-	if req.HasCaption() && utf8.RuneCountInString(req.GetCaption()) > maxCaptionLength {
-		return nil, connect.Errorf(connect.CodeInvalidArgument, "the caption must be at most %d characters", maxCaptionLength)
+	if req.HasCaption() && utf8.RuneCountInString(req.GetCaption()) > MaxCaptionLength {
+		return nil, connect.Errorf(connect.CodeInvalidArgument, "the caption must be at most %d characters", MaxCaptionLength)
 	}
 	photo, err := s.repo.GetPhoto(ctx, userID, photoID)
 	if err != nil {
@@ -626,7 +637,7 @@ func (s *Service) UpdateTripPhoto(ctx context.Context, req *tripsv1.UpdateTripPh
 		if err != nil {
 			return nil, s.toConnectError(ctx, err, "failed to get track")
 		}
-		loc, err := locationFromProto(req.GetLocation(), trips.LocationManual, t)
+		loc, err := LocationFromProto(req.GetLocation(), trips.LocationManual, t)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 		}
@@ -648,19 +659,15 @@ func (s *Service) GetTripPhoto(ctx context.Context, req *tripsv1.GetTripPhotoReq
 	if err != nil {
 		return nil, err
 	}
-	size := sizeThumb
-	switch req.GetSize() {
-	case tripsv1.PhotoSize_PHOTO_SIZE_UNSPECIFIED, tripsv1.PhotoSize_PHOTO_SIZE_THUMBNAIL:
-	case tripsv1.PhotoSize_PHOTO_SIZE_LARGE:
-		size = sizeLarge
-	default:
-		return nil, connect.Errorf(connect.CodeInvalidArgument, "unknown size %v; use PHOTO_SIZE_THUMBNAIL or PHOTO_SIZE_LARGE", req.GetSize())
+	size, err := PhotoSize(req.GetSize())
+	if err != nil {
+		return nil, err
 	}
 	photo, err := s.repo.GetPhoto(ctx, userID, photoID)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get photo")
 	}
-	data, err := s.blobs.Get(ctx, imageKey(photo.ObjectKey, size))
+	data, err := s.photoStore.Get(ctx, photo.ObjectKey, size)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to read the photo's image")
 	}
@@ -876,13 +883,11 @@ func (s *Service) reportsToProto(ctx context.Context, reports []*trips.Report, p
 	return result, nil
 }
 
-// deleteImages deletes the images of a photo. Failures are logged, as the
+// deleteImages deletes the images of a photo. Failures are reported, as the
 // photo is already gone.
 func (s *Service) deleteImages(ctx context.Context, objectKey string) {
-	for _, size := range []string{sizeLarge, sizeThumb} {
-		if err := s.blobs.Delete(ctx, imageKey(objectKey, size)); err != nil {
-			s.report.Report(ctx, "Failed to delete photo image", err, slog.String("key", objectKey))
-		}
+	if err := s.photoStore.Delete(ctx, objectKey); err != nil {
+		s.report.Report(ctx, "Failed to delete photo images", err, slog.String("key", objectKey))
 	}
 }
 
@@ -918,35 +923,6 @@ func validateTitle(title string) error {
 		return fmt.Errorf("the title must be at most %d characters", maxTitleLength)
 	}
 	return nil
-}
-
-// localTimeLayout is the layout of local times without an offset.
-const localTimeLayout = "2006-01-02T15:04:05"
-
-// parseLocalTime parses a local time without an offset in the IANA
-// timezone, falling back to UTC for unknown timezones.
-func parseLocalTime(value, timezone string) (time.Time, error) {
-	loc, err := time.LoadLocation(timezone)
-	if err != nil {
-		loc = time.UTC
-	}
-	t, err := time.ParseInLocation(localTimeLayout, value, loc)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid taken_local_time %q, expected YYYY-MM-DDTHH:MM:SS", value)
-	}
-	return t, nil
-}
-
-// locationFromProto validates a location and finds its distance along the
-// track.
-func locationFromProto(ll *geov1.LatLng, source trips.LocationSource, t *track.Track) (*trips.Location, error) {
-	lat, lng := ll.GetLat(), ll.GetLng()
-	if math.IsNaN(lat) || math.IsNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180 {
-		return nil, errors.New("the location must have a latitude between -90 and 90 and a longitude between -180 and 180")
-	}
-	loc := &trips.Location{Lat: lat, Lng: lng, Source: source}
-	loc.TrackDistanceMeters, loc.HasTrackDistanceMeters = t.NearestDistance(geo.Point{Lat: lat, Lng: lng})
-	return loc, nil
 }
 
 // dateOf returns the date of a time, at midnight UTC.

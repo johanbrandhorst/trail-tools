@@ -66,6 +66,7 @@ import {
   unpublishTripReport,
   updateTripPhoto,
   updateTripReport,
+  uploadTripPhoto,
 } from "gen/trips/v1/trips-TripReportService_connectquery";
 import type { TripReport, TripSection } from "gen/trips/v1/trips_pb";
 import { LocationSource, TripReportService } from "gen/trips/v1/trips_pb";
@@ -175,6 +176,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
     },
   });
   const movePhoto = useMutation(updateTripPhoto, { onSuccess: onChanged });
+  const uploadPhoto = useMutation(uploadTripPhoto);
   const setCover = useMutation(updateTripReport, { onSuccess: onChanged });
 
   // Clicking anywhere but a photo, or pressing Escape, clears the selection.
@@ -544,7 +546,12 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
 
         <Card title={`Photos (${String(photos.length)})`}>
           <div className="flex flex-col gap-2">
-            <PhotoUploader reportId={report.id} onUploaded={onChanged} />
+            <PhotoUploader
+              upload={async (fields) =>
+                uploadPhoto.mutateAsync({ ...fields, reportId: report.id })
+              }
+              onUploaded={onChanged}
+            />
             <p className="text-xs text-gray-500">
               New photos go in the section about where they were taken, or the
               last section.

@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file trips/v1/trips.proto.
  */
 export const file_trips_v1_trips: GenFile = /*@__PURE__*/
-  fileDesc("ChR0cmlwcy92MS90cmlwcy5wcm90bxIIdHJpcHMudjEi6QQKClRyaXBSZXBvcnQSEgoCaWQYASABKAlCBqqfGQIIARIbCgthY3Rpdml0eV9pZBgCIAEoCUIGqp8ZAggBEg0KBXRpdGxlGAMgASgJEgwKBHNsdWcYBCABKAkSDAoEZGF0ZRgGIAEoCRIqCgVzdGF0cxgHIAEoCzITLnRyaXBzLnYxLlRyaXBTdGF0c0IGqp8ZAggBEhkKCXB1Ymxpc2hlZBgIIAEoCEIGqp8ZAggBEjgKDHB1Ymxpc2hfdGltZRgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARITCgN1cmwYCiABKAlCBqqfGQIIARIrCgZwaG90b3MYCyADKAsyEy50cmlwcy52MS5UcmlwUGhvdG9CBqqfGQIIARI3CgtjcmVhdGVfdGltZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARI3Cgt1cGRhdGVfdGltZRgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARIZCgloYXNfdHJhY2sYDiABKAhCBqqfGQIIARIvCghzZWN0aW9ucxgQIAMoCzIVLnRyaXBzLnYxLlRyaXBTZWN0aW9uQgaqnxkCCAESFwoHZXhjZXJwdBgRIAEoCUIGqp8ZAggBEh4KDmNvdmVyX3Bob3RvX2lkGBIgASgJQgaqnxkCCAESHwoEdGFncxgTIAMoDjIRLnRyaXBzLnYxLlRyaXBUYWdKBAgFEAZKBAgPEBBSBGJvZHlSEmhpZGRlbl9lbmRzX21ldGVycyIrCghUcmlwVGFncxIfCgR0YWdzGAEgAygOMhEudHJpcHMudjEuVHJpcFRhZyLBAQoLVHJpcFNlY3Rpb24SCgoCaWQYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEYm9keRgDIAEoCRIiChVzdGFydF9kaXN0YW5jZV9tZXRlcnMYBCABKAFIAIgBARIgChNlbmRfZGlzdGFuY2VfbWV0ZXJzGAUgASgBSAGIAQESEQoJcGhvdG9faWRzGAYgAygJQhgKFl9zdGFydF9kaXN0YW5jZV9tZXRlcnNCFgoUX2VuZF9kaXN0YW5jZV9tZXRlcnMi1AEKCVRyaXBTdGF0cxISCgpzcG9ydF90eXBlGAEgASgJEi4KCnN0YXJ0X3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHRpbWV6b25lGAMgASgJEhcKD2Rpc3RhbmNlX21ldGVycxgEIAEoARIbChNtb3ZpbmdfdGltZV9zZWNvbmRzGAUgASgFEhwKFGVsYXBzZWRfdGltZV9zZWNvbmRzGAYgASgFEh0KFWVsZXZhdGlvbl9nYWluX21ldGVycxgHIAEoASLuAgoJVHJpcFBob3RvEhIKAmlkGAEgASgJQgaqnxkCCAESDwoHY2FwdGlvbhgCIAEoCRIgCghsb2NhdGlvbhgDIAEoCzIOLmdlby52MS5MYXRMbmcSOQoPbG9jYXRpb25fc291cmNlGAQgASgOMhgudHJpcHMudjEuTG9jYXRpb25Tb3VyY2VCBqqfGQIIARIqChV0cmFja19kaXN0YW5jZV9tZXRlcnMYBSABKAFCBqqfGQIIAUgAiAEBEjYKCnRha2VuX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgaqnxkCCAESFQoFd2lkdGgYByABKAVCBqqfGQIIARIWCgZoZWlnaHQYCCABKAVCBqqfGQIIARITCgN1cmwYCSABKAlCBqqfGQIIARIdCg10aHVtYm5haWxfdXJsGAogASgJQgaqnxkCCAFCGAoWX3RyYWNrX2Rpc3RhbmNlX21ldGVycyJECgdQcm9maWxlEg4KBmhhbmRsZRgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoDdXJsGAMgASgJQgaqnxkCCAEiPQoXQ3JlYXRlVHJpcFJlcG9ydFJlcXVlc3QSEwoLYWN0aXZpdHlfaWQYASABKAkSDQoFdGl0bGUYAiABKAkiQAoYQ3JlYXRlVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiOQoUR2V0VHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkSFQoNaW5jbHVkZV90cmFjaxgCIAEoCCJjChVHZXRUcmlwUmVwb3J0UmVzcG9uc2USJAoGcmVwb3J0GAEgASgLMhQudHJpcHMudjEuVHJpcFJlcG9ydBIkCgV0cmFjaxgCIAMoCzIVLnJvdXRlcy52MS5Sb3V0ZVBvaW50Ii0KFkxpc3RUcmlwUmVwb3J0c1JlcXVlc3QSEwoLYWN0aXZpdHlfaWQYASABKAkiQAoXTGlzdFRyaXBSZXBvcnRzUmVzcG9uc2USJQoHcmVwb3J0cxgBIAMoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQi8wEKF1VwZGF0ZVRyaXBSZXBvcnRSZXF1ZXN0EgoKAmlkGAEgASgJEhIKBXRpdGxlGAIgASgJSACIAQESEQoEc2x1ZxgDIAEoCUgBiAEBEhEKBGRhdGUYBSABKAlIAogBARIbCg5jb3Zlcl9waG90b19pZBgHIAEoCUgDiAEBEiAKBHRhZ3MYCCABKAsyEi50cmlwcy52MS5UcmlwVGFnc0IICgZfdGl0bGVCBwoFX3NsdWdCBwoFX2RhdGVCEQoPX2NvdmVyX3Bob3RvX2lkSgQIBBAFSgQIBhAHUgRib2R5UhJoaWRkZW5fZW5kc19tZXRlcnMiQAoYVXBkYXRlVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiJQoXRGVsZXRlVHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkiGgoYRGVsZXRlVHJpcFJlcG9ydFJlc3BvbnNlIiYKGFB1Ymxpc2hUcmlwUmVwb3J0UmVxdWVzdBIKCgJpZBgBIAEoCSJBChlQdWJsaXNoVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiKAoaVW5wdWJsaXNoVHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkiQwobVW5wdWJsaXNoVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQitgEKFlVwbG9hZFRyaXBQaG90b1JlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJEgwKBGRhdGEYAiABKAwSDwoHY2FwdGlvbhgDIAEoCRIgCghsb2NhdGlvbhgEIAEoCzIOLmdlby52MS5MYXRMbmcSLgoKdGFrZW5fdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQdGFrZW5fbG9jYWxfdGltZRgGIAEoCSI9ChdVcGxvYWRUcmlwUGhvdG9SZXNwb25zZRIiCgVwaG90bxgBIAEoCzITLnRyaXBzLnYxLlRyaXBQaG90byIuChlJbXBvcnRTdHJhdmFQaG90b3NSZXF1ZXN0EhEKCXJlcG9ydF9pZBgBIAEoCSJuChpJbXBvcnRTdHJhdmFQaG90b3NSZXNwb25zZRIjCgZwaG90b3MYASADKAsyEy50cmlwcy52MS5UcmlwUGhvdG8SFQoNc2tpcHBlZF9jb3VudBgCIAEoBRIUCgxmYWlsZWRfY291bnQYAyABKAUigAEKFlVwZGF0ZVRyaXBQaG90b1JlcXVlc3QSCgoCaWQYASABKAkSFAoHY2FwdGlvbhgCIAEoCUgAiAEBEiAKCGxvY2F0aW9uGAMgASgLMg4uZ2VvLnYxLkxhdExuZxIWCg5jbGVhcl9sb2NhdGlvbhgEIAEoCEIKCghfY2FwdGlvbiI9ChdVcGRhdGVUcmlwUGhvdG9SZXNwb25zZRIiCgVwaG90bxgBIAEoCzITLnRyaXBzLnYxLlRyaXBQaG90byJUChZTZXRUcmlwU2VjdGlvbnNSZXF1ZXN0EhEKCXJlcG9ydF9pZBgBIAEoCRInCghzZWN0aW9ucxgCIAMoCzIVLnRyaXBzLnYxLlRyaXBTZWN0aW9uIj8KF1NldFRyaXBTZWN0aW9uc1Jlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiLwoaU3VnZ2VzdFRyaXBTZWN0aW9uc1JlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJIkYKG1N1Z2dlc3RUcmlwU2VjdGlvbnNSZXNwb25zZRInCghzZWN0aW9ucxgBIAMoCzIVLnRyaXBzLnYxLlRyaXBTZWN0aW9uIkQKE0dldFRyaXBQaG90b1JlcXVlc3QSCgoCaWQYASABKAkSIQoEc2l6ZRgCIAEoDjITLnRyaXBzLnYxLlBob3RvU2l6ZSJYChRHZXRUcmlwUGhvdG9SZXNwb25zZRIiCgVwaG90bxgBIAEoCzITLnRyaXBzLnYxLlRyaXBQaG90bxIcCgVpbWFnZRgCIAEoCzINLm1jcC52MS5JbWFnZSIkChZEZWxldGVUcmlwUGhvdG9SZXF1ZXN0EgoKAmlkGAEgASgJIhkKF0RlbGV0ZVRyaXBQaG90b1Jlc3BvbnNlIhMKEUdldFByb2ZpbGVSZXF1ZXN0IlgKEkdldFByb2ZpbGVSZXNwb25zZRIiCgdwcm9maWxlGAEgASgLMhEudHJpcHMudjEuUHJvZmlsZRIeChZzdWdnZXN0ZWRfZGlzcGxheV9uYW1lGAIgASgJIjoKFFVwZGF0ZVByb2ZpbGVSZXF1ZXN0EiIKB3Byb2ZpbGUYASABKAsyES50cmlwcy52MS5Qcm9maWxlIjsKFVVwZGF0ZVByb2ZpbGVSZXNwb25zZRIiCgdwcm9maWxlGAEgASgLMhEudHJpcHMudjEuUHJvZmlsZSIpChdHZXRQdWJsaWNQcm9maWxlUmVxdWVzdBIOCgZoYW5kbGUYASABKAkiZQoYR2V0UHVibGljUHJvZmlsZVJlc3BvbnNlEiIKB3Byb2ZpbGUYASABKAsyES50cmlwcy52MS5Qcm9maWxlEiUKB3JlcG9ydHMYAiADKAsyFC50cmlwcy52MS5UcmlwUmVwb3J0IjoKGkdldFB1YmxpY1RyaXBSZXBvcnRSZXF1ZXN0Eg4KBmhhbmRsZRgBIAEoCRIMCgRzbHVnGAIgASgJIqIBChtHZXRQdWJsaWNUcmlwUmVwb3J0UmVzcG9uc2USJAoGcmVwb3J0GAEgASgLMhQudHJpcHMudjEuVHJpcFJlcG9ydBIhCgZhdXRob3IYAiABKAsyES50cmlwcy52MS5Qcm9maWxlEiQKBXRyYWNrGAMgAygLMhUucm91dGVzLnYxLlJvdXRlUG9pbnQSFAoMdHJhY2tfYnJlYWtzGAQgAygFKpoCCgdUcmlwVGFnEhgKFFRSSVBfVEFHX1VOU1BFQ0lGSUVEEAASHgoaVFJJUF9UQUdfQkVHSU5ORVJfRlJJRU5ETFkQARIVChFUUklQX1RBR19NT0RFUkFURRACEhgKFFRSSVBfVEFHX0NIQUxMRU5HSU5HEAMSFQoRVFJJUF9UQUdfUlVOTkFCTEUQBBIWChJUUklQX1RBR19URUNITklDQUwQBRIXChNUUklQX1RBR19TQ1JBTUJMSU5HEAYSEQoNVFJJUF9UQUdfU05PVxAHEhEKDVRSSVBfVEFHX0xPT1AQCBIZChVUUklQX1RBR19PVVRfQU5EX0JBQ0sQCRIbChdUUklQX1RBR19QT0lOVF9UT19QT0lOVBAKKoYBCg5Mb2NhdGlvblNvdXJjZRIfChtMT0NBVElPTl9TT1VSQ0VfVU5TUEVDSUZJRUQQABIXChNMT0NBVElPTl9TT1VSQ0VfR1BTEAESHgoaTE9DQVRJT05fU09VUkNFX1RSQUNLX1RJTUUQAhIaChZMT0NBVElPTl9TT1VSQ0VfTUFOVUFMEAMqVwoJUGhvdG9TaXplEhoKFlBIT1RPX1NJWkVfVU5TUEVDSUZJRUQQABIYChRQSE9UT19TSVpFX1RIVU1CTkFJTBABEhQKEFBIT1RPX1NJWkVfTEFSR0UQAjKWDQoRVHJpcFJlcG9ydFNlcnZpY2USWQoQQ3JlYXRlVHJpcFJlcG9ydBIhLnRyaXBzLnYxLkNyZWF0ZVRyaXBSZXBvcnRSZXF1ZXN0GiIudHJpcHMudjEuQ3JlYXRlVHJpcFJlcG9ydFJlc3BvbnNlElAKDUdldFRyaXBSZXBvcnQSHi50cmlwcy52MS5HZXRUcmlwUmVwb3J0UmVxdWVzdBofLnRyaXBzLnYxLkdldFRyaXBSZXBvcnRSZXNwb25zZRJWCg9MaXN0VHJpcFJlcG9ydHMSIC50cmlwcy52MS5MaXN0VHJpcFJlcG9ydHNSZXF1ZXN0GiEudHJpcHMudjEuTGlzdFRyaXBSZXBvcnRzUmVzcG9uc2USWQoQVXBkYXRlVHJpcFJlcG9ydBIhLnRyaXBzLnYxLlVwZGF0ZVRyaXBSZXBvcnRSZXF1ZXN0GiIudHJpcHMudjEuVXBkYXRlVHJpcFJlcG9ydFJlc3BvbnNlElkKEERlbGV0ZVRyaXBSZXBvcnQSIS50cmlwcy52MS5EZWxldGVUcmlwUmVwb3J0UmVxdWVzdBoiLnRyaXBzLnYxLkRlbGV0ZVRyaXBSZXBvcnRSZXNwb25zZRJkChFQdWJsaXNoVHJpcFJlcG9ydBIiLnRyaXBzLnYxLlB1Ymxpc2hUcmlwUmVwb3J0UmVxdWVzdBojLnRyaXBzLnYxLlB1Ymxpc2hUcmlwUmVwb3J0UmVzcG9uc2UiBqKfGQIIARJqChNVbnB1Ymxpc2hUcmlwUmVwb3J0EiQudHJpcHMudjEuVW5wdWJsaXNoVHJpcFJlcG9ydFJlcXVlc3QaJS50cmlwcy52MS5VbnB1Ymxpc2hUcmlwUmVwb3J0UmVzcG9uc2UiBqKfGQIIARJeCg9VcGxvYWRUcmlwUGhvdG8SIC50cmlwcy52MS5VcGxvYWRUcmlwUGhvdG9SZXF1ZXN0GiEudHJpcHMudjEuVXBsb2FkVHJpcFBob3RvUmVzcG9uc2UiBqKfGQIIARJnChJJbXBvcnRTdHJhdmFQaG90b3MSIy50cmlwcy52MS5JbXBvcnRTdHJhdmFQaG90b3NSZXF1ZXN0GiQudHJpcHMudjEuSW1wb3J0U3RyYXZhUGhvdG9zUmVzcG9uc2UiBqKfGQIIARJWCg9VcGRhdGVUcmlwUGhvdG8SIC50cmlwcy52MS5VcGRhdGVUcmlwUGhvdG9SZXF1ZXN0GiEudHJpcHMudjEuVXBkYXRlVHJpcFBob3RvUmVzcG9uc2USVgoPU2V0VHJpcFNlY3Rpb25zEiAudHJpcHMudjEuU2V0VHJpcFNlY3Rpb25zUmVxdWVzdBohLnRyaXBzLnYxLlNldFRyaXBTZWN0aW9uc1Jlc3BvbnNlEmIKE1N1Z2dlc3RUcmlwU2VjdGlvbnMSJC50cmlwcy52MS5TdWdnZXN0VHJpcFNlY3Rpb25zUmVxdWVzdBolLnRyaXBzLnYxLlN1Z2dlc3RUcmlwU2VjdGlvbnNSZXNwb25zZRJWCg9EZWxldGVUcmlwUGhvdG8SIC50cmlwcy52MS5EZWxldGVUcmlwUGhvdG9SZXF1ZXN0GiEudHJpcHMudjEuRGVsZXRlVHJpcFBob3RvUmVzcG9uc2USTQoMR2V0VHJpcFBob3RvEh0udHJpcHMudjEuR2V0VHJpcFBob3RvUmVxdWVzdBoeLnRyaXBzLnYxLkdldFRyaXBQaG90b1Jlc3BvbnNlEkcKCkdldFByb2ZpbGUSGy50cmlwcy52MS5HZXRQcm9maWxlUmVxdWVzdBocLnRyaXBzLnYxLkdldFByb2ZpbGVSZXNwb25zZRJYCg1VcGRhdGVQcm9maWxlEh4udHJpcHMudjEuVXBkYXRlUHJvZmlsZVJlcXVlc3QaHy50cmlwcy52MS5VcGRhdGVQcm9maWxlUmVzcG9uc2UiBqKfGQIIARJhChBHZXRQdWJsaWNQcm9maWxlEiEudHJpcHMudjEuR2V0UHVibGljUHJvZmlsZVJlcXVlc3QaIi50cmlwcy52MS5HZXRQdWJsaWNQcm9maWxlUmVzcG9uc2UiBqKfGQIIARJqChNHZXRQdWJsaWNUcmlwUmVwb3J0EiQudHJpcHMudjEuR2V0UHVibGljVHJpcFJlcG9ydFJlcXVlc3QaJS50cmlwcy52MS5HZXRQdWJsaWNUcmlwUmVwb3J0UmVzcG9uc2UiBqKfGQIIAUKhAQoMY29tLnRyaXBzLnYxQgpUcmlwc1Byb3RvUAFaRGdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi90cmlwcy92MTt0cmlwc3YxogIDVFhYqgIIVHJpcHMuVjHKAghUcmlwc1xWMeICFFRyaXBzXFYxXEdQQk1ldGFkYXRh6gIJVHJpcHM6OlYxYgZwcm90bzM", [file_geo_v1_geo, file_google_protobuf_timestamp, file_mcp_v1_image, file_mcp_v1_options, file_routes_v1_routes]);
+  fileDesc("ChR0cmlwcy92MS90cmlwcy5wcm90bxIIdHJpcHMudjEi6QQKClRyaXBSZXBvcnQSEgoCaWQYASABKAlCBqqfGQIIARIbCgthY3Rpdml0eV9pZBgCIAEoCUIGqp8ZAggBEg0KBXRpdGxlGAMgASgJEgwKBHNsdWcYBCABKAkSDAoEZGF0ZRgGIAEoCRIqCgVzdGF0cxgHIAEoCzITLnRyaXBzLnYxLlRyaXBTdGF0c0IGqp8ZAggBEhkKCXB1Ymxpc2hlZBgIIAEoCEIGqp8ZAggBEjgKDHB1Ymxpc2hfdGltZRgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARITCgN1cmwYCiABKAlCBqqfGQIIARIrCgZwaG90b3MYCyADKAsyEy50cmlwcy52MS5UcmlwUGhvdG9CBqqfGQIIARI3CgtjcmVhdGVfdGltZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARI3Cgt1cGRhdGVfdGltZRgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARIZCgloYXNfdHJhY2sYDiABKAhCBqqfGQIIARIvCghzZWN0aW9ucxgQIAMoCzIVLnRyaXBzLnYxLlRyaXBTZWN0aW9uQgaqnxkCCAESFwoHZXhjZXJwdBgRIAEoCUIGqp8ZAggBEh4KDmNvdmVyX3Bob3RvX2lkGBIgASgJQgaqnxkCCAESHwoEdGFncxgTIAMoDjIRLnRyaXBzLnYxLlRyaXBUYWdKBAgFEAZKBAgPEBBSBGJvZHlSEmhpZGRlbl9lbmRzX21ldGVycyIrCghUcmlwVGFncxIfCgR0YWdzGAEgAygOMhEudHJpcHMudjEuVHJpcFRhZyLBAQoLVHJpcFNlY3Rpb24SCgoCaWQYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEYm9keRgDIAEoCRIiChVzdGFydF9kaXN0YW5jZV9tZXRlcnMYBCABKAFIAIgBARIgChNlbmRfZGlzdGFuY2VfbWV0ZXJzGAUgASgBSAGIAQESEQoJcGhvdG9faWRzGAYgAygJQhgKFl9zdGFydF9kaXN0YW5jZV9tZXRlcnNCFgoUX2VuZF9kaXN0YW5jZV9tZXRlcnMi1AEKCVRyaXBTdGF0cxISCgpzcG9ydF90eXBlGAEgASgJEi4KCnN0YXJ0X3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHRpbWV6b25lGAMgASgJEhcKD2Rpc3RhbmNlX21ldGVycxgEIAEoARIbChNtb3ZpbmdfdGltZV9zZWNvbmRzGAUgASgFEhwKFGVsYXBzZWRfdGltZV9zZWNvbmRzGAYgASgFEh0KFWVsZXZhdGlvbl9nYWluX21ldGVycxgHIAEoASLuAgoJVHJpcFBob3RvEhIKAmlkGAEgASgJQgaqnxkCCAESDwoHY2FwdGlvbhgCIAEoCRIgCghsb2NhdGlvbhgDIAEoCzIOLmdlby52MS5MYXRMbmcSOQoPbG9jYXRpb25fc291cmNlGAQgASgOMhgudHJpcHMudjEuTG9jYXRpb25Tb3VyY2VCBqqfGQIIARIqChV0cmFja19kaXN0YW5jZV9tZXRlcnMYBSABKAFCBqqfGQIIAUgAiAEBEjYKCnRha2VuX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgaqnxkCCAESFQoFd2lkdGgYByABKAVCBqqfGQIIARIWCgZoZWlnaHQYCCABKAVCBqqfGQIIARITCgN1cmwYCSABKAlCBqqfGQIIARIdCg10aHVtYm5haWxfdXJsGAogASgJQgaqnxkCCAFCGAoWX3RyYWNrX2Rpc3RhbmNlX21ldGVycyJECgdQcm9maWxlEg4KBmhhbmRsZRgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoDdXJsGAMgASgJQgaqnxkCCAEiPQoXQ3JlYXRlVHJpcFJlcG9ydFJlcXVlc3QSEwoLYWN0aXZpdHlfaWQYASABKAkSDQoFdGl0bGUYAiABKAkiQAoYQ3JlYXRlVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiOQoUR2V0VHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkSFQoNaW5jbHVkZV90cmFjaxgCIAEoCCJjChVHZXRUcmlwUmVwb3J0UmVzcG9uc2USJAoGcmVwb3J0GAEgASgLMhQudHJpcHMudjEuVHJpcFJlcG9ydBIkCgV0cmFjaxgCIAMoCzIVLnJvdXRlcy52MS5Sb3V0ZVBvaW50Ii0KFkxpc3RUcmlwUmVwb3J0c1JlcXVlc3QSEwoLYWN0aXZpdHlfaWQYASABKAkiQAoXTGlzdFRyaXBSZXBvcnRzUmVzcG9uc2USJQoHcmVwb3J0cxgBIAMoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQi8wEKF1VwZGF0ZVRyaXBSZXBvcnRSZXF1ZXN0EgoKAmlkGAEgASgJEhIKBXRpdGxlGAIgASgJSACIAQESEQoEc2x1ZxgDIAEoCUgBiAEBEhEKBGRhdGUYBSABKAlIAogBARIbCg5jb3Zlcl9waG90b19pZBgHIAEoCUgDiAEBEiAKBHRhZ3MYCCABKAsyEi50cmlwcy52MS5UcmlwVGFnc0IICgZfdGl0bGVCBwoFX3NsdWdCBwoFX2RhdGVCEQoPX2NvdmVyX3Bob3RvX2lkSgQIBBAFSgQIBhAHUgRib2R5UhJoaWRkZW5fZW5kc19tZXRlcnMiQAoYVXBkYXRlVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiJQoXRGVsZXRlVHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkiGgoYRGVsZXRlVHJpcFJlcG9ydFJlc3BvbnNlIiYKGFB1Ymxpc2hUcmlwUmVwb3J0UmVxdWVzdBIKCgJpZBgBIAEoCSJBChlQdWJsaXNoVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiKAoaVW5wdWJsaXNoVHJpcFJlcG9ydFJlcXVlc3QSCgoCaWQYASABKAkiQwobVW5wdWJsaXNoVHJpcFJlcG9ydFJlc3BvbnNlEiQKBnJlcG9ydBgBIAEoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQitgEKFlVwbG9hZFRyaXBQaG90b1JlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJEgwKBGRhdGEYAiABKAwSDwoHY2FwdGlvbhgDIAEoCRIgCghsb2NhdGlvbhgEIAEoCzIOLmdlby52MS5MYXRMbmcSLgoKdGFrZW5fdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQdGFrZW5fbG9jYWxfdGltZRgGIAEoCSI9ChdVcGxvYWRUcmlwUGhvdG9SZXNwb25zZRIiCgVwaG90bxgBIAEoCzITLnRyaXBzLnYxLlRyaXBQaG90byJLCgtQaG90b1VwbG9hZBILCgN1cmwYASABKAkSLwoLZXhwaXJlX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjEKHENyZWF0ZVRyaXBQaG90b1VwbG9hZFJlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJIkYKHUNyZWF0ZVRyaXBQaG90b1VwbG9hZFJlc3BvbnNlEiUKBnVwbG9hZBgBIAEoCzIVLnRyaXBzLnYxLlBob3RvVXBsb2FkIi4KGUltcG9ydFN0cmF2YVBob3Rvc1JlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJIm4KGkltcG9ydFN0cmF2YVBob3Rvc1Jlc3BvbnNlEiMKBnBob3RvcxgBIAMoCzITLnRyaXBzLnYxLlRyaXBQaG90bxIVCg1za2lwcGVkX2NvdW50GAIgASgFEhQKDGZhaWxlZF9jb3VudBgDIAEoBSKAAQoWVXBkYXRlVHJpcFBob3RvUmVxdWVzdBIKCgJpZBgBIAEoCRIUCgdjYXB0aW9uGAIgASgJSACIAQESIAoIbG9jYXRpb24YAyABKAsyDi5nZW8udjEuTGF0TG5nEhYKDmNsZWFyX2xvY2F0aW9uGAQgASgIQgoKCF9jYXB0aW9uIj0KF1VwZGF0ZVRyaXBQaG90b1Jlc3BvbnNlEiIKBXBob3RvGAEgASgLMhMudHJpcHMudjEuVHJpcFBob3RvIlQKFlNldFRyaXBTZWN0aW9uc1JlcXVlc3QSEQoJcmVwb3J0X2lkGAEgASgJEicKCHNlY3Rpb25zGAIgAygLMhUudHJpcHMudjEuVHJpcFNlY3Rpb24iPwoXU2V0VHJpcFNlY3Rpb25zUmVzcG9uc2USJAoGcmVwb3J0GAEgASgLMhQudHJpcHMudjEuVHJpcFJlcG9ydCIvChpTdWdnZXN0VHJpcFNlY3Rpb25zUmVxdWVzdBIRCglyZXBvcnRfaWQYASABKAkiRgobU3VnZ2VzdFRyaXBTZWN0aW9uc1Jlc3BvbnNlEicKCHNlY3Rpb25zGAEgAygLMhUudHJpcHMudjEuVHJpcFNlY3Rpb24iRAoTR2V0VHJpcFBob3RvUmVxdWVzdBIKCgJpZBgBIAEoCRIhCgRzaXplGAIgASgOMhMudHJpcHMudjEuUGhvdG9TaXplIlgKFEdldFRyaXBQaG90b1Jlc3BvbnNlEiIKBXBob3RvGAEgASgLMhMudHJpcHMudjEuVHJpcFBob3RvEhwKBWltYWdlGAIgASgLMg0ubWNwLnYxLkltYWdlIiQKFkRlbGV0ZVRyaXBQaG90b1JlcXVlc3QSCgoCaWQYASABKAkiGQoXRGVsZXRlVHJpcFBob3RvUmVzcG9uc2UiEwoRR2V0UHJvZmlsZVJlcXVlc3QiWAoSR2V0UHJvZmlsZVJlc3BvbnNlEiIKB3Byb2ZpbGUYASABKAsyES50cmlwcy52MS5Qcm9maWxlEh4KFnN1Z2dlc3RlZF9kaXNwbGF5X25hbWUYAiABKAkiOgoUVXBkYXRlUHJvZmlsZVJlcXVlc3QSIgoHcHJvZmlsZRgBIAEoCzIRLnRyaXBzLnYxLlByb2ZpbGUiOwoVVXBkYXRlUHJvZmlsZVJlc3BvbnNlEiIKB3Byb2ZpbGUYASABKAsyES50cmlwcy52MS5Qcm9maWxlIikKF0dldFB1YmxpY1Byb2ZpbGVSZXF1ZXN0Eg4KBmhhbmRsZRgBIAEoCSJlChhHZXRQdWJsaWNQcm9maWxlUmVzcG9uc2USIgoHcHJvZmlsZRgBIAEoCzIRLnRyaXBzLnYxLlByb2ZpbGUSJQoHcmVwb3J0cxgCIAMoCzIULnRyaXBzLnYxLlRyaXBSZXBvcnQiOgoaR2V0UHVibGljVHJpcFJlcG9ydFJlcXVlc3QSDgoGaGFuZGxlGAEgASgJEgwKBHNsdWcYAiABKAkiogEKG0dldFB1YmxpY1RyaXBSZXBvcnRSZXNwb25zZRIkCgZyZXBvcnQYASABKAsyFC50cmlwcy52MS5UcmlwUmVwb3J0EiEKBmF1dGhvchgCIAEoCzIRLnRyaXBzLnYxLlByb2ZpbGUSJAoFdHJhY2sYAyADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludBIUCgx0cmFja19icmVha3MYBCADKAUqmgIKB1RyaXBUYWcSGAoUVFJJUF9UQUdfVU5TUEVDSUZJRUQQABIeChpUUklQX1RBR19CRUdJTk5FUl9GUklFTkRMWRABEhUKEVRSSVBfVEFHX01PREVSQVRFEAISGAoUVFJJUF9UQUdfQ0hBTExFTkdJTkcQAxIVChFUUklQX1RBR19SVU5OQUJMRRAEEhYKElRSSVBfVEFHX1RFQ0hOSUNBTBAFEhcKE1RSSVBfVEFHX1NDUkFNQkxJTkcQBhIRCg1UUklQX1RBR19TTk9XEAcSEQoNVFJJUF9UQUdfTE9PUBAIEhkKFVRSSVBfVEFHX09VVF9BTkRfQkFDSxAJEhsKF1RSSVBfVEFHX1BPSU5UX1RPX1BPSU5UEAoqhgEKDkxvY2F0aW9uU291cmNlEh8KG0xPQ0FUSU9OX1NPVVJDRV9VTlNQRUNJRklFRBAAEhcKE0xPQ0FUSU9OX1NPVVJDRV9HUFMQARIeChpMT0NBVElPTl9TT1VSQ0VfVFJBQ0tfVElNRRACEhoKFkxPQ0FUSU9OX1NPVVJDRV9NQU5VQUwQAypXCglQaG90b1NpemUSGgoWUEhPVE9fU0laRV9VTlNQRUNJRklFRBAAEhgKFFBIT1RPX1NJWkVfVEhVTUJOQUlMEAESFAoQUEhPVE9fU0laRV9MQVJHRRACMoAOChFUcmlwUmVwb3J0U2VydmljZRJZChBDcmVhdGVUcmlwUmVwb3J0EiEudHJpcHMudjEuQ3JlYXRlVHJpcFJlcG9ydFJlcXVlc3QaIi50cmlwcy52MS5DcmVhdGVUcmlwUmVwb3J0UmVzcG9uc2USUAoNR2V0VHJpcFJlcG9ydBIeLnRyaXBzLnYxLkdldFRyaXBSZXBvcnRSZXF1ZXN0Gh8udHJpcHMudjEuR2V0VHJpcFJlcG9ydFJlc3BvbnNlElYKD0xpc3RUcmlwUmVwb3J0cxIgLnRyaXBzLnYxLkxpc3RUcmlwUmVwb3J0c1JlcXVlc3QaIS50cmlwcy52MS5MaXN0VHJpcFJlcG9ydHNSZXNwb25zZRJZChBVcGRhdGVUcmlwUmVwb3J0EiEudHJpcHMudjEuVXBkYXRlVHJpcFJlcG9ydFJlcXVlc3QaIi50cmlwcy52MS5VcGRhdGVUcmlwUmVwb3J0UmVzcG9uc2USWQoQRGVsZXRlVHJpcFJlcG9ydBIhLnRyaXBzLnYxLkRlbGV0ZVRyaXBSZXBvcnRSZXF1ZXN0GiIudHJpcHMudjEuRGVsZXRlVHJpcFJlcG9ydFJlc3BvbnNlEmQKEVB1Ymxpc2hUcmlwUmVwb3J0EiIudHJpcHMudjEuUHVibGlzaFRyaXBSZXBvcnRSZXF1ZXN0GiMudHJpcHMudjEuUHVibGlzaFRyaXBSZXBvcnRSZXNwb25zZSIGop8ZAggBEmoKE1VucHVibGlzaFRyaXBSZXBvcnQSJC50cmlwcy52MS5VbnB1Ymxpc2hUcmlwUmVwb3J0UmVxdWVzdBolLnRyaXBzLnYxLlVucHVibGlzaFRyaXBSZXBvcnRSZXNwb25zZSIGop8ZAggBEl4KD1VwbG9hZFRyaXBQaG90bxIgLnRyaXBzLnYxLlVwbG9hZFRyaXBQaG90b1JlcXVlc3QaIS50cmlwcy52MS5VcGxvYWRUcmlwUGhvdG9SZXNwb25zZSIGop8ZAggBEmgKFUNyZWF0ZVRyaXBQaG90b1VwbG9hZBImLnRyaXBzLnYxLkNyZWF0ZVRyaXBQaG90b1VwbG9hZFJlcXVlc3QaJy50cmlwcy52MS5DcmVhdGVUcmlwUGhvdG9VcGxvYWRSZXNwb25zZRJnChJJbXBvcnRTdHJhdmFQaG90b3MSIy50cmlwcy52MS5JbXBvcnRTdHJhdmFQaG90b3NSZXF1ZXN0GiQudHJpcHMudjEuSW1wb3J0U3RyYXZhUGhvdG9zUmVzcG9uc2UiBqKfGQIIARJWCg9VcGRhdGVUcmlwUGhvdG8SIC50cmlwcy52MS5VcGRhdGVUcmlwUGhvdG9SZXF1ZXN0GiEudHJpcHMudjEuVXBkYXRlVHJpcFBob3RvUmVzcG9uc2USVgoPU2V0VHJpcFNlY3Rpb25zEiAudHJpcHMudjEuU2V0VHJpcFNlY3Rpb25zUmVxdWVzdBohLnRyaXBzLnYxLlNldFRyaXBTZWN0aW9uc1Jlc3BvbnNlEmIKE1N1Z2dlc3RUcmlwU2VjdGlvbnMSJC50cmlwcy52MS5TdWdnZXN0VHJpcFNlY3Rpb25zUmVxdWVzdBolLnRyaXBzLnYxLlN1Z2dlc3RUcmlwU2VjdGlvbnNSZXNwb25zZRJWCg9EZWxldGVUcmlwUGhvdG8SIC50cmlwcy52MS5EZWxldGVUcmlwUGhvdG9SZXF1ZXN0GiEudHJpcHMudjEuRGVsZXRlVHJpcFBob3RvUmVzcG9uc2USTQoMR2V0VHJpcFBob3RvEh0udHJpcHMudjEuR2V0VHJpcFBob3RvUmVxdWVzdBoeLnRyaXBzLnYxLkdldFRyaXBQaG90b1Jlc3BvbnNlEkcKCkdldFByb2ZpbGUSGy50cmlwcy52MS5HZXRQcm9maWxlUmVxdWVzdBocLnRyaXBzLnYxLkdldFByb2ZpbGVSZXNwb25zZRJYCg1VcGRhdGVQcm9maWxlEh4udHJpcHMudjEuVXBkYXRlUHJvZmlsZVJlcXVlc3QaHy50cmlwcy52MS5VcGRhdGVQcm9maWxlUmVzcG9uc2UiBqKfGQIIARJhChBHZXRQdWJsaWNQcm9maWxlEiEudHJpcHMudjEuR2V0UHVibGljUHJvZmlsZVJlcXVlc3QaIi50cmlwcy52MS5HZXRQdWJsaWNQcm9maWxlUmVzcG9uc2UiBqKfGQIIARJqChNHZXRQdWJsaWNUcmlwUmVwb3J0EiQudHJpcHMudjEuR2V0UHVibGljVHJpcFJlcG9ydFJlcXVlc3QaJS50cmlwcy52MS5HZXRQdWJsaWNUcmlwUmVwb3J0UmVzcG9uc2UiBqKfGQIIAUKhAQoMY29tLnRyaXBzLnYxQgpUcmlwc1Byb3RvUAFaRGdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi90cmlwcy92MTt0cmlwc3YxogIDVFhYqgIIVHJpcHMuVjHKAghUcmlwc1xWMeICFFRyaXBzXFYxXEdQQk1ldGFkYXRh6gIJVHJpcHM6OlYxYgZwcm90bzM", [file_geo_v1_geo, file_google_protobuf_timestamp, file_mcp_v1_image, file_mcp_v1_options, file_routes_v1_routes]);
 
 /**
  * A trip report.
@@ -819,6 +819,73 @@ export const UploadTripPhotoResponseSchema: GenMessage<UploadTripPhotoResponse> 
   messageDesc(file_trips_v1_trips, 21);
 
 /**
+ * A link to upload photos to a report with. See CreateTripPhotoUpload.
+ *
+ * @generated from message trips.v1.PhotoUpload
+ */
+export type PhotoUpload = Message<"trips.v1.PhotoUpload"> & {
+  /**
+   * The URL to upload photos to. It includes a secret token, which is all
+   * that's needed to upload.
+   *
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * When the link expires.
+   *
+   * @generated from field: google.protobuf.Timestamp expire_time = 2;
+   */
+  expireTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message trips.v1.PhotoUpload.
+ * Use `create(PhotoUploadSchema)` to create a new message.
+ */
+export const PhotoUploadSchema: GenMessage<PhotoUpload> = /*@__PURE__*/
+  messageDesc(file_trips_v1_trips, 22);
+
+/**
+ * @generated from message trips.v1.CreateTripPhotoUploadRequest
+ */
+export type CreateTripPhotoUploadRequest = Message<"trips.v1.CreateTripPhotoUploadRequest"> & {
+  /**
+   * The ID of the report.
+   *
+   * @generated from field: string report_id = 1;
+   */
+  reportId: string;
+};
+
+/**
+ * Describes the message trips.v1.CreateTripPhotoUploadRequest.
+ * Use `create(CreateTripPhotoUploadRequestSchema)` to create a new message.
+ */
+export const CreateTripPhotoUploadRequestSchema: GenMessage<CreateTripPhotoUploadRequest> = /*@__PURE__*/
+  messageDesc(file_trips_v1_trips, 23);
+
+/**
+ * @generated from message trips.v1.CreateTripPhotoUploadResponse
+ */
+export type CreateTripPhotoUploadResponse = Message<"trips.v1.CreateTripPhotoUploadResponse"> & {
+  /**
+   * The link to upload photos with.
+   *
+   * @generated from field: trips.v1.PhotoUpload upload = 1;
+   */
+  upload?: PhotoUpload | undefined;
+};
+
+/**
+ * Describes the message trips.v1.CreateTripPhotoUploadResponse.
+ * Use `create(CreateTripPhotoUploadResponseSchema)` to create a new message.
+ */
+export const CreateTripPhotoUploadResponseSchema: GenMessage<CreateTripPhotoUploadResponse> = /*@__PURE__*/
+  messageDesc(file_trips_v1_trips, 24);
+
+/**
  * @generated from message trips.v1.ImportStravaPhotosRequest
  */
 export type ImportStravaPhotosRequest = Message<"trips.v1.ImportStravaPhotosRequest"> & {
@@ -835,7 +902,7 @@ export type ImportStravaPhotosRequest = Message<"trips.v1.ImportStravaPhotosRequ
  * Use `create(ImportStravaPhotosRequestSchema)` to create a new message.
  */
 export const ImportStravaPhotosRequestSchema: GenMessage<ImportStravaPhotosRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 22);
+  messageDesc(file_trips_v1_trips, 25);
 
 /**
  * @generated from message trips.v1.ImportStravaPhotosResponse
@@ -868,7 +935,7 @@ export type ImportStravaPhotosResponse = Message<"trips.v1.ImportStravaPhotosRes
  * Use `create(ImportStravaPhotosResponseSchema)` to create a new message.
  */
 export const ImportStravaPhotosResponseSchema: GenMessage<ImportStravaPhotosResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 23);
+  messageDesc(file_trips_v1_trips, 26);
 
 /**
  * @generated from message trips.v1.UpdateTripPhotoRequest
@@ -908,7 +975,7 @@ export type UpdateTripPhotoRequest = Message<"trips.v1.UpdateTripPhotoRequest"> 
  * Use `create(UpdateTripPhotoRequestSchema)` to create a new message.
  */
 export const UpdateTripPhotoRequestSchema: GenMessage<UpdateTripPhotoRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 24);
+  messageDesc(file_trips_v1_trips, 27);
 
 /**
  * @generated from message trips.v1.UpdateTripPhotoResponse
@@ -927,7 +994,7 @@ export type UpdateTripPhotoResponse = Message<"trips.v1.UpdateTripPhotoResponse"
  * Use `create(UpdateTripPhotoResponseSchema)` to create a new message.
  */
 export const UpdateTripPhotoResponseSchema: GenMessage<UpdateTripPhotoResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 25);
+  messageDesc(file_trips_v1_trips, 28);
 
 /**
  * @generated from message trips.v1.SetTripSectionsRequest
@@ -954,7 +1021,7 @@ export type SetTripSectionsRequest = Message<"trips.v1.SetTripSectionsRequest"> 
  * Use `create(SetTripSectionsRequestSchema)` to create a new message.
  */
 export const SetTripSectionsRequestSchema: GenMessage<SetTripSectionsRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 26);
+  messageDesc(file_trips_v1_trips, 29);
 
 /**
  * @generated from message trips.v1.SetTripSectionsResponse
@@ -973,7 +1040,7 @@ export type SetTripSectionsResponse = Message<"trips.v1.SetTripSectionsResponse"
  * Use `create(SetTripSectionsResponseSchema)` to create a new message.
  */
 export const SetTripSectionsResponseSchema: GenMessage<SetTripSectionsResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 27);
+  messageDesc(file_trips_v1_trips, 30);
 
 /**
  * @generated from message trips.v1.SuggestTripSectionsRequest
@@ -992,7 +1059,7 @@ export type SuggestTripSectionsRequest = Message<"trips.v1.SuggestTripSectionsRe
  * Use `create(SuggestTripSectionsRequestSchema)` to create a new message.
  */
 export const SuggestTripSectionsRequestSchema: GenMessage<SuggestTripSectionsRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 28);
+  messageDesc(file_trips_v1_trips, 31);
 
 /**
  * @generated from message trips.v1.SuggestTripSectionsResponse
@@ -1011,7 +1078,7 @@ export type SuggestTripSectionsResponse = Message<"trips.v1.SuggestTripSectionsR
  * Use `create(SuggestTripSectionsResponseSchema)` to create a new message.
  */
 export const SuggestTripSectionsResponseSchema: GenMessage<SuggestTripSectionsResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 29);
+  messageDesc(file_trips_v1_trips, 32);
 
 /**
  * @generated from message trips.v1.GetTripPhotoRequest
@@ -1037,7 +1104,7 @@ export type GetTripPhotoRequest = Message<"trips.v1.GetTripPhotoRequest"> & {
  * Use `create(GetTripPhotoRequestSchema)` to create a new message.
  */
 export const GetTripPhotoRequestSchema: GenMessage<GetTripPhotoRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 30);
+  messageDesc(file_trips_v1_trips, 33);
 
 /**
  * @generated from message trips.v1.GetTripPhotoResponse
@@ -1063,7 +1130,7 @@ export type GetTripPhotoResponse = Message<"trips.v1.GetTripPhotoResponse"> & {
  * Use `create(GetTripPhotoResponseSchema)` to create a new message.
  */
 export const GetTripPhotoResponseSchema: GenMessage<GetTripPhotoResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 31);
+  messageDesc(file_trips_v1_trips, 34);
 
 /**
  * @generated from message trips.v1.DeleteTripPhotoRequest
@@ -1082,7 +1149,7 @@ export type DeleteTripPhotoRequest = Message<"trips.v1.DeleteTripPhotoRequest"> 
  * Use `create(DeleteTripPhotoRequestSchema)` to create a new message.
  */
 export const DeleteTripPhotoRequestSchema: GenMessage<DeleteTripPhotoRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 32);
+  messageDesc(file_trips_v1_trips, 35);
 
 /**
  * @generated from message trips.v1.DeleteTripPhotoResponse
@@ -1095,7 +1162,7 @@ export type DeleteTripPhotoResponse = Message<"trips.v1.DeleteTripPhotoResponse"
  * Use `create(DeleteTripPhotoResponseSchema)` to create a new message.
  */
 export const DeleteTripPhotoResponseSchema: GenMessage<DeleteTripPhotoResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 33);
+  messageDesc(file_trips_v1_trips, 36);
 
 /**
  * @generated from message trips.v1.GetProfileRequest
@@ -1108,7 +1175,7 @@ export type GetProfileRequest = Message<"trips.v1.GetProfileRequest"> & {
  * Use `create(GetProfileRequestSchema)` to create a new message.
  */
 export const GetProfileRequestSchema: GenMessage<GetProfileRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 34);
+  messageDesc(file_trips_v1_trips, 37);
 
 /**
  * @generated from message trips.v1.GetProfileResponse
@@ -1134,7 +1201,7 @@ export type GetProfileResponse = Message<"trips.v1.GetProfileResponse"> & {
  * Use `create(GetProfileResponseSchema)` to create a new message.
  */
 export const GetProfileResponseSchema: GenMessage<GetProfileResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 35);
+  messageDesc(file_trips_v1_trips, 38);
 
 /**
  * @generated from message trips.v1.UpdateProfileRequest
@@ -1153,7 +1220,7 @@ export type UpdateProfileRequest = Message<"trips.v1.UpdateProfileRequest"> & {
  * Use `create(UpdateProfileRequestSchema)` to create a new message.
  */
 export const UpdateProfileRequestSchema: GenMessage<UpdateProfileRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 36);
+  messageDesc(file_trips_v1_trips, 39);
 
 /**
  * @generated from message trips.v1.UpdateProfileResponse
@@ -1172,7 +1239,7 @@ export type UpdateProfileResponse = Message<"trips.v1.UpdateProfileResponse"> & 
  * Use `create(UpdateProfileResponseSchema)` to create a new message.
  */
 export const UpdateProfileResponseSchema: GenMessage<UpdateProfileResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 37);
+  messageDesc(file_trips_v1_trips, 40);
 
 /**
  * @generated from message trips.v1.GetPublicProfileRequest
@@ -1191,7 +1258,7 @@ export type GetPublicProfileRequest = Message<"trips.v1.GetPublicProfileRequest"
  * Use `create(GetPublicProfileRequestSchema)` to create a new message.
  */
 export const GetPublicProfileRequestSchema: GenMessage<GetPublicProfileRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 38);
+  messageDesc(file_trips_v1_trips, 41);
 
 /**
  * @generated from message trips.v1.GetPublicProfileResponse
@@ -1217,7 +1284,7 @@ export type GetPublicProfileResponse = Message<"trips.v1.GetPublicProfileRespons
  * Use `create(GetPublicProfileResponseSchema)` to create a new message.
  */
 export const GetPublicProfileResponseSchema: GenMessage<GetPublicProfileResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 39);
+  messageDesc(file_trips_v1_trips, 42);
 
 /**
  * @generated from message trips.v1.GetPublicTripReportRequest
@@ -1243,7 +1310,7 @@ export type GetPublicTripReportRequest = Message<"trips.v1.GetPublicTripReportRe
  * Use `create(GetPublicTripReportRequestSchema)` to create a new message.
  */
 export const GetPublicTripReportRequestSchema: GenMessage<GetPublicTripReportRequest> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 40);
+  messageDesc(file_trips_v1_trips, 43);
 
 /**
  * @generated from message trips.v1.GetPublicTripReportResponse
@@ -1285,7 +1352,7 @@ export type GetPublicTripReportResponse = Message<"trips.v1.GetPublicTripReportR
  * Use `create(GetPublicTripReportResponseSchema)` to create a new message.
  */
 export const GetPublicTripReportResponseSchema: GenMessage<GetPublicTripReportResponse> = /*@__PURE__*/
-  messageDesc(file_trips_v1_trips, 41);
+  messageDesc(file_trips_v1_trips, 44);
 
 /**
  * TripTag is a tag of a trip report.
@@ -1464,9 +1531,10 @@ export const PhotoSizeSchema: GenEnum<PhotoSize> = /*@__PURE__*/
  * (paragraphs separated by blank lines) and photos, and is usually about a
  * stretch of the track, e.g. the first climb or a ridge. The app can suggest
  * sections from the track's elevation profile. The author uploads photos in
- * the app; each photo is placed on the map at the time it was taken along the
- * activity's track, or else from its GPS position, and goes in the section
- * about where it was taken.
+ * the app, and agents can upload the user's photo files with
+ * CreateTripPhotoUpload; each photo is placed on the map at the time it was
+ * taken along the activity's track, or else from its GPS position, and goes
+ * in the section about where it was taken.
  *
  * Publishing makes a report public at <public URL>/u/<handle>/<slug>, where
  * it can be read without signing in and indexed by search engines, and lists
@@ -1567,6 +1635,34 @@ export const TripReportService: GenService<{
     methodKind: "unary";
     input: typeof UploadTripPhotoRequestSchema;
     output: typeof UploadTripPhotoResponseSchema;
+  },
+  /**
+   * Create a link to upload photos to a trip report with, for agents that
+   * can read the user's photo files and make HTTP requests, e.g. with a
+   * shell, as tools can't take files. Upload each photo with a POST request
+   * to the link with the file as the body, e.g.
+   * `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
+   * form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
+   * caption query parameter or form field, e.g.
+   * `--url-query 'caption=On the ridge'`. Each upload responds with
+   * {"photo": TripPhoto} as JSON, or with an error as
+   * {"code": "...", "message": "..."}.
+   *
+   * JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
+   * photos, as iPhones take them, to JPEG first, keeping their metadata, e.g.
+   * with `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS. Each
+   * photo is placed on the track and in the story from the time and GPS
+   * position in its metadata, like photos uploaded in the app; look at them
+   * with GetTripPhoto to write their captions. The link uploads any number of
+   * photos for an hour; create another one when it expires. Anyone with the
+   * link can add photos to the report, so don't share it.
+   *
+   * @generated from rpc trips.v1.TripReportService.CreateTripPhotoUpload
+   */
+  createTripPhotoUpload: {
+    methodKind: "unary";
+    input: typeof CreateTripPhotoUploadRequestSchema;
+    output: typeof CreateTripPhotoUploadResponseSchema;
   },
   /**
    * Import the photos of the report's activity from Strava that it doesn't

@@ -71,6 +71,31 @@ export const unpublishTripReport = TripReportService.method.unpublishTripReport;
 export const uploadTripPhoto = TripReportService.method.uploadTripPhoto;
 
 /**
+ * Create a link to upload photos to a trip report with, for agents that
+ * can read the user's photo files and make HTTP requests, e.g. with a
+ * shell, as tools can't take files. Upload each photo with a POST request
+ * to the link with the file as the body, e.g.
+ * `curl --data-binary @IMG_1234.jpg '<url>'`, or as the file of a multipart
+ * form, e.g. `curl -F file=@IMG_1234.jpg '<url>'`. Set a caption with the
+ * caption query parameter or form field, e.g.
+ * `--url-query 'caption=On the ridge'`. Each upload responds with
+ * {"photo": TripPhoto} as JSON, or with an error as
+ * {"code": "...", "message": "..."}.
+ *
+ * JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
+ * photos, as iPhones take them, to JPEG first, keeping their metadata, e.g.
+ * with `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS. Each
+ * photo is placed on the track and in the story from the time and GPS
+ * position in its metadata, like photos uploaded in the app; look at them
+ * with GetTripPhoto to write their captions. The link uploads any number of
+ * photos for an hour; create another one when it expires. Anyone with the
+ * link can add photos to the report, so don't share it.
+ *
+ * @generated from rpc trips.v1.TripReportService.CreateTripPhotoUpload
+ */
+export const createTripPhotoUpload = TripReportService.method.createTripPhotoUpload;
+
+/**
  * Import the photos of the report's activity from Strava that it doesn't
  * have yet, e.g. ones added on Strava after the report was created, like
  * uploaded photos and with their captions. Photos imported before are

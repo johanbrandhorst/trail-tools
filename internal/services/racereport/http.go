@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/johanbrandhorst/trail-tools/internal/html"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
 	"github.com/johanbrandhorst/trail-tools/internal/services/trip"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
@@ -36,7 +37,7 @@ func (s *Service) PageHandler(watch bool, next http.Handler) http.Handler {
 		if description == "" {
 			description = fmt.Sprintf("%s's race report of %s on %s.", profile.DisplayName, report.RaceName, report.RaceDate.Format("2 January 2006"))
 		}
-		html.Render(w, watch, http.StatusOK, html.Page{
+		page := html.Page{
 			Title:         report.Title + " · " + profile.DisplayName,
 			Description:   description,
 			URL:           s.ReportURL(profile.Handle, report.Slug),
@@ -44,6 +45,15 @@ func (s *Service) PageHandler(watch bool, next http.Handler) http.Handler {
 			PublishedTime: report.PublishTime,
 			// Authors can preview drafts, which shouldn't be indexed.
 			NoIndex: !report.Published,
-		})
+		}
+		// Link previews show the first photo, if there is one.
+		reportPhotos, err := s.repo.ListRaceReportPhotos(r.Context(), report.ID)
+		switch {
+		case err != nil:
+			s.report.Report(r.Context(), "Failed to list race report photos, showing the page without one", err)
+		case len(reportPhotos) > 0:
+			page.Image = s.photoURL(store.UUIDToString(reportPhotos[0].ID), photos.SizeLarge)
+		}
+		html.Render(w, watch, http.StatusOK, page)
 	})
 }
