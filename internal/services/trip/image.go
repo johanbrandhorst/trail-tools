@@ -1,6 +1,9 @@
 package trip
 
 import (
+	"context"
+	"image"
+
 	"github.com/johanbrandhorst/trail-tools/internal/images"
 )
 
@@ -24,24 +27,25 @@ type processedImage struct {
 // processImage decodes an uploaded image and encodes it as a JPEG of at
 // most largeSize pixels and a thumbnail of at most thumbSize pixels.
 // Re-encoding drops the metadata of the upload, such as its GPS position.
-func processImage(data []byte) (*processedImage, error) {
-	img, err := images.Decode(data)
-	if err != nil {
-		return nil, err
-	}
-	large := images.ScaleDown(img, largeSize)
-	largeData, err := images.EncodeJPEG(large, 85)
-	if err != nil {
-		return nil, err
-	}
-	thumbData, err := images.EncodeJPEG(images.ScaleDown(large, thumbSize), 80)
-	if err != nil {
-		return nil, err
-	}
-	return &processedImage{
-		large:  largeData,
-		width:  large.Bounds().Dx(),
-		height: large.Bounds().Dy(),
-		thumb:  thumbData,
-	}, nil
+func processImage(ctx context.Context, data []byte) (*processedImage, error) {
+	var processed *processedImage
+	err := images.Decode(ctx, data, func(img image.Image) error {
+		large := images.ScaleDown(img, largeSize)
+		largeData, err := images.EncodeJPEG(large, 85)
+		if err != nil {
+			return err
+		}
+		thumbData, err := images.EncodeJPEG(images.ScaleDown(large, thumbSize), 80)
+		if err != nil {
+			return err
+		}
+		processed = &processedImage{
+			large:  largeData,
+			width:  large.Bounds().Dx(),
+			height: large.Bounds().Dy(),
+			thumb:  thumbData,
+		}
+		return nil
+	})
+	return processed, err
 }

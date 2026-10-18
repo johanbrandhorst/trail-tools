@@ -24,7 +24,6 @@ import (
 	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -75,11 +74,7 @@ func (e *env) createActivityWithAltitudes(altitudes []float64) string {
 		streams.SetAltitudeMeters(append(streams.GetAltitudeMeters(), altitudes[i]))
 		streams.SetHeartrateBpm(append(streams.GetHeartrateBpm(), 150))
 	}
-	data, err := proto.Marshal(streams)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	if err := e.activities.StoreActivityDetail(ctx, id, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, data, &geo.Bounds{MaxLat: 0.09}); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, 4242, &activities.Detail{Description: "Felt good", DeviceName: "Watch", RawJSON: []byte("{}")}, streams, &geo.Bounds{MaxLat: 0.09}); err != nil {
 		e.t.Fatal(err)
 	}
 	return store.UUIDToString(id)
@@ -459,11 +454,7 @@ func (e *env) createActivityFrom(stravaID int64, name string, bearingDegrees flo
 		streams.SetLat(append(streams.GetLat(), end.Lat*float64(i)/200))
 		streams.SetLng(append(streams.GetLng(), end.Lng*float64(i)/200))
 	}
-	data, err := proto.Marshal(streams)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	if err := e.activities.StoreActivityDetail(ctx, id, &activities.Detail{RawJSON: []byte("{}")}, data, nil); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, id, stravaID, &activities.Detail{RawJSON: []byte("{}")}, streams, nil); err != nil {
 		e.t.Fatal(err)
 	}
 	return store.UUIDToString(id)
@@ -692,7 +683,9 @@ func TestTripPhotos(t *testing.T) {
 	for _, p := range got.GetReport().GetPhotos() {
 		ids = append(ids, p.GetId())
 	}
-	if want := []string{gps.GetId(), timed.GetId(), local.GetId(), unplaced.GetId()}; strings.Join(ids, ",") != strings.Join(want, ",") {
+	// In the order they were taken, rather than uploaded: the local time
+	// photo was taken 18 seconds before the timed one.
+	if want := []string{gps.GetId(), local.GetId(), timed.GetId(), unplaced.GetId()}; strings.Join(ids, ",") != strings.Join(want, ",") {
 		t.Fatalf("photos in order %v, want %v", ids, want)
 	}
 
@@ -856,6 +849,10 @@ func TestTripPhotos(t *testing.T) {
 	}
 	if cover := listed.GetReports()[0].GetCoverPhotoId(); cover != local.GetId() {
 		t.Errorf("listed cover photo %q, want %q", cover, local.GetId())
+	}
+	// Lists only include the cover photo.
+	if photos := listed.GetReports()[0].GetPhotos(); len(photos) != 1 || photos[0].GetId() != local.GetId() {
+		t.Errorf("listed %d photos, want only the cover photo", len(photos))
 	}
 	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "nope"} {
 		_, err = setCover(id)

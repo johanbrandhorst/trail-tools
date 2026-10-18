@@ -240,16 +240,17 @@ message ListHeatmapTracksRequest {
   BoundingBox bounds = 1;
   // How far in meters the simplified tracks may stray from the recorded
   // ones. Defaults to 10, minimum 1. The tracks are stored simplified to 2
-  // meters, and from 50 meters the activities' summary polylines are used,
-  // which are much faster to list.
+  // meters, and from 50 meters, or for areas more than 100 km across, the
+  // activities' summary polylines are used, which are much faster to list.
   double tolerance_meters = 2;
 }
 
 message ListHeatmapTracksResponse {
   // The parts of the tracks inside the bounds, as encoded polylines.
   repeated string polylines = 1;
-  // Whether there were too many points to return all of them. The longest
-  // parts are returned first.
+  // Whether there were too many tracks or points to return all of them. The
+  // tracks of the 1,000 most recent activities are listed, and of those the
+  // longest parts are returned first. Use a smaller area to see the rest.
   bool truncated = 2;
 }
 
@@ -258,6 +259,10 @@ message GetPersonalHeatmapResponse {
   repeated HeatmapCell cells = 1;
   // The size of each cell in meters.
   double cell_size_meters = 2;
-  // The number of activities that intersected the bounds.
+  // The number of activities that intersected the bounds and were counted.
   int32 activity_count = 3;
+  // Whether there were too many activities in the bounds to count all of
+  // them, so only the most recent (up to 1,000) were. Use a smaller area or
+  // date range to count them all.
+  bool truncated = 4;
 }

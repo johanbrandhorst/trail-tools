@@ -87,13 +87,23 @@ $ STRAVA_CLIENT_ID=12345 STRAVA_CLIENT_SECRET=... make run
 ```
 
 Connect your account under Settings. The first sync fetches all activities,
-then the details, photos and detailed streams of each activity, most recent
-first. Photos stay on Strava: only their captions, locations and links are
-stored, and they're only shown to you. Strava's API rate limits (100 requests
-per 15 minutes, 1000 per day) mean a long history takes a few days to sync
-fully; the sync pauses and resumes automatically, and the app syncs new
-activities every few hours. The activities page checks for new activities
-every minute while it's open.
+then the details, photos and detailed streams of the activities from the
+year before the latest one, most recent first. Older activities' details
+are fetched when you open them or create a report from them. Photos stay on
+Strava: only their captions, locations and links are stored, and they're
+only shown to you. Strava's API rate limits, by default 100 requests per 15
+minutes and 1000 per day, are shared by all users of the app, so a year of
+activities can take a day to sync; the sync pauses and resumes
+automatically, users take turns so one user's history doesn't hold up the
+others' new activities, and the app syncs new activities every few hours.
+The activities page checks for new activities every minute while it's
+open.
+
+The activities' detailed streams and Strava's raw responses are stored as
+files, not in the database: locally in the `activity-data` directory of the
+working directory, which is ignored by git, or elsewhere with
+`-activity-dir`, or in a Google Cloud Storage bucket with
+`-activity-bucket` (`TRAIL_TOOLS_ACTIVITY_BUCKET`).
 
 When the server is reachable from the internet, Strava can also push new,
 changed and deleted activities to it as they happen, so they appear within
@@ -459,6 +469,16 @@ itself, so only the Cloud Run service account can read and write them
 account's application default credentials. Photos of published reports
 are served with long cache lifetimes, so they're mostly fetched once per
 visitor.
+
+### Activity data
+
+Activities' streams and Strava's raw responses about them are stored in the
+`<project>-activity-data` Cloud Storage bucket, where they cost much less
+than in the database: they're written once, read whole and never queried.
+It's set up like the photos bucket, private and in `us-west1`, and Terraform
+passes it to the service as `TRAIL_TOOLS_ACTIVITY_BUCKET`. Streams are
+stored compactly, at Strava's precision, in about a seventh of the space of
+the API's message.
 
 ### Elevation tiles
 

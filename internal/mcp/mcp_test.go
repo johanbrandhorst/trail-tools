@@ -22,12 +22,14 @@ import (
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1/geov1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
+	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1/plansv1connect"
 	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/races/v1/racesv1connect"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1/routesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1/stravav1connect"
+	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1/tripsv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -441,6 +443,17 @@ func TestCallTool(t *testing.T) {
 		if got.GetRoute().GetId() != "r1" {
 			t.Errorf("route id = %q, want r1", got.GetRoute().GetId())
 		}
+		// Fields with default values are included, so agents can tell
+		// them from fields they don't know.
+		var fields struct {
+			Route map[string]any `json:"route"`
+		}
+		if err := json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if v, ok := fields.Route["description"]; !ok || v != "" {
+			t.Errorf("route description = %v (present %v), want empty", v, ok)
+		}
 		if len(res.Content) != 1 {
 			t.Fatalf("got %d content blocks, want 1", len(res.Content))
 		}
@@ -574,4 +587,75 @@ func TestCallTool(t *testing.T) {
 			t.Errorf("update mask = %v, want [goals]", paths)
 		}
 	})
+}
+
+// fakeTrips returns a photo with an image.
+type fakeTrips struct {
+	tripsv1connect.UnimplementedTripReportServiceHandler
+}
+
+func (fakeTrips) GetTripPhoto(_ context.Context, req *tripsv1.GetTripPhotoRequest) (*tripsv1.GetTripPhotoResponse, error) {
+	return tripsv1.GetTripPhotoResponse_builder{
+		Photo: tripsv1.TripPhoto_builder{Id: req.GetId(), Caption: "Summit"}.Build(),
+		Image: mcpv1.Image_builder{MimeType: "image/jpeg", Data: []byte("jpeg")}.Build(),
+	}.Build(), nil
+}
+
+func TestCallToolImage(t *testing.T) {
+	srv, err := NewServer(discardLogger(), errreport.NewLocal(discardLogger()),
+		Service{Name: tripsv1connect.TripReportServiceName, Handler: fakeTrips{}},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session := connectClient(t, srv.Handler())
+	res, err := session.CallTool(t.Context(), &mcp.CallToolParams{
+		Name:      "GetTripPhoto",
+		Arguments: map[string]any{"id": "p1"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.IsError {
+		t.Fatalf("tool error: %v", res.Content)
+	}
+	// The image is image content, and the rest is JSON without it.
+	if len(res.Content) != 2 {
+		t.Fatalf("got %d content blocks, want the JSON and the image", len(res.Content))
+	}
+	if img, ok := res.Content[1].(*mcp.ImageContent); !ok || string(img.Data) != "jpeg" || img.MIMEType != "image/jpeg" {
+		t.Errorf("got content %#v, want the JPEG image", res.Content[1])
+	}
+	data, err := json.Marshal(res.StructuredContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]any
+	if err := json.Unmarshal(data, &fields); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := fields["image"]; ok || fields["photo"] == nil {
+		t.Errorf("got structured content %s, want the photo without the image", data)
+	}
+	// Nor is the image in the output schema.
+	for _, tool := range srv.Tools() {
+		if tool.Name != "GetTripPhoto" {
+			continue
+		}
+		schema := tool.OutputSchema.(*jsonschema.Schema)
+		if _, ok := schema.Properties["image"]; ok || slices.Contains(schema.PropertyOrder, "image") {
+			t.Error("the output schema has the image")
+		}
+		resolved, err := schema.Resolve(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var instance any
+		if err := json.Unmarshal(data, &instance); err != nil {
+			t.Fatal(err)
+		}
+		if err := resolved.Validate(instance); err != nil {
+			t.Errorf("structured content does not validate against the output schema: %v", err)
+		}
+	}
 }

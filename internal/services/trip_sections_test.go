@@ -2,12 +2,18 @@ package services_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -206,4 +212,60 @@ func photoIDs(report *tripsv1.TripReport) string {
 		ids[i] = p.GetId()
 	}
 	return strings.Join(ids, ",")
+}
+
+func TestTripPhotosInTripOrder(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	// An out-and-back of an hour: 5 km north and back, every 36 seconds.
+	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+		StravaID: 77, Name: "Out and back", SportType: "TrailRun", StartTime: tripStart,
+		StartDateLocal: time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC), Timezone: "Europe/Zurich",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	streams := &activitiesv1.ActivityStreams{}
+	for i := range 101 {
+		streams.SetTimeSeconds(append(streams.GetTimeSeconds(), int32(i*36)))
+		streams.SetDistanceMeters(append(streams.GetDistanceMeters(), float64(i)*100))
+		streams.SetLat(append(streams.GetLat(), float64(min(i, 100-i))*0.0009))
+		streams.SetLng(append(streams.GetLng(), 0))
+	}
+	e.storeActivityDetail(id, nil, streams, &geo.Bounds{MaxLat: 0.045})
+	created, err := e.trips.CreateTripReport(ctx, tripsv1.CreateTripReportRequest_builder{ActivityId: store.UUIDToString(id)}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportID := created.GetReport().GetId()
+	upload := func(minutes int, location *geov1.LatLng) string {
+		t.Helper()
+		b := tripsv1.UploadTripPhotoRequest_builder{ReportId: reportID, Data: testJPEG(t, 300, 200), Location: location}
+		if minutes >= 0 {
+			b.TakenTime = timestamppb.New(tripStart.Add(time.Duration(minutes) * time.Minute))
+		}
+		resp, err := e.trips.UploadTripPhoto(ctx, b.Build())
+		if err != nil {
+			t.Fatalf("UploadTripPhoto: %v", err)
+		}
+		return resp.GetPhoto().GetId()
+	}
+	// Uploaded out of order. The photos on the way out and back were taken
+	// at the same place, 1.2 km from the start, and are ordered by time.
+	back := upload(48, geov1.LatLng_builder{Lat: 0.0108}.Build())
+	out := upload(12, geov1.LatLng_builder{Lat: 0.0108}.Build())
+	turn := upload(30, nil)
+	// Without a time, a photo is ordered by how far along the track it is,
+	// here 200 m.
+	start := upload(-1, geov1.LatLng_builder{Lat: 0.0018}.Build())
+
+	got, err := e.trips.GetTripReport(ctx, tripsv1.GetTripReportRequest_builder{Id: reportID}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{start, out, turn, back}
+	if ids := got.GetReport().GetSections()[0].GetPhotoIds(); !slices.Equal(ids, want) {
+		t.Errorf("got photos %v, want %v: in the order they were taken", ids, want)
+	}
 }

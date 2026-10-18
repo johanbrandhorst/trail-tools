@@ -42,7 +42,7 @@ type Finder interface {
 }
 
 type TrackRepository interface {
-	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) ([]activities.Track, error)
+	ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) (tracks []activities.Track, truncated bool, err error)
 }
 
 // Service implements API handlers for the geo service.
@@ -292,7 +292,28 @@ const (
 	minTrackToleranceMeters     = 1
 	// maxHeatmapTrackPoints bounds the size of a heatmap tracks response.
 	maxHeatmapTrackPoints = 200_000
+	// maxDetailedHeatmapMeters is the widest or tallest area that heatmaps
+	// are made from the activities' tracks rather than their summary
+	// polylines. Over larger areas, the summary polylines are accurate
+	// enough, and the tracks are tens of megabytes for active users.
+	maxDetailedHeatmapMeters = 100_000
+	// metersPerDegreeLat is the approximate length of a degree of latitude.
+	metersPerDegreeLat = 111_320.0
 )
+
+// trackPrecision returns the precision to list the tracks in bounds with,
+// for heatmaps that need the precision: at least
+// activities.SummaryPrecisionMeters for areas larger than
+// maxDetailedHeatmapMeters.
+func trackPrecision(bounds geo.Bounds, precision float64) float64 {
+	midLat := (bounds.MinLat + bounds.MaxLat) / 2
+	height := (bounds.MaxLat - bounds.MinLat) * metersPerDegreeLat
+	width := (bounds.MaxLng - bounds.MinLng) * metersPerDegreeLat * math.Cos(midLat*math.Pi/180)
+	if max(height, width) > maxDetailedHeatmapMeters {
+		return max(precision, activities.SummaryPrecisionMeters)
+	}
+	return precision
+}
 
 func (s *Service) ListHeatmapTracks(ctx context.Context, req *geov1.ListHeatmapTracksRequest) (*geov1.ListHeatmapTracksResponse, error) {
 	userID, ok := authn.GetUserID(ctx)
@@ -311,7 +332,7 @@ func (s *Service) ListHeatmapTracks(ctx context.Context, req *geov1.ListHeatmapT
 	if tolerance < minTrackToleranceMeters {
 		return nil, connect.Errorf(connect.CodeInvalidArgument, "tolerance_meters must be at least %d", minTrackToleranceMeters)
 	}
-	tracks, err := s.tracks.ListTracksInBounds(ctx, userID, bounds, time.Time{}, time.Time{}, tolerance)
+	tracks, truncated, err := s.tracks.ListTracksInBounds(ctx, userID, bounds, time.Time{}, time.Time{}, trackPrecision(bounds, tolerance))
 	if err != nil {
 		return nil, s.internalError(ctx, err, "failed to list tracks")
 	}
@@ -328,7 +349,7 @@ func (s *Service) ListHeatmapTracks(ctx context.Context, req *geov1.ListHeatmapT
 	// The longest parts first, so a truncated response keeps the most of
 	// the tracks.
 	sort.SliceStable(parts, func(i, j int) bool { return len(parts[i]) > len(parts[j]) })
-	resp := geov1.ListHeatmapTracksResponse_builder{}
+	resp := geov1.ListHeatmapTracksResponse_builder{Truncated: truncated}
 	points := 0
 	for _, part := range parts {
 		if points+len(part) > maxHeatmapTrackPoints {
@@ -377,7 +398,7 @@ func (s *Service) GetPersonalHeatmap(ctx context.Context, req *geov1.GetPersonal
 		return nil, connect.NewError(connect.CodeInvalidArgument, "the area is too large for the cell size; use a smaller area or larger cells")
 	}
 	// Tracks accurate to a quarter of a cell count in the right cells.
-	tracks, err := s.tracks.ListTracksInBounds(ctx, userID, bounds, startDate, endDate, cellSize/4)
+	tracks, truncated, err := s.tracks.ListTracksInBounds(ctx, userID, bounds, startDate, endDate, trackPrecision(bounds, cellSize/4))
 	if err != nil {
 		return nil, s.internalError(ctx, err, "failed to list tracks")
 	}
@@ -412,6 +433,7 @@ func (s *Service) GetPersonalHeatmap(ctx context.Context, req *geov1.GetPersonal
 		Cells:          cells[:min(limit, len(cells))],
 		CellSizeMeters: cellSize,
 		ActivityCount:  int32(len(tracks)),
+		Truncated:      truncated,
 	}.Build(), nil
 }
 

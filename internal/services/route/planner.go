@@ -17,6 +17,12 @@ import (
 const (
 	// maxWaypoints is the maximum number of waypoints in a route.
 	maxWaypoints = 200
+	// maxLegMeters is the longest distance between the waypoints of a leg
+	// that is routed or drawn straight. Longer legs take a large area of the
+	// map to route, and straight ones points every straightSpacingMeters,
+	// which add up to more memory than the server has for legs around the
+	// world.
+	maxLegMeters = 50_000
 	// straightSpacingMeters is the spacing of points on straight legs, used
 	// to look up elevations.
 	straightSpacingMeters = 25
@@ -95,9 +101,14 @@ func (s *Service) buildLegs(ctx context.Context, userID pgtype.UUID, waypoints [
 			repeats[i] = j
 			continue
 		}
+		fromPoint, toPoint := geo.Point{Lat: from.Lat, Lng: from.Lng}, geo.Point{Lat: to.Lat, Lng: to.Lng}
+		if d := geo.Distance(fromPoint, toPoint); d > maxLegMeters {
+			return nil, fmt.Errorf("%w: the leg from waypoint %d to %d is %.0f km long, but legs can be at most %d km; add waypoints in between",
+				errInvalidRoute, i+1, i+2, d/1000, maxLegMeters/1000)
+		}
 		toRoute = append(toRoute, i)
 		if profile == routes.ProfileHeatmap {
-			heatmapEnds = append(heatmapEnds, geo.Point{Lat: from.Lat, Lng: from.Lng}, geo.Point{Lat: to.Lat, Lng: to.Lng})
+			heatmapEnds = append(heatmapEnds, fromPoint, toPoint)
 		}
 	}
 	var heat *heatmap
@@ -230,7 +241,9 @@ func dedupe(points []geo.Point, terrains []geo.Terrain) ([]geo.Point, []geo.Terr
 }
 
 // legsFromTrack splits a recorded or imported track into editable legs, with
-// waypoints spaced along the track.
+// waypoints spaced along the track. Each leg is simplified to
+// trackToleranceMeters and trackElevationToleranceMeters, as tracks
+// recorded every second have far more points than needed.
 func legsFromTrack(points []geo.Point) ([]routes.LatLng, []routes.Leg) {
 	dists := geo.CumulativeDistances(points)
 	total := dists[len(dists)-1]
@@ -251,7 +264,7 @@ func legsFromTrack(points []geo.Point) ([]routes.LatLng, []routes.Leg) {
 	}
 	legs := make([]routes.Leg, len(idxs)-1)
 	for i := range legs {
-		legs[i] = routes.NewLeg(waypoints[i], waypoints[i+1], "", points[idxs[i]:idxs[i+1]+1], nil)
+		legs[i] = routes.NewLeg(waypoints[i], waypoints[i+1], "", geo.SimplifyTrack(points[idxs[i]:idxs[i+1]+1], trackToleranceMeters, trackElevationToleranceMeters), nil)
 	}
 	return waypoints, legs
 }

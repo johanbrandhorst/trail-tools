@@ -4,6 +4,7 @@ package trips.v1;
 
 import "geo/v1/geo.proto";
 import "google/protobuf/timestamp.proto";
+import "mcp/v1/image.proto";
 import "mcp/v1/options.proto";
 import "routes/v1/routes.proto";
 
@@ -87,6 +88,10 @@ service TripReportService {
   rpc SuggestTripSections(SuggestTripSectionsRequest) returns (SuggestTripSectionsResponse);
   // Delete a photo.
   rpc DeleteTripPhoto(DeleteTripPhotoRequest) returns (DeleteTripPhotoResponse);
+  // Get a photo of one of the user's trip reports with its image, to look at
+  // it, e.g. to write its caption or the story around it. The thumbnail is
+  // enough to see what's in a photo; get the large image for details.
+  rpc GetTripPhoto(GetTripPhotoRequest) returns (GetTripPhotoResponse);
   // Get the user's public profile. The profile is unset if the user hasn't
   // created one yet.
   rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
@@ -133,7 +138,8 @@ message TripReport {
   // reachable by others once published.
   string url = 10 [(mcp.v1.field).output_only = true];
   // The photos in the order of the story: by section, and in order within
-  // each section.
+  // each section. Lists of reports only include the cover photo; get a
+  // report for all of them.
   repeated TripPhoto photos = 11 [(mcp.v1.field).output_only = true];
   // When the report was created.
   google.protobuf.Timestamp create_time = 12 [(mcp.v1.field).output_only = true];
@@ -439,6 +445,30 @@ message SuggestTripSectionsRequest {
 message SuggestTripSectionsResponse {
   // The suggested sections in order, without IDs or text.
   repeated TripSection sections = 1;
+}
+
+// The size of a photo's image.
+enum PhotoSize {
+  // The thumbnail.
+  PHOTO_SIZE_UNSPECIFIED = 0;
+  // At most 480 pixels wide and high: tens of kilobytes.
+  PHOTO_SIZE_THUMBNAIL = 1;
+  // At most 2048 pixels wide and high: hundreds of kilobytes.
+  PHOTO_SIZE_LARGE = 2;
+}
+
+message GetTripPhotoRequest {
+  // The ID of the photo.
+  string id = 1;
+  // The size of the image. Defaults to the thumbnail.
+  PhotoSize size = 2;
+}
+
+message GetTripPhotoResponse {
+  // The photo.
+  TripPhoto photo = 1;
+  // The photo's image, a JPEG.
+  mcp.v1.Image image = 2;
 }
 
 message DeleteTripPhotoRequest {
