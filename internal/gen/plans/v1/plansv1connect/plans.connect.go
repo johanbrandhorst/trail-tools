@@ -178,7 +178,10 @@ type TrainingPlanServiceClient interface {
 	GetTrainingPlan(context.Context, *v1.GetTrainingPlanRequest) (*v1.GetTrainingPlanResponse, error)
 	// List the user's training plans, most recent start date first.
 	ListTrainingPlans(context.Context, *v1.ListTrainingPlansRequest) (*v1.ListTrainingPlansResponse, error)
-	// Update a training plan's details.
+	// Update a training plan's details. Fails with FAILED_PRECONDITION if the
+	// new start_date and end_date would leave workouts, weeks or months of the
+	// plan outside them, naming their dates: move or delete those first with
+	// UpdateWorkout, DeleteWorkouts or DeletePlanPeriods.
 	UpdateTrainingPlan(context.Context, *v1.UpdateTrainingPlanRequest) (*v1.UpdateTrainingPlanResponse, error)
 	// Delete a training plan, including its periods and workouts.
 	DeleteTrainingPlan(context.Context, *v1.DeleteTrainingPlanRequest) (*v1.DeleteTrainingPlanResponse, error)
@@ -225,7 +228,10 @@ type TrainingPlanServiceHandler interface {
 	GetTrainingPlan(context.Context, *v1.GetTrainingPlanRequest) (*v1.GetTrainingPlanResponse, error)
 	// List the user's training plans, most recent start date first.
 	ListTrainingPlans(context.Context, *v1.ListTrainingPlansRequest) (*v1.ListTrainingPlansResponse, error)
-	// Update a training plan's details.
+	// Update a training plan's details. Fails with FAILED_PRECONDITION if the
+	// new start_date and end_date would leave workouts, weeks or months of the
+	// plan outside them, naming their dates: move or delete those first with
+	// UpdateWorkout, DeleteWorkouts or DeletePlanPeriods.
 	UpdateTrainingPlan(context.Context, *v1.UpdateTrainingPlanRequest) (*v1.UpdateTrainingPlanResponse, error)
 	// Delete a training plan, including its periods and workouts.
 	DeleteTrainingPlan(context.Context, *v1.DeleteTrainingPlanRequest) (*v1.DeleteTrainingPlanResponse, error)

@@ -3,7 +3,8 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router";
+import { createBrowserRouter } from "react-router";
+import { RouterProvider } from "react-router/dom";
 
 import App from "./app";
 
@@ -23,14 +24,19 @@ const transport = createConnectTransport({
 
 const queryClient = new QueryClient();
 
+/**
+ * A data router, rather than a BrowserRouter, so that pages can block
+ * navigation with useBlocker while they have unsaved changes. The app still
+ * declares its routes with <Routes> in App, under this catch-all route.
+ */
+const router = createBrowserRouter([{ element: <App />, path: "*" }]);
+
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <TransportProvider transport={transport}>
-        <QueryClientProvider client={queryClient}>
-          <App />
-        </QueryClientProvider>
-      </TransportProvider>
-    </BrowserRouter>
+    <TransportProvider transport={transport}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </TransportProvider>
   </React.StrictMode>
 );

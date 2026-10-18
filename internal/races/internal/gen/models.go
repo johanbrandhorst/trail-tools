@@ -902,6 +902,7 @@ type RacePlanCheckpoint struct {
 	Tasks                 string
 	CrewInstructions      string
 	DropBagContents       string
+	ID                    pgtype.UUID
 }
 
 type RacePlanContingency struct {
@@ -923,11 +924,11 @@ type RacePlanGear struct {
 }
 
 type RacePlanIntake struct {
-	PlanID             pgtype.UUID
-	CheckpointPosition int32
-	Position           int32
-	Product            string
-	Quantity           float64
+	PlanID       pgtype.UUID
+	Position     int32
+	Product      string
+	Quantity     float64
+	CheckpointID pgtype.UUID
 }
 
 type RacePlanNutritionProduct struct {
@@ -948,10 +949,10 @@ type RacePlanRaceMorning struct {
 }
 
 type RacePlanSplit struct {
-	PlanID             pgtype.UUID
-	CheckpointPosition int32
-	ArrivalTime        pgtype.Timestamptz
-	DepartureTime      pgtype.Timestamptz
+	PlanID        pgtype.UUID
+	ArrivalTime   pgtype.Timestamptz
+	DepartureTime pgtype.Timestamptz
+	CheckpointID  pgtype.UUID
 }
 
 type RaceReport struct {

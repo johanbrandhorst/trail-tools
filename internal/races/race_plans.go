@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -50,6 +51,10 @@ type RaceGoals struct {
 // Checkpoint is a checkpoint, aid station or the finish, together with the
 // segment leading to it.
 type Checkpoint struct {
+	// The checkpoint's ID, which race day splits recorded at the checkpoint
+	// refer to. When storing checkpoints, a checkpoint without an ID, or with
+	// one the plan doesn't have, is a new checkpoint and gets a new ID.
+	ID                    pgtype.UUID
 	Name                  string
 	DistanceMeters        float64
 	ElevationGainMeters   float64
@@ -347,6 +352,7 @@ func (r *Repository) ListRacePlans(ctx context.Context, userID pgtype.UUID) ([]*
 // unchanged. It returns the updated plan.
 func (r *Repository) UpdateRacePlan(ctx context.Context, plan *RacePlan, sections []RacePlanSection) (*RacePlan, error) {
 	var touched int64
+	var existingCheckpoints []pgtype.UUID
 	var p planReader
 	err := r.db.Transact(ctx, func(b *store.Batch) error {
 		// Touching the plan checks it belongs to the user, and locks it so
@@ -354,6 +360,13 @@ func (r *Repository) UpdateRacePlan(ctx context.Context, plan *RacePlan, section
 		read(b, &touched, "update race plan", func(q *gen.Queries) (int64, error) {
 			return q.TouchRacePlan(ctx, &gen.TouchRacePlanParams{ID: plan.ID, UserID: plan.UserID})
 		})
+		if slices.Contains(sections, SectionCheckpoints) {
+			// The IDs of the checkpoints decide which of the new ones are
+			// updated in place, keeping their splits.
+			read(b, &existingCheckpoints, "list checkpoint IDs", func(q *gen.Queries) ([]pgtype.UUID, error) {
+				return q.ListRacePlanCheckpointIDs(ctx, plan.ID)
+			})
+		}
 		return nil
 	}, func(b *store.Batch) error {
 		if touched == 0 {
@@ -361,7 +374,7 @@ func (r *Repository) UpdateRacePlan(ctx context.Context, plan *RacePlan, section
 		}
 		q := gen.New(b)
 		for _, section := range sections {
-			if err := writeSection(ctx, q, plan.ID, plan, section); err != nil {
+			if err := writeSection(ctx, q, plan.ID, plan, section, existingCheckpoints); err != nil {
 				return err
 			}
 		}
@@ -510,8 +523,9 @@ func writeError(op string, err error) error {
 
 // splitsError returns the error of setting a plan's splits.
 func splitsError(op string, err error) error {
-	// A foreign key violation means the checkpoint of a split doesn't exist.
-	if pgErr := (*pgconn.PgError)(nil); errors.As(err, &pgErr) && pgErr.Code == "23503" {
+	// The splits are stored by the ID of the checkpoint at their index, which
+	// is null if there is no checkpoint there, violating not null.
+	if pgErr := (*pgconn.PgError)(nil); errors.As(err, &pgErr) && pgErr.Code == "23502" && pgErr.ColumnName == "checkpoint_id" {
 		return ErrCheckpointNotFound
 	}
 	return writeError(op, err)
@@ -595,12 +609,6 @@ func (p *planReader) plan() (*RacePlan, error) {
 	return plans[0], nil
 }
 
-// checkpointKey identifies a checkpoint of a plan.
-type checkpointKey struct {
-	planID   pgtype.UUID
-	position int32
-}
-
 // plans converts the plan rows read and adds their child rows.
 func (p *planReader) plans() ([]*RacePlan, error) {
 	plans := make([]*RacePlan, len(p.rows))
@@ -610,9 +618,11 @@ func (p *planReader) plans() ([]*RacePlan, error) {
 		byID[row.ID] = plans[i]
 	}
 
-	checkpoints := make(map[checkpointKey]*Checkpoint, len(p.checkpoints))
+	checkpoints := make(map[pgtype.UUID]*Checkpoint, len(p.checkpoints))
+	positions := make(map[pgtype.UUID]int32, len(p.checkpoints))
 	for _, c := range p.checkpoints {
 		cp := &Checkpoint{
+			ID:                    c.ID,
 			Name:                  c.Name,
 			DistanceMeters:        c.DistanceMeters,
 			ElevationGainMeters:   c.ElevationGainMeters,
@@ -630,13 +640,14 @@ func (p *planReader) plans() ([]*RacePlan, error) {
 		}
 		plan := byID[c.PlanID]
 		plan.Checkpoints = append(plan.Checkpoints, cp)
-		checkpoints[checkpointKey{c.PlanID, c.Position}] = cp
+		checkpoints[c.ID] = cp
+		positions[c.ID] = c.Position
 	}
 
 	for _, i := range p.intakes {
-		cp, ok := checkpoints[checkpointKey{i.PlanID, i.CheckpointPosition}]
+		cp, ok := checkpoints[i.CheckpointID]
 		if !ok {
-			return nil, fmt.Errorf("intake for unknown checkpoint %d", i.CheckpointPosition)
+			return nil, fmt.Errorf("intake for unknown checkpoint %s", store.UUIDToString(i.CheckpointID))
 		}
 		cp.Intake = append(cp.Intake, &Intake{Product: i.Product, Quantity: i.Quantity})
 	}
@@ -678,19 +689,28 @@ func (p *planReader) plans() ([]*RacePlan, error) {
 	}
 
 	for _, split := range p.splits {
+		position, ok := positions[split.CheckpointID]
+		if !ok {
+			return nil, fmt.Errorf("split for unknown checkpoint %s", store.UUIDToString(split.CheckpointID))
+		}
 		plan := byID[split.PlanID]
 		plan.RaceDay.Splits = append(plan.RaceDay.Splits, &CheckpointSplit{
-			CheckpointIndex: split.CheckpointPosition,
+			CheckpointIndex: position,
 			ArrivalTime:     timeFromPG(split.ArrivalTime),
 			DepartureTime:   timeFromPG(split.DepartureTime),
+		})
+	}
+	for _, plan := range plans {
+		slices.SortFunc(plan.RaceDay.Splits, func(a, b *CheckpointSplit) int {
+			return int(a.CheckpointIndex - b.CheckpointIndex)
 		})
 	}
 	return plans, nil
 }
 
-// writeSection replaces a section of a plan. The caller must check the plan
-// belongs to the user.
-func writeSection(ctx context.Context, q *gen.Queries, planID pgtype.UUID, plan *RacePlan, section RacePlanSection) error {
+// writeSection replaces a section of a plan, whose checkpoints have the IDs
+// existingCheckpoints. The caller must check the plan belongs to the user.
+func writeSection(ctx context.Context, q *gen.Queries, planID pgtype.UUID, plan *RacePlan, section RacePlanSection, existingCheckpoints []pgtype.UUID) error {
 	var err error
 	switch section {
 	case SectionGoals:
@@ -702,7 +722,7 @@ func writeSection(ctx context.Context, q *gen.Queries, planID pgtype.UUID, plan 
 			GoalsNotes:          plan.Goals.Notes,
 		})
 	case SectionCheckpoints:
-		err = writeCheckpoints(ctx, q, planID, plan.Checkpoints)
+		err = writeCheckpoints(ctx, q, planID, plan.Checkpoints, existingCheckpoints)
 	case SectionPacing:
 		err = q.UpdateRacePlanPacing(ctx, &gen.UpdateRacePlanPacingParams{
 			ID:                     planID,
@@ -752,24 +772,28 @@ func writeSection(ctx context.Context, q *gen.Queries, planID pgtype.UUID, plan 
 	return nil
 }
 
-// writeCheckpoints replaces the checkpoints of a plan. Checkpoints are updated
-// in place by position and the ones past the end deleted, rather than all
-// replaced, so that rows referencing the remaining checkpoints are kept.
-func writeCheckpoints(ctx context.Context, q *gen.Queries, planID pgtype.UUID, checkpoints []*Checkpoint) error {
+// writeCheckpoints replaces the checkpoints of a plan, whose checkpoints have
+// the IDs existing. Checkpoints are matched by ID: the ones kept are updated
+// in place, so that their race day splits follow them when checkpoints are
+// inserted, removed or reordered, and those removed are deleted with their
+// splits.
+func writeCheckpoints(ctx context.Context, q *gen.Queries, planID pgtype.UUID, checkpoints []*Checkpoint, existing []pgtype.UUID) error {
 	if err := q.DeleteRacePlanIntakes(ctx, planID); err != nil {
 		return err
 	}
-	cps, intakes := checkpointParams(planID, checkpoints)
+	cps, intakes := checkpointParams(planID, checkpoints, existing)
+	// The new checkpoints' IDs don't exist yet, so keeping them deletes
+	// nothing.
+	if err := q.DeleteOtherRacePlanCheckpoints(ctx, &gen.DeleteOtherRacePlanCheckpointsParams{
+		PlanID:  planID,
+		KeepIds: cps.Ids,
+	}); err != nil {
+		return err
+	}
 	if len(checkpoints) > 0 {
 		if err := q.UpsertRacePlanCheckpoints(ctx, cps); err != nil {
 			return err
 		}
-	}
-	if err := q.DeleteRacePlanCheckpointsFrom(ctx, &gen.DeleteRacePlanCheckpointsFromParams{
-		PlanID:       planID,
-		FromPosition: int32(len(checkpoints)),
-	}); err != nil {
-		return err
 	}
 	if len(intakes.Positions) > 0 {
 		return q.CreateRacePlanIntakes(ctx, intakes)
@@ -782,7 +806,7 @@ func createCheckpoints(ctx context.Context, q *gen.Queries, planID pgtype.UUID, 
 	if len(checkpoints) == 0 {
 		return nil
 	}
-	cps, intakes := checkpointParams(planID, checkpoints)
+	cps, intakes := checkpointParams(planID, checkpoints, nil)
 	if err := q.UpsertRacePlanCheckpoints(ctx, cps); err != nil {
 		return err
 	}
@@ -793,11 +817,24 @@ func createCheckpoints(ctx context.Context, q *gen.Queries, planID pgtype.UUID, 
 }
 
 // checkpointParams returns the parameters to store checkpoints and their
-// intakes.
-func checkpointParams(planID pgtype.UUID, checkpoints []*Checkpoint) (*gen.UpsertRacePlanCheckpointsParams, *gen.CreateRacePlanIntakesParams) {
+// intakes in a plan whose checkpoints have the IDs existing. Checkpoints keep
+// their ID if the plan has it, and get a new one otherwise: a client could
+// send an ID twice, or one of another plan's checkpoints, e.g. when copying
+// checkpoints between plans.
+func checkpointParams(planID pgtype.UUID, checkpoints []*Checkpoint, existing []pgtype.UUID) (*gen.UpsertRacePlanCheckpointsParams, *gen.CreateRacePlanIntakesParams) {
+	available := make(map[pgtype.UUID]bool, len(existing))
+	for _, id := range existing {
+		available[id] = true
+	}
 	cps := &gen.UpsertRacePlanCheckpointsParams{PlanID: planID}
 	intakes := &gen.CreateRacePlanIntakesParams{PlanID: planID}
 	for i, cp := range checkpoints {
+		id := cp.ID
+		if !id.Valid || !available[id] {
+			id = store.NewUUID()
+		}
+		delete(available, id)
+		cps.Ids = append(cps.Ids, id)
 		cps.Positions = append(cps.Positions, int32(i))
 		cps.Names = append(cps.Names, cp.Name)
 		cps.DistancesMeters = append(cps.DistancesMeters, cp.DistanceMeters)
@@ -814,7 +851,7 @@ func checkpointParams(planID pgtype.UUID, checkpoints []*Checkpoint) (*gen.Upser
 		cps.CrewInstructions = append(cps.CrewInstructions, cp.CrewInstructions)
 		cps.DropBagContents = append(cps.DropBagContents, cp.DropBagContents)
 		for j, intake := range cp.Intake {
-			intakes.CheckpointPositions = append(intakes.CheckpointPositions, int32(i))
+			intakes.CheckpointIds = append(intakes.CheckpointIds, id)
 			intakes.Positions = append(intakes.Positions, int32(j))
 			intakes.Products = append(intakes.Products, intake.Product)
 			intakes.Quantities = append(intakes.Quantities, intake.Quantity)
