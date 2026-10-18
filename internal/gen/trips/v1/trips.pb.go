@@ -2654,7 +2654,7 @@ func (x *PhotoUpload) ClearExpireTime() {
 type PhotoUpload_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The URL to upload photos to.
+	// The URL to upload photos to: JPEG, PNG or WebP files only.
 	Url string
 	// When the link expires.
 	ExpireTime *timestamppb.Timestamp

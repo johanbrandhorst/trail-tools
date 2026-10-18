@@ -65,9 +65,20 @@ service TripReportService {
   }
   // Create a link to upload photos to a trip report with, for agents that
   // can read the user's photo files and make HTTP requests, e.g. with a
-  // shell, as tools can't take files. Upload each photo with a POST request
-  // to the link's URL with the file as the body and the link's token in an
-  // Authorization header, e.g.
+  // shell, as tools can't take files.
+  //
+  // Only JPEG, PNG and WebP files are accepted, of up to 20 MB and 40
+  // megapixels, or about 10 for progressive JPEGs. Check each file's format
+  // before uploading it, e.g. with `file IMG_1234.HEIC`, as extensions can be
+  // wrong. Convert other formats to JPEG first, keeping their metadata,
+  // which places the photo: HEIC and HEIF, as iPhones take them, AVIF, GIF,
+  // TIFF and camera raw files like DNG, e.g. with
+  // `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS or
+  // `magick IMG_1234.HEIC IMG_1234.jpg` with ImageMagick. Scale larger photos
+  // down, e.g. with `sips -Z 4096 IMG_1234.jpg`.
+  //
+  // Upload each photo with a POST request to the link's URL with the file as
+  // the body and the link's token in an Authorization header, e.g.
   // `curl -H 'Authorization: Bearer <token>' --data-binary @IMG_1234.jpg '<url>'`,
   // or as the file of a multipart form, with `-F file=@IMG_1234.jpg` instead
   // of `--data-binary`. Set a caption with the caption query parameter or
@@ -75,10 +86,7 @@ service TripReportService {
   // responds with {"photo": TripPhoto} as JSON, or with an error as
   // {"code": "...", "message": "..."}.
   //
-  // JPEG, PNG and WebP files of up to 20 MB are accepted. Convert HEIC
-  // photos, as iPhones take them, to JPEG first, keeping their metadata, e.g.
-  // with `sips -s format jpeg IMG_1234.HEIC --out IMG_1234.jpg` on macOS. Each
-  // photo is placed on the track and in the story from the time and GPS
+  // Each photo is placed on the track and in the story from the time and GPS
   // position in its metadata, like photos uploaded in the app; look at them
   // with GetTripPhoto to write their captions. The link uploads any number of
   // photos for an hour; create another one when it expires. Anyone with the
@@ -418,7 +426,7 @@ message UploadTripPhotoResponse {
 
 // A link to upload photos to a report with. See CreateTripPhotoUpload.
 message PhotoUpload {
-  // The URL to upload photos to.
+  // The URL to upload photos to: JPEG, PNG or WebP files only.
   string url = 1;
   // When the link expires.
   google.protobuf.Timestamp expire_time = 2;
