@@ -665,10 +665,13 @@ func (s *Server) exchangeCode(r *http.Request, clientID string) (*users.OAuthTok
 	if verifier == "" {
 		return nil, &tokenError{"invalid_request", "code_verifier is required"}
 	}
-	// The code is deleted even if the exchange fails below, so a stolen
-	// code can't be retried.
+	// The code is used up even if the exchange fails below, so a stolen
+	// code can't be retried. Using it again revokes the tokens issued for it.
 	authz, err := s.repo.ConsumeOAuthAuthorizationCode(r.Context(), code)
 	if err != nil {
+		if errors.Is(err, users.ErrOAuthReplay) {
+			s.log.WarnContext(r.Context(), "Revoked an OAuth grant after its authorization code was used again", slog.String("client_id", clientID))
+		}
 		if errors.Is(err, store.ErrNotFound) {
 			return nil, &tokenError{"invalid_grant", "invalid authorization code"}
 		}
@@ -688,6 +691,10 @@ func (s *Server) exchangeCode(r *http.Request, clientID string) (*users.OAuthTok
 	}
 	tokens, err := s.repo.CreateOAuthGrant(r.Context(), authz, s.now().Add(accessTokenTTL), s.now().Add(refreshTokenTTL))
 	if err != nil {
+		if errors.Is(err, users.ErrOAuthReplay) {
+			s.log.WarnContext(r.Context(), "Didn't create an OAuth grant, as its authorization code was used again", slog.String("client_id", clientID))
+			return nil, &tokenError{"invalid_grant", "invalid authorization code"}
+		}
 		s.report.Report(r.Context(), "Failed to create OAuth grant", err)
 		return nil, errTokenServer
 	}
@@ -702,6 +709,9 @@ func (s *Server) refresh(r *http.Request, clientID string) (*users.OAuthTokens, 
 	}
 	tokens, err := s.repo.RefreshOAuthGrant(r.Context(), refreshToken, clientID, s.now().Add(accessTokenTTL), s.now().Add(refreshTokenTTL))
 	if err != nil {
+		if errors.Is(err, users.ErrOAuthReplay) {
+			s.log.WarnContext(r.Context(), "Revoked an OAuth grant after a rotated refresh token was used again", slog.String("client_id", clientID))
+		}
 		if errors.Is(err, store.ErrNotFound) {
 			return nil, &tokenError{"invalid_grant", "invalid refresh token"}
 		}

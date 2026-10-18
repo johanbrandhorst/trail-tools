@@ -10,6 +10,8 @@ import (
 	"connectrpc.com/connect/v2/connecthttp"
 	authv1 "github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
+	oauthv1 "github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
 	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
 )
@@ -45,7 +47,16 @@ func (t *cookieTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func (e *env) newBrowser() *browser {
-	httpClient := &http.Client{Transport: &cookieTransport{next: e.srv.Client().Transport}}
+	return e.browserWithCookie("")
+}
+
+// signedInBrowser is a browser signed in as the test user.
+func (e *env) signedInBrowser() *browser {
+	return e.browserWithCookie("session=" + e.session)
+}
+
+func (e *env) browserWithCookie(cookie string) *browser {
+	httpClient := &http.Client{Transport: &cookieTransport{next: e.srv.Client().Transport, cookie: cookie}}
 	client := connect.NewClient(connecthttp.NewTransport(httpClient, e.srv.URL))
 	return &browser{
 		auth:  authv1connect.NewAuthServiceClient(client),
@@ -229,4 +240,137 @@ func passkeysFor(t *testing.T, b *browser) []*authv1.Passkey {
 		t.Fatal(err)
 	}
 	return resp.GetPasskeys()
+}
+
+// TestCredentialsRequireSession checks that API tokens and OAuth access
+// tokens, which API clients and AI agents hold, can't manage the account's
+// credentials. Otherwise a leaked token could add a passkey and sign in as
+// the user, or create more tokens.
+func TestCredentialsRequireSession(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// An OAuth client connects, and the user invites another device.
+	c := registerClient(t, e, "Claude", claudeRedirectURI)
+	const verifier = "a-verifier-that-is-long-enough-to-be-a-real-pkce-verifier"
+	oauthTokens := c.exchange(t, c.authorize(t, verifier), verifier)
+	if oauthTokens.Error != "" {
+		t.Fatalf("got tokens %+v", oauthTokens)
+	}
+	signedIn := e.signedInBrowser()
+	invitation, err := signedIn.auth.CreateInvitation(ctx, authv1.CreateInvitationRequest_builder{
+		Kind: authv1.InvitationKind_INVITATION_KIND_ADD_PASSKEY,
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateInvitation: %v", err)
+	}
+	apiTokens, err := e.users.ListAPITokens(ctx, usersv1.ListAPITokensRequest_builder{}.Build())
+	if err != nil || len(apiTokens.GetTokens()) != 1 {
+		t.Fatalf("ListAPITokens: %v %v", apiTokens, err)
+	}
+	connections, err := e.oauth.ListConnections(ctx, oauthv1.ListConnectionsRequest_builder{}.Build())
+	if err != nil || len(connections.GetConnections()) != 1 {
+		t.Fatalf("ListConnections: %v %v", connections, err)
+	}
+
+	for name, token := range map[string]string{"an API token": e.token, "an OAuth access token": oauthTokens.AccessToken} {
+		client := connect.NewClient(connecthttp.NewTransport(e.srv.Client(), e.srv.URL), bearerInterceptor(token))
+		authClient := authv1connect.NewAuthServiceClient(client)
+		usersClient := usersv1connect.NewUserServiceClient(client)
+		oauthClient := oauthv1connect.NewOAuthServiceClient(client)
+
+		// The token works for the rest of the API.
+		if _, err := usersClient.GetCurrentUser(ctx, usersv1.GetCurrentUserRequest_builder{}.Build()); err != nil {
+			t.Fatalf("GetCurrentUser with %s: %v", name, err)
+		}
+		// It can't manage passkeys, invitations, API tokens or OAuth
+		// connections.
+		calls := map[string]func() error{
+			"BeginPasskeyRegistration": func() error {
+				_, err := authClient.BeginPasskeyRegistration(ctx, authv1.BeginPasskeyRegistrationRequest_builder{}.Build())
+				return err
+			},
+			"ListPasskeys": func() error {
+				_, err := authClient.ListPasskeys(ctx, authv1.ListPasskeysRequest_builder{}.Build())
+				return err
+			},
+			"DeletePasskey": func() error {
+				_, err := authClient.DeletePasskey(ctx, authv1.DeletePasskeyRequest_builder{Id: "AAAA"}.Build())
+				return err
+			},
+			"CreateInvitation": func() error {
+				_, err := authClient.CreateInvitation(ctx, authv1.CreateInvitationRequest_builder{
+					Kind: authv1.InvitationKind_INVITATION_KIND_ADD_PASSKEY,
+				}.Build())
+				return err
+			},
+			"ListInvitations": func() error {
+				_, err := authClient.ListInvitations(ctx, authv1.ListInvitationsRequest_builder{}.Build())
+				return err
+			},
+			"DeleteInvitation": func() error {
+				_, err := authClient.DeleteInvitation(ctx, authv1.DeleteInvitationRequest_builder{Id: invitation.GetInvitation().GetId()}.Build())
+				return err
+			},
+			"CreateAPIToken": func() error {
+				_, err := usersClient.CreateAPIToken(ctx, usersv1.CreateAPITokenRequest_builder{Name: "More"}.Build())
+				return err
+			},
+			"ListAPITokens": func() error {
+				_, err := usersClient.ListAPITokens(ctx, usersv1.ListAPITokensRequest_builder{}.Build())
+				return err
+			},
+			"DeleteAPIToken": func() error {
+				_, err := usersClient.DeleteAPIToken(ctx, usersv1.DeleteAPITokenRequest_builder{Id: apiTokens.GetTokens()[0].GetId()}.Build())
+				return err
+			},
+			"ApproveAuthorization": func() error {
+				_, err := oauthClient.ApproveAuthorization(ctx, oauthv1.ApproveAuthorizationRequest_builder{
+					Query: c.authorizeQuery(verifier, "state"),
+				}.Build())
+				return err
+			},
+			"ListConnections": func() error {
+				_, err := oauthClient.ListConnections(ctx, oauthv1.ListConnectionsRequest_builder{}.Build())
+				return err
+			},
+			"DeleteConnection": func() error {
+				_, err := oauthClient.DeleteConnection(ctx, oauthv1.DeleteConnectionRequest_builder{Id: connections.GetConnections()[0].GetId()}.Build())
+				return err
+			},
+		}
+		for rpc, call := range calls {
+			if err := call(); connect.CodeOf(err) != connect.CodePermissionDenied || !strings.Contains(err.Error(), "web app") {
+				t.Errorf("%s with %s: got %v, want PermissionDenied pointing to the web app", rpc, name, err)
+			}
+		}
+	}
+
+	// Nothing was deleted, and the web app, signed in with the session, can
+	// still manage everything.
+	invitations, err := signedIn.auth.ListInvitations(ctx, authv1.ListInvitationsRequest_builder{}.Build())
+	if err != nil || len(invitations.GetInvitations()) != 1 {
+		t.Errorf("ListInvitations: %v %v", invitations, err)
+	}
+	if _, err := signedIn.auth.DeleteInvitation(ctx, authv1.DeleteInvitationRequest_builder{Id: invitation.GetInvitation().GetId()}.Build()); err != nil {
+		t.Errorf("DeleteInvitation: %v", err)
+	}
+	laptop := newAuthenticator(t, "http://localhost:8080", "localhost")
+	if _, err := signedIn.register(t, laptop, "", ""); err != nil {
+		t.Fatalf("registering a passkey: %v", err)
+	}
+	if passkeys := passkeysFor(t, signedIn); len(passkeys) != 1 {
+		t.Errorf("got passkeys %v, want the new one", passkeys)
+	}
+	created, err := signedIn.users.CreateAPIToken(ctx, usersv1.CreateAPITokenRequest_builder{Name: "More"}.Build())
+	if err != nil {
+		t.Fatalf("CreateAPIToken: %v", err)
+	}
+	if _, err := signedIn.users.DeleteAPIToken(ctx, usersv1.DeleteAPITokenRequest_builder{Id: created.GetToken().GetId()}.Build()); err != nil {
+		t.Errorf("DeleteAPIToken: %v", err)
+	}
+	if _, err := e.oauth.DeleteConnection(ctx, oauthv1.DeleteConnectionRequest_builder{Id: connections.GetConnections()[0].GetId()}.Build()); err != nil {
+		t.Errorf("DeleteConnection: %v", err)
+	}
 }

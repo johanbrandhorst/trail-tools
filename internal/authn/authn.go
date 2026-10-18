@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/connect/v2"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
@@ -28,6 +29,15 @@ type SessionRepository interface {
 }
 
 type authCtx struct{}
+
+// authInfo is the authenticated user of a request, and how they
+// authenticated.
+type authInfo struct {
+	user users.User
+	// session is whether the user authenticated with a session cookie,
+	// rather than a bearer token.
+	session bool
+}
 
 // Option configures the authn middleware.
 type Option func(*options)
@@ -65,7 +75,7 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 				http.Error(w, "failed to authenticate", http.StatusInternalServerError)
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authCtx{}, user)))
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authCtx{}, authInfo{user: user})))
 			return
 		}
 		sessionCookie, err := r.Cookie(sessionCookieName)
@@ -91,7 +101,7 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 			http.Error(w, "failed to get session", http.StatusInternalServerError)
 			return
 		}
-		newCtx := context.WithValue(r.Context(), authCtx{}, user)
+		newCtx := context.WithValue(r.Context(), authCtx{}, authInfo{user: user, session: true})
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	}), nil
 }
@@ -99,8 +109,33 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 // GetUser gets the authenticated user, if there is one. It returns
 // (nil, false) if the current request is unauthenticated.
 func GetUser(ctx context.Context) (users.User, bool) {
-	user, ok := ctx.Value(authCtx{}).(users.User)
-	return user, ok
+	info, ok := ctx.Value(authCtx{}).(authInfo)
+	return info.user, ok
+}
+
+// ViaSession returns whether the request was authenticated with a session
+// cookie, which only the web app has, rather than a bearer token.
+func ViaSession(ctx context.Context) bool {
+	info, ok := ctx.Value(authCtx{}).(authInfo)
+	return ok && info.session
+}
+
+// GetSessionUser gets the user authenticated with a session cookie, for
+// managing the account's credentials: passkeys, invitations, API tokens and
+// OAuth connections. Bearer tokens are rejected, as they are held by API
+// clients and AI agents, which must not be able to sign in as the user,
+// create more tokens or connect more clients. It returns a Connect error with
+// code Unauthenticated if the request is unauthenticated, and
+// PermissionDenied if it was authenticated with a bearer token.
+func GetSessionUser(ctx context.Context) (users.User, error) {
+	info, ok := ctx.Value(authCtx{}).(authInfo)
+	if !ok {
+		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	}
+	if !info.session {
+		return nil, connect.NewError(connect.CodePermissionDenied, "API tokens and OAuth access tokens can't manage passkeys, invitations, API tokens or connections; sign in to the trailrunn.ing web app to do this in the settings")
+	}
+	return info.user, nil
 }
 
 // GetUserID gets the ID of the authenticated user, if there is one. It

@@ -12,12 +12,14 @@ import (
 )
 
 const consumeOAuthAuthorizationCode = `-- name: ConsumeOAuthAuthorizationCode :one
-delete from oauth_authorization_codes
-where code_sha256 = $1 and expire_time > now()
-returning code_sha256, user_id, client_id, client_name, redirect_uri, code_challenge, expire_time, create_time
+update oauth_authorization_codes
+set consume_time = now()
+where code_sha256 = $1 and expire_time > now() and consume_time is null
+returning code_sha256, user_id, client_id, client_name, redirect_uri, code_challenge, expire_time, create_time, consume_time, oauth_grant_id
 `
 
-// ConsumeOAuthAuthorizationCode deletes the code, so it can only be used once.
+// ConsumeOAuthAuthorizationCode marks the code as used, so it can only be used
+// once.
 func (q *Queries) ConsumeOAuthAuthorizationCode(ctx context.Context, codeSha256 []byte) (*OAuthAuthorizationCode, error) {
 	row := q.db.QueryRow(ctx, consumeOAuthAuthorizationCode, codeSha256)
 	var i OAuthAuthorizationCode
@@ -30,6 +32,8 @@ func (q *Queries) ConsumeOAuthAuthorizationCode(ctx context.Context, codeSha256 
 		&i.CodeChallenge,
 		&i.ExpireTime,
 		&i.CreateTime,
+		&i.ConsumeTime,
+		&i.OAuthGrantID,
 	)
 	return &i, err
 }
@@ -175,13 +179,26 @@ func (q *Queries) CreateOAuthGrant(ctx context.Context, arg *CreateOAuthGrantPar
 	return &i, err
 }
 
-const deleteExpiredOAuthAccessTokens = `-- name: DeleteExpiredOAuthAccessTokens :exec
-delete from api_tokens
-where oauth_grant_id = $1 and expire_time <= now()
+const createOAuthUsedRefreshToken = `-- name: CreateOAuthUsedRefreshToken :exec
+insert into oauth_used_refresh_tokens (
+  refresh_token_sha256,
+  oauth_grant_id,
+  expire_time
+) values (
+  $1,
+  $2,
+  $3
+)
 `
 
-func (q *Queries) DeleteExpiredOAuthAccessTokens(ctx context.Context, oauthGrantID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteExpiredOAuthAccessTokens, oauthGrantID)
+type CreateOAuthUsedRefreshTokenParams struct {
+	RefreshTokenSHA256 []byte
+	OAuthGrantID       pgtype.UUID
+	ExpireTime         pgtype.Timestamptz
+}
+
+func (q *Queries) CreateOAuthUsedRefreshToken(ctx context.Context, arg *CreateOAuthUsedRefreshTokenParams) error {
+	_, err := q.db.Exec(ctx, createOAuthUsedRefreshToken, arg.RefreshTokenSHA256, arg.OAuthGrantID, arg.ExpireTime)
 	return err
 }
 
@@ -205,6 +222,26 @@ func (q *Queries) DeleteExpiredOAuthGrants(ctx context.Context, userID pgtype.UU
 	return err
 }
 
+const deleteExpiredOAuthUsedRefreshTokens = `-- name: DeleteExpiredOAuthUsedRefreshTokens :exec
+delete from oauth_used_refresh_tokens
+where oauth_grant_id = $1 and expire_time <= now()
+`
+
+func (q *Queries) DeleteExpiredOAuthUsedRefreshTokens(ctx context.Context, oauthGrantID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteExpiredOAuthUsedRefreshTokens, oauthGrantID)
+	return err
+}
+
+const deleteOAuthAccessTokens = `-- name: DeleteOAuthAccessTokens :exec
+delete from api_tokens
+where oauth_grant_id = $1
+`
+
+func (q *Queries) DeleteOAuthAccessTokens(ctx context.Context, oauthGrantID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOAuthAccessTokens, oauthGrantID)
+	return err
+}
+
 const deleteOAuthGrant = `-- name: DeleteOAuthGrant :execrows
 delete from oauth_grants
 where id = $1 and user_id = $2
@@ -221,6 +258,44 @@ func (q *Queries) DeleteOAuthGrant(ctx context.Context, arg *DeleteOAuthGrantPar
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const deleteOAuthGrantByUsedRefreshToken = `-- name: DeleteOAuthGrantByUsedRefreshToken :execrows
+delete from oauth_grants
+where id = (
+  select oauth_used_refresh_tokens.oauth_grant_id from oauth_used_refresh_tokens
+  where oauth_used_refresh_tokens.refresh_token_sha256 = $1
+)
+`
+
+// DeleteOAuthGrantByUsedRefreshToken revokes the grant of a refresh token that
+// was rotated out.
+func (q *Queries) DeleteOAuthGrantByUsedRefreshToken(ctx context.Context, refreshTokenSha256 []byte) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOAuthGrantByUsedRefreshToken, refreshTokenSha256)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteUsedOAuthAuthorizationCode = `-- name: DeleteUsedOAuthAuthorizationCode :one
+delete from oauth_authorization_codes
+where code_sha256 = $1 and consume_time is not null
+returning user_id, oauth_grant_id
+`
+
+type DeleteUsedOAuthAuthorizationCodeRow struct {
+	UserID       pgtype.UUID
+	OAuthGrantID pgtype.UUID
+}
+
+// DeleteUsedOAuthAuthorizationCode deletes a code that was used already,
+// returning the grant it was exchanged for, if it was.
+func (q *Queries) DeleteUsedOAuthAuthorizationCode(ctx context.Context, codeSha256 []byte) (*DeleteUsedOAuthAuthorizationCodeRow, error) {
+	row := q.db.QueryRow(ctx, deleteUsedOAuthAuthorizationCode, codeSha256)
+	var i DeleteUsedOAuthAuthorizationCodeRow
+	err := row.Scan(&i.UserID, &i.OAuthGrantID)
+	return &i, err
 }
 
 const getOAuthGrantByRefreshToken = `-- name: GetOAuthGrantByRefreshToken :one
@@ -310,4 +385,25 @@ type RotateOAuthRefreshTokenParams struct {
 func (q *Queries) RotateOAuthRefreshToken(ctx context.Context, arg *RotateOAuthRefreshTokenParams) error {
 	_, err := q.db.Exec(ctx, rotateOAuthRefreshToken, arg.ID, arg.RefreshTokenSHA256, arg.RefreshExpireTime)
 	return err
+}
+
+const setOAuthAuthorizationCodeGrant = `-- name: SetOAuthAuthorizationCodeGrant :execrows
+update oauth_authorization_codes
+set oauth_grant_id = $2
+where code_sha256 = $1
+`
+
+type SetOAuthAuthorizationCodeGrantParams struct {
+	CodeSHA256   []byte
+	OAuthGrantID pgtype.UUID
+}
+
+// SetOAuthAuthorizationCodeGrant records the grant a code was exchanged for.
+// It updates no rows if the code was used again meanwhile, and deleted.
+func (q *Queries) SetOAuthAuthorizationCodeGrant(ctx context.Context, arg *SetOAuthAuthorizationCodeGrantParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setOAuthAuthorizationCodeGrant, arg.CodeSHA256, arg.OAuthGrantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

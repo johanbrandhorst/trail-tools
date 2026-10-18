@@ -23,6 +23,12 @@ const (
 	oauthRefreshTokenPrefix = "ttr_"
 )
 
+// ErrOAuthReplay is returned when an authorization code or a refresh token
+// that was used already is used again, which means it was stolen. The grant
+// issued for it is revoked. It wraps store.ErrNotFound, as the code or token
+// is invalid.
+var ErrOAuthReplay = fmt.Errorf("%w: the authorization code or refresh token was used already", store.ErrNotFound)
+
 // OAuthAuthorization is a user's approval of an OAuth client, exchanged for
 // tokens with an authorization code.
 type OAuthAuthorization struct {
@@ -31,6 +37,9 @@ type OAuthAuthorization struct {
 	ClientName    string
 	RedirectURI   string
 	CodeChallenge string
+	// codeSHA256 is the hash of the code the authorization was consumed
+	// with, to record the grant it is exchanged for.
+	codeSHA256 []byte
 }
 
 // OAuthTokens are the tokens issued to an OAuth client.
@@ -71,14 +80,16 @@ func (r *Repository) CreateOAuthAuthorizationCode(ctx context.Context, authz *OA
 }
 
 // ConsumeOAuthAuthorizationCode returns the authorization of an authorization
-// code and deletes the code, so it can only be used once. It returns
-// store.ErrNotFound if the code doesn't exist or has expired.
+// code and marks the code as used, so it can only be used once. It returns
+// store.ErrNotFound if the code doesn't exist or has expired, and
+// ErrOAuthReplay if it was used already, revoking the grant it was exchanged
+// for.
 func (r *Repository) ConsumeOAuthAuthorizationCode(ctx context.Context, code string) (*OAuthAuthorization, error) {
 	hash := sha256.Sum256([]byte(code))
 	row, err := r.querier.ConsumeOAuthAuthorizationCode(ctx, hash[:])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
+			return nil, r.revokeReplayedOAuthAuthorizationCode(ctx, hash[:])
 		}
 		return nil, fmt.Errorf("failed to consume authorization code: %w", err)
 	}
@@ -88,11 +99,48 @@ func (r *Repository) ConsumeOAuthAuthorizationCode(ctx context.Context, code str
 		ClientName:    row.ClientName,
 		RedirectURI:   row.RedirectURI,
 		CodeChallenge: row.CodeChallenge,
+		codeSHA256:    hash[:],
 	}, nil
 }
 
+// revokeReplayedOAuthAuthorizationCode deletes the code if it was used
+// already, and the grant it was exchanged for. It returns ErrOAuthReplay if
+// the code was used already, and store.ErrNotFound if it doesn't exist.
+func (r *Repository) revokeReplayedOAuthAuthorizationCode(ctx context.Context, hash []byte) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+	querier := r.querier.WithTx(tx)
+	// Deleting the code also stops a grant being created for it, if the
+	// first exchange is still in progress.
+	used, err := querier.DeleteUsedOAuthAuthorizationCode(ctx, hash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return store.ErrNotFound
+		}
+		return fmt.Errorf("failed to delete used authorization code: %w", err)
+	}
+	if used.OAuthGrantID.Valid {
+		_, err := querier.DeleteOAuthGrant(ctx, &gen.DeleteOAuthGrantParams{
+			ID:     used.OAuthGrantID,
+			UserID: used.UserID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to revoke grant: %w", err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return ErrOAuthReplay
+}
+
 // CreateOAuthGrant grants the client of the authorization access on behalf
-// of the user, and returns its first tokens.
+// of the user, and returns its first tokens. The authorization must come from
+// ConsumeOAuthAuthorizationCode. It returns ErrOAuthReplay if the code was
+// used again meanwhile.
 func (r *Repository) CreateOAuthGrant(ctx context.Context, authz *OAuthAuthorization, accessExpiry, refreshExpiry time.Time) (*OAuthTokens, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -117,6 +165,18 @@ func (r *Repository) CreateOAuthGrant(ctx context.Context, authz *OAuthAuthoriza
 	if err != nil {
 		return nil, fmt.Errorf("failed to create grant: %w", err)
 	}
+	// Record the grant with the code, so it is revoked if the code is used
+	// again. The code is gone if that happened already.
+	n, err := querier.SetOAuthAuthorizationCodeGrant(ctx, &gen.SetOAuthAuthorizationCodeGrantParams{
+		CodeSHA256:   authz.codeSHA256,
+		OAuthGrantID: grant.ID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to record the grant of the authorization code: %w", err)
+	}
+	if n == 0 {
+		return nil, ErrOAuthReplay
+	}
 	accessToken, err := createOAuthAccessToken(ctx, querier, grant, accessExpiry)
 	if err != nil {
 		return nil, err
@@ -132,9 +192,10 @@ func (r *Repository) CreateOAuthGrant(ctx context.Context, authz *OAuthAuthoriza
 }
 
 // RefreshOAuthGrant issues new tokens for the grant with the refresh token.
-// The refresh token is rotated, so it can only be used once. It returns
-// store.ErrNotFound if the refresh token doesn't exist, has expired, or
-// belongs to another client.
+// The refresh token is rotated, so it can only be used once, and the
+// previous access tokens are revoked. It returns store.ErrNotFound if the
+// refresh token doesn't exist, has expired, or belongs to another client, and
+// ErrOAuthReplay if it was rotated out already, revoking the grant.
 func (r *Repository) RefreshOAuthGrant(ctx context.Context, refreshToken, clientID string, accessExpiry, refreshExpiry time.Time) (*OAuthTokens, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -145,10 +206,20 @@ func (r *Repository) RefreshOAuthGrant(ctx context.Context, refreshToken, client
 	hash := sha256.Sum256([]byte(refreshToken))
 	grant, err := querier.GetOAuthGrantByRefreshToken(ctx, hash[:])
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to get grant: %w", err)
+		}
+		n, err := querier.DeleteOAuthGrantByUsedRefreshToken(ctx, hash[:])
+		if err != nil {
+			return nil, fmt.Errorf("failed to revoke grant of a used refresh token: %w", err)
+		}
+		if n == 0 {
 			return nil, store.ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get grant: %w", err)
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+		return nil, ErrOAuthReplay
 	}
 	if grant.ClientID != clientID {
 		return nil, store.ErrNotFound
@@ -163,8 +234,23 @@ func (r *Repository) RefreshOAuthGrant(ctx context.Context, refreshToken, client
 	if err != nil {
 		return nil, fmt.Errorf("failed to rotate refresh token: %w", err)
 	}
-	if err := querier.DeleteExpiredOAuthAccessTokens(ctx, grant.ID); err != nil {
-		return nil, fmt.Errorf("failed to delete expired access tokens: %w", err)
+	// Remember the old refresh token until it would have expired, to revoke
+	// the grant if it is used again.
+	if err := querier.DeleteExpiredOAuthUsedRefreshTokens(ctx, grant.ID); err != nil {
+		return nil, fmt.Errorf("failed to delete expired used refresh tokens: %w", err)
+	}
+	err = querier.CreateOAuthUsedRefreshToken(ctx, &gen.CreateOAuthUsedRefreshTokenParams{
+		RefreshTokenSHA256: hash[:],
+		OAuthGrantID:       grant.ID,
+		ExpireTime:         grant.RefreshExpireTime,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to record used refresh token: %w", err)
+	}
+	// The client gets a new access token, so the previous ones are revoked
+	// rather than left valid until they expire.
+	if err := querier.DeleteOAuthAccessTokens(ctx, grant.ID); err != nil {
+		return nil, fmt.Errorf("failed to delete previous access tokens: %w", err)
 	}
 	accessToken, err := createOAuthAccessToken(ctx, querier, grant, accessExpiry)
 	if err != nil {

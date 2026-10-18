@@ -19,7 +19,8 @@ func TestAPITokens(t *testing.T) {
 	ctx := context.Background()
 
 	// The test token authenticates as the test user.
-	current, err := e.users.GetCurrentUser(ctx, usersv1.GetCurrentUserRequest_builder{}.Build())
+	withToken := usersv1connect.NewUserServiceClient(connect.NewClient(connecthttp.NewTransport(e.srv.Client(), e.srv.URL), bearerInterceptor(e.token)))
+	current, err := withToken.GetCurrentUser(ctx, usersv1.GetCurrentUserRequest_builder{}.Build())
 	if err != nil {
 		t.Fatalf("GetCurrentUser: %v", err)
 	}

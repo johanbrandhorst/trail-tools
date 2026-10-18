@@ -722,6 +722,8 @@ type OAuthAuthorizationCode struct {
 	CodeChallenge string
 	ExpireTime    pgtype.Timestamptz
 	CreateTime    pgtype.Timestamptz
+	ConsumeTime   pgtype.Timestamptz
+	OAuthGrantID  pgtype.UUID
 }
 
 type OAuthGrant struct {
@@ -733,6 +735,12 @@ type OAuthGrant struct {
 	RefreshTokenSHA256 []byte
 	RefreshExpireTime  pgtype.Timestamptz
 	CreateTime         pgtype.Timestamptz
+}
+
+type OauthUsedRefreshToken struct {
+	RefreshTokenSHA256 []byte
+	OAuthGrantID       pgtype.UUID
+	ExpireTime         pgtype.Timestamptz
 }
 
 type Passkey struct {
