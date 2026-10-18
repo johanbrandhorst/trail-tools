@@ -45,7 +45,10 @@ service UserService {
 
 // A privacy zone: a circle around a place, like the user's home, within
 // which their tracks and photos are hidden on public pages, like trip and
-// race reports.
+// race reports. The circle hidden is half the radius larger, and centered a
+// quarter to half the radius away from the zone's center, in a secret
+// direction that stays the same on every page. Otherwise the place at the
+// center could be found from where several public tracks are cut.
 message PrivacyZone {
   // The ID of the zone.
   string id = 1 [(mcp.v1.field).output_only = true];

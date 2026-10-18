@@ -10,6 +10,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"image"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -35,15 +36,7 @@ const (
 	// images.
 	largeSize = 2048
 	thumbSize = 480
-	// maxProcessing is how many photos are processed at once. Decoding and
-	// scaling a photo as a camera took it takes up to about 200 MB, and the
-	// server has 512 MiB, so agents uploading many photos at once would run
-	// it out of memory.
-	maxProcessing = 2
 )
-
-// processing holds a slot for each photo being processed.
-var processing = make(chan struct{}, maxProcessing)
 
 // Processed is an uploaded photo turned into the images that are stored.
 type Processed struct {
@@ -60,38 +53,28 @@ type Processed struct {
 // Process decodes an uploaded JPEG, PNG or WebP photo, turns it upright, and
 // encodes it as a JPEG of at most 2048 pixels and a thumbnail of at most 480
 // pixels. Re-encoding drops the upload's metadata, such as its GPS position,
-// which it returns instead. It waits while other photos are processed, and
-// returns ctx's error if it's done meanwhile. Its other errors say why the
-// upload isn't a usable photo, for users.
+// which it returns instead. It waits while other images are decoded, as
+// images.Decode does, and returns ctx's error if it's done meanwhile. Its
+// other errors say why the upload isn't a usable photo, for users.
 func Process(ctx context.Context, data []byte) (*Processed, error) {
-	select {
-	case processing <- struct{}{}:
-		defer func() { <-processing }()
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-	md := images.ReadMetadata(data)
-	img, err := images.Decode(data)
+	processed := &Processed{Metadata: images.ReadMetadata(data)}
+	err := images.Decode(ctx, data, func(img image.Image) error {
+		// Scaling first turns fewer pixels, and the size bounds both sides.
+		large := images.Orient(images.ScaleDown(img, largeSize), processed.Metadata.Orientation)
+		var err error
+		if processed.Large, err = images.EncodeJPEG(large, 85); err != nil {
+			return err
+		}
+		if processed.Thumb, err = images.EncodeJPEG(images.ScaleDown(large, thumbSize), 80); err != nil {
+			return err
+		}
+		processed.Width, processed.Height = large.Bounds().Dx(), large.Bounds().Dy()
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	// Scaling first turns fewer pixels, and the size bounds both sides.
-	large := images.Orient(images.ScaleDown(img, largeSize), md.Orientation)
-	largeData, err := images.EncodeJPEG(large, 85)
-	if err != nil {
-		return nil, err
-	}
-	thumbData, err := images.EncodeJPEG(images.ScaleDown(large, thumbSize), 80)
-	if err != nil {
-		return nil, err
-	}
-	return &Processed{
-		Large:    largeData,
-		Width:    large.Bounds().Dx(),
-		Height:   large.Bounds().Dy(),
-		Thumb:    thumbData,
-		Metadata: md,
-	}, nil
+	return processed, nil
 }
 
 // Store stores the images of photos in a blob store, under

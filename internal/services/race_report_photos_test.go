@@ -242,7 +242,7 @@ func TestRaceReportPhotos(t *testing.T) {
 
 	// The public report hides where photos in privacy zones were taken.
 	if _, err := e.users.SetPrivacyZones(ctx, usersv1.SetPrivacyZonesRequest_builder{
-		Zones: []*usersv1.PrivacyZone{usersv1.PrivacyZone_builder{Name: "Home", Lat: 0.018, Lng: 0, RadiusMeters: 300}.Build()},
+		Zones: []*usersv1.PrivacyZone{usersv1.PrivacyZone_builder{Name: "Home", Lat: 0.018, Lng: 0, RadiusMeters: 200}.Build()},
 	}.Build()); err != nil {
 		t.Fatalf("SetPrivacyZones: %v", err)
 	}

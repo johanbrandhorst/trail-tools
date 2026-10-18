@@ -369,7 +369,7 @@ func TestOrient(t *testing.T) {
 func TestDecodeHEIF(t *testing.T) {
 	t.Parallel()
 	heic := append([]byte{0, 0, 0, 24}, "ftypheic\x00\x00\x00\x00mif1heic"...)
-	if _, err := Decode(heic); err != ErrHEIF {
+	if err := Decode(t.Context(), heic, func(image.Image) error { return nil }); err != ErrHEIF {
 		t.Errorf("Decode returned %v, want ErrHEIF", err)
 	}
 }

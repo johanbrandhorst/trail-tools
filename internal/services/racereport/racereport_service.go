@@ -577,7 +577,7 @@ func (s *Service) GetPublicRaceReport(ctx context.Context, req *racesv1.GetPubli
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list privacy zones")
 	}
-	zones := trackZones(zoneList)
+	zones := track.HiddenZones(zoneList)
 	if err := s.withPhotos(ctx, reportProto, report.ID, zones); err != nil {
 		return nil, err
 	}
@@ -725,13 +725,4 @@ func (s *Service) toConnectError(ctx context.Context, err error, msg string) err
 		s.report.Report(ctx, msg, err)
 		return connect.NewError(connect.CodeInternal, msg).WithCause(err)
 	}
-}
-
-// trackZones returns privacy zones as the zones tracks are hidden in.
-func trackZones(zones []users.PrivacyZone) []track.Zone {
-	out := make([]track.Zone, len(zones))
-	for i, z := range zones {
-		out[i] = track.Zone{Center: z.Center, RadiusMeters: float64(z.RadiusMeters)}
-	}
-	return out
 }

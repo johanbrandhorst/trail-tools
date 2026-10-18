@@ -72,3 +72,61 @@ func TestSimplify(t *testing.T) {
 		t.Error("the points were changed")
 	}
 }
+
+func TestSimplifyLongTrack(t *testing.T) {
+	t.Parallel()
+	// A spiral, which the Douglas-Peucker algorithm takes quadratic time
+	// for, of 100,000 points a meter apart.
+	var spiral []geo.Point
+	for i := range 100_000 {
+		r := 10 + float64(i)/100
+		a := float64(i) / r
+		spiral = append(spiral, geo.Point{Lat: 46 + r*math.Sin(a)/111320, Lng: 7 + r*math.Cos(a)/111320/0.6947})
+	}
+	got := geo.Simplify(spiral, 1)
+	if got[0] != spiral[0] || got[len(got)-1] != spiral[len(spiral)-1] {
+		t.Error("the ends weren't kept")
+	}
+	if len(got) >= len(spiral)/2 {
+		t.Errorf("got %d points, want fewer than half of %d", len(got), len(spiral))
+	}
+	// Every point is within the tolerance of the simplified track.
+	for i, p := range spiral {
+		if i%997 != 0 {
+			continue
+		}
+		nearest := math.Inf(1)
+		for k := 1; k < len(got); k++ {
+			nearest = math.Min(nearest, geo.SegmentDistance(p, got[k-1], got[k]))
+		}
+		if nearest > 1.01 {
+			t.Errorf("point %d is %.2f m from the simplified track, want at most 1 m", i, nearest)
+		}
+	}
+}
+
+func TestSimplifyTrack(t *testing.T) {
+	t.Parallel()
+	// A straight line 2 km north over a 50 m hill in the middle, with a
+	// point every 10 m.
+	var points []geo.Point
+	for i := range 201 {
+		ele := 1000 + 50*math.Max(0, 1-math.Abs(float64(i-100))/20)
+		points = append(points, geo.Point{Lat: 46 + float64(i)*10/111320, Lng: 7, Ele: ele})
+	}
+	if got := geo.Simplify(points, 1); len(got) != 2 {
+		t.Errorf("Simplify kept %d points, want the ends", len(got))
+	}
+	// The hill is kept: its foot on either side and its top.
+	got := geo.SimplifyTrack(points, 1, 2)
+	if len(got) != 5 || got[2] != points[100] {
+		t.Errorf("SimplifyTrack kept %v, want the ends, the hill's feet and its top", got)
+	}
+	// Unknown elevations are ignored.
+	for i := range points {
+		points[i].Ele = math.NaN()
+	}
+	if got := geo.SimplifyTrack(points, 1, 2); len(got) != 2 {
+		t.Errorf("SimplifyTrack without elevations kept %d points, want the ends", len(got))
+	}
+}

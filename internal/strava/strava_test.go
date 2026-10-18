@@ -285,3 +285,39 @@ func TestPushSubscriptions(t *testing.T) {
 		t.Error("wrong client secret should fail")
 	}
 }
+
+func TestRefreshRevoked(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		status      int
+		body        string
+		wantRevoked bool
+	}{
+		"invalid refresh token": {http.StatusBadRequest, `{"message": "Bad Request", "errors": [{"resource": "RefreshToken", "field": "refresh_token", "code": "invalid"}]}`, true},
+		"invalid grant":         {http.StatusBadRequest, `{"error": "invalid_grant"}`, true},
+		// A misconfigured client must not make every connection look
+		// revoked.
+		"invalid client": {http.StatusBadRequest, `{"message": "Bad Request", "errors": [{"resource": "Application", "field": "client_id", "code": "invalid"}]}`, false},
+		"unauthorized":   {http.StatusUnauthorized, `{"message": "Authorization Error", "errors": [{"resource": "Application", "field": "", "code": "invalid"}]}`, false},
+		"server error":   {http.StatusInternalServerError, `oops`, false},
+		"not json":       {http.StatusBadRequest, `Bad Request`, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				fmt.Fprint(w, tc.body)
+			}))
+			t.Cleanup(srv.Close)
+			client := New(Config{OAuthBaseURL: srv.URL, HTTPClient: srv.Client()})
+			_, err := client.Refresh(context.Background(), "refresh")
+			if err == nil {
+				t.Fatal("Refresh succeeded, want an error")
+			}
+			if got := errors.Is(err, ErrUnauthorized); got != tc.wantRevoked {
+				t.Errorf("got %v, want revoked %v", err, tc.wantRevoked)
+			}
+		})
+	}
+}

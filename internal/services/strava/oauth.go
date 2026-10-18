@@ -29,6 +29,10 @@ const (
 	callbackPath    = "/strava/callback"
 	stateCookieName = "strava_oauth_state"
 	stateLifetime   = 10 * time.Minute
+	// connectSyncTimeout bounds starting the first sync after connecting,
+	// which may run the scheduled sync's trigger, so the user isn't kept
+	// waiting for the redirect.
+	connectSyncTimeout = 10 * time.Second
 )
 
 // CallbackPath is the path Strava redirects to after authorization.
@@ -138,7 +142,13 @@ func (o *OAuth) handleCallback(w http.ResponseWriter, r *http.Request) {
 		o.redirectSettings(w, r, "error", "Failed to connect Strava")
 		return
 	}
-	o.syncer.Start(userID, false)
+	// Start syncing right away, or with the next scheduled sync if syncs
+	// can't run now. The connection is stored either way.
+	syncCtx, cancel := context.WithTimeout(ctx, connectSyncTimeout)
+	defer cancel()
+	if err := o.syncer.SyncConnected(syncCtx, userID); err != nil {
+		o.report.Report(ctx, "Failed to start syncing a new Strava connection, syncing with the next scheduled sync", err)
+	}
 	o.redirectSettings(w, r, "connected", "")
 }
 

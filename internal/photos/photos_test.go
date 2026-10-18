@@ -140,23 +140,6 @@ func TestProcessTurnsPhotosUpright(t *testing.T) {
 	}
 }
 
-func TestProcessWaitsForASlot(t *testing.T) {
-	// Not parallel, as it takes every processing slot.
-	for range maxProcessing {
-		processing <- struct{}{}
-	}
-	defer func() {
-		for range maxProcessing {
-			<-processing
-		}
-	}()
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	if _, err := Process(ctx, encodeTestImage(t, 10, 10, false)); !errors.Is(err, context.Canceled) {
-		t.Errorf("Process while all slots are taken returned %v, want context.Canceled", err)
-	}
-}
-
 // testLink is what a test upload link uploads to.
 type testLink struct {
 	reportID string

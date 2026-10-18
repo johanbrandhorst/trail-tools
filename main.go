@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/reload"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/apilimit"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/cloudrun"
@@ -94,10 +94,6 @@ const (
 	liveTrackTimeout = 20 * time.Second
 	geofabrikTimeout = 2 * time.Minute
 )
-
-// maxRequestBytes limits the size of API requests. GPX files imported as
-// routes and trip report photos can be several megabytes.
-const maxRequestBytes = 32 << 20
 
 var (
 	logLevel = flag.String(
@@ -557,8 +553,11 @@ func run(
 		stravaSyncer = stravasvc.NewSyncer(ctx, log, report, activityRepo, stravaClient, background, trigger)
 		stravaOAuth = stravasvc.NewOAuth(log, report, stravaClient, activityRepo, stravaSyncer, []byte(stravaClientSecret))
 		if stravaWebhookVerifyToken != "" {
-			stravaWebhook = stravasvc.NewWebhook(log, report, activityRepo, stravaSyncer, stravaClient,
+			stravaWebhook, err = stravasvc.NewWebhook(log, report, activityRepo, stravaSyncer, stravaClient,
 				baseURL+stravasvc.WebhookPath, stravaWebhookVerifyToken)
+			if err != nil {
+				return fmt.Errorf("failed to create the Strava webhook: %w", err)
+			}
 		}
 		if background {
 			go stravaSyncer.RunBackground(ctx)
@@ -627,8 +626,10 @@ func run(
 	lactatev1connect.RegisterLactateTestServiceHandler(server, lactateService)
 	oauthv1connect.RegisterOAuthServiceHandler(server, oauthService)
 	tripsv1connect.RegisterTripReportServiceHandler(server, tripService)
+	// Requests are bounded, so one can't exhaust the server's memory. Only
+	// signed in users can upload files, like GPX files and photos.
 	apiMux := http.NewServeMux()
-	connecthttp.Mount(apiMux, server, connecthttp.WithReadMaxBytes(maxRequestBytes))
+	apilimit.Mount(apiMux, server)
 
 	// Wrap the API mux in the authn middleware. Each service checks
 	// authentication itself.
@@ -684,9 +685,10 @@ func run(
 	if stravaOAuth != nil {
 		stravaOAuth.RegisterHandlers(mux, authenticate)
 	}
-	// Serve Strava's webhook events, which aren't authenticated
+	// Serve Strava's webhook events, which are authenticated by a secret
+	// path rather than a user
 	if stravaWebhook != nil {
-		mux.Handle(stravasvc.WebhookPath, stravaWebhook)
+		mux.Handle(stravaWebhook.Pattern(), stravaWebhook)
 	}
 	// Serve the scheduled sync endpoint, only for the scheduler
 	if stravaSyncer != nil && !stravaSyncer.Background() {

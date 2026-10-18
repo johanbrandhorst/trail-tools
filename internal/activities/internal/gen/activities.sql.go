@@ -15,15 +15,17 @@ const countActivities = `-- name: CountActivities :one
 select
   count(*) as total,
   count(*) filter (
-    where not a.streams_synced and (a.sync_requested or a.start_time >= (
-      select max(latest.start_time) from strava_activities latest where latest.user_id = $1
-    ) - $2::interval)
-  ) as pending_streams
+    where not a.streams_synced and a.sync_failures < $1 and (a.sync_requested or a.start_time >= (
+      select max(latest.start_time) from strava_activities latest where latest.user_id = $2
+    ) - $3::interval)
+  ) as pending_streams,
+  count(*) filter (where not a.streams_synced and a.sync_failures >= $1) as failed_streams
 from strava_activities a
-where a.user_id = $1
+where a.user_id = $2
 `
 
 type CountActivitiesParams struct {
+	MaxFailures  int32
 	UserID       pgtype.UUID
 	RecentWindow pgtype.Interval
 }
@@ -31,12 +33,13 @@ type CountActivitiesParams struct {
 type CountActivitiesRow struct {
 	Total          int64
 	PendingStreams int64
+	FailedStreams  int64
 }
 
 func (q *Queries) CountActivities(ctx context.Context, arg *CountActivitiesParams) (*CountActivitiesRow, error) {
-	row := q.db.QueryRow(ctx, countActivities, arg.UserID, arg.RecentWindow)
+	row := q.db.QueryRow(ctx, countActivities, arg.MaxFailures, arg.UserID, arg.RecentWindow)
 	var i CountActivitiesRow
-	err := row.Scan(&i.Total, &i.PendingStreams)
+	err := row.Scan(&i.Total, &i.PendingStreams, &i.FailedStreams)
 	return &i, err
 }
 
@@ -243,18 +246,19 @@ func (q *Queries) ListActivities(ctx context.Context, arg *ListActivitiesParams)
 
 const listActivitiesWithoutStreams = `-- name: ListActivitiesWithoutStreams :many
 select a.id, a.strava_id from strava_activities a
-where a.user_id = $1 and not a.streams_synced
+where a.user_id = $1 and not a.streams_synced and a.sync_failures < $2
   and (a.sync_requested or a.start_time >= (
     select max(latest.start_time) from strava_activities latest where latest.user_id = $1
   ) - $3::interval)
-order by a.sync_requested desc, a.start_time desc
-limit $2
+order by a.sync_requested desc, a.sync_failures, a.start_time desc
+limit $4
 `
 
 type ListActivitiesWithoutStreamsParams struct {
 	UserID       pgtype.UUID
-	Limit        int32
+	MaxFailures  int32
 	RecentWindow pgtype.Interval
+	RowLimit     int32
 }
 
 type ListActivitiesWithoutStreamsRow struct {
@@ -263,9 +267,15 @@ type ListActivitiesWithoutStreamsRow struct {
 }
 
 // Activities that started more than recent_window before the latest one are
-// only listed when they're requested.
+// only listed when they're requested, and those that failed to sync
+// max_failures times are left out.
 func (q *Queries) ListActivitiesWithoutStreams(ctx context.Context, arg *ListActivitiesWithoutStreamsParams) ([]*ListActivitiesWithoutStreamsRow, error) {
-	rows, err := q.db.Query(ctx, listActivitiesWithoutStreams, arg.UserID, arg.Limit, arg.RecentWindow)
+	rows, err := q.db.Query(ctx, listActivitiesWithoutStreams,
+		arg.UserID,
+		arg.MaxFailures,
+		arg.RecentWindow,
+		arg.RowLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -294,16 +304,19 @@ where user_id = $1
   and max_lng >= $5::double precision
   and ($6::date is null or start_date_local >= $6::date)
   and ($7::date is null or start_date_local <= $7::date)
+order by start_date_local desc, id
+limit $8
 `
 
 type ListActivitySummaryTracksInBoundsParams struct {
-	UserID    pgtype.UUID
-	North     float64
-	South     float64
-	East      float64
-	West      float64
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
+	UserID        pgtype.UUID
+	North         float64
+	South         float64
+	East          float64
+	West          float64
+	StartDate     pgtype.Date
+	EndDate       pgtype.Date
+	MaxActivities int32
 }
 
 type ListActivitySummaryTracksInBoundsRow struct {
@@ -320,6 +333,7 @@ func (q *Queries) ListActivitySummaryTracksInBounds(ctx context.Context, arg *Li
 		arg.West,
 		arg.StartDate,
 		arg.EndDate,
+		arg.MaxActivities,
 	)
 	if err != nil {
 		return nil, err
@@ -404,16 +418,19 @@ where a.user_id = $1
   and a.max_lng >= $5::double precision
   and ($6::date is null or a.start_date_local >= $6::date)
   and ($7::date is null or a.start_date_local <= $7::date)
+order by a.start_date_local desc, a.id
+limit $8
 `
 
 type ListActivityTracksInBoundsParams struct {
-	UserID    pgtype.UUID
-	North     float64
-	South     float64
-	East      float64
-	West      float64
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
+	UserID        pgtype.UUID
+	North         float64
+	South         float64
+	East          float64
+	West          float64
+	StartDate     pgtype.Date
+	EndDate       pgtype.Date
+	MaxActivities int32
 }
 
 type ListActivityTracksInBoundsRow struct {
@@ -431,6 +448,7 @@ func (q *Queries) ListActivityTracksInBounds(ctx context.Context, arg *ListActiv
 		arg.West,
 		arg.StartDate,
 		arg.EndDate,
+		arg.MaxActivities,
 	)
 	if err != nil {
 		return nil, err
@@ -454,6 +472,7 @@ const markActivityStreamsSynced = `-- name: MarkActivityStreamsSynced :exec
 update strava_activities set
   streams_synced = true,
   sync_requested = false,
+  sync_failures = 0,
   min_lat = coalesce($1::double precision, strava_activities.min_lat),
   min_lng = coalesce($2::double precision, strava_activities.min_lng),
   max_lat = coalesce($3::double precision, strava_activities.max_lat),
@@ -481,9 +500,26 @@ func (q *Queries) MarkActivityStreamsSynced(ctx context.Context, arg *MarkActivi
 	return err
 }
 
+const recordActivitySyncFailure = `-- name: RecordActivitySyncFailure :exec
+update strava_activities set
+  sync_failures = sync_failures + 1
+where id = $1 and user_id = $2
+`
+
+type RecordActivitySyncFailureParams struct {
+	ID     pgtype.UUID
+	UserID pgtype.UUID
+}
+
+func (q *Queries) RecordActivitySyncFailure(ctx context.Context, arg *RecordActivitySyncFailureParams) error {
+	_, err := q.db.Exec(ctx, recordActivitySyncFailure, arg.ID, arg.UserID)
+	return err
+}
+
 const requestActivitySync = `-- name: RequestActivitySync :exec
 update strava_activities set
-  sync_requested = true
+  sync_requested = true,
+  sync_failures = 0
 where id = $1 and user_id = $2 and not streams_synced
 `
 
@@ -569,6 +605,11 @@ on conflict (user_id, strava_id) do update set
   -- Photos are synced with the details, so sync them again when photos
   -- are added or removed on Strava.
   streams_synced = strava_activities.streams_synced and strava_activities.photo_count = excluded.photo_count,
+  -- An activity that changed may sync now, so it's no longer skipped.
+  sync_failures = case
+    when strava_activities.photo_count = excluded.photo_count then strava_activities.sync_failures
+    else 0
+  end,
   update_time = now()
 returning id
 `

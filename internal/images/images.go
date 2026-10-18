@@ -3,6 +3,7 @@ package images
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -19,13 +20,22 @@ import (
 // MaxPixels limits the size of decoded images, to bound memory.
 const MaxPixels = 40_000_000
 
-// maxDecodedBytes limits the memory of decoded images, so that images with
-// more bytes per pixel, like 16 bit PNGs, are limited to fewer pixels.
-const maxDecodedBytes = MaxPixels * 4
+// maxDecodeBytes limits the memory that decoding an image takes, so that
+// images that take more bytes per pixel to decode, like 16 bit PNGs and
+// progressive JPEGs, are limited to fewer pixels.
+const maxDecodeBytes = MaxPixels * 4
 
 // maxScaleBufferBytes limits the buffer of each draw.CatmullRom.Scale, see
 // catmullRom.
 const maxScaleBufferBytes = 8 << 20
+
+// maxConcurrentDecodes limits the images decoded and used at once. Each can
+// take up to maxDecodeBytes, and more to scale, and the server has one CPU,
+// so decoding several at once wouldn't be faster anyway.
+const maxConcurrentDecodes = 1
+
+// decodeSlots holds a value for each image being decoded or used.
+var decodeSlots = make(chan struct{}, maxConcurrentDecodes)
 
 var (
 	// ErrNotImage is returned for uploads that aren't a supported image.
@@ -36,26 +46,37 @@ var (
 	ErrHEIF = errors.New("the image is HEIC or AVIF, which isn't supported; convert it to JPEG first, keeping its metadata")
 )
 
-// Decode decodes a JPEG, PNG or WebP image of at most MaxPixels pixels.
-func Decode(data []byte) (image.Image, error) {
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+// Decode decodes a JPEG, PNG or WebP image of at most MaxPixels pixels, that
+// takes at most maxDecodeBytes to decode, and calls use with it. At most
+// maxConcurrentDecodes images are decoded and used at once; Decode waits for
+// its turn until ctx is done.
+func Decode(ctx context.Context, data []byte, use func(image.Image) error) error {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
 		if isHEIF(data) {
-			return nil, ErrHEIF
+			return ErrHEIF
 		}
-		return nil, ErrNotImage
+		return ErrNotImage
 	}
 	if cfg.Width <= 0 || cfg.Height <= 0 {
-		return nil, ErrNotImage
+		return ErrNotImage
 	}
-	if cfg.Width*cfg.Height > MaxPixels || cfg.Width*cfg.Height*bytesPerPixel(cfg.ColorModel) > maxDecodedBytes {
-		return nil, fmt.Errorf("the image is too large: %dx%d pixels, the maximum is %d megapixels", cfg.Width, cfg.Height, MaxPixels/1_000_000)
+	perPixel := decodeBytesPerPixel(data, cfg.ColorModel, format)
+	if pixels := cfg.Width * cfg.Height; pixels > MaxPixels || pixels*perPixel > maxDecodeBytes {
+		return fmt.Errorf("the image is too large: %dx%d pixels, the maximum for this image is %d megapixels; scale it down and try again",
+			cfg.Width, cfg.Height, min(MaxPixels, maxDecodeBytes/perPixel)/1_000_000)
+	}
+	select {
+	case decodeSlots <- struct{}{}:
+		defer func() { <-decodeSlots }()
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, ErrNotImage
+		return ErrNotImage
 	}
-	return img, nil
+	return use(img)
 }
 
 // isHEIF reports whether data is a HEIF image, like HEIC or AVIF, from the
@@ -156,6 +177,62 @@ func toRGBA(img image.Image) *image.RGBA {
 	dst := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(dst, dst.Bounds(), img, b.Min, draw.Src)
 	return dst
+}
+
+// decodeBytesPerPixel returns the bytes per pixel that decoding an image of
+// the format and color model takes, at most.
+func decodeBytesPerPixel(data []byte, m color.Model, format string) int {
+	n := bytesPerPixel(m)
+	switch format {
+	case "jpeg":
+		components := 3
+		switch m {
+		case color.GrayModel:
+			components = 1
+		case color.CMYKModel:
+			// CMYK images are decoded to YCbCr and a black plane, and then
+			// converted.
+			components, n = 4, 3+1+4
+		case color.RGBAModel:
+			// RGB images are decoded to YCbCr and then converted.
+			n = 3 + 4
+		}
+		// Progressive images keep the coefficients of every block, 4 bytes
+		// per pixel and component, until the last scan.
+		if progressiveJPEG(data) {
+			n += 4 * components
+		}
+	case "png":
+		// Interlaced images are decoded a pass at a time, into images
+		// that add up to the size of the whole, before being merged.
+		if len(data) > 28 && data[28] == 1 {
+			n *= 2
+		}
+	}
+	return n
+}
+
+// progressiveJPEG reports whether a JPEG is progressive: whether its frame
+// header, the first segment that starts with a SOFn marker, is SOF2.
+func progressiveJPEG(data []byte) bool {
+	// Skip the SOI marker, then each segment: a marker and a 2 byte length
+	// that includes itself.
+	for i := 2; i+4 <= len(data); {
+		if data[i] != 0xff {
+			return false
+		}
+		marker := data[i+1]
+		switch {
+		case marker == 0xff:
+			// Fill bytes may precede a marker.
+			i++
+			continue
+		case marker >= 0xc0 && marker <= 0xcf && marker != 0xc4 && marker != 0xc8 && marker != 0xcc:
+			return marker == 0xc2
+		}
+		i += 2 + (int(data[i+2])<<8 | int(data[i+3]))
+	}
+	return false
 }
 
 // bytesPerPixel returns the bytes per pixel of decoded images with the color
