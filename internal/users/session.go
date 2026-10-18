@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,15 +12,13 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/users/internal/gen"
 )
 
-func (r *Repository) GetSession(ctx context.Context, sessionID string) (User, error) {
-	id, err := store.StringToUUID(sessionID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid UUID: %w", err)
-	}
+// GetSession gets the user of an unexpired session by the session's token.
+func (r *Repository) GetSession(ctx context.Context, token string) (User, error) {
+	hash := sha256.Sum256([]byte(token))
 	// Every signed in request gets its session, so it's read with its user in
 	// a single query, without a transaction, which would take two more round
 	// trips.
-	row, err := r.querier.GetSessionUser(ctx, id)
+	row, err := r.querier.GetSessionUser(ctx, hash[:])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, store.ErrNotFound
@@ -29,12 +28,10 @@ func (r *Repository) GetSession(ctx context.Context, sessionID string) (User, er
 	return &PasskeyUser{id: row.ID, Name: row.Name, UserHandle: row.UserHandle, AvatarKey: row.AvatarKey.String, admin: row.IsAdmin}, nil
 }
 
-func (r *Repository) DeleteSession(ctx context.Context, sessionID string) error {
-	id, err := store.StringToUUID(sessionID)
-	if err != nil {
-		return fmt.Errorf("invalid UUID: %w", err)
-	}
-	if err := r.querier.DeleteSession(ctx, id); err != nil {
+// DeleteSession deletes a session by its token.
+func (r *Repository) DeleteSession(ctx context.Context, token string) error {
+	hash := sha256.Sum256([]byte(token))
+	if err := r.querier.DeleteSession(ctx, hash[:]); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return store.ErrNotFound
 		}

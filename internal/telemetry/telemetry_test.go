@@ -97,7 +97,8 @@ func TestIsStaticAsset(t *testing.T) {
 }
 
 // TestTracing checks that a request with a traced client to a traced server
-// makes a client and a server span in the same trace.
+// makes a client span, and a server span in a new trace linked to it, with
+// secrets redacted from both.
 func TestTracing(t *testing.T) {
 	// Sets the global trace provider and propagator, so not parallel.
 	exporter := tracetest.NewInMemoryExporter()
@@ -114,17 +115,23 @@ func TestTracing(t *testing.T) {
 	mux.HandleFunc("GET /routes/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "ok")
 	})
+	mux.HandleFunc("POST /webhook/", func(w http.ResponseWriter, r *http.Request) {})
 	mux.HandleFunc("GET /index.js", func(w http.ResponseWriter, r *http.Request) {})
 	// A middleware passing on a copy of the request, like the live reload.
 	copying := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Routes(mux).ServeHTTP(w, r.WithContext(r.Context()))
 	})
-	srv := httptest.NewServer(Handler(copying))
+	srv := httptest.NewServer(Handler(copying, "/webhook/"))
 	t.Cleanup(srv.Close)
 
+	const secret = "hunter2"
 	client := NewClient(0)
-	for _, path := range []string{"/routes/abc.gpx", "/index.js"} {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+path, nil)
+	for _, r := range []struct{ method, path string }{
+		{http.MethodGet, "/routes/abc.gpx?client_secret=" + secret + "&page=1"},
+		{http.MethodPost, "/webhook/" + secret},
+		{http.MethodGet, "/index.js"},
+	} {
+		req, err := http.NewRequestWithContext(context.Background(), r.method, srv.URL+r.path, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -139,7 +146,8 @@ func TestTracing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var clientSpans, serverSpans []tracetest.SpanStub
+	var clientSpans []tracetest.SpanStub
+	serverSpans := map[string]tracetest.SpanStub{}
 	var names []string
 	for _, s := range exporter.GetSpans() {
 		names = append(names, s.Name)
@@ -147,17 +155,22 @@ func TestTracing(t *testing.T) {
 		case trace.SpanKindClient:
 			clientSpans = append(clientSpans, s)
 		case trace.SpanKindServer:
-			serverSpans = append(serverSpans, s)
+			serverSpans[s.Name] = s
+			for _, a := range s.Attributes {
+				if strings.Contains(a.Value.String(), secret) {
+					t.Errorf("server span %q has the secret in %s: %q", s.Name, a.Key, a.Value.String())
+				}
+			}
 		}
 	}
 	// Static assets aren't traced on the server, only by the client.
-	if len(clientSpans) != 2 || len(serverSpans) != 1 {
-		t.Fatalf("got spans %v, want 2 client spans and 1 server span", names)
+	if len(clientSpans) != 3 || len(serverSpans) != 2 {
+		t.Fatalf("got spans %v, want 3 client spans and 2 server spans", names)
 	}
 	host := srv.Listener.Addr().String()
 	for _, s := range clientSpans {
-		if s.Name != "GET "+host {
-			t.Errorf("client span %q, want it named after the host", s.Name)
+		if _, h, _ := strings.Cut(s.Name, " "); h != host {
+			t.Errorf("client span %q, want it named after the method and host", s.Name)
 		}
 		// The span has the URL, with its path.
 		if !slices.ContainsFunc(s.Attributes, func(a attribute.KeyValue) bool {
@@ -166,15 +179,31 @@ func TestTracing(t *testing.T) {
 			t.Errorf("client span %q has no url.full: %v", s.Name, s.Attributes)
 		}
 	}
-	server := serverSpans[0]
-	if server.Name != "GET /routes/" {
-		t.Errorf("server span %q, want it named after the route", server.Name)
-	}
-	// The trace context propagates from the client to the server.
-	if !slices.ContainsFunc(clientSpans, func(c tracetest.SpanStub) bool {
-		return server.Parent.SpanID() == c.SpanContext.SpanID() && server.SpanContext.TraceID() == c.SpanContext.TraceID()
+	if !slices.ContainsFunc(clientSpans, func(s tracetest.SpanStub) bool {
+		return slices.Contains(s.Attributes, attribute.String("url.full", srv.URL+"/routes/abc.gpx?client_secret=REDACTED&page=1"))
 	}) {
-		t.Errorf("the server span isn't a child of a client span")
+		t.Errorf("no client span has the URL with the client secret redacted")
+	}
+	server, ok := serverSpans["GET /routes/"]
+	if !ok {
+		t.Fatalf("got server spans %v, want one named after the route", names)
+	}
+	// The server doesn't trust the trace context from the client: it starts
+	// a new trace, linked to the client's.
+	if server.Parent.IsValid() {
+		t.Errorf("the server span has the parent %v, want none", server.Parent)
+	}
+	if !slices.ContainsFunc(clientSpans, func(c tracetest.SpanStub) bool {
+		return server.SpanContext.TraceID() != c.SpanContext.TraceID() &&
+			slices.ContainsFunc(server.Links, func(l sdktrace.Link) bool {
+				return l.SpanContext.SpanID() == c.SpanContext.SpanID()
+			})
+	}) {
+		t.Errorf("the server span isn't in a new trace linked to a client span")
+	}
+	webhook := serverSpans["POST /webhook/"]
+	if !slices.Contains(webhook.Attributes, attribute.String("url.path", "/webhook/REDACTED")) {
+		t.Errorf("the webhook's server span has no redacted url.path: %v", webhook.Attributes)
 	}
 }
 
