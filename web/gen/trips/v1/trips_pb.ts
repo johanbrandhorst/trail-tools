@@ -93,7 +93,8 @@ export type TripReport = Message<"trips.v1.TripReport"> & {
 
   /**
    * The photos in the order of the story: by section, and in order within
-   * each section.
+   * each section. Lists of reports only include the cover photo; get a
+   * report for all of them.
    *
    * @generated from field: repeated trips.v1.TripPhoto photos = 11;
    */

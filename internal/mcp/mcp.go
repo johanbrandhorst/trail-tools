@@ -231,7 +231,7 @@ func newToolHandler(log *slog.Logger, report *errreport.Reporter, impl any, md p
 			return nil, fmt.Errorf("%s returned a nil response", method)
 		}
 		msg := out[0].Interface().(proto.Message)
-		data, err := protojson.Marshal(msg)
+		data, err := outputOptions.Marshal(msg)
 		if err != nil {
 			return nil, fmt.Errorf("marshaling %s response: %w", method, err)
 		}
@@ -262,6 +262,12 @@ func validateSignature(fnType reflect.Type, inType, outType protoreflect.Message
 	}
 	return nil
 }
+
+// outputOptions encode tool results. They include fields with their default
+// values, like false and 0, which protojson leaves out by default, so agents
+// can tell a draft report from a published one rather than seeing no status.
+// That makes results about 3% larger.
+var outputOptions = protojson.MarshalOptions{EmitDefaultValues: true}
 
 // clearOutputOnly recursively clears all output only fields of the message.
 func clearOutputOnly(m protoreflect.Message) {

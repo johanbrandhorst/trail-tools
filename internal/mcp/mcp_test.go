@@ -441,6 +441,17 @@ func TestCallTool(t *testing.T) {
 		if got.GetRoute().GetId() != "r1" {
 			t.Errorf("route id = %q, want r1", got.GetRoute().GetId())
 		}
+		// Fields with default values are included, so agents can tell
+		// them from fields they don't know.
+		var fields struct {
+			Route map[string]any `json:"route"`
+		}
+		if err := json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if v, ok := fields.Route["description"]; !ok || v != "" {
+			t.Errorf("route description = %v (present %v), want empty", v, ok)
+		}
 		if len(res.Content) != 1 {
 			t.Fatalf("got %d content blocks, want 1", len(res.Content))
 		}
