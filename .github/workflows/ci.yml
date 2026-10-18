@@ -243,7 +243,12 @@ jobs:
           workload_identity_provider: projects/296221712346/locations/global/workloadIdentityPools/github/providers/github
           service_account: github-terraform@trail-tools-444904.iam.gserviceaccount.com
       - name: Build and push the image
-        run: echo "IMAGE=$(go tool ko build --bare --tags "${GITHUB_SHA},latest" .)" >> "$GITHUB_ENV"
+        run: |
+          # The base image, from images/Dockerfile, see the Makefile.
+          KO_DEFAULTBASEIMAGE=$(awk '$1 == "FROM" && $NF == "ko-base" { print $2 }' images/Dockerfile)
+          : "${KO_DEFAULTBASEIMAGE:?no ko-base stage in images/Dockerfile}"
+          export KO_DEFAULTBASEIMAGE
+          echo "IMAGE=$(go tool ko build --bare --tags "${GITHUB_SHA},latest" .)" >> "$GITHUB_ENV"
       - name: Apply Terraform
         run: |
           terraform -chdir=infra init -input=false

@@ -249,11 +249,12 @@ $ make grafana
 $ make watch
 ```
 
-`make grafana` runs the container like this, with 4 GB of memory, as it
-bundles several services and stalls under the default 1 GB after a while:
+`make grafana` runs the container like this, with the image in
+[`images/Dockerfile`](images/Dockerfile) and 4 GB of memory, as it bundles
+several services and stalls under the default 1 GB after a while:
 
 ```sh
-$ container run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:latest
+$ container run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:<version>
 ```
 
 Open Grafana on http://localhost:3000; there's no need to sign in.

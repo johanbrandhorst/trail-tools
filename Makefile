@@ -1,5 +1,3 @@
-NPM_TAG := 26.11.1-alpine
-PG_TAG  := 18
 CONTAINER_BIN ?= $(shell if command -v docker >/dev/null 2>&1; then printf '%s' docker; elif command -v container >/dev/null 2>&1; then printf '%s' container; fi)
 CPUS ?= $(shell (nproc --all || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
 MAKEFLAGS += --jobs=$(CPUS)
@@ -21,6 +19,10 @@ endif
 
 UID_GID := $(shell id -u):$(shell id -g)
 
+# The image of a stage in images/Dockerfile, by its name, e.g.
+# $(call image,node). The images are kept there for Dependabot to update.
+image = $(shell awk '$$1 == "FROM" && $$NF == "$(1)" { print $$2 }' images/Dockerfile)
+
 # Boilerplate for running a one-off node tool against ./web in a container, as
 # the host user so written files aren't owned by root. Append the command, e.g.
 # `$(NODE_RUN) npx oxlint`.
@@ -31,7 +33,7 @@ NODE_ARGS := \
 	-e NPM_CONFIG_CACHE=/srv/node_modules/.npm \
 	-e NODE_OPTIONS='--disable-warning=ExperimentalWarning' \
 	-e BROWSERSLIST_IGNORE_OLD_DATA=true \
-	node:$(NPM_TAG)
+	$(call image,node)
 NODE_RUN := $(CONTAINER_BIN) run --rm $(NODE_ARGS)
 
 # The admin bootstrap token of the local server. Its invitation creates the
@@ -86,8 +88,8 @@ db: ## Start the postgres container, with PostGIS and pgRouting
 		$(CONTAINER_BIN) exec postgres psql -U postgres -tAc "select 1 from pg_available_extensions where name = 'pgrouting'" | grep -q 1 || \
 			{ echo "the running postgres container has no pgRouting; restart it with make clean db" >&2; exit 1; }; \
 	else \
-		$(CONTAINER_BIN) build -t trail-tools-postgres:$(PG_TAG) --build-arg PG_TAG=$(PG_TAG) --build-arg PG_MAJOR=$(PG_TAG) test/postgres && \
-		$(CONTAINER_BIN) run --rm --name postgres -p 5432:5432 -d --memory 4g -e POSTGRES_PASSWORD=password trail-tools-postgres:$(PG_TAG); \
+		$(CONTAINER_BIN) build -t trail-tools-postgres test/postgres && \
+		$(CONTAINER_BIN) run --rm --name postgres -p 5432:5432 -d --memory 4g -e POSTGRES_PASSWORD=password trail-tools-postgres; \
 	fi
 
 .PHONY: grafana
@@ -95,7 +97,7 @@ grafana: ## Start Grafana with Tempo, which the server sends traces to, on http:
 	@if $(CONTAINER_RUNNING) | grep -qx otel-lgtm; then \
 		echo "otel-lgtm already running"; \
 	else \
-		$(CONTAINER_BIN) run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 grafana/otel-lgtm:latest >/dev/null && \
+		$(CONTAINER_BIN) run --rm --name otel-lgtm -d --memory 4g -p 3000:3000 -p 4317:4317 $(call image,otel-lgtm) >/dev/null && \
 		echo "Grafana is starting on http://localhost:3000"; \
 	fi
 
