@@ -553,8 +553,11 @@ func run(
 		stravaSyncer = stravasvc.NewSyncer(ctx, log, report, activityRepo, stravaClient, background, trigger)
 		stravaOAuth = stravasvc.NewOAuth(log, report, stravaClient, activityRepo, stravaSyncer, []byte(stravaClientSecret))
 		if stravaWebhookVerifyToken != "" {
-			stravaWebhook = stravasvc.NewWebhook(log, report, activityRepo, stravaSyncer, stravaClient,
+			stravaWebhook, err = stravasvc.NewWebhook(log, report, activityRepo, stravaSyncer, stravaClient,
 				baseURL+stravasvc.WebhookPath, stravaWebhookVerifyToken)
+			if err != nil {
+				return fmt.Errorf("failed to create the Strava webhook: %w", err)
+			}
 		}
 		if background {
 			go stravaSyncer.RunBackground(ctx)
@@ -682,9 +685,10 @@ func run(
 	if stravaOAuth != nil {
 		stravaOAuth.RegisterHandlers(mux, authenticate)
 	}
-	// Serve Strava's webhook events, which aren't authenticated
+	// Serve Strava's webhook events, which are authenticated by a secret
+	// path rather than a user
 	if stravaWebhook != nil {
-		mux.Handle(stravasvc.WebhookPath, stravaWebhook)
+		mux.Handle(stravaWebhook.Pattern(), stravaWebhook)
 	}
 	// Serve the scheduled sync endpoint, only for the scheduler
 	if stravaSyncer != nil && !stravaSyncer.Background() {
