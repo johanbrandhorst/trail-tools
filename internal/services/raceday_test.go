@@ -54,7 +54,7 @@ func TestRaceDay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	token := shared.GetShareUrl()[len("https://trail.example/share/race-plans/"):]
+	token := shared.GetShareUrl()[len("https://trail.example/share/race-plans#"):]
 
 	// Crew record the start through the share link, without an account.
 	start := time.Now().Add(-90 * time.Minute).Truncate(time.Second)

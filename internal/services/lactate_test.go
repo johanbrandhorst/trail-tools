@@ -176,30 +176,36 @@ func TestLactateTestWorkout(t *testing.T) {
 	}
 }
 
-// openRecordingLink opens a recording link like a browser, returning the
-// recorder cookie it set, or "" if it set none.
-func openRecordingLink(t *testing.T, e *env, link string) string {
+// openRecordingLink opens a recording link like its page does, in a browser
+// with the recorder cookie if it isn't empty. It returns the recorder cookie
+// the browser has after, or "" if the link doesn't work in it.
+func openRecordingLink(t *testing.T, e *env, link, cookie string) string {
 	t.Helper()
-	path := strings.TrimPrefix(link, "https://trail.example")
-	client := *e.srv.Client()
-	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	resp, err := client.Get(e.srv.URL + path)
+	token, ok := strings.CutPrefix(link, "https://trail.example"+lactatesvc.RecordPath+"#")
+	if !ok {
+		t.Fatalf("got link %q, want the recording page with the token in the fragment", link)
+	}
+	ctx, info := connect.NewClientContext(context.Background())
+	_, err := recorderClient(e, cookie, "").CreateLactateTestRecording(ctx, lactatev1.CreateLactateTestRecordingRequest_builder{Token: token}.Build())
+	if connect.CodeOf(err) == connect.CodePermissionDenied {
+		return ""
+	}
 	if err != nil {
-		t.Fatalf("GET %s: %v", path, err)
+		t.Fatalf("CreateLactateTestRecording: %v", err)
 	}
-	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != lactatesvc.RecordPath {
-		t.Fatalf("opening the link got status %d to %q, want a redirect to the recording page", resp.StatusCode, resp.Header.Get("Location"))
-	}
-	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "lactate_recorder" {
-			if !cookie.HttpOnly || !cookie.Secure {
-				t.Errorf("got an insecure recorder cookie %v", cookie)
+	for _, line := range info.ResponseHeader().Values("Set-Cookie") {
+		c, err := http.ParseSetCookie(line)
+		if err != nil {
+			t.Fatalf("invalid cookie %q: %v", line, err)
+		}
+		if c.Name == "lactate_recorder" {
+			if !c.HttpOnly || !c.Secure {
+				t.Errorf("got an insecure recorder cookie %v", c)
 			}
-			return cookie.Value
+			return c.Value
 		}
 	}
-	return ""
+	return cookie
 }
 
 // recorderClient returns a client of a browser with the recorder cookie,
@@ -231,12 +237,9 @@ func TestLactateTestRecordingLinks(t *testing.T) {
 		t.Fatalf("CreateLactateTestShare: %v", err)
 	}
 	link := created.GetShare().GetUrl()
-	if !strings.HasPrefix(link, "https://trail.example"+lactatesvc.SharePath) {
-		t.Fatalf("got link %q", link)
-	}
 
 	// The friend's browser opens it, and records a test with its cookie.
-	cookie := openRecordingLink(t, e, link)
+	cookie := openRecordingLink(t, e, link, "")
 	if cookie == "" {
 		t.Fatal("opening the link set no cookie")
 	}
@@ -277,8 +280,12 @@ func TestLactateTestRecordingLinks(t *testing.T) {
 		t.Errorf("got shares %v, want the opened link with its test", got)
 	}
 
+	// The friend's browser can open the link again, keeping its cookie.
+	if again := openRecordingLink(t, e, link, cookie); again != cookie {
+		t.Errorf("opening the link again got cookie %q, want the first one", again)
+	}
 	// Another browser opening the link can't record with it.
-	if other := openRecordingLink(t, e, link); other != "" {
+	if other := openRecordingLink(t, e, link, ""); other != "" {
 		t.Errorf("a second browser got a cookie")
 	}
 	_, err = recorderClient(e, "", "").GetLactateTestRecording(ctx, &lactatev1.GetLactateTestRecordingRequest{})
@@ -289,7 +296,7 @@ func TestLactateTestRecordingLinks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateLactateTestShare: %v", err)
 	}
-	signedIn := recorderClient(e, openRecordingLink(t, e, second.GetShare().GetUrl()), e.otherToken)
+	signedIn := recorderClient(e, openRecordingLink(t, e, second.GetShare().GetUrl(), ""), e.otherToken)
 	if _, err := signedIn.RecordLactateTest(ctx, lactatev1.RecordLactateTestRequest_builder{
 		Test: lactatev1.LactateTest_builder{Date: "2026-10-17", Stages: stages([]int32{100}, []float64{1.2})}.Build(),
 	}.Build()); err != nil {

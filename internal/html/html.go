@@ -128,3 +128,12 @@ func ServeIndexHTML(watch bool) http.Handler {
 		Render(w, watch, http.StatusOK, Page{})
 	})
 }
+
+// TokenURL returns the path of page with a link's secret token in its
+// fragment, e.g. "/invite#<token>". Browsers don't send fragments to the
+// server, so the token stays out of request logs, like Cloud Run's, which
+// record the URL of every request, and out of the Referer of the requests
+// the page makes.
+func TokenURL(page, token string) string {
+	return (&url.URL{Path: page, Fragment: token}).String()
+}

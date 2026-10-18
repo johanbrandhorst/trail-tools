@@ -76,10 +76,11 @@ func (s *Service) GetAuthorization(ctx context.Context, req *oauthv1.GetAuthoriz
 }
 
 func (s *Service) ApproveAuthorization(ctx context.Context, req *oauthv1.ApproveAuthorizationRequest) (*oauthv1.ApproveAuthorizationResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	authzReq, err := s.parseRequest(req.GetQuery())
 	if err != nil {
 		return nil, err
@@ -105,10 +106,11 @@ func (s *Service) DenyAuthorization(ctx context.Context, req *oauthv1.DenyAuthor
 }
 
 func (s *Service) ListConnections(ctx context.Context, req *oauthv1.ListConnectionsRequest) (*oauthv1.ListConnectionsResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	grants, err := s.grants.ListOAuthGrants(ctx, userID)
 	if err != nil {
 		s.report.Report(ctx, "Failed to list connections", err)
@@ -133,10 +135,11 @@ func (s *Service) ListConnections(ctx context.Context, req *oauthv1.ListConnecti
 }
 
 func (s *Service) DeleteConnection(ctx context.Context, req *oauthv1.DeleteConnectionRequest) (*oauthv1.DeleteConnectionResponse, error) {
-	userID, ok := authn.GetUserID(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
+	userID := user.ID()
 	grantID, err := store.StringToUUID(req.GetId())
 	if err != nil {
 		return nil, connect.Errorf(connect.CodeInvalidArgument, "invalid connection ID: %v", err).WithCause(err)

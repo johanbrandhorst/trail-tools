@@ -48,6 +48,9 @@ const (
 	// LactateTestServiceDeleteLactateTestShareProcedure is the procedure name of the
 	// LactateTestService's DeleteLactateTestShare RPC.
 	LactateTestServiceDeleteLactateTestShareProcedure = "/lactate.v1.LactateTestService/DeleteLactateTestShare"
+	// LactateTestServiceCreateLactateTestRecordingProcedure is the procedure name of the
+	// LactateTestService's CreateLactateTestRecording RPC.
+	LactateTestServiceCreateLactateTestRecordingProcedure = "/lactate.v1.LactateTestService/CreateLactateTestRecording"
 	// LactateTestServiceGetLactateTestRecordingProcedure is the procedure name of the
 	// LactateTestService's GetLactateTestRecording RPC.
 	LactateTestServiceGetLactateTestRecordingProcedure = "/lactate.v1.LactateTestService/GetLactateTestRecording"
@@ -113,6 +116,13 @@ var (
 			Procedure:  LactateTestServiceDeleteLactateTestShareProcedure,
 		}
 	})
+	lactateTestServiceCreateLactateTestRecordingSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_lactate_v1_lactate_proto.Services().ByName("LactateTestService").Methods().ByName("CreateLactateTestRecording"),
+			Procedure:  LactateTestServiceCreateLactateTestRecordingProcedure,
+		}
+	})
 	lactateTestServiceGetLactateTestRecordingSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -152,6 +162,11 @@ type LactateTestServiceClient interface {
 	// Delete a recording link, so it can't record any more. A test it
 	// recorded is kept.
 	DeleteLactateTestShare(context.Context, *v1.DeleteLactateTestShareRequest) (*v1.DeleteLactateTestShareResponse, error)
+	// Open a recording link in this browser, with the token from the link's
+	// fragment. The first browser to open a link gets a cookie it records with
+	// until the link expires, and may open it again. Fails with
+	// PERMISSION_DENIED for other browsers, and for expired or deleted links.
+	CreateLactateTestRecording(context.Context, *v1.CreateLactateTestRecordingRequest) (*v1.CreateLactateTestRecordingResponse, error)
 	// Get the recording of the browser that opened a recording link, which
 	// the link's page records with. Authenticated by the browser's cookie, not
 	// the user's.
@@ -190,6 +205,11 @@ type LactateTestServiceHandler interface {
 	// Delete a recording link, so it can't record any more. A test it
 	// recorded is kept.
 	DeleteLactateTestShare(context.Context, *v1.DeleteLactateTestShareRequest) (*v1.DeleteLactateTestShareResponse, error)
+	// Open a recording link in this browser, with the token from the link's
+	// fragment. The first browser to open a link gets a cookie it records with
+	// until the link expires, and may open it again. Fails with
+	// PERMISSION_DENIED for other browsers, and for expired or deleted links.
+	CreateLactateTestRecording(context.Context, *v1.CreateLactateTestRecordingRequest) (*v1.CreateLactateTestRecordingResponse, error)
 	// Get the recording of the browser that opened a recording link, which
 	// the link's page records with. Authenticated by the browser's cookie, not
 	// the user's.
@@ -212,6 +232,7 @@ func RegisterLactateTestServiceHandler(server *connect.Server, svc LactateTestSe
 		connect.Method{Spec: lactateTestServiceCreateLactateTestShareSpec(), Handler: adapter.createLactateTestShare},
 		connect.Method{Spec: lactateTestServiceListLactateTestSharesSpec(), Handler: adapter.listLactateTestShares},
 		connect.Method{Spec: lactateTestServiceDeleteLactateTestShareSpec(), Handler: adapter.deleteLactateTestShare},
+		connect.Method{Spec: lactateTestServiceCreateLactateTestRecordingSpec(), Handler: adapter.createLactateTestRecording},
 		connect.Method{Spec: lactateTestServiceGetLactateTestRecordingSpec(), Handler: adapter.getLactateTestRecording},
 		connect.Method{Spec: lactateTestServiceRecordLactateTestSpec(), Handler: adapter.recordLactateTest},
 	)
@@ -250,6 +271,10 @@ func (UnimplementedLactateTestServiceHandler) ListLactateTestShares(context.Cont
 
 func (UnimplementedLactateTestServiceHandler) DeleteLactateTestShare(context.Context, *v1.DeleteLactateTestShareRequest) (*v1.DeleteLactateTestShareResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "lactate.v1.LactateTestService.DeleteLactateTestShare is not implemented")
+}
+
+func (UnimplementedLactateTestServiceHandler) CreateLactateTestRecording(context.Context, *v1.CreateLactateTestRecordingRequest) (*v1.CreateLactateTestRecordingResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "lactate.v1.LactateTestService.CreateLactateTestRecording is not implemented")
 }
 
 func (UnimplementedLactateTestServiceHandler) GetLactateTestRecording(context.Context, *v1.GetLactateTestRecordingRequest) (*v1.GetLactateTestRecordingResponse, error) {
@@ -323,6 +348,14 @@ func (c *lactateTestServiceClient) ListLactateTestShares(ctx context.Context, re
 func (c *lactateTestServiceClient) DeleteLactateTestShare(ctx context.Context, req *v1.DeleteLactateTestShareRequest) (*v1.DeleteLactateTestShareResponse, error) {
 	var res v1.DeleteLactateTestShareResponse
 	if err := c.client.CallUnary(ctx, lactateTestServiceDeleteLactateTestShareSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *lactateTestServiceClient) CreateLactateTestRecording(ctx context.Context, req *v1.CreateLactateTestRecordingRequest) (*v1.CreateLactateTestRecordingResponse, error) {
+	var res v1.CreateLactateTestRecordingResponse
+	if err := c.client.CallUnary(ctx, lactateTestServiceCreateLactateTestRecordingSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -436,6 +469,18 @@ func (h lactateTestServiceHandler) deleteLactateTestShare(ctx context.Context, _
 		return err
 	}
 	res, err := h.svc.DeleteLactateTestShare(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h lactateTestServiceHandler) createLactateTestRecording(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateLactateTestRecordingRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateLactateTestRecording(ctx, &req)
 	if err != nil {
 		return err
 	}

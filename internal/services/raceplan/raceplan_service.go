@@ -18,6 +18,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/gen/races/v1/racesv1connect"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
 	"github.com/johanbrandhorst/trail-tools/internal/protomask"
 	"github.com/johanbrandhorst/trail-tools/internal/races"
 	"github.com/johanbrandhorst/trail-tools/internal/routes"
@@ -74,8 +75,10 @@ func NewService(log *slog.Logger, report *errreport.Reporter, repo RacePlanRepos
 	}
 }
 
-// SharePath is the path of the shared race plan page.
-const SharePath = "/share/race-plans/"
+// SharePath is the shared race plan page. Its links carry the share token in
+// the fragment, which browsers don't send, so it doesn't end up in request
+// logs.
+const SharePath = "/share/race-plans"
 
 // maxSharedCoursePoints is the number of course points in shared plans.
 const maxSharedCoursePoints = 1000
@@ -345,7 +348,7 @@ func (s *Service) shareURL(token string) string {
 	if token == "" {
 		return ""
 	}
-	return s.baseURL + SharePath + token
+	return s.baseURL + html.TokenURL(SharePath, token)
 }
 
 func raceInfo(r *races.Race, course []geo.Point) RaceInfo {

@@ -19,6 +19,12 @@ have it.
   `connect.NewError(connect.CodeUnauthenticated, "")` if not. The middleware
   only identifies the user; each handler enforces it. Check administrators
   with `user.IsAdmin()`, returning `CodePermissionDenied`.
+- Handlers that manage the account's credentials (passkeys, invitations, API
+  tokens, OAuth connections) start with `user, err :=
+  authn.GetSessionUser(ctx)` instead, returning `err`. It only accepts the web
+  app's session cookie, as a bearer token held by an API client or AI agent
+  could otherwise sign in as the user or create more tokens. Exclude them from
+  MCP too.
 - Pass the user's ID to the repository, which scopes its queries by it.
 
 ## Validation

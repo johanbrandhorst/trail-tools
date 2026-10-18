@@ -43,6 +43,13 @@ service LactateTestService {
   // Delete a recording link, so it can't record any more. A test it
   // recorded is kept.
   rpc DeleteLactateTestShare(DeleteLactateTestShareRequest) returns (DeleteLactateTestShareResponse);
+  // Open a recording link in this browser, with the token from the link's
+  // fragment. The first browser to open a link gets a cookie it records with
+  // until the link expires, and may open it again. Fails with
+  // PERMISSION_DENIED for other browsers, and for expired or deleted links.
+  rpc CreateLactateTestRecording(CreateLactateTestRecordingRequest) returns (CreateLactateTestRecordingResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
   // Get the recording of the browser that opened a recording link, which
   // the link's page records with. Authenticated by the browser's cookie, not
   // the user's.
@@ -208,6 +215,21 @@ message DeleteLactateTestShareRequest {
 }
 
 message DeleteLactateTestShareResponse {}
+
+message CreateLactateTestRecordingRequest {
+  // The token from the fragment of the recording link's URL.
+  string token = 1;
+}
+
+message CreateLactateTestRecordingResponse {
+  // The name of the user the test is recorded for.
+  string owner_name = 1;
+  // When the link stops working.
+  google.protobuf.Timestamp expire_time = 2;
+  // The test recorded so far, if this browser opened the link before.
+  // Unset until the first save.
+  LactateTest test = 3;
+}
 
 message GetLactateTestRecordingRequest {}
 

@@ -21,11 +21,27 @@ insert into oauth_authorization_codes (
 delete from oauth_authorization_codes
 where expire_time <= now();
 
--- ConsumeOAuthAuthorizationCode deletes the code, so it can only be used once.
+-- ConsumeOAuthAuthorizationCode marks the code as used, so it can only be used
+-- once.
 -- name: ConsumeOAuthAuthorizationCode :one
-delete from oauth_authorization_codes
-where code_sha256 = $1 and expire_time > now()
+update oauth_authorization_codes
+set consume_time = now()
+where code_sha256 = $1 and expire_time > now() and consume_time is null
 returning *;
+
+-- DeleteUsedOAuthAuthorizationCode deletes a code that was used already,
+-- returning the grant it was exchanged for, if it was.
+-- name: DeleteUsedOAuthAuthorizationCode :one
+delete from oauth_authorization_codes
+where code_sha256 = $1 and consume_time is not null
+returning user_id, oauth_grant_id;
+
+-- SetOAuthAuthorizationCodeGrant records the grant a code was exchanged for.
+-- It updates no rows if the code was used again meanwhile, and deleted.
+-- name: SetOAuthAuthorizationCodeGrant :execrows
+update oauth_authorization_codes
+set oauth_grant_id = $2
+where code_sha256 = $1;
 
 -- name: CreateOAuthGrant :one
 insert into oauth_grants (
@@ -77,9 +93,33 @@ insert into api_tokens (
 )
 returning *;
 
--- name: DeleteExpiredOAuthAccessTokens :exec
+-- name: DeleteOAuthAccessTokens :exec
 delete from api_tokens
+where oauth_grant_id = $1;
+
+-- name: CreateOAuthUsedRefreshToken :exec
+insert into oauth_used_refresh_tokens (
+  refresh_token_sha256,
+  oauth_grant_id,
+  expire_time
+) values (
+  $1,
+  $2,
+  $3
+);
+
+-- name: DeleteExpiredOAuthUsedRefreshTokens :exec
+delete from oauth_used_refresh_tokens
 where oauth_grant_id = $1 and expire_time <= now();
+
+-- DeleteOAuthGrantByUsedRefreshToken revokes the grant of a refresh token that
+-- was rotated out.
+-- name: DeleteOAuthGrantByUsedRefreshToken :execrows
+delete from oauth_grants
+where id = (
+  select oauth_used_refresh_tokens.oauth_grant_id from oauth_used_refresh_tokens
+  where oauth_used_refresh_tokens.refresh_token_sha256 = $1
+);
 
 -- name: ListOAuthGrants :many
 select

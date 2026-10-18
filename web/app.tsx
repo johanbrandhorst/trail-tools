@@ -106,17 +106,14 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route element={<Layout user={user} />}>
-        <Route
-          path="/share/race-plans/:token"
-          element={<SharedRacePlanPage />}
-        />
+        <Route path="/share/race-plans" element={<SharedRacePlanPage />} />
         <Route
           path="/u/:handle/races/:slug"
           element={<PublicRaceReportPage />}
         />
         <Route path="/u/:handle" element={<PublicProfilePage />} />
         <Route path="/u/:handle/:slug" element={<PublicTripReportPage />} />
-        <Route path="/invite/:token" element={<InvitePage />} />
+        <Route path="/invite" element={<InvitePage />} />
         <Route
           path="/record/lactate-test"
           element={<RecordLactateTestPage />}

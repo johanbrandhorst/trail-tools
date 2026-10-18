@@ -1579,6 +1579,175 @@ func (b0 DeleteLactateTestShareResponse_builder) Build() *DeleteLactateTestShare
 	return m0
 }
 
+type CreateLactateTestRecordingRequest struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token string                 `protobuf:"bytes,1,opt,name=token,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreateLactateTestRecordingRequest) Reset() {
+	*x = CreateLactateTestRecordingRequest{}
+	mi := &file_lactate_v1_lactate_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateLactateTestRecordingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateLactateTestRecordingRequest) ProtoMessage() {}
+
+func (x *CreateLactateTestRecordingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_lactate_v1_lactate_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CreateLactateTestRecordingRequest) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *CreateLactateTestRecordingRequest) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+type CreateLactateTestRecordingRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The token from the fragment of the recording link's URL.
+	Token string
+}
+
+func (b0 CreateLactateTestRecordingRequest_builder) Build() *CreateLactateTestRecordingRequest {
+	m0 := &CreateLactateTestRecordingRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	return m0
+}
+
+type CreateLactateTestRecordingResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_OwnerName  string                 `protobuf:"bytes,1,opt,name=owner_name,json=ownerName,proto3"`
+	xxx_hidden_ExpireTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3"`
+	xxx_hidden_Test       *LactateTest           `protobuf:"bytes,3,opt,name=test,proto3"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CreateLactateTestRecordingResponse) Reset() {
+	*x = CreateLactateTestRecordingResponse{}
+	mi := &file_lactate_v1_lactate_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateLactateTestRecordingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateLactateTestRecordingResponse) ProtoMessage() {}
+
+func (x *CreateLactateTestRecordingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_lactate_v1_lactate_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CreateLactateTestRecordingResponse) GetOwnerName() string {
+	if x != nil {
+		return x.xxx_hidden_OwnerName
+	}
+	return ""
+}
+
+func (x *CreateLactateTestRecordingResponse) GetExpireTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_ExpireTime
+	}
+	return nil
+}
+
+func (x *CreateLactateTestRecordingResponse) GetTest() *LactateTest {
+	if x != nil {
+		return x.xxx_hidden_Test
+	}
+	return nil
+}
+
+func (x *CreateLactateTestRecordingResponse) SetOwnerName(v string) {
+	x.xxx_hidden_OwnerName = v
+}
+
+func (x *CreateLactateTestRecordingResponse) SetExpireTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_ExpireTime = v
+}
+
+func (x *CreateLactateTestRecordingResponse) SetTest(v *LactateTest) {
+	x.xxx_hidden_Test = v
+}
+
+func (x *CreateLactateTestRecordingResponse) HasExpireTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ExpireTime != nil
+}
+
+func (x *CreateLactateTestRecordingResponse) HasTest() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Test != nil
+}
+
+func (x *CreateLactateTestRecordingResponse) ClearExpireTime() {
+	x.xxx_hidden_ExpireTime = nil
+}
+
+func (x *CreateLactateTestRecordingResponse) ClearTest() {
+	x.xxx_hidden_Test = nil
+}
+
+type CreateLactateTestRecordingResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The name of the user the test is recorded for.
+	OwnerName string
+	// When the link stops working.
+	ExpireTime *timestamppb.Timestamp
+	// The test recorded so far, if this browser opened the link before.
+	// Unset until the first save.
+	Test *LactateTest
+}
+
+func (b0 CreateLactateTestRecordingResponse_builder) Build() *CreateLactateTestRecordingResponse {
+	m0 := &CreateLactateTestRecordingResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_OwnerName = b.OwnerName
+	x.xxx_hidden_ExpireTime = b.ExpireTime
+	x.xxx_hidden_Test = b.Test
+	return m0
+}
+
 type GetLactateTestRecordingRequest struct {
 	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1587,7 +1756,7 @@ type GetLactateTestRecordingRequest struct {
 
 func (x *GetLactateTestRecordingRequest) Reset() {
 	*x = GetLactateTestRecordingRequest{}
-	mi := &file_lactate_v1_lactate_proto_msgTypes[20]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1599,7 +1768,7 @@ func (x *GetLactateTestRecordingRequest) String() string {
 func (*GetLactateTestRecordingRequest) ProtoMessage() {}
 
 func (x *GetLactateTestRecordingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_lactate_v1_lactate_proto_msgTypes[20]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1633,7 +1802,7 @@ type GetLactateTestRecordingResponse struct {
 
 func (x *GetLactateTestRecordingResponse) Reset() {
 	*x = GetLactateTestRecordingResponse{}
-	mi := &file_lactate_v1_lactate_proto_msgTypes[21]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1645,7 +1814,7 @@ func (x *GetLactateTestRecordingResponse) String() string {
 func (*GetLactateTestRecordingResponse) ProtoMessage() {}
 
 func (x *GetLactateTestRecordingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_lactate_v1_lactate_proto_msgTypes[21]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +1910,7 @@ type RecordLactateTestRequest struct {
 
 func (x *RecordLactateTestRequest) Reset() {
 	*x = RecordLactateTestRequest{}
-	mi := &file_lactate_v1_lactate_proto_msgTypes[22]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1753,7 +1922,7 @@ func (x *RecordLactateTestRequest) String() string {
 func (*RecordLactateTestRequest) ProtoMessage() {}
 
 func (x *RecordLactateTestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_lactate_v1_lactate_proto_msgTypes[22]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1810,7 +1979,7 @@ type RecordLactateTestResponse struct {
 
 func (x *RecordLactateTestResponse) Reset() {
 	*x = RecordLactateTestResponse{}
-	mi := &file_lactate_v1_lactate_proto_msgTypes[23]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1822,7 +1991,7 @@ func (x *RecordLactateTestResponse) String() string {
 func (*RecordLactateTestResponse) ProtoMessage() {}
 
 func (x *RecordLactateTestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_lactate_v1_lactate_proto_msgTypes[23]
+	mi := &file_lactate_v1_lactate_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1936,7 +2105,15 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x06shares\x18\x01 \x03(\v2\x1c.lactate.v1.LactateTestShareR\x06shares\"/\n" +
 	"\x1dDeleteLactateTestShareRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
-	"\x1eDeleteLactateTestShareResponse\" \n" +
+	"\x1eDeleteLactateTestShareResponse\"9\n" +
+	"!CreateLactateTestRecordingRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xad\x01\n" +
+	"\"CreateLactateTestRecordingResponse\x12\x1d\n" +
+	"\n" +
+	"owner_name\x18\x01 \x01(\tR\townerName\x12;\n" +
+	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"expireTime\x12+\n" +
+	"\x04test\x18\x03 \x01(\v2\x17.lactate.v1.LactateTestR\x04test\" \n" +
 	"\x1eGetLactateTestRecordingRequest\"\xaa\x01\n" +
 	"\x1fGetLactateTestRecordingResponse\x12\x1d\n" +
 	"\n" +
@@ -1952,7 +2129,7 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	" THRESHOLD_DEFINITION_UNSPECIFIED\x10\x00\x12%\n" +
 	"!THRESHOLD_DEFINITION_FIXED_2_MMOL\x10\x01\x12'\n" +
 	"#THRESHOLD_DEFINITION_FIXED_2_5_MMOL\x10\x02\x12+\n" +
-	"'THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL\x10\x032\xa8\b\n" +
+	"'THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL\x10\x032\xae\t\n" +
 	"\x12LactateTestService\x12`\n" +
 	"\x11CreateLactateTest\x12$.lactate.v1.CreateLactateTestRequest\x1a%.lactate.v1.CreateLactateTestResponse\x12W\n" +
 	"\x0eGetLactateTest\x12!.lactate.v1.GetLactateTestRequest\x1a\".lactate.v1.GetLactateTestResponse\x12]\n" +
@@ -1961,7 +2138,8 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x11DeleteLactateTest\x12$.lactate.v1.DeleteLactateTestRequest\x1a%.lactate.v1.DeleteLactateTestResponse\x12o\n" +
 	"\x16CreateLactateTestShare\x12).lactate.v1.CreateLactateTestShareRequest\x1a*.lactate.v1.CreateLactateTestShareResponse\x12l\n" +
 	"\x15ListLactateTestShares\x12(.lactate.v1.ListLactateTestSharesRequest\x1a).lactate.v1.ListLactateTestSharesResponse\x12o\n" +
-	"\x16DeleteLactateTestShare\x12).lactate.v1.DeleteLactateTestShareRequest\x1a*.lactate.v1.DeleteLactateTestShareResponse\x12z\n" +
+	"\x16DeleteLactateTestShare\x12).lactate.v1.DeleteLactateTestShareRequest\x1a*.lactate.v1.DeleteLactateTestShareResponse\x12\x83\x01\n" +
+	"\x1aCreateLactateTestRecording\x12-.lactate.v1.CreateLactateTestRecordingRequest\x1a..lactate.v1.CreateLactateTestRecordingResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12z\n" +
 	"\x17GetLactateTestRecording\x12*.lactate.v1.GetLactateTestRecordingRequest\x1a+.lactate.v1.GetLactateTestRecordingResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12h\n" +
 	"\x11RecordLactateTest\x12$.lactate.v1.RecordLactateTestRequest\x1a%.lactate.v1.RecordLactateTestResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xb1\x01\n" +
 	"\x0ecom.lactate.v1B\fLactateProtoP\x01ZHgithub.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1;lactatev1\xa2\x02\x03LXX\xaa\x02\n" +
@@ -1969,82 +2147,88 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"Lactate\\V1\xe2\x02\x16Lactate\\V1\\GPBMetadata\xea\x02\vLactate::V1b\x06proto3"
 
 var file_lactate_v1_lactate_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_lactate_v1_lactate_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_lactate_v1_lactate_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_lactate_v1_lactate_proto_goTypes = []any{
-	(ThresholdDefinition)(0),                // 0: lactate.v1.ThresholdDefinition
-	(*LactateTest)(nil),                     // 1: lactate.v1.LactateTest
-	(*ThresholdEstimate)(nil),               // 2: lactate.v1.ThresholdEstimate
-	(*LactateStage)(nil),                    // 3: lactate.v1.LactateStage
-	(*CreateLactateTestRequest)(nil),        // 4: lactate.v1.CreateLactateTestRequest
-	(*CreateLactateTestResponse)(nil),       // 5: lactate.v1.CreateLactateTestResponse
-	(*GetLactateTestRequest)(nil),           // 6: lactate.v1.GetLactateTestRequest
-	(*GetLactateTestResponse)(nil),          // 7: lactate.v1.GetLactateTestResponse
-	(*ListLactateTestsRequest)(nil),         // 8: lactate.v1.ListLactateTestsRequest
-	(*ListLactateTestsResponse)(nil),        // 9: lactate.v1.ListLactateTestsResponse
-	(*UpdateLactateTestRequest)(nil),        // 10: lactate.v1.UpdateLactateTestRequest
-	(*UpdateLactateTestResponse)(nil),       // 11: lactate.v1.UpdateLactateTestResponse
-	(*DeleteLactateTestRequest)(nil),        // 12: lactate.v1.DeleteLactateTestRequest
-	(*DeleteLactateTestResponse)(nil),       // 13: lactate.v1.DeleteLactateTestResponse
-	(*LactateTestShare)(nil),                // 14: lactate.v1.LactateTestShare
-	(*CreateLactateTestShareRequest)(nil),   // 15: lactate.v1.CreateLactateTestShareRequest
-	(*CreateLactateTestShareResponse)(nil),  // 16: lactate.v1.CreateLactateTestShareResponse
-	(*ListLactateTestSharesRequest)(nil),    // 17: lactate.v1.ListLactateTestSharesRequest
-	(*ListLactateTestSharesResponse)(nil),   // 18: lactate.v1.ListLactateTestSharesResponse
-	(*DeleteLactateTestShareRequest)(nil),   // 19: lactate.v1.DeleteLactateTestShareRequest
-	(*DeleteLactateTestShareResponse)(nil),  // 20: lactate.v1.DeleteLactateTestShareResponse
-	(*GetLactateTestRecordingRequest)(nil),  // 21: lactate.v1.GetLactateTestRecordingRequest
-	(*GetLactateTestRecordingResponse)(nil), // 22: lactate.v1.GetLactateTestRecordingResponse
-	(*RecordLactateTestRequest)(nil),        // 23: lactate.v1.RecordLactateTestRequest
-	(*RecordLactateTestResponse)(nil),       // 24: lactate.v1.RecordLactateTestResponse
-	(*timestamppb.Timestamp)(nil),           // 25: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),           // 26: google.protobuf.FieldMask
+	(ThresholdDefinition)(0),                   // 0: lactate.v1.ThresholdDefinition
+	(*LactateTest)(nil),                        // 1: lactate.v1.LactateTest
+	(*ThresholdEstimate)(nil),                  // 2: lactate.v1.ThresholdEstimate
+	(*LactateStage)(nil),                       // 3: lactate.v1.LactateStage
+	(*CreateLactateTestRequest)(nil),           // 4: lactate.v1.CreateLactateTestRequest
+	(*CreateLactateTestResponse)(nil),          // 5: lactate.v1.CreateLactateTestResponse
+	(*GetLactateTestRequest)(nil),              // 6: lactate.v1.GetLactateTestRequest
+	(*GetLactateTestResponse)(nil),             // 7: lactate.v1.GetLactateTestResponse
+	(*ListLactateTestsRequest)(nil),            // 8: lactate.v1.ListLactateTestsRequest
+	(*ListLactateTestsResponse)(nil),           // 9: lactate.v1.ListLactateTestsResponse
+	(*UpdateLactateTestRequest)(nil),           // 10: lactate.v1.UpdateLactateTestRequest
+	(*UpdateLactateTestResponse)(nil),          // 11: lactate.v1.UpdateLactateTestResponse
+	(*DeleteLactateTestRequest)(nil),           // 12: lactate.v1.DeleteLactateTestRequest
+	(*DeleteLactateTestResponse)(nil),          // 13: lactate.v1.DeleteLactateTestResponse
+	(*LactateTestShare)(nil),                   // 14: lactate.v1.LactateTestShare
+	(*CreateLactateTestShareRequest)(nil),      // 15: lactate.v1.CreateLactateTestShareRequest
+	(*CreateLactateTestShareResponse)(nil),     // 16: lactate.v1.CreateLactateTestShareResponse
+	(*ListLactateTestSharesRequest)(nil),       // 17: lactate.v1.ListLactateTestSharesRequest
+	(*ListLactateTestSharesResponse)(nil),      // 18: lactate.v1.ListLactateTestSharesResponse
+	(*DeleteLactateTestShareRequest)(nil),      // 19: lactate.v1.DeleteLactateTestShareRequest
+	(*DeleteLactateTestShareResponse)(nil),     // 20: lactate.v1.DeleteLactateTestShareResponse
+	(*CreateLactateTestRecordingRequest)(nil),  // 21: lactate.v1.CreateLactateTestRecordingRequest
+	(*CreateLactateTestRecordingResponse)(nil), // 22: lactate.v1.CreateLactateTestRecordingResponse
+	(*GetLactateTestRecordingRequest)(nil),     // 23: lactate.v1.GetLactateTestRecordingRequest
+	(*GetLactateTestRecordingResponse)(nil),    // 24: lactate.v1.GetLactateTestRecordingResponse
+	(*RecordLactateTestRequest)(nil),           // 25: lactate.v1.RecordLactateTestRequest
+	(*RecordLactateTestResponse)(nil),          // 26: lactate.v1.RecordLactateTestResponse
+	(*timestamppb.Timestamp)(nil),              // 27: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),              // 28: google.protobuf.FieldMask
 }
 var file_lactate_v1_lactate_proto_depIdxs = []int32{
 	3,  // 0: lactate.v1.LactateTest.stages:type_name -> lactate.v1.LactateStage
 	2,  // 1: lactate.v1.LactateTest.threshold_estimates:type_name -> lactate.v1.ThresholdEstimate
-	25, // 2: lactate.v1.LactateTest.create_time:type_name -> google.protobuf.Timestamp
-	25, // 3: lactate.v1.LactateTest.update_time:type_name -> google.protobuf.Timestamp
+	27, // 2: lactate.v1.LactateTest.create_time:type_name -> google.protobuf.Timestamp
+	27, // 3: lactate.v1.LactateTest.update_time:type_name -> google.protobuf.Timestamp
 	0,  // 4: lactate.v1.ThresholdEstimate.definition:type_name -> lactate.v1.ThresholdDefinition
 	1,  // 5: lactate.v1.CreateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
 	1,  // 6: lactate.v1.CreateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
 	1,  // 7: lactate.v1.GetLactateTestResponse.test:type_name -> lactate.v1.LactateTest
 	1,  // 8: lactate.v1.ListLactateTestsResponse.tests:type_name -> lactate.v1.LactateTest
 	1,  // 9: lactate.v1.UpdateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
-	26, // 10: lactate.v1.UpdateLactateTestRequest.update_mask:type_name -> google.protobuf.FieldMask
+	28, // 10: lactate.v1.UpdateLactateTestRequest.update_mask:type_name -> google.protobuf.FieldMask
 	1,  // 11: lactate.v1.UpdateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	25, // 12: lactate.v1.LactateTestShare.expire_time:type_name -> google.protobuf.Timestamp
-	25, // 13: lactate.v1.LactateTestShare.create_time:type_name -> google.protobuf.Timestamp
+	27, // 12: lactate.v1.LactateTestShare.expire_time:type_name -> google.protobuf.Timestamp
+	27, // 13: lactate.v1.LactateTestShare.create_time:type_name -> google.protobuf.Timestamp
 	14, // 14: lactate.v1.CreateLactateTestShareResponse.share:type_name -> lactate.v1.LactateTestShare
 	14, // 15: lactate.v1.ListLactateTestSharesResponse.shares:type_name -> lactate.v1.LactateTestShare
-	25, // 16: lactate.v1.GetLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
-	1,  // 17: lactate.v1.GetLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
-	1,  // 18: lactate.v1.RecordLactateTestRequest.test:type_name -> lactate.v1.LactateTest
-	1,  // 19: lactate.v1.RecordLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	4,  // 20: lactate.v1.LactateTestService.CreateLactateTest:input_type -> lactate.v1.CreateLactateTestRequest
-	6,  // 21: lactate.v1.LactateTestService.GetLactateTest:input_type -> lactate.v1.GetLactateTestRequest
-	8,  // 22: lactate.v1.LactateTestService.ListLactateTests:input_type -> lactate.v1.ListLactateTestsRequest
-	10, // 23: lactate.v1.LactateTestService.UpdateLactateTest:input_type -> lactate.v1.UpdateLactateTestRequest
-	12, // 24: lactate.v1.LactateTestService.DeleteLactateTest:input_type -> lactate.v1.DeleteLactateTestRequest
-	15, // 25: lactate.v1.LactateTestService.CreateLactateTestShare:input_type -> lactate.v1.CreateLactateTestShareRequest
-	17, // 26: lactate.v1.LactateTestService.ListLactateTestShares:input_type -> lactate.v1.ListLactateTestSharesRequest
-	19, // 27: lactate.v1.LactateTestService.DeleteLactateTestShare:input_type -> lactate.v1.DeleteLactateTestShareRequest
-	21, // 28: lactate.v1.LactateTestService.GetLactateTestRecording:input_type -> lactate.v1.GetLactateTestRecordingRequest
-	23, // 29: lactate.v1.LactateTestService.RecordLactateTest:input_type -> lactate.v1.RecordLactateTestRequest
-	5,  // 30: lactate.v1.LactateTestService.CreateLactateTest:output_type -> lactate.v1.CreateLactateTestResponse
-	7,  // 31: lactate.v1.LactateTestService.GetLactateTest:output_type -> lactate.v1.GetLactateTestResponse
-	9,  // 32: lactate.v1.LactateTestService.ListLactateTests:output_type -> lactate.v1.ListLactateTestsResponse
-	11, // 33: lactate.v1.LactateTestService.UpdateLactateTest:output_type -> lactate.v1.UpdateLactateTestResponse
-	13, // 34: lactate.v1.LactateTestService.DeleteLactateTest:output_type -> lactate.v1.DeleteLactateTestResponse
-	16, // 35: lactate.v1.LactateTestService.CreateLactateTestShare:output_type -> lactate.v1.CreateLactateTestShareResponse
-	18, // 36: lactate.v1.LactateTestService.ListLactateTestShares:output_type -> lactate.v1.ListLactateTestSharesResponse
-	20, // 37: lactate.v1.LactateTestService.DeleteLactateTestShare:output_type -> lactate.v1.DeleteLactateTestShareResponse
-	22, // 38: lactate.v1.LactateTestService.GetLactateTestRecording:output_type -> lactate.v1.GetLactateTestRecordingResponse
-	24, // 39: lactate.v1.LactateTestService.RecordLactateTest:output_type -> lactate.v1.RecordLactateTestResponse
-	30, // [30:40] is the sub-list for method output_type
-	20, // [20:30] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	27, // 16: lactate.v1.CreateLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
+	1,  // 17: lactate.v1.CreateLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
+	27, // 18: lactate.v1.GetLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
+	1,  // 19: lactate.v1.GetLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
+	1,  // 20: lactate.v1.RecordLactateTestRequest.test:type_name -> lactate.v1.LactateTest
+	1,  // 21: lactate.v1.RecordLactateTestResponse.test:type_name -> lactate.v1.LactateTest
+	4,  // 22: lactate.v1.LactateTestService.CreateLactateTest:input_type -> lactate.v1.CreateLactateTestRequest
+	6,  // 23: lactate.v1.LactateTestService.GetLactateTest:input_type -> lactate.v1.GetLactateTestRequest
+	8,  // 24: lactate.v1.LactateTestService.ListLactateTests:input_type -> lactate.v1.ListLactateTestsRequest
+	10, // 25: lactate.v1.LactateTestService.UpdateLactateTest:input_type -> lactate.v1.UpdateLactateTestRequest
+	12, // 26: lactate.v1.LactateTestService.DeleteLactateTest:input_type -> lactate.v1.DeleteLactateTestRequest
+	15, // 27: lactate.v1.LactateTestService.CreateLactateTestShare:input_type -> lactate.v1.CreateLactateTestShareRequest
+	17, // 28: lactate.v1.LactateTestService.ListLactateTestShares:input_type -> lactate.v1.ListLactateTestSharesRequest
+	19, // 29: lactate.v1.LactateTestService.DeleteLactateTestShare:input_type -> lactate.v1.DeleteLactateTestShareRequest
+	21, // 30: lactate.v1.LactateTestService.CreateLactateTestRecording:input_type -> lactate.v1.CreateLactateTestRecordingRequest
+	23, // 31: lactate.v1.LactateTestService.GetLactateTestRecording:input_type -> lactate.v1.GetLactateTestRecordingRequest
+	25, // 32: lactate.v1.LactateTestService.RecordLactateTest:input_type -> lactate.v1.RecordLactateTestRequest
+	5,  // 33: lactate.v1.LactateTestService.CreateLactateTest:output_type -> lactate.v1.CreateLactateTestResponse
+	7,  // 34: lactate.v1.LactateTestService.GetLactateTest:output_type -> lactate.v1.GetLactateTestResponse
+	9,  // 35: lactate.v1.LactateTestService.ListLactateTests:output_type -> lactate.v1.ListLactateTestsResponse
+	11, // 36: lactate.v1.LactateTestService.UpdateLactateTest:output_type -> lactate.v1.UpdateLactateTestResponse
+	13, // 37: lactate.v1.LactateTestService.DeleteLactateTest:output_type -> lactate.v1.DeleteLactateTestResponse
+	16, // 38: lactate.v1.LactateTestService.CreateLactateTestShare:output_type -> lactate.v1.CreateLactateTestShareResponse
+	18, // 39: lactate.v1.LactateTestService.ListLactateTestShares:output_type -> lactate.v1.ListLactateTestSharesResponse
+	20, // 40: lactate.v1.LactateTestService.DeleteLactateTestShare:output_type -> lactate.v1.DeleteLactateTestShareResponse
+	22, // 41: lactate.v1.LactateTestService.CreateLactateTestRecording:output_type -> lactate.v1.CreateLactateTestRecordingResponse
+	24, // 42: lactate.v1.LactateTestService.GetLactateTestRecording:output_type -> lactate.v1.GetLactateTestRecordingResponse
+	26, // 43: lactate.v1.LactateTestService.RecordLactateTest:output_type -> lactate.v1.RecordLactateTestResponse
+	33, // [33:44] is the sub-list for method output_type
+	22, // [22:33] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_lactate_v1_lactate_proto_init() }
@@ -2058,7 +2242,7 @@ func file_lactate_v1_lactate_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_lactate_v1_lactate_proto_rawDesc), len(file_lactate_v1_lactate_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   24,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
