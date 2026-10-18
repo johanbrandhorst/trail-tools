@@ -10,6 +10,7 @@ import {
   draftSections,
   mergeWithNext,
   moveSection,
+  movePhotoTo,
   movePhotoToSection,
   movePhotoWithin,
   newSection,
@@ -32,6 +33,7 @@ import TripMap from "@components/trips/trip-map";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
 import { TextField } from "@components/ui/fields";
+import Lightbox from "@components/ui/lightbox";
 import { Badge } from "@components/ui/misc";
 import QueryError, { ErrorText } from "@components/ui/query-error";
 import {
@@ -161,6 +163,8 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
   const [suggestion, setSuggestion] = useState<TripSection[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placingId, setPlacingId] = useState<string | null>(null);
+  // The index of the photo shown full screen, in story order.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const update = useMutation(updateTripReport);
@@ -499,6 +503,14 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
                   setActiveKey(null);
                 }}
                 onSelectPhoto={setSelectedId}
+                onOpenPhoto={(photoId) => {
+                  setOpenIndex(
+                    photos.findIndex((photo) => photo.id === photoId)
+                  );
+                }}
+                onDropPhoto={(photoId, at) => {
+                  change(movePhotoTo(sections, photoId, section.key, at));
+                }}
                 onPlacePhoto={(photoId) => {
                   setSelectedId(photoId);
                   setPlacingId(photoId === placingId ? null : photoId);
@@ -572,6 +584,15 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
           <ErrorText error={update.error ?? saveSections.error} />
         </div>
       </form>
+      <Lightbox
+        photos={photos}
+        index={openIndex}
+        onChange={setOpenIndex}
+        onShowOnMap={(photo) => {
+          setSelectedId(photo.id);
+          setOpenIndex(null);
+        }}
+      />
 
       <div className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start">
         <div className="overflow-hidden rounded-lg border border-gray-200">

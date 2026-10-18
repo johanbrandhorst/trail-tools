@@ -156,6 +156,9 @@ func (s *Section) Contains(distanceMeters float64) bool {
 	return s.HasDistances && distanceMeters >= s.StartDistanceMeters && distanceMeters <= s.EndDistanceMeters
 }
 
+// PhotoOrder reports whether photo a goes before photo b in a section.
+type PhotoOrder func(a, b *Photo) bool
+
 // SectionFor returns the section a photo taken at the location belongs in:
 // the first section about the stretch of the track where it was taken, or
 // else the last section. It returns nil if there are no sections.
@@ -430,9 +433,10 @@ func (r *Repository) DeleteReport(ctx context.Context, userID, reportID pgtype.U
 	return keys, nil
 }
 
-// AddPhoto adds a photo to one of the user's reports, at the end of the
-// section about where it was taken, or else of the last section.
-func (r *Repository) AddPhoto(ctx context.Context, userID pgtype.UUID, p *Photo) (*Photo, error) {
+// AddPhoto adds a photo to one of the user's reports, in the section about
+// where it was taken, or else the last section: before the first photo it
+// goes before by the order, or else last.
+func (r *Repository) AddPhoto(ctx context.Context, userID pgtype.UUID, p *Photo, before PhotoOrder) (*Photo, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
@@ -458,7 +462,26 @@ func (r *Repository) AddPhoto(ctx context.Context, userID pgtype.UUID, p *Photo)
 	if section == nil {
 		return nil, errors.New("the report has no sections")
 	}
+	// Insert the photo before the first photo of the section taken after it,
+	// or else last.
+	var position pgtype.Int4
+	photoRows, err := q.ListPhotos(ctx, []pgtype.UUID{p.ReportID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list photos: %w", err)
+	}
+	for _, row := range photoRows {
+		if existing := photoFromDB(row); existing.SectionID == section.ID && before(p, existing) {
+			position = pgtype.Int4{Int32: existing.Position, Valid: true}
+			break
+		}
+	}
+	if position.Valid {
+		if err := q.ShiftPhotos(ctx, &gen.ShiftPhotosParams{SectionID: section.ID, Position: position.Int32}); err != nil {
+			return nil, fmt.Errorf("failed to make room for the photo: %w", err)
+		}
+	}
 	params := &gen.AddPhotoParams{
+		Position:      position,
 		ReportID:      p.ReportID,
 		SectionID:     section.ID,
 		ObjectKey:     p.ObjectKey,
