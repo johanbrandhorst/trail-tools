@@ -88,6 +88,23 @@ func (q *Queries) FinishStravaSync(ctx context.Context, arg *FinishStravaSyncPar
 	return err
 }
 
+const getActivityIDByStravaID = `-- name: GetActivityIDByStravaID :one
+select id from strava_activities
+where user_id = $1 and strava_id = $2
+`
+
+type GetActivityIDByStravaIDParams struct {
+	UserID   pgtype.UUID
+	StravaID int64
+}
+
+func (q *Queries) GetActivityIDByStravaID(ctx context.Context, arg *GetActivityIDByStravaIDParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getActivityIDByStravaID, arg.UserID, arg.StravaID)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getStravaConnection = `-- name: GetStravaConnection :one
 select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time from strava_connections
 where user_id = $1

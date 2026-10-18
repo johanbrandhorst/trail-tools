@@ -7,7 +7,6 @@ package gen
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,10 +32,9 @@ insert into strava_activity_photos (
   height,
   lat,
   lng,
-  taken_time,
-  photo_json
+  taken_time
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 on conflict (activity_id, strava_id) do nothing
 `
@@ -52,7 +50,6 @@ type InsertActivityPhotoParams struct {
 	Lat        pgtype.Float8
 	Lng        pgtype.Float8
 	TakenTime  pgtype.Timestamptz
-	PhotoJSON  json.RawMessage
 }
 
 func (q *Queries) InsertActivityPhoto(ctx context.Context, arg *InsertActivityPhotoParams) error {
@@ -67,7 +64,6 @@ func (q *Queries) InsertActivityPhoto(ctx context.Context, arg *InsertActivityPh
 		arg.Lat,
 		arg.Lng,
 		arg.TakenTime,
-		arg.PhotoJSON,
 	)
 	return err
 }

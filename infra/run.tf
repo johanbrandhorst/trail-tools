@@ -52,6 +52,7 @@ resource "google_cloud_run_v2_service" "app" {
             TRAIL_TOOLS_TRACE_SAMPLE_RATE       = tostring(var.trace_sample_rate)
             TRAIL_TOOLS_IMPORT_JOB              = google_cloud_run_v2_job.import[0].id
             TRAIL_TOOLS_PHOTO_BUCKET            = google_storage_bucket.photos.name
+            TRAIL_TOOLS_ACTIVITY_BUCKET         = google_storage_bucket.activity_data.name
             TRAIL_TOOLS_DEM_BUCKET              = google_storage_bucket.dem.name
           },
           local.strava ? {
@@ -96,6 +97,7 @@ resource "google_cloud_run_v2_service" "app" {
     google_secret_manager_secret_iam_member.run,
     google_storage_bucket_iam_member.run_photos,
     google_storage_bucket_iam_member.run_dem,
+    google_storage_bucket_iam_member.run_activity_data,
     google_project_iam_member.run_error_reporting,
     google_project_iam_member.run_tracing,
   ]

@@ -17,7 +17,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
 	"gitlab.com/greyxor/slogor"
-	"google.golang.org/protobuf/proto"
 )
 
 // SyncRepository stores synced activities and the sync state.
@@ -32,13 +31,13 @@ type SyncRepository interface {
 	UpsertActivity(ctx context.Context, userID pgtype.UUID, a *activities.ActivitySummary) (pgtype.UUID, error)
 	StoreListedActivities(ctx context.Context, userID pgtype.UUID, page []*activities.ActivitySummary, listBefore time.Time) error
 	LatestActivityStartTime(ctx context.Context, userID pgtype.UUID) (time.Time, error)
-	ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, limit int32) ([]activities.PendingStreams, error)
+	ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, window time.Duration, limit int32) ([]activities.PendingStreams, error)
 	GetActivity(ctx context.Context, userID, activityID pgtype.UUID) (*activities.Activity, error)
 	RequestActivitySync(ctx context.Context, userID, activityID pgtype.UUID) error
-	CountActivities(ctx context.Context, userID pgtype.UUID) (total, pendingStreams int64, err error)
-	CountActivitiesByState(ctx context.Context, userID pgtype.UUID) (activities.ActivityCounts, error)
+	CountActivities(ctx context.Context, userID pgtype.UUID, window time.Duration) (total, pendingStreams int64, err error)
+	CountActivitiesByState(ctx context.Context, userID pgtype.UUID, window time.Duration) (activities.ActivityCounts, error)
 	RecordActivitySyncFailure(ctx context.Context, userID, activityID pgtype.UUID) error
-	StoreActivityDetail(ctx context.Context, activityID pgtype.UUID, detail *activities.Detail, streams []byte, bounds *geo.Bounds) error
+	StoreActivityDetail(ctx context.Context, userID, activityID pgtype.UUID, stravaID int64, detail *activities.Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error
 	DeleteActivityByStravaID(ctx context.Context, userID pgtype.UUID, stravaID int64) error
 }
 
@@ -67,8 +66,14 @@ const (
 	// autoSyncCheckInterval is how often to check for stale syncs.
 	autoSyncCheckInterval = time.Hour
 	// streamBatchSize is the number of activities fetched streams for between
-	// progress updates.
+	// progress updates, and in a user's turn of a scheduled sync.
 	streamBatchSize = 25
+	// eagerSyncAge is how far back from a user's latest activity syncs fetch
+	// the details, photos and streams of activities. Older activities are
+	// fetched when they're requested, e.g. opened, as fetching them all for a
+	// long history would take days of Strava's rate limit, which all users
+	// share.
+	eagerSyncAge = 365 * 24 * time.Hour
 	// staleSyncAge is how long a running sync goes without updating its
 	// state before it is considered interrupted. Syncs update it after each
 	// page of activities and each batch of streams.
@@ -76,11 +81,6 @@ const (
 	// inlineSyncBudget is how long Request syncs for within the request when
 	// syncs neither run in the background nor can be triggered.
 	inlineSyncBudget = 45 * time.Second
-	// minScheduledSyncShare is the least time SyncDue gives each connection.
-	// The time is otherwise shared equally, and a share too short to make
-	// progress would waste the requests it makes. Connections left without
-	// time go first in the next run.
-	minScheduledSyncShare = 10 * time.Second
 	// failedSyncRetryDelay is how long a failed sync waits before it's
 	// retried, doubling with each failure in a row up to
 	// maxFailedSyncRetryDelay, so a connection that keeps failing, e.g.
@@ -164,7 +164,7 @@ func (s *Syncer) Start(userID pgtype.UUID, full bool) bool {
 			delete(s.running, userID)
 			s.mu.Unlock()
 		}()
-		s.sync(s.ctx, userID, full, true)
+		s.sync(s.ctx, userID, syncOptions{full: full, wait: true})
 	}()
 	return true
 }
@@ -221,10 +221,17 @@ func (s *Syncer) Active(conn *activities.StravaConnection) bool {
 // used where background work isn't possible, such as on Cloud Run with
 // request based billing. It returns false if a sync is already running.
 func (s *Syncer) SyncOnce(ctx context.Context, userID pgtype.UUID, full bool) bool {
+	_, ok := s.syncOnce(ctx, userID, syncOptions{full: full})
+	return ok
+}
+
+// syncOnce runs a sync unless one is already running for the user. It
+// returns whether the sync stopped at the end of a turn, and whether it ran.
+func (s *Syncer) syncOnce(ctx context.Context, userID pgtype.UUID, opts syncOptions) (more, ok bool) {
 	s.mu.Lock()
 	if s.running[userID] {
 		s.mu.Unlock()
-		return false
+		return false, false
 	}
 	s.running[userID] = true
 	s.mu.Unlock()
@@ -233,35 +240,48 @@ func (s *Syncer) SyncOnce(ctx context.Context, userID pgtype.UUID, full bool) bo
 		delete(s.running, userID)
 		s.mu.Unlock()
 	}()
-	s.sync(ctx, userID, full, false)
-	return true
+	return s.sync(ctx, userID, opts), true
 }
 
-// SyncDue syncs the connections that are due a sync, one at a time, until
-// ctx is done. A sync is due if it was interrupted, the rate limit has
-// reset, a failed sync's retry time has passed or the last sync is old. The
-// connections whose latest sync started longest ago go first, and if ctx
-// has a deadline, each gets an equal share of the time left, so a long
-// backlog doesn't starve the other connections. It continues in later runs,
-// after the connections that waited longer.
+// SyncDue syncs the connections that are due a sync until they're done, the
+// rate limit is reached or ctx is done. A sync is due if it was interrupted,
+// the rate limit has reset, a failed sync's retry time has passed or the
+// last sync is old.
+//
+// Users take turns, as Strava's rate limit is shared by all of them: the
+// first turn lists a user's new activities and fetches a batch of the
+// details and streams waiting, and later turns fetch a batch each. So one
+// user's backlog doesn't hold up the others' new activities. The users whose
+// latest sync started longest ago go first, so if a run ends before every
+// user had a turn, those left out go first in the next one.
 func (s *Syncer) SyncDue(ctx context.Context) error {
 	conns, err := s.repo.ListStravaConnections(ctx)
 	if err != nil {
 		return err
 	}
-	due := slices.DeleteFunc(conns, func(conn *activities.StravaConnection) bool { return !s.due(conn) })
-	for i, conn := range due {
-		if ctx.Err() != nil {
-			return ctx.Err()
+	var users []pgtype.UUID
+	for _, conn := range conns {
+		if s.due(conn) {
+			users = append(users, conn.UserID)
 		}
-		// Connections that finish early leave their time to the rest.
-		connCtx, cancel := ctx, context.CancelFunc(func() {})
-		if deadline, ok := ctx.Deadline(); ok {
-			share := max(time.Until(deadline)/time.Duration(len(due)-i), minScheduledSyncShare)
-			connCtx, cancel = context.WithTimeout(ctx, share)
+	}
+	// The activities that failed to sync in each user's turns, which wait
+	// for the next run rather than being retried in the next turn.
+	failed := map[pgtype.UUID]map[pgtype.UUID]bool{}
+	for first := true; len(users) > 0; first = false {
+		var next []pgtype.UUID
+		for _, userID := range users {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if failed[userID] == nil {
+				failed[userID] = map[pgtype.UUID]bool{}
+			}
+			if more, _ := s.syncOnce(ctx, userID, syncOptions{turn: true, skipListing: !first, failed: failed[userID]}); more {
+				next = append(next, userID)
+			}
 		}
-		s.SyncOnce(connCtx, conn.UserID, false)
-		cancel()
+		users = next
 	}
 	return nil
 }
@@ -323,40 +343,65 @@ func (s *Syncer) RunBackground(ctx context.Context) {
 // waiting for it to reset.
 var errRateLimited = errors.New("rate limited")
 
-// sync runs a sync to completion, recording progress and errors in the
-// connection's sync state. If wait is set, it waits for rate limits to
-// reset, otherwise it stops.
-func (s *Syncer) sync(ctx context.Context, userID pgtype.UUID, full, wait bool) {
+// errTurnOver is returned when a sync stops at the end of its turn.
+var errTurnOver = errors.New("turn over")
+
+// syncOptions are how a sync runs.
+type syncOptions struct {
+	// Lists all activities, rather than the new ones.
+	full bool
+	// Waits for rate limits to reset, rather than stopping.
+	wait bool
+	// Stops after a batch of the activities waiting for details and
+	// streams, for another user's turn.
+	turn bool
+	// Doesn't list activities, as the user's first turn did.
+	skipListing bool
+	// The activities that failed to sync in the user's earlier turns, which
+	// the sync adds to, or nil.
+	failed map[pgtype.UUID]bool
+}
+
+// sync runs a sync to completion, or to the end of its turn, recording
+// progress and errors in the connection's sync state. It returns whether it
+// stopped at the end of its turn, with more to sync.
+func (s *Syncer) sync(ctx context.Context, userID pgtype.UUID, opts syncOptions) bool {
 	user := slog.String("user_id", store.UUIDToString(userID))
 	log, report := s.log.With(user), s.report.With(user)
 	conn, err := s.repo.GetStravaConnection(ctx, userID)
 	switch {
 	case errors.Is(err, store.ErrNotFound) || ctx.Err() != nil:
 		// Strava was disconnected meanwhile, or the time is up.
-		return
+		return false
 	case err != nil:
 		report.Report(ctx, "Failed to get the Strava connection to sync, syncing with the next sync", err)
-		return
+		return false
 	}
-	log.InfoContext(ctx, "Starting Strava sync", slog.Bool("full", full))
-	err = s.runSync(ctx, log, report, conn, full, wait)
+	if !opts.skipListing {
+		log.InfoContext(ctx, "Starting Strava sync", slog.Bool("full", opts.full))
+	}
+	err = s.runSync(ctx, log, report, conn, opts)
 	if ctx.Err() != nil {
 		// The server is shutting down or the time is up. Leave the state as
 		// running so the sync resumes later.
-		return
+		return false
+	}
+	if errors.Is(err, errTurnOver) {
+		// The state is left as running, with the progress so far.
+		return true
 	}
 	if errors.Is(err, errRateLimited) {
 		// The rate limited state is already recorded.
 		log.InfoContext(ctx, "Strava sync paused at the rate limit")
-		return
+		return false
 	}
 	// Use a fresh context so the final state is recorded.
 	stateCtx := context.WithoutCancel(ctx)
 	if err != nil {
 		s.fail(stateCtx, log, report, conn, err)
-		return
+		return false
 	}
-	counts, err := s.repo.CountActivitiesByState(stateCtx, userID)
+	counts, err := s.repo.CountActivitiesByState(stateCtx, userID, eagerSyncAge)
 	if err != nil {
 		report.Report(ctx, "Failed to count activities", err)
 	}
@@ -368,6 +413,7 @@ func (s *Syncer) sync(ctx context.Context, userID pgtype.UUID, full, wait bool) 
 		report.Report(ctx, "Failed to record sync completion", err)
 	}
 	log.InfoContext(ctx, "Finished Strava sync", slog.Int64("activities", counts.Total), slog.Int64("failed_activities", counts.FailedStreams))
+	return false
 }
 
 // fail records a failed sync, which is retried with backoff, unless Strava
@@ -397,7 +443,82 @@ func retryDelay(failures int32) time.Duration {
 	return min(failedSyncRetryDelay<<min(max(failures-1, 0), 16), maxFailedSyncRetryDelay)
 }
 
-func (s *Syncer) runSync(ctx context.Context, log *slog.Logger, report *errreport.Reporter, conn *activities.StravaConnection, full, wait bool) error {
+func (s *Syncer) runSync(ctx context.Context, log *slog.Logger, report *errreport.Reporter, conn *activities.StravaConnection, opts syncOptions) error {
+	userID := conn.UserID
+	if !opts.skipListing {
+		if err := s.listActivities(ctx, conn, opts); err != nil {
+			return err
+		}
+	}
+
+	// Fetch details and streams: activities users asked for first, then the
+	// most recent first. An activity that fails is retried by later syncs,
+	// after the other activities, until it failed too often, so one
+	// activity can't fail the whole sync.
+	failed := opts.failed
+	if failed == nil {
+		failed = map[pgtype.UUID]bool{}
+	}
+	consecutiveFailures := 0
+	for {
+		pending, err := s.repo.ListActivitiesWithoutStreams(ctx, userID, eagerSyncAge, streamBatchSize)
+		if err != nil {
+			return err
+		}
+		// Activities that failed in this sync are still pending, but wait
+		// for the next sync. If they're all that's left in the batch, the
+		// rest waits too.
+		pending = slices.DeleteFunc(pending, func(p activities.PendingStreams) bool { return failed[p.ID] })
+		if len(pending) == 0 {
+			return nil
+		}
+		_, remaining, err := s.repo.CountActivities(ctx, userID, eagerSyncAge)
+		if err != nil {
+			return err
+		}
+		if err := s.setState(ctx, userID, activities.SyncStateRunning, fmt.Sprintf("Fetching activity details: %d remaining", remaining), time.Time{}); err != nil {
+			return err
+		}
+		for _, p := range pending {
+			_, err := s.syncPending(ctx, conn, p)
+			var rateErr *strava.RateLimitError
+			if opts.wait && errors.As(err, &rateErr) {
+				// List the pending activities again after the reset, as
+				// users may have requested some meanwhile.
+				if err := s.waitForReset(ctx, conn, rateErr.ResetAt); err != nil {
+					return err
+				}
+				break
+			}
+			switch {
+			case err == nil:
+				consecutiveFailures = 0
+				continue
+			case errors.As(err, &rateErr) || errors.Is(err, strava.ErrUnauthorized) ||
+				errors.Is(err, store.ErrNotFound) || ctx.Err() != nil:
+				// The sync can't continue, whatever the activity: it's rate
+				// limited, the connection was revoked or disconnected, or
+				// the time is up.
+				return fmt.Errorf("failed to sync activity %d: %w", p.StravaID, err)
+			}
+			failed[p.ID] = true
+			consecutiveFailures++
+			if err := s.repo.RecordActivitySyncFailure(ctx, userID, p.ID); err != nil {
+				return err
+			}
+			if consecutiveFailures >= maxConsecutiveActivityFailures {
+				return fmt.Errorf("%d activities in a row failed to sync, the last one %d: %w", consecutiveFailures, p.StravaID, err)
+			}
+			report.Report(ctx, "Failed to sync a Strava activity, syncing it after the others", err, slog.Int64("strava_id", p.StravaID))
+		}
+		if opts.turn {
+			return errTurnOver
+		}
+	}
+}
+
+// listActivities lists the user's activities, storing their summaries.
+func (s *Syncer) listActivities(ctx context.Context, conn *activities.StravaConnection, opts syncOptions) error {
 	userID := conn.UserID
 	if err := s.repo.StartStravaSync(ctx, userID, "Fetching activities"); err != nil {
 		return err
@@ -408,7 +529,7 @@ func (s *Syncer) runSync(ctx context.Context, log *slog.Logger, report *errrepor
 	// activity. Otherwise a full sync lists all activities, and an
 	// incremental sync stops at the ones synced before.
 	before, since := conn.ListBefore, time.Time{}
-	if before.IsZero() && !full {
+	if before.IsZero() && !opts.full {
 		latest, err := s.repo.LatestActivityStartTime(ctx, userID)
 		if err != nil {
 			return err
@@ -420,7 +541,7 @@ func (s *Syncer) runSync(ctx context.Context, log *slog.Logger, report *errrepor
 	fetched := 0
 	for done := false; !done; {
 		var list []*strava.Activity
-		err := s.retry(ctx, conn, wait, func() error {
+		err := s.retry(ctx, conn, opts.wait, func() error {
 			return s.withToken(ctx, conn, func(token string) error {
 				var err error
 				list, err = s.client.ListActivities(ctx, token, before, strava.MaxActivitiesPerPage)
@@ -459,65 +580,7 @@ func (s *Syncer) runSync(ctx context.Context, log *slog.Logger, report *errrepor
 			return err
 		}
 	}
-
-	// Fetch details and streams: activities users asked for first, then the
-	// most recent first. An activity that fails is retried by later syncs,
-	// after the other activities, until it failed too often, so one
-	// activity can't fail the whole sync.
-	failed := map[pgtype.UUID]bool{}
-	consecutiveFailures := 0
-	for {
-		pending, err := s.repo.ListActivitiesWithoutStreams(ctx, userID, streamBatchSize)
-		if err != nil {
-			return err
-		}
-		// Activities that failed in this sync are still pending, but wait
-		// for the next sync. If they're all that's left in the batch, the
-		// rest waits too.
-		pending = slices.DeleteFunc(pending, func(p activities.PendingStreams) bool { return failed[p.ID] })
-		if len(pending) == 0 {
-			return nil
-		}
-		_, remaining, err := s.repo.CountActivities(ctx, userID)
-		if err != nil {
-			return err
-		}
-		if err := s.setState(ctx, userID, activities.SyncStateRunning, fmt.Sprintf("Fetching activity details: %d remaining", remaining), time.Time{}); err != nil {
-			return err
-		}
-		for _, p := range pending {
-			_, err := s.syncPending(ctx, conn, p)
-			var rateErr *strava.RateLimitError
-			if wait && errors.As(err, &rateErr) {
-				// List the pending activities again after the reset, as
-				// users may have requested some meanwhile.
-				if err := s.waitForReset(ctx, conn, rateErr.ResetAt); err != nil {
-					return err
-				}
-				break
-			}
-			switch {
-			case err == nil:
-				consecutiveFailures = 0
-				continue
-			case errors.As(err, &rateErr) || errors.Is(err, strava.ErrUnauthorized) ||
-				errors.Is(err, store.ErrNotFound) || ctx.Err() != nil:
-				// The sync can't continue, whatever the activity: it's rate
-				// limited, the connection was revoked or disconnected, or
-				// the time is up.
-				return fmt.Errorf("failed to sync activity %d: %w", p.StravaID, err)
-			}
-			failed[p.ID] = true
-			consecutiveFailures++
-			if err := s.repo.RecordActivitySyncFailure(ctx, userID, p.ID); err != nil {
-				return err
-			}
-			if consecutiveFailures >= maxConsecutiveActivityFailures {
-				return fmt.Errorf("%d activities in a row failed to sync, the last one %d: %w", consecutiveFailures, p.StravaID, err)
-			}
-			report.Report(ctx, "Failed to sync a Strava activity, syncing it after the others", err, slog.Int64("strava_id", p.StravaID))
-		}
-	}
+	return nil
 }
 
 // syncPending syncs the details, photos and streams of an activity waiting
@@ -612,7 +675,7 @@ func (s *Syncer) syncDetails(ctx context.Context, conn *activities.StravaConnect
 			return err
 		}
 	}
-	return s.store(ctx, p.ID, detail, photos, streams)
+	return s.store(ctx, conn.UserID, p, detail, photos, streams)
 }
 
 // fetchPhotos fetches the photos of an activity, if it has any.
@@ -662,22 +725,19 @@ func (s *Syncer) fetchStreams(ctx context.Context, conn *activities.StravaConnec
 	return streams, err
 }
 
-// store stores the detail of an activity, which is nil if Strava no
-// longer has it, with its photos, and its streams, which are nil if it has
-// none, and marks it synced.
-func (s *Syncer) store(ctx context.Context, activityID pgtype.UUID, detail *strava.Activity, photos []activities.Photo, streams *strava.Streams) error {
+// store stores the detail of one of the user's activities, which is nil if
+// Strava no longer has it, with its photos, and its streams, which are nil
+// if it has none, and marks it synced.
+func (s *Syncer) store(ctx context.Context, userID pgtype.UUID, a activities.PendingStreams, detail *strava.Activity, photos []activities.Photo, streams *strava.Streams) error {
 	var d *activities.Detail
 	if detail != nil {
 		d = &activities.Detail{Description: detail.Description, DeviceName: detail.DeviceName, RawJSON: detail.Raw, Photos: photos}
 	}
 	if streams == nil {
-		return s.repo.StoreActivityDetail(ctx, activityID, d, nil, nil)
+		return s.repo.StoreActivityDetail(ctx, userID, a.ID, a.StravaID, d, nil, nil)
 	}
-	encoded, bounds, err := encodeStreams(streams, detail != nil && detail.IsFootSport())
-	if err != nil {
-		return err
-	}
-	return s.repo.StoreActivityDetail(ctx, activityID, d, encoded, bounds)
+	msg, bounds := streamsFromStrava(streams, detail != nil && detail.IsFootSport())
+	return s.repo.StoreActivityDetail(ctx, userID, a.ID, a.StravaID, d, msg, bounds)
 }
 
 // SyncActivity syncs one of the user's activities from Strava right away:
@@ -733,7 +793,7 @@ func (s *Syncer) SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID 
 	if err := errors.Join(photosErr, streamsErr); err != nil {
 		return err
 	}
-	return s.store(ctx, id, detail, photos, streams)
+	return s.store(ctx, userID, activities.PendingStreams{ID: id, StravaID: stravaID}, detail, photos, streams)
 }
 
 // SyncPending syncs the details, photos and streams of one of the user's
@@ -935,9 +995,9 @@ func summaryFromStrava(a *strava.Activity) *activities.ActivitySummary {
 	}
 }
 
-// encodeStreams encodes streams as an activitiesv1.ActivityStreams message
-// and returns the bounds of the GPS track, if any.
-func encodeStreams(streams *strava.Streams, footSport bool) ([]byte, *geo.Bounds, error) {
+// streamsFromStrava converts streams to an activitiesv1.ActivityStreams
+// message and returns the bounds of the GPS track, if any.
+func streamsFromStrava(streams *strava.Streams, footSport bool) (*activitiesv1.ActivityStreams, *geo.Bounds) {
 	msg := activitiesv1.ActivityStreams_builder{
 		TimeSeconds:    streams.Time,
 		DistanceMeters: streams.Distance,
@@ -965,13 +1025,9 @@ func encodeStreams(streams *strava.Streams, footSport bool) ([]byte, *geo.Bounds
 			points[i] = geo.Point{Lat: ll[0], Lng: ll[1]}
 		}
 	}
-	data, err := proto.Marshal(msg.Build())
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to encode streams: %w", err)
-	}
 	bounds, ok := geo.BoundsOf(points)
 	if !ok {
-		return data, nil, nil
+		return msg.Build(), nil
 	}
-	return data, &bounds, nil
+	return msg.Build(), &bounds
 }

@@ -242,6 +242,17 @@ var (
 		"photos",
 		"The local directory to store trip report photos in, if -photo-bucket is unset",
 	)
+	activityBucket = flag.String(
+		"activity-bucket",
+		"",
+		"The Google Cloud Storage bucket to store activities' streams and Strava's responses in,"+
+			" using the application default credentials. If unset, they're stored in -activity-dir",
+	)
+	activityDir = flag.String(
+		"activity-dir",
+		"activity-data",
+		"The local directory to store activities' streams and Strava's responses in, if -activity-bucket is unset",
+	)
 	demBucket = flag.String(
 		"dem-bucket",
 		"",
@@ -301,6 +312,8 @@ func main() {
 		*importJob,
 		*photoBucket,
 		*photoDir,
+		*activityBucket,
+		*activityDir,
 		*demBucket,
 		mapdata.Config{},
 	)
@@ -391,6 +404,8 @@ func run(
 	importJob string,
 	photoBucket string,
 	photoDir string,
+	activityBucket string,
+	activityDir string,
 	demBucket string,
 	mapConfig mapdata.Config,
 ) error {
@@ -413,6 +428,8 @@ func run(
 		return errors.New("scheduler-service-account is required with -strava-sync-mode=scheduled")
 	case photoBucket == "" && photoDir == "":
 		return errors.New("photo-bucket or photo-dir is required")
+	case activityBucket == "" && activityDir == "":
+		return errors.New("activity-bucket or activity-dir is required")
 	}
 	dbURL, err := url.Parse(databaseURL)
 	if err != nil {
@@ -439,10 +456,6 @@ func run(
 	if err != nil {
 		return fmt.Errorf("failed to create user directory: %w", err)
 	}
-	activityRepo, err := activities.NewRepository(report, db)
-	if err != nil {
-		return fmt.Errorf("failed to create activity repository: %w", err)
-	}
 	routeRepo, err := routes.NewRepository(log, db)
 	if err != nil {
 		return fmt.Errorf("failed to create route repository: %w", err)
@@ -467,21 +480,20 @@ func run(
 	// package, and Google's API clients take theirs from the context.
 	googleCtx := telemetry.WithClient(ctx, telemetry.NewClient(0))
 
-	// Photos are stored in Cloud Storage on Cloud Run, whose file system
-	// doesn't outlive an instance, and in a local directory otherwise.
-	var photos blob.Store
-	if photoBucket != "" {
-		photos, err = blob.NewGCS(googleCtx, photoBucket)
-		if err != nil {
-			return fmt.Errorf("failed to create the photo bucket client: %w", err)
-		}
-		log.InfoContext(ctx, "Storing photos in Cloud Storage", slog.String("bucket", photoBucket))
-	} else {
-		photos, err = blob.NewDir(photoDir)
-		if err != nil {
-			return fmt.Errorf("failed to create the photo directory: %w", err)
-		}
-		log.InfoContext(ctx, "Storing photos in a local directory", slog.String("dir", photoDir))
+	// Photos and activity data are stored in Cloud Storage on Cloud Run,
+	// whose file system doesn't outlive an instance, and in local directories
+	// otherwise.
+	photos, err := newBlobStore(googleCtx, log, "photos", photoBucket, photoDir)
+	if err != nil {
+		return err
+	}
+	activityBlobs, err := newBlobStore(googleCtx, log, "activity data", activityBucket, activityDir)
+	if err != nil {
+		return err
+	}
+	activityRepo, err := activities.NewRepository(report, db, activityBlobs)
+	if err != nil {
+		return fmt.Errorf("failed to create activity repository: %w", err)
 	}
 	// Elevations come from public elevation tiles, for routes and for imports
 	// run in the server.
@@ -572,13 +584,15 @@ func run(
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, livetrack.New("", telemetry.NewClient(liveTrackTimeout)), baseURL)
 	// Activities are synced from Strava before importing their photos into
-	// trip reports, if Strava is configured.
-	var activitySyncer trip.ActivitySyncer
+	// trip reports, and before copying the tracks of activities older than
+	// syncs fetch them for into reports, if Strava is configured.
+	var tripSyncer trip.ActivitySyncer
+	var raceReportSyncer racereport.ActivitySyncer
 	if stravaSyncer != nil {
-		activitySyncer = stravaSyncer
+		tripSyncer, raceReportSyncer = stravaSyncer, stravaSyncer
 	}
-	tripService := trip.NewService(log, report, tripRepo, activityRepo, activitySyncer, photos, users, telemetry.NewClient(0), baseURL)
-	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, tripRepo, racePlanService, users, baseURL)
+	tripService := trip.NewService(log, report, tripRepo, activityRepo, tripSyncer, photos, users, telemetry.NewClient(0), baseURL)
+	raceReportService := racereport.NewService(log, report, raceRepo, activityRepo, raceReportSyncer, tripRepo, racePlanService, users, baseURL)
 	lactateService := lactatesvc.NewService(log, report, lactateRepo, baseURL)
 	// MCP clients that require OAuth, like claude.ai, authorize with this
 	// authorization server instead of API tokens.
@@ -821,6 +835,25 @@ func setFlagsFromEnv(fs *flag.FlagSet) error {
 		}
 	})
 	return err
+}
+
+// newBlobStore returns a store of what it stores in the Cloud Storage
+// bucket, if set, or else in the local directory.
+func newBlobStore(ctx context.Context, log *slog.Logger, what, bucket, dir string) (blob.Store, error) {
+	if bucket != "" {
+		blobs, err := blob.NewGCS(ctx, bucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the %s bucket client: %w", what, err)
+		}
+		log.InfoContext(ctx, "Storing "+what+" in Cloud Storage", slog.String("bucket", bucket))
+		return blobs, nil
+	}
+	blobs, err := blob.NewDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the %s directory: %w", what, err)
+	}
+	log.InfoContext(ctx, "Storing "+what+" in a local directory", slog.String("dir", dir))
+	return blobs, nil
 }
 
 // newDEM creates a DEM that downloads tiles from baseURL and caches them in

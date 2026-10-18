@@ -18,14 +18,13 @@ insert into strava_activities (
   average_cadence_spm,
   summary_polyline,
   relative_effort,
-  summary_json,
   min_lat,
   min_lng,
   max_lat,
   max_lng,
   photo_count
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
 )
 on conflict (user_id, strava_id) do update set
   name = excluded.name,
@@ -44,7 +43,6 @@ on conflict (user_id, strava_id) do update set
   average_cadence_spm = excluded.average_cadence_spm,
   summary_polyline = excluded.summary_polyline,
   relative_effort = excluded.relative_effort,
-  summary_json = excluded.summary_json,
   min_lat = coalesce(strava_activities.min_lat, excluded.min_lat),
   min_lng = coalesce(strava_activities.min_lng, excluded.min_lng),
   max_lat = coalesce(strava_activities.max_lat, excluded.max_lat),
@@ -72,9 +70,15 @@ select max(start_time)::timestamptz from strava_activities
 where user_id = $1;
 
 -- name: ListActivitiesWithoutStreams :many
-select id, strava_id from strava_activities
-where user_id = sqlc.arg(user_id) and not streams_synced and sync_failures < sqlc.arg(max_failures)
-order by sync_requested desc, sync_failures, start_time desc
+-- Activities that started more than recent_window before the latest one are
+-- only listed when they're requested, and those that failed to sync
+-- max_failures times are left out.
+select a.id, a.strava_id from strava_activities a
+where a.user_id = sqlc.arg(user_id) and not a.streams_synced and a.sync_failures < sqlc.arg(max_failures)
+  and (a.sync_requested or a.start_time >= (
+    select max(latest.start_time) from strava_activities latest where latest.user_id = sqlc.arg(user_id)
+  ) - sqlc.arg(recent_window)::interval)
+order by a.sync_requested desc, a.sync_failures, a.start_time desc
 limit sqlc.arg(row_limit);
 
 -- name: RequestActivitySync :exec
@@ -91,16 +95,19 @@ where id = $1 and user_id = $2;
 -- name: CountActivities :one
 select
   count(*) as total,
-  count(*) filter (where not streams_synced and sync_failures < sqlc.arg(max_failures)) as pending_streams,
-  count(*) filter (where not streams_synced and sync_failures >= sqlc.arg(max_failures)) as failed_streams
-from strava_activities
-where user_id = sqlc.arg(user_id);
+  count(*) filter (
+    where not a.streams_synced and a.sync_failures < sqlc.arg(max_failures) and (a.sync_requested or a.start_time >= (
+      select max(latest.start_time) from strava_activities latest where latest.user_id = sqlc.arg(user_id)
+    ) - sqlc.arg(recent_window)::interval)
+  ) as pending_streams,
+  count(*) filter (where not a.streams_synced and a.sync_failures >= sqlc.arg(max_failures)) as failed_streams
+from strava_activities a
+where a.user_id = sqlc.arg(user_id);
 
 -- name: SetActivityDetail :exec
 update strava_activities set
   description = $2,
   device_name = $3,
-  detail_json = $4,
   update_time = now()
 where id = $1;
 
@@ -117,17 +124,16 @@ update strava_activities set
 where id = sqlc.arg(id);
 
 -- name: UpsertActivityStreams :exec
+-- The streams are stored in the blob store, and the row records that the
+-- activity has them, with its track.
 insert into strava_activity_streams (
   activity_id,
-  streams,
   track_polyline
 ) values (
   $1,
-  $2,
   sqlc.arg(track_polyline)::text
 )
 on conflict (activity_id) do update set
-  streams = excluded.streams,
   track_polyline = excluded.track_polyline;
 
 -- name: ListActivities :many
@@ -157,11 +163,6 @@ select
 from strava_activities
 where id = $1 and user_id = $2;
 
--- name: GetActivityStreams :one
-select s.streams from strava_activity_streams s
-join strava_activities a on a.id = s.activity_id
-where s.activity_id = $1 and a.user_id = $2;
-
 -- name: ListActivityTotals :many
 select start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters
 from strava_activities
@@ -172,7 +173,7 @@ where user_id = $1
 order by start_date_local;
 
 -- name: ListActivityTracksInBounds :many
-select a.id, a.summary_polyline, s.track_polyline, (s.activity_id is not null)::boolean as has_streams
+select a.id, a.summary_polyline, s.track_polyline
 from strava_activities a
 left join strava_activity_streams s on s.activity_id = a.id
 where a.user_id = $1
@@ -193,11 +194,3 @@ where user_id = $1
   and max_lng >= sqlc.arg(west)::double precision
   and (sqlc.narg(start_date)::date is null or start_date_local >= sqlc.narg(start_date)::date)
   and (sqlc.narg(end_date)::date is null or start_date_local <= sqlc.narg(end_date)::date);
-
--- name: ListStreamsWithoutTrack :many
-select activity_id, streams from strava_activity_streams
-where activity_id = any(sqlc.arg(activity_ids)::uuid[]) and track_polyline is null;
-
--- name: SetActivityTrack :exec
-update strava_activity_streams set track_polyline = sqlc.arg(track_polyline)::text
-where activity_id = $1;

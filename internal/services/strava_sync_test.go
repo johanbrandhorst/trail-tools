@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"slices"
 	"strings"
@@ -17,11 +16,14 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	stravav1 "github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1"
+	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	stravasvc "github.com/johanbrandhorst/trail-tools/internal/services/strava"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
 )
+
+// allActivities is a window of activities' start times that has them all.
+const allActivities = 100 * 365 * 24 * time.Hour
 
 // upsertSummaries stores the summaries of the fake Strava activities, as
 // listed by a sync, without their details. It returns their IDs by Strava
@@ -61,7 +63,7 @@ func (e *env) upsertSummary(a *strava.Activity, photoCount int32) pgtype.UUID {
 // details, in the order the backlog syncs them.
 func (e *env) pendingStravaIDs() []int64 {
 	e.t.Helper()
-	pending, err := e.activities.ListActivitiesWithoutStreams(context.Background(), e.userID, 100)
+	pending, err := e.activities.ListActivitiesWithoutStreams(context.Background(), e.userID, allActivities, 100)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -91,9 +93,7 @@ func TestStravaRequestedActivitiesSyncFirst(t *testing.T) {
 	}
 	// Syncing the activity clears the request, so when it's waiting for
 	// details again, e.g. as its photos changed, it's in date order.
-	if err := e.activities.StoreActivityDetail(ctx, ids[1000], nil, nil, nil); err != nil {
-		t.Fatal(err)
-	}
+	e.storeActivityDetail(ids[1000], nil, nil, nil)
 	if got := e.pendingStravaIDs(); !slices.Equal(got, []int64{1002, 1001}) {
 		t.Fatalf("got pending %v after syncing the requested activity", got)
 	}
@@ -105,7 +105,7 @@ func TestStravaRequestedActivitiesSyncFirst(t *testing.T) {
 		t.Fatalf("got pending %v, want the request cleared", got)
 	}
 	// Synced activities can't be requested.
-	if err := e.activities.StoreActivityDetail(ctx, ids[1002], nil, nil, nil); err != nil {
+	if err := e.activities.StoreActivityDetail(ctx, e.userID, ids[1002], 1002, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.activities.RequestActivitySync(ctx, e.userID, ids[1002]); err != nil {
@@ -207,14 +207,112 @@ func TestStravaSyncActivityOnDemand(t *testing.T) {
 	}
 }
 
-// scheduledSyncer returns a syncer that only syncs when asked to, as with
-// -strava-sync-mode=scheduled.
+// scheduledSyncer returns a syncer that only syncs when it's called, as on
+// Cloud Run.
 func (e *env) scheduledSyncer() *stravasvc.Syncer {
-	e.t.Helper()
-	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	ctx, cancel := context.WithCancel(context.Background())
-	e.t.Cleanup(cancel)
-	return stravasvc.NewSyncer(ctx, log, errreport.NewLocal(log), e.activities, e.strava, false, nil)
+	log := slog.New(slog.DiscardHandler)
+	return stravasvc.NewSyncer(context.Background(), log, errreport.NewLocal(log), e.activities, e.strava, false, nil)
+}
+
+// streamsFetched returns the Strava IDs of the activities streams were
+// fetched for, in order.
+func (e *env) streamsFetched() []int64 {
+	e.strava.mu.Lock()
+	defer e.strava.mu.Unlock()
+	return slices.Clone(e.strava.streamIDs)
+}
+
+func TestStravaSyncFetchesDetailsOfRecentActivities(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	e.connectStrava()
+	e.strava.mu.Lock()
+	// Don't start at the rate limit.
+	e.strava.rateLimited = true
+	latest := e.strava.activities[2].StartDate
+	e.strava.mu.Unlock()
+	// An activity from two years before the latest one.
+	old := latest.AddDate(-2, 0, 0)
+	e.strava.upsertActivity(&strava.Activity{
+		ID: 900, Name: "Old run", SportType: "Run", StartDate: old, StartDateLocal: old.Format(time.RFC3339),
+	})
+
+	syncer := e.scheduledSyncer()
+	if err := syncer.SyncDue(ctx); err != nil {
+		t.Fatalf("SyncDue: %v", err)
+	}
+	if fetched := e.streamsFetched(); slices.Contains(fetched, 900) || len(fetched) != 3 {
+		t.Errorf("fetched streams of %v, want the three recent activities", fetched)
+	}
+	// The old activity isn't waiting for its details, so the sync is done.
+	resp, err := e.stravaAPI.GetStravaConnection(ctx, stravav1.GetStravaConnectionRequest_builder{}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conn := resp.GetConnection(); conn.GetActivityCount() != 4 || conn.GetPendingStreamCount() != 0 || conn.GetSyncState() != stravav1.SyncState_SYNC_STATE_IDLE {
+		t.Errorf("got %d activities, %d pending and state %v, want 4, none pending and idle",
+			conn.GetActivityCount(), conn.GetPendingStreamCount(), conn.GetSyncState())
+	}
+
+	// Its details are fetched when it's linked to a report.
+	pending, err := e.activities.ListActivitiesWithoutStreams(ctx, e.userID, allActivities, 10)
+	if err != nil || len(pending) != 1 || pending[0].StravaID != 900 {
+		t.Fatalf("got pending activities %v (%v), want the old one", pending, err)
+	}
+	if _, err := e.trips.CreateTripReport(ctx, tripsv1.CreateTripReportRequest_builder{ActivityId: store.UUIDToString(pending[0].ID)}.Build()); err != nil {
+		t.Fatalf("CreateTripReport: %v", err)
+	}
+	a, err := e.activities.GetActivity(ctx, e.userID, pending[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !a.StreamsSynced || !slices.Contains(e.streamsFetched(), 900) {
+		t.Error("the old activity wasn't synced when a trip report was created from it")
+	}
+}
+
+func TestScheduledStravaSyncTakesTurns(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	e.connectStravaAs(e.userID, 7)
+	e.connectStravaAs(e.otherUserID, 8)
+	e.strava.mu.Lock()
+	e.strava.rateLimited = true
+	e.strava.activities = nil
+	e.strava.mu.Unlock()
+	// 30 activities, which both athletes get from the fake.
+	start := time.Date(2026, 9, 1, 8, 0, 0, 0, time.UTC)
+	for i := range 30 {
+		day := start.AddDate(0, 0, i)
+		e.strava.upsertActivity(&strava.Activity{
+			ID: int64(i + 1), Name: "Run", SportType: "Run", StartDate: day, StartDateLocal: day.Format(time.RFC3339),
+		})
+	}
+
+	if err := e.scheduledSyncer().SyncDue(ctx); err != nil {
+		t.Fatalf("SyncDue: %v", err)
+	}
+	// Each user's first turn fetches a batch of 25, the newest first, then
+	// each fetches the rest.
+	fetched := e.streamsFetched()
+	if len(fetched) != 60 || fetched[0] != 30 || fetched[25] != 30 || fetched[50] != 5 || fetched[55] != 5 {
+		t.Errorf("fetched streams in the order %v, want a batch for each user in turn", fetched)
+	}
+	for _, userID := range []pgtype.UUID{e.userID, e.otherUserID} {
+		conn, err := e.activities.GetStravaConnection(ctx, userID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, pending, err := e.activities.CountActivities(ctx, userID, allActivities)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if conn.SyncState != activities.SyncStateIdle || pending != 0 {
+			t.Errorf("got state %q with %d pending, want idle with none", conn.SyncState, pending)
+		}
+	}
 }
 
 // stravaConnection returns the user's Strava connection as stored.
@@ -446,62 +544,39 @@ func TestStravaTokenRefreshSerialized(t *testing.T) {
 	}
 }
 
-func TestStravaScheduledSyncFairness(t *testing.T) {
+func TestScheduledStravaSyncOrder(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	ctx := context.Background()
-	syncer := e.scheduledSyncer()
-	e.connectStrava()
-	other := storetest.NewUser(t, e.db)
-	if _, err := e.activities.UpsertStravaConnection(ctx, &activities.StravaConnection{
-		UserID: other, AthleteID: 8, AthleteName: "Other Runner", AccessToken: "expired", RefreshToken: "refresh", Expiry: time.Now().Add(-time.Hour),
-	}); err != nil {
-		t.Fatal(err)
-	}
+	e.connectStravaAs(e.userID, 7)
+	e.connectStravaAs(e.otherUserID, 8)
 	e.strava.rateLimited = true
-	// The user's latest sync started an hour ago, the other user never
-	// synced, so the other user goes first. Its sync is stuck fetching
-	// streams, like a long backlog.
+	// The user's latest sync started an hour ago, and the other user never
+	// synced, so the other user goes first.
 	e.exec("update strava_connections set sync_start_time = now() - interval '1 hour' where user_id = $1", e.userID)
-	e.strava.blockStreams = 1002
-	e.strava.streamsBlocked = make(chan struct{}, 1)
-	e.strava.unblockStreams = make(chan struct{})
-
-	// The stuck sync gets its share of the time, and the user's sync the
-	// rest, rather than waiting for the next run.
-	syncCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	if err := syncer.SyncDue(syncCtx); err != nil && syncCtx.Err() == nil {
-		t.Fatal(err)
+	if err := e.scheduledSyncer().SyncDue(ctx); err != nil {
+		t.Fatalf("SyncDue: %v", err)
 	}
-	select {
-	case <-e.strava.streamsBlocked:
-	default:
-		t.Fatal("no sync got stuck")
+	first, second := e.stravaConnection(e.otherUserID), e.stravaConnection(e.userID)
+	if first.SyncState != activities.SyncStateIdle || second.SyncState != activities.SyncStateIdle {
+		t.Fatalf("got states %q and %q, want both synced", first.SyncState, second.SyncState)
 	}
-	stuck, synced := e.stravaConnection(other), e.stravaConnection(e.userID)
-	if stuck.SyncState != activities.SyncStateRunning || !stuck.LastSyncTime.IsZero() {
-		t.Errorf("got %+v, want the stuck sync left to continue", stuck)
+	if !first.SyncStartTime.Before(second.SyncStartTime) {
+		t.Errorf("got start times %v and %v, want the user who waited longest first", first.SyncStartTime, second.SyncStartTime)
 	}
-	if synced.SyncState != activities.SyncStateIdle || synced.LastSyncTime.IsZero() {
-		t.Errorf("got %+v, want the user synced", synced)
-	}
-	// Connections are listed by when their latest sync started, so one
-	// that got no time in a run goes first in the next.
-	if !stuck.SyncStartTime.Before(synced.SyncStartTime) {
-		t.Errorf("got start times %v and %v, want the stuck sync first", stuck.SyncStartTime, synced.SyncStartTime)
-	}
+	// Connections are listed by when their latest sync started, so users a
+	// run ends before go first in the next.
 	conns, err := e.activities.ListStravaConnections(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var order []pgtype.UUID
 	for _, conn := range conns {
-		if conn.UserID == other || conn.UserID == e.userID {
+		if conn.UserID == e.otherUserID || conn.UserID == e.userID {
 			order = append(order, conn.UserID)
 		}
 	}
-	if !slices.Equal(order, []pgtype.UUID{other, e.userID}) {
+	if !slices.Equal(order, []pgtype.UUID{e.otherUserID, e.userID}) {
 		t.Errorf("got order %v, want the connection whose sync started first first", order)
 	}
 }

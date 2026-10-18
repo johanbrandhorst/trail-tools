@@ -99,6 +99,10 @@ where user_id = $1;
 select * from strava_connections
 where athlete_id = $1;
 
+-- name: GetActivityIDByStravaID :one
+select id from strava_activities
+where user_id = $1 and strava_id = $2;
+
 -- name: DeleteActivityByStravaID :exec
 delete from strava_activities
 where user_id = $1 and strava_id = $2;

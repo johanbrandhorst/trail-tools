@@ -7,7 +7,6 @@ package gen
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -15,15 +14,20 @@ import (
 const countActivities = `-- name: CountActivities :one
 select
   count(*) as total,
-  count(*) filter (where not streams_synced and sync_failures < $1) as pending_streams,
-  count(*) filter (where not streams_synced and sync_failures >= $1) as failed_streams
-from strava_activities
-where user_id = $2
+  count(*) filter (
+    where not a.streams_synced and a.sync_failures < $1 and (a.sync_requested or a.start_time >= (
+      select max(latest.start_time) from strava_activities latest where latest.user_id = $2
+    ) - $3::interval)
+  ) as pending_streams,
+  count(*) filter (where not a.streams_synced and a.sync_failures >= $1) as failed_streams
+from strava_activities a
+where a.user_id = $2
 `
 
 type CountActivitiesParams struct {
-	MaxFailures int32
-	UserID      pgtype.UUID
+	MaxFailures  int32
+	UserID       pgtype.UUID
+	RecentWindow pgtype.Interval
 }
 
 type CountActivitiesRow struct {
@@ -33,7 +37,7 @@ type CountActivitiesRow struct {
 }
 
 func (q *Queries) CountActivities(ctx context.Context, arg *CountActivitiesParams) (*CountActivitiesRow, error) {
-	row := q.db.QueryRow(ctx, countActivities, arg.MaxFailures, arg.UserID)
+	row := q.db.QueryRow(ctx, countActivities, arg.MaxFailures, arg.UserID, arg.RecentWindow)
 	var i CountActivitiesRow
 	err := row.Scan(&i.Total, &i.PendingStreams, &i.FailedStreams)
 	return &i, err
@@ -107,24 +111,6 @@ func (q *Queries) GetActivity(ctx context.Context, arg *GetActivityParams) (*Get
 		&i.PhotoCount,
 	)
 	return &i, err
-}
-
-const getActivityStreams = `-- name: GetActivityStreams :one
-select s.streams from strava_activity_streams s
-join strava_activities a on a.id = s.activity_id
-where s.activity_id = $1 and a.user_id = $2
-`
-
-type GetActivityStreamsParams struct {
-	ActivityID pgtype.UUID
-	UserID     pgtype.UUID
-}
-
-func (q *Queries) GetActivityStreams(ctx context.Context, arg *GetActivityStreamsParams) ([]byte, error) {
-	row := q.db.QueryRow(ctx, getActivityStreams, arg.ActivityID, arg.UserID)
-	var streams []byte
-	err := row.Scan(&streams)
-	return streams, err
 }
 
 const getLatestActivityPolyline = `-- name: GetLatestActivityPolyline :one
@@ -259,16 +245,20 @@ func (q *Queries) ListActivities(ctx context.Context, arg *ListActivitiesParams)
 }
 
 const listActivitiesWithoutStreams = `-- name: ListActivitiesWithoutStreams :many
-select id, strava_id from strava_activities
-where user_id = $1 and not streams_synced and sync_failures < $2
-order by sync_requested desc, sync_failures, start_time desc
-limit $3
+select a.id, a.strava_id from strava_activities a
+where a.user_id = $1 and not a.streams_synced and a.sync_failures < $2
+  and (a.sync_requested or a.start_time >= (
+    select max(latest.start_time) from strava_activities latest where latest.user_id = $1
+  ) - $3::interval)
+order by a.sync_requested desc, a.sync_failures, a.start_time desc
+limit $4
 `
 
 type ListActivitiesWithoutStreamsParams struct {
-	UserID      pgtype.UUID
-	MaxFailures int32
-	RowLimit    int32
+	UserID       pgtype.UUID
+	MaxFailures  int32
+	RecentWindow pgtype.Interval
+	RowLimit     int32
 }
 
 type ListActivitiesWithoutStreamsRow struct {
@@ -276,8 +266,16 @@ type ListActivitiesWithoutStreamsRow struct {
 	StravaID int64
 }
 
+// Activities that started more than recent_window before the latest one are
+// only listed when they're requested, and those that failed to sync
+// max_failures times are left out.
 func (q *Queries) ListActivitiesWithoutStreams(ctx context.Context, arg *ListActivitiesWithoutStreamsParams) ([]*ListActivitiesWithoutStreamsRow, error) {
-	rows, err := q.db.Query(ctx, listActivitiesWithoutStreams, arg.UserID, arg.MaxFailures, arg.RowLimit)
+	rows, err := q.db.Query(ctx, listActivitiesWithoutStreams,
+		arg.UserID,
+		arg.MaxFailures,
+		arg.RecentWindow,
+		arg.RowLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +404,7 @@ func (q *Queries) ListActivityTotals(ctx context.Context, arg *ListActivityTotal
 }
 
 const listActivityTracksInBounds = `-- name: ListActivityTracksInBounds :many
-select a.id, a.summary_polyline, s.track_polyline, (s.activity_id is not null)::boolean as has_streams
+select a.id, a.summary_polyline, s.track_polyline
 from strava_activities a
 left join strava_activity_streams s on s.activity_id = a.id
 where a.user_id = $1
@@ -432,7 +430,6 @@ type ListActivityTracksInBoundsRow struct {
 	ID              pgtype.UUID
 	SummaryPolyline string
 	TrackPolyline   pgtype.Text
-	HasStreams      bool
 }
 
 func (q *Queries) ListActivityTracksInBounds(ctx context.Context, arg *ListActivityTracksInBoundsParams) ([]*ListActivityTracksInBoundsRow, error) {
@@ -452,42 +449,7 @@ func (q *Queries) ListActivityTracksInBounds(ctx context.Context, arg *ListActiv
 	var items []*ListActivityTracksInBoundsRow
 	for rows.Next() {
 		var i ListActivityTracksInBoundsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.SummaryPolyline,
-			&i.TrackPolyline,
-			&i.HasStreams,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listStreamsWithoutTrack = `-- name: ListStreamsWithoutTrack :many
-select activity_id, streams from strava_activity_streams
-where activity_id = any($1::uuid[]) and track_polyline is null
-`
-
-type ListStreamsWithoutTrackRow struct {
-	ActivityID pgtype.UUID
-	Streams    []byte
-}
-
-func (q *Queries) ListStreamsWithoutTrack(ctx context.Context, activityIds []pgtype.UUID) ([]*ListStreamsWithoutTrackRow, error) {
-	rows, err := q.db.Query(ctx, listStreamsWithoutTrack, activityIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*ListStreamsWithoutTrackRow
-	for rows.Next() {
-		var i ListStreamsWithoutTrackRow
-		if err := rows.Scan(&i.ActivityID, &i.Streams); err != nil {
+		if err := rows.Scan(&i.ID, &i.SummaryPolyline, &i.TrackPolyline); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -567,7 +529,6 @@ const setActivityDetail = `-- name: SetActivityDetail :exec
 update strava_activities set
   description = $2,
   device_name = $3,
-  detail_json = $4,
   update_time = now()
 where id = $1
 `
@@ -576,31 +537,10 @@ type SetActivityDetailParams struct {
 	ID          pgtype.UUID
 	Description string
 	DeviceName  string
-	DetailJSON  json.RawMessage
 }
 
 func (q *Queries) SetActivityDetail(ctx context.Context, arg *SetActivityDetailParams) error {
-	_, err := q.db.Exec(ctx, setActivityDetail,
-		arg.ID,
-		arg.Description,
-		arg.DeviceName,
-		arg.DetailJSON,
-	)
-	return err
-}
-
-const setActivityTrack = `-- name: SetActivityTrack :exec
-update strava_activity_streams set track_polyline = $2::text
-where activity_id = $1
-`
-
-type SetActivityTrackParams struct {
-	ActivityID    pgtype.UUID
-	TrackPolyline string
-}
-
-func (q *Queries) SetActivityTrack(ctx context.Context, arg *SetActivityTrackParams) error {
-	_, err := q.db.Exec(ctx, setActivityTrack, arg.ActivityID, arg.TrackPolyline)
+	_, err := q.db.Exec(ctx, setActivityDetail, arg.ID, arg.Description, arg.DeviceName)
 	return err
 }
 
@@ -624,14 +564,13 @@ insert into strava_activities (
   average_cadence_spm,
   summary_polyline,
   relative_effort,
-  summary_json,
   min_lat,
   min_lng,
   max_lat,
   max_lng,
   photo_count
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
 )
 on conflict (user_id, strava_id) do update set
   name = excluded.name,
@@ -650,7 +589,6 @@ on conflict (user_id, strava_id) do update set
   average_cadence_spm = excluded.average_cadence_spm,
   summary_polyline = excluded.summary_polyline,
   relative_effort = excluded.relative_effort,
-  summary_json = excluded.summary_json,
   min_lat = coalesce(strava_activities.min_lat, excluded.min_lat),
   min_lng = coalesce(strava_activities.min_lng, excluded.min_lng),
   max_lat = coalesce(strava_activities.max_lat, excluded.max_lat),
@@ -687,7 +625,6 @@ type UpsertActivityParams struct {
 	AverageCadenceSpm   float64
 	SummaryPolyline     string
 	RelativeEffort      int32
-	SummaryJSON         json.RawMessage
 	MinLat              pgtype.Float8
 	MinLng              pgtype.Float8
 	MaxLat              pgtype.Float8
@@ -715,7 +652,6 @@ func (q *Queries) UpsertActivity(ctx context.Context, arg *UpsertActivityParams)
 		arg.AverageCadenceSpm,
 		arg.SummaryPolyline,
 		arg.RelativeEffort,
-		arg.SummaryJSON,
 		arg.MinLat,
 		arg.MinLng,
 		arg.MaxLat,
@@ -730,25 +666,23 @@ func (q *Queries) UpsertActivity(ctx context.Context, arg *UpsertActivityParams)
 const upsertActivityStreams = `-- name: UpsertActivityStreams :exec
 insert into strava_activity_streams (
   activity_id,
-  streams,
   track_polyline
 ) values (
   $1,
-  $2,
-  $3::text
+  $2::text
 )
 on conflict (activity_id) do update set
-  streams = excluded.streams,
   track_polyline = excluded.track_polyline
 `
 
 type UpsertActivityStreamsParams struct {
 	ActivityID    pgtype.UUID
-	Streams       []byte
 	TrackPolyline string
 }
 
+// The streams are stored in the blob store, and the row records that the
+// activity has them, with its track.
 func (q *Queries) UpsertActivityStreams(ctx context.Context, arg *UpsertActivityStreamsParams) error {
-	_, err := q.db.Exec(ctx, upsertActivityStreams, arg.ActivityID, arg.Streams, arg.TrackPolyline)
+	_, err := q.db.Exec(ctx, upsertActivityStreams, arg.ActivityID, arg.TrackPolyline)
 	return err
 }

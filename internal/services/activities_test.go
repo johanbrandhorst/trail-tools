@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
@@ -204,9 +205,16 @@ func (f *fakeStrava) GetStreams(ctx context.Context, _ string, id int64) (*strav
 // user.
 func (e *env) connectStrava() {
 	e.t.Helper()
+	e.connectStravaAs(e.userID, 7)
+}
+
+// connectStravaAs stores a Strava connection with an expired token for a
+// user, as the athlete.
+func (e *env) connectStravaAs(userID pgtype.UUID, athleteID int64) {
+	e.t.Helper()
 	if _, err := e.activities.UpsertStravaConnection(context.Background(), &activities.StravaConnection{
-		UserID:       e.userID,
-		AthleteID:    7,
+		UserID:       userID,
+		AthleteID:    athleteID,
 		AthleteName:  "Test Runner",
 		AccessToken:  "expired",
 		RefreshToken: "refresh",
@@ -514,7 +522,7 @@ func TestScheduledStravaSync(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	total, pending, err := e.activities.CountActivities(ctx, e.userID)
+	total, pending, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -538,7 +546,7 @@ func TestScheduledStravaSync(t *testing.T) {
 	if !syncer.SyncOnce(ctx, e.userID, false) {
 		t.Fatal("SyncOnce didn't run")
 	}
-	if total, _, err = e.activities.CountActivities(ctx, e.userID); err != nil || total != 4 {
+	if total, _, err = e.activities.CountActivities(ctx, e.userID, allActivities); err != nil || total != 4 {
 		t.Errorf("got %d activities (%v), want 4", total, err)
 	}
 	// The oldest activity is before the overlap, so the second page isn't
@@ -565,7 +573,7 @@ func TestStravaSyncResumesListing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	total, _, err := e.activities.CountActivities(ctx, e.userID)
+	total, _, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -581,7 +589,7 @@ func TestStravaSyncResumesListing(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	if total, _, err = e.activities.CountActivities(ctx, e.userID); err != nil {
+	if total, _, err = e.activities.CountActivities(ctx, e.userID, allActivities); err != nil {
 		t.Fatal(err)
 	}
 	if conn.SyncState != activities.SyncStateIdle || total != 3 || !conn.ListBefore.IsZero() {
@@ -662,7 +670,7 @@ func TestTriggeredStravaSync(t *testing.T) {
 	if conn, err = e.activities.GetStravaConnection(ctx, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	total, pending, err := e.activities.CountActivities(ctx, e.userID)
+	total, pending, err := e.activities.CountActivities(ctx, e.userID, allActivities)
 	if err != nil {
 		t.Fatal(err)
 	}

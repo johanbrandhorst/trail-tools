@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -59,7 +60,23 @@ func newInputSchema(md protoreflect.MessageDescriptor) *jsonschema.Schema {
 // protojson.Marshal.
 func newOutputSchema(md protoreflect.MessageDescriptor) *jsonschema.Schema {
 	b := &schemaBuilder{input: false, visiting: map[protoreflect.FullName]bool{}}
-	return b.message(md)
+	s := b.message(md)
+	// Top-level images are returned as image content, not in the JSON.
+	fields := md.Fields()
+	for i := range fields.Len() {
+		if fd := fields.Get(i); isImage(fd) {
+			delete(s.Properties, fd.JSONName())
+			s.PropertyOrder = slices.DeleteFunc(s.PropertyOrder, func(name string) bool { return name == fd.JSONName() })
+		}
+	}
+	return s
+}
+
+// isImage reports whether a field is a singular mcp.v1.Image, which tool
+// results return as image content when it's a field of the response.
+func isImage(fd protoreflect.FieldDescriptor) bool {
+	return fd.Kind() == protoreflect.MessageKind && !fd.IsList() && !fd.IsMap() &&
+		fd.Message().FullName() == (&mcpv1.Image{}).ProtoReflect().Descriptor().FullName()
 }
 
 // message returns an object schema with a property for each field of the

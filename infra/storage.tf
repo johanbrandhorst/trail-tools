@@ -38,3 +38,25 @@ resource "google_storage_bucket_iam_member" "run_dem" {
   role   = "roles/storage.objectUser"
   member = google_service_account.run.member
 }
+
+# Activities' streams and Strava's raw responses about them, which are
+# written once, read whole and never queried, so they cost much less here
+# than in the database: tens of kilobytes an activity, within the free
+# tier's 5 GB, with an upload for each synced activity and a download for
+# each view of one. Only the service account can read and write them.
+resource "google_storage_bucket" "activity_data" {
+  name                        = "${var.project}-activity-data"
+  location                    = upper(var.region)
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+
+  depends_on = [google_project_service.services]
+}
+
+# The service stores, reads and deletes activity data.
+resource "google_storage_bucket_iam_member" "run_activity_data" {
+  bucket = google_storage_bucket.activity_data.name
+  role   = "roles/storage.objectUser"
+  member = google_service_account.run.member
+}
