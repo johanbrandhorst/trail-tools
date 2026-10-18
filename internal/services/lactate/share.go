@@ -6,22 +6,22 @@ import (
 	"crypto/sha256"
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"connectrpc.com/connect/v2"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
 	"github.com/johanbrandhorst/trail-tools/internal/lactate"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	// SharePath is the path of recording links, followed by their token.
-	// Opening one sets the recorder cookie and redirects to RecordPath.
-	SharePath = "/share/lactate-tests/"
 	// RecordPath is the page that records a test with a recording link.
+	// The links are RecordPath with their token in the fragment, which
+	// browsers don't send, so it doesn't end up in request logs. The page
+	// opens the link with CreateLactateTestRecording.
 	RecordPath = "/record/lactate-test"
 	// recorderCookie holds the secret of the browser that opened a
 	// recording link.
@@ -64,7 +64,7 @@ func (s *Service) CreateLactateTestShare(ctx context.Context, _ *lactatev1.Creat
 		return nil, s.toConnectError(ctx, err, "failed to create lactate test share")
 	}
 	protoShare := shareToProto(share)
-	protoShare.SetUrl(s.baseURL + SharePath + token)
+	protoShare.SetUrl(s.baseURL + html.TokenURL(RecordPath, token))
 	return lactatev1.CreateLactateTestShareResponse_builder{Share: protoShare}.Build(), nil
 }
 
@@ -102,25 +102,91 @@ func (s *Service) DeleteLactateTestShare(ctx context.Context, req *lactatev1.Del
 	return lactatev1.DeleteLactateTestShareResponse_builder{}.Build(), nil
 }
 
+func (s *Service) CreateLactateTestRecording(ctx context.Context, req *lactatev1.CreateLactateTestRecordingRequest) (*lactatev1.CreateLactateTestRecordingResponse, error) {
+	share, err := s.tests.GetShareByToken(ctx, hashSecret(req.GetToken()))
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, errNoRecording
+	}
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to open the recording link")
+	}
+	var recording *lactate.Recording
+	if share.RecorderSHA256 != nil {
+		// The browser that opened the link may open it again; it still has
+		// its cookie.
+		recording, err = s.recording(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if recording.ID != share.ID {
+			return nil, errNoRecording
+		}
+	} else {
+		secret := rand.Text()
+		opened, err := s.tests.OpenShare(ctx, share.ID, hashSecret(secret))
+		if err != nil {
+			return nil, s.toConnectError(ctx, err, "failed to open the recording link")
+		}
+		if !opened {
+			// Another browser opened it first.
+			return nil, errNoRecording
+		}
+		if info, ok := connect.CallInfoForServerContext(ctx); ok {
+			info.ResponseHeader().Add("Set-Cookie", (&http.Cookie{
+				Name:     recorderCookie,
+				Value:    secret,
+				Path:     "/",
+				Expires:  share.ExpireTime,
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			}).String())
+		}
+		if recording, err = s.tests.GetRecording(ctx, hashSecret(secret)); err != nil {
+			return nil, s.toConnectError(ctx, err, "failed to open the recording link")
+		}
+	}
+	test, err := s.recordedTest(ctx, recording)
+	if err != nil {
+		return nil, err
+	}
+	return lactatev1.CreateLactateTestRecordingResponse_builder{
+		OwnerName:  recording.OwnerName,
+		ExpireTime: timestamppb.New(recording.ExpireTime),
+		Test:       test,
+	}.Build(), nil
+}
+
 func (s *Service) GetLactateTestRecording(ctx context.Context, _ *lactatev1.GetLactateTestRecordingRequest) (*lactatev1.GetLactateTestRecordingResponse, error) {
 	recording, err := s.recording(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resp := lactatev1.GetLactateTestRecordingResponse_builder{
+	test, err := s.recordedTest(ctx, recording)
+	if err != nil {
+		return nil, err
+	}
+	return lactatev1.GetLactateTestRecordingResponse_builder{
 		OwnerName:  recording.OwnerName,
 		ExpireTime: timestamppb.New(recording.ExpireTime),
-	}.Build()
-	if recording.TestID.Valid {
-		test, err := s.tests.GetTest(ctx, recording.UserID, recording.TestID)
-		if err != nil && !errors.Is(err, store.ErrNotFound) {
-			return nil, s.toConnectError(ctx, err, "failed to get the recorded lactate test")
-		}
-		if test != nil {
-			resp.SetTest(TestToProto(test))
-		}
+		Test:       test,
+	}.Build(), nil
+}
+
+// recordedTest returns the test recorded with a recording so far, or nil if
+// there is none: before the first save, or after its user deleted it.
+func (s *Service) recordedTest(ctx context.Context, recording *lactate.Recording) (*lactatev1.LactateTest, error) {
+	if !recording.TestID.Valid {
+		return nil, nil
 	}
-	return resp, nil
+	test, err := s.tests.GetTest(ctx, recording.UserID, recording.TestID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to get the recorded lactate test")
+	}
+	return TestToProto(test), nil
 }
 
 func (s *Service) RecordLactateTest(ctx context.Context, req *lactatev1.RecordLactateTestRequest) (*lactatev1.RecordLactateTestResponse, error) {
@@ -165,47 +231,6 @@ func (s *Service) recording(ctx context.Context) (*lactate.Recording, error) {
 		return nil, s.toConnectError(ctx, err, "failed to get lactate test recording")
 	}
 	return recording, nil
-}
-
-// ShareHandler opens recording links: the first browser to open one gets a
-// cookie with a new secret, which records with it until it expires, and is
-// redirected to the recording page. Other browsers, and expired links, are
-// redirected too, where the page says the link doesn't work.
-func (s *Service) ShareHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.URL.Path, SharePath)
-		share, err := s.tests.GetShareByToken(r.Context(), hashSecret(token))
-		switch {
-		case errors.Is(err, store.ErrNotFound):
-		case err != nil:
-			s.report.Report(r.Context(), "Failed to open a lactate test share", err)
-			http.Error(w, "failed to open the recording link", http.StatusInternalServerError)
-			return
-		case share.RecorderSHA256 != nil:
-			// The browser that opened the link may open it again; it still has
-			// its cookie.
-		default:
-			secret := rand.Text()
-			opened, err := s.tests.OpenShare(r.Context(), share.ID, hashSecret(secret))
-			if err != nil {
-				s.report.Report(r.Context(), "Failed to open a lactate test share", err)
-				http.Error(w, "failed to open the recording link", http.StatusInternalServerError)
-				return
-			}
-			if opened {
-				http.SetCookie(w, &http.Cookie{
-					Name:     recorderCookie,
-					Value:    secret,
-					Path:     "/",
-					Expires:  share.ExpireTime,
-					Secure:   true,
-					HttpOnly: true,
-					SameSite: http.SameSiteLaxMode,
-				})
-			}
-		}
-		http.Redirect(w, r, RecordPath, http.StatusSeeOther)
-	})
 }
 
 func shareToProto(share *lactate.Share) *lactatev1.LactateTestShare {

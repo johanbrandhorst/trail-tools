@@ -239,7 +239,6 @@ func newEnv(t *testing.T) *env {
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
-	mux.Handle(lactatesvc.SharePath, lactateService.ShareHandler())
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
 
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))

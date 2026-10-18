@@ -5,22 +5,32 @@ import PlanDocument, { RaceHeader } from "@components/race-plan/plan-document";
 import QueryError from "@components/ui/query-error";
 import { secondaryButton } from "@components/ui/styles";
 import { Code } from "@connectrpc/connect";
-import { useQuery } from "@connectrpc/connect-query";
+import { skipToken, useQuery } from "@connectrpc/connect-query";
 import { PrinterIcon } from "@heroicons/react/24/outline";
 import { getSharedRacePlan } from "gen/races/v1/race_plans-RacePlanService_connectquery";
 import { formatDurationLong } from "helpers/format";
+import { useFragmentToken } from "helpers/hooks";
 import React from "react";
-import { useParams } from "react-router";
+
+// PlanNotAvailable says that a share link doesn't work.
+const PlanNotAvailable: React.FC = () => (
+  <div className="py-10 text-center">
+    <h1 className="text-xl font-semibold">Plan not available</h1>
+    <p className="mt-2 text-gray-600">
+      This race plan is no longer shared, or the link is wrong.
+    </p>
+  </div>
+);
 
 /**
  * SharedRacePlanPage is the read-only view of a plan shared by link. It works
  * without signing in.
  */
 const SharedRacePlanPage: React.FC = () => {
-  const { token = "" } = useParams();
+  const token = useFragmentToken();
   const { isPending, isError, data, error, refetch } = useQuery(
     getSharedRacePlan,
-    { token },
+    token === "" ? skipToken : { token },
     {
       retry: (failureCount, err) =>
         err.code !== Code.NotFound &&
@@ -30,19 +40,15 @@ const SharedRacePlanPage: React.FC = () => {
   );
   const raceDay = useRaceDay({ planId: "", shareToken: token });
 
+  if (token === "") {
+    return <PlanNotAvailable />;
+  }
   if (isPending) {
     return <Loading />;
   }
   if (isError) {
     if (error.code === Code.NotFound || error.code === Code.PermissionDenied) {
-      return (
-        <div className="py-10 text-center">
-          <h1 className="text-xl font-semibold">Plan not available</h1>
-          <p className="mt-2 text-gray-600">
-            This race plan is no longer shared, or the link is wrong.
-          </p>
-        </div>
-      );
+      return <PlanNotAvailable />;
     }
     return (
       <QueryError

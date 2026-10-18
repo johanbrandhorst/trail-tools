@@ -219,7 +219,7 @@ var (
 		"admin-bootstrap-token",
 		"",
 		"A secret that can be used as an invitation to create the first administrator,"+
-			" at /invite/<token>, while there are no administrators",
+			" at /invite#<token>, while there are no administrators",
 	)
 	importJob = flag.String(
 		"import-job",
@@ -751,7 +751,6 @@ func run(
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	// The guided lactate test as a Garmin workout. It holds no user data.
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
-	mux.Handle(lactatesvc.SharePath, lactateService.ShareHandler())
 	mux.Handle(trip.ProfilePath, authenticate(raceReportService.PageHandler(serveDir != "", tripService.PageHandler(serveDir != ""))))
 
 	// Requests are traced, and named after the routes they match.

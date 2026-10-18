@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 
 // UseElementWidth tracks the rendered width of an element in pixels.
 export const useElementWidth = (ref: RefObject<HTMLElement | null>): number => {
@@ -21,4 +22,19 @@ export const useElementWidth = (ref: RefObject<HTMLElement | null>): number => {
     };
   }, [ref]);
   return width;
+};
+
+/**
+ * UseFragmentToken returns the secret token in the fragment of the page's
+ * URL, e.g. of an invitation link, /invite#<token>. Links carry their tokens
+ * there because browsers don't send fragments to the server, so the tokens
+ * stay out of request logs. It's "" if there is none.
+ */
+export const useFragmentToken = (): string => {
+  const fragment = useLocation().hash.slice(1);
+  try {
+    return decodeURIComponent(fragment);
+  } catch {
+    return fragment;
+  }
 };

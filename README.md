@@ -55,7 +55,7 @@ $ make run
 On a database without an administrator, opening http://localhost:8080 on the
 same machine goes to the invitation to create the administrator account with a
 passkey (`make watch` works the same way). It's
-http://localhost:8080/invite/local-admin, if you need the link. Trail Tools is invite only: invite
+http://localhost:8080/invite#local-admin, if you need the link. Trail Tools is invite only: invite
 other users, or yourself to add a passkey on another device, from the settings
 page.
 
@@ -428,7 +428,7 @@ aren't stored in the Terraform state:
   ```
 
 - `admin-bootstrap-token`: works as an invitation to create the first
-  administrator at `/invite/<token>`, until there is one.
+  administrator at `/invite#<token>`, until there is one.
 
   ```sh
   $ openssl rand -hex 24 | gcloud secrets versions add admin-bootstrap-token --data-file=- --project trail-tools-444904
