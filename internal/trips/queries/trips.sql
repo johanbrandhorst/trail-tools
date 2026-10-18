@@ -97,6 +97,11 @@ where id = $1 and user_id = $2;
 -- name: ReportExists :one
 select exists (select 1 from trip_reports where id = $1 and user_id = $2);
 
+-- name: ShiftPhotos :exec
+-- Makes room for a photo at a position in a section.
+update trip_photos set position = position + 1
+where section_id = $1 and position >= $2;
+
 -- name: AddPhoto :one
 insert into trip_photos (
   report_id,
@@ -115,7 +120,11 @@ insert into trip_photos (
 ) values (
   sqlc.arg(report_id),
   sqlc.arg(section_id),
-  (select coalesce(max(position) + 1, 0) from trip_photos where report_id = sqlc.arg(report_id)),
+  -- At the position if set, or else last.
+  coalesce(
+    sqlc.narg(position)::integer,
+    (select coalesce(max(position) + 1, 0) from trip_photos where report_id = sqlc.arg(report_id))
+  ),
   sqlc.arg(object_key),
   sqlc.arg(width),
   sqlc.arg(height),

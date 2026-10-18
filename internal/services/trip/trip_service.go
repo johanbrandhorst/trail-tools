@@ -49,7 +49,7 @@ type TripRepository interface {
 	UpdateReport(ctx context.Context, u *trips.ReportUpdate) (*trips.Report, error)
 	SetReportPublished(ctx context.Context, userID, reportID pgtype.UUID, published bool) (*trips.Report, error)
 	DeleteReport(ctx context.Context, userID, reportID pgtype.UUID) ([]string, error)
-	AddPhoto(ctx context.Context, userID pgtype.UUID, p *trips.Photo) (*trips.Photo, error)
+	AddPhoto(ctx context.Context, userID pgtype.UUID, p *trips.Photo, before trips.PhotoOrder) (*trips.Photo, error)
 	ListPhotos(ctx context.Context, reportIDs ...pgtype.UUID) (map[pgtype.UUID][]*trips.Photo, error)
 	GetPhoto(ctx context.Context, userID, photoID pgtype.UUID) (*trips.Photo, error)
 	GetPhotoAccess(ctx context.Context, photoID pgtype.UUID) (*trips.PhotoAccess, error)
@@ -551,8 +551,23 @@ func placePhoto(report *trips.Report, t *track.Track, gps *geov1.LatLng, takenTi
 	return nil, nil
 }
 
-// storePhoto re-encodes a photo, stores its images and adds it to the end
-// of its report. It returns trips.ErrPhotoImported for a photo from Strava
+// takenBefore reports whether photo a was taken before photo b on the trip:
+// by the times they were taken, if both are known, or else by how far along
+// the track they were taken. Times come first, as on an out-and-back the
+// same place is passed twice, and a photo's GPS position may be matched to
+// the wrong way.
+func takenBefore(a, b *trips.Photo) bool {
+	if !a.TakenTime.IsZero() && !b.TakenTime.IsZero() {
+		return a.TakenTime.Before(b.TakenTime)
+	}
+	if a.Location != nil && a.Location.HasTrackDistanceMeters && b.Location != nil && b.Location.HasTrackDistanceMeters {
+		return a.Location.TrackDistanceMeters < b.Location.TrackDistanceMeters
+	}
+	return false
+}
+
+// storePhoto re-encodes a photo, stores its images and adds it to its
+// section of the report, in the order it was taken. It returns trips.ErrPhotoImported for a photo from Strava
 // the report already has, and otherwise connect errors.
 func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *trips.Photo, data []byte) (*trips.Photo, error) {
 	img, err := processImage(data)
@@ -568,7 +583,7 @@ func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *tri
 		s.deleteImages(ctx, photo.ObjectKey)
 		return nil, s.toConnectError(ctx, err, "failed to store photo")
 	}
-	created, err := s.repo.AddPhoto(ctx, userID, photo)
+	created, err := s.repo.AddPhoto(ctx, userID, photo, takenBefore)
 	if err != nil {
 		s.deleteImages(ctx, photo.ObjectKey)
 		if errors.Is(err, trips.ErrPhotoImported) {
