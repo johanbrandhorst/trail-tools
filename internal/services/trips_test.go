@@ -529,7 +529,9 @@ func TestTripPhotos(t *testing.T) {
 	for _, p := range got.GetReport().GetPhotos() {
 		ids = append(ids, p.GetId())
 	}
-	if want := []string{gps.GetId(), timed.GetId(), local.GetId(), unplaced.GetId()}; strings.Join(ids, ",") != strings.Join(want, ",") {
+	// In the order they were taken, rather than uploaded: the local time
+	// photo was taken 18 seconds before the timed one.
+	if want := []string{gps.GetId(), local.GetId(), timed.GetId(), unplaced.GetId()}; strings.Join(ids, ",") != strings.Join(want, ",") {
 		t.Fatalf("photos in order %v, want %v", ids, want)
 	}
 

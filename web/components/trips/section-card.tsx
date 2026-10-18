@@ -10,6 +10,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowsPointingInIcon,
+  Bars2Icon,
   MapPinIcon,
   ScissorsIcon,
   StarIcon,
@@ -24,7 +25,18 @@ import {
 } from "gen/trips/v1/trips-TripReportService_connectquery";
 import type { TripPhoto } from "gen/trips/v1/trips_pb";
 import { formatMeters } from "helpers/format";
-import React, { useState } from "react";
+import type { DragEvent } from "react";
+import React, { useRef, useState } from "react";
+
+/**
+ * PHOTO_DRAG_TYPE is the type of the data of a dragged photo row: the
+ * photo's ID. Types are lowercase, as browsers lowercase them.
+ */
+const PHOTO_DRAG_TYPE = "application/x-trailrunning-photo";
+
+// IsPhotoDrag reports whether a drag is of a photo row.
+const isPhotoDrag = (event: DragEvent): boolean =>
+  event.dataTransfer.types.includes(PHOTO_DRAG_TYPE);
 
 interface KmInputProps {
   label: string;
@@ -79,8 +91,17 @@ interface PhotoRowProps {
   cover: boolean;
   // The other sections the photo can move to.
   sections: { key: string; label: string }[];
+  // Where a photo being dragged would drop next to this one, if here.
+  dropEdge: "before" | "after" | null;
   onSelect: () => void;
+  // Shows the photo full screen.
+  onOpen: () => void;
   onPlace: () => void;
+  /**
+   * Called while a photo is dragged over this one, with whether it would
+   * drop after it rather than before.
+   */
+  onDragOver: (after: boolean) => void;
   onMove: (delta: number) => void;
   onMoveToSection: (key: string) => void;
   onSetCover: () => void;
@@ -100,13 +121,17 @@ const PhotoRow: React.FC<PhotoRowProps> = ({
   placing,
   cover,
   sections,
+  dropEdge,
   onSelect,
+  onOpen,
   onPlace,
+  onDragOver,
   onMove,
   onMoveToSection,
   onSetCover,
   onChanged,
 }) => {
+  const row = useRef<HTMLLIElement>(null);
   const [caption, setCaption] = useState(photo.caption);
   const update = useMutation(updateTripPhoto, { onSuccess: onChanged });
   const remove = useMutation(deleteTripPhoto, { onSuccess: onChanged });
@@ -120,14 +145,45 @@ const PhotoRow: React.FC<PhotoRowProps> = ({
 
   return (
     <li
+      ref={row}
       data-photo-row
-      className={`flex gap-3 rounded-lg p-2 ${selected ? "bg-amber-50 ring-2 ring-amber-300" : ""}`}
+      className={`flex gap-3 rounded-lg p-2 ${selected ? "bg-amber-50 ring-2 ring-amber-300" : ""} ${dropEdge === "before" ? "shadow-[0_-3px_0_var(--color-brand-600)]" : ""} ${dropEdge === "after" ? "shadow-[0_3px_0_var(--color-brand-600)]" : ""}`}
+      onDragOver={(event) => {
+        if (!isPhotoDrag(event)) {
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        const rect = event.currentTarget.getBoundingClientRect();
+        onDragOver(event.clientY > rect.top + rect.height / 2);
+      }}
     >
+      {/* Only the handle drags, so the caption's text can be selected. */}
+      <span
+        draggable
+        role="img"
+        aria-label="Drag to reorder"
+        title="Drag to reorder"
+        className="-mx-1 hidden cursor-grab self-center p-1 text-gray-400 hover:text-gray-700 active:cursor-grabbing sm:block"
+        onDragStart={(event) => {
+          event.dataTransfer.setData(PHOTO_DRAG_TYPE, photo.id);
+          event.dataTransfer.effectAllowed = "move";
+          if (row.current !== null) {
+            event.dataTransfer.setDragImage(row.current, 24, 24);
+          }
+        }}
+      >
+        <Bars2Icon className="size-4" />
+      </span>
       <button
         type="button"
-        className="relative shrink-0 self-start"
-        onClick={onSelect}
-        aria-label={`Select photo ${number}`}
+        className="relative shrink-0 cursor-zoom-in self-start"
+        onClick={() => {
+          onSelect();
+          onOpen();
+        }}
+        aria-label={`Enlarge photo ${number}`}
+        title="Enlarge"
       >
         <img
           src={photo.thumbnailUrl}
@@ -266,6 +322,24 @@ const PhotoRow: React.FC<PhotoRowProps> = ({
   );
 };
 
+/**
+ * DropEdgeOf returns where a dragged photo dropping at dropIndex shows
+ * against the photo at position: before it, or after the last photo.
+ */
+const dropEdgeOf = (
+  dropIndex: number | null,
+  position: number,
+  count: number
+): "before" | "after" | null => {
+  if (dropIndex === position) {
+    return "before";
+  }
+  if (dropIndex === count && position === count - 1) {
+    return "after";
+  }
+  return null;
+};
+
 // SectionLabel names a section in lists, e.g. "2. Climb to 1,450 m".
 export const sectionLabel = (section: DraftSection, index: number): string =>
   `${index + 1}. ${section.title.trim() === "" ? "Untitled section" : section.title.trim()}`;
@@ -292,7 +366,11 @@ interface SectionCardProps {
   onSplit: () => void;
   onRemove: () => void;
   onSelectPhoto: (id: string) => void;
+  // Shows a photo full screen.
+  onOpenPhoto: (id: string) => void;
   onPlacePhoto: (id: string) => void;
+  // Moves a photo, from this section or another, to a place in this one.
+  onDropPhoto: (id: string, index: number) => void;
   onMovePhoto: (id: string, delta: number) => void;
   onMovePhotoToSection: (id: string, key: string) => void;
   onSetCover: (id: string) => void;
@@ -323,12 +401,16 @@ export const SectionCard: React.FC<SectionCardProps> = ({
   onSplit,
   onRemove,
   onSelectPhoto,
+  onOpenPhoto,
   onPlacePhoto,
+  onDropPhoto,
   onMovePhoto,
   onMovePhotoToSection,
   onSetCover,
   onPhotoChanged,
 }) => {
+  // Where a photo being dragged over the section would drop.
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const range = draftRange(section);
   const error = rangeError(section);
   let climbing = "";
@@ -343,6 +425,22 @@ export const SectionCard: React.FC<SectionCardProps> = ({
     const photo = photos.get(id);
     return photo === undefined ? [] : [photo];
   });
+  const drop = (event: DragEvent) => {
+    const id = event.dataTransfer.getData(PHOTO_DRAG_TYPE);
+    if (id !== "" && dropIndex !== null) {
+      event.preventDefault();
+      onDropPhoto(id, dropIndex);
+    }
+    setDropIndex(null);
+  };
+  const leave = (event: DragEvent) => {
+    if (
+      !(event.relatedTarget instanceof Node) ||
+      !event.currentTarget.contains(event.relatedTarget)
+    ) {
+      setDropIndex(null);
+    }
+  };
   const otherSections = labels.filter((label) => label.key !== section.key);
 
   return (
@@ -470,7 +568,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
         }}
       />
       {sectionPhotos.length > 0 ? (
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-1" onDrop={drop} onDragLeave={leave}>
           {sectionPhotos.map((photo, position) => (
             <PhotoRow
               key={photo.id}
@@ -482,11 +580,18 @@ export const SectionCard: React.FC<SectionCardProps> = ({
               placing={photo.id === placingPhotoId}
               cover={photo.id === coverPhotoId}
               sections={otherSections}
+              dropEdge={dropEdgeOf(dropIndex, position, sectionPhotos.length)}
               onSelect={() => {
                 onSelectPhoto(photo.id);
               }}
+              onOpen={() => {
+                onOpenPhoto(photo.id);
+              }}
               onPlace={() => {
                 onPlacePhoto(photo.id);
+              }}
+              onDragOver={(after) => {
+                setDropIndex(position + (after ? 1 : 0));
               }}
               onMove={(delta) => {
                 onMovePhoto(photo.id, delta);
@@ -502,8 +607,19 @@ export const SectionCard: React.FC<SectionCardProps> = ({
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-gray-500">
-          No photos. Upload photos, or move them here from another section.
+        <p
+          className={`rounded-md text-xs text-gray-500 ${dropIndex === null ? "" : "ring-2 ring-brand-600"}`}
+          onDragOver={(event) => {
+            if (isPhotoDrag(event)) {
+              event.preventDefault();
+              setDropIndex(0);
+            }
+          }}
+          onDragLeave={leave}
+          onDrop={drop}
+        >
+          No photos. Upload photos, or move or drag them here from another
+          section.
         </p>
       )}
     </section>
