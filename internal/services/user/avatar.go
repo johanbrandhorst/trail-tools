@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"image"
 	"net/http"
 	"regexp"
 	"strings"
@@ -54,13 +55,16 @@ func (s *Service) UploadAvatar(ctx context.Context, req *usersv1.UploadAvatarReq
 	if len(req.GetData()) > maxAvatarBytes {
 		return nil, connect.Errorf(connect.CodeInvalidArgument, "the picture must be at most %d MB", maxAvatarBytes>>20)
 	}
-	img, err := images.Decode(req.GetData())
-	if err != nil {
+	var data []byte
+	var encodeErr error
+	if err := images.Decode(ctx, req.GetData(), func(img image.Image) error {
+		data, encodeErr = images.EncodeJPEG(images.Square(img, avatarSize), 85)
+		return nil
+	}); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
-	data, err := images.EncodeJPEG(images.Square(img, avatarSize), 85)
-	if err != nil {
-		return nil, s.toConnectError(ctx, err, "failed to encode avatar")
+	if encodeErr != nil {
+		return nil, s.toConnectError(ctx, encodeErr, "failed to encode avatar")
 	}
 	// Each avatar gets a new key, so its image can be cached forever.
 	key := strings.ToLower(rand.Text())

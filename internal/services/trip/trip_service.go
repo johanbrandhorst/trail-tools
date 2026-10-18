@@ -571,7 +571,7 @@ func takenBefore(a, b *trips.Photo) bool {
 // section of the report, in the order it was taken. It returns trips.ErrPhotoImported for a photo from Strava
 // the report already has, and otherwise connect errors.
 func (s *Service) storePhoto(ctx context.Context, userID pgtype.UUID, photo *trips.Photo, data []byte) (*trips.Photo, error) {
-	img, err := processImage(data)
+	img, err := processImage(ctx, data)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}

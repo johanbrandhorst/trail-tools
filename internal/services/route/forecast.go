@@ -127,6 +127,11 @@ func (s *Service) forecastPath(ctx context.Context, msg *routesv1.GetRouteForeca
 	if len(points) < 2 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "the route must have at least 2 points")
 	}
+	if msg.WhichSource() != routesv1.GetRouteForecastRequest_RouteId_case {
+		if err := checkTrack(points); err != nil {
+			return nil, err
+		}
+	}
 	if err := s.fillMissingElevations(ctx, points); err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err.Error()).WithCause(err)
 	}

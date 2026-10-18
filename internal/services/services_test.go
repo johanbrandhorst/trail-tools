@@ -20,6 +20,7 @@ import (
 	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/apilimit"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
@@ -226,7 +227,7 @@ func newEnv(t *testing.T) *env {
 	}
 	lactateService := lactatesvc.NewService(log, report, lactateRepo, "https://trail.example")
 	lactatev1connect.RegisterLactateTestServiceHandler(srv2, lactateService)
-	connecthttp.Mount(mux, srv2)
+	apilimit.Mount(mux, srv2)
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())

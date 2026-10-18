@@ -21,6 +21,13 @@ const (
 	// lists the summary polylines of the activities, which Strava simplifies
 	// to tens of meters, instead of their tracks.
 	SummaryPrecisionMeters = 50
+	// MaxTracksInBounds is the most tracks ListTracksInBounds lists, the
+	// most recent activities' first. Users with many activities in an area
+	// have tens of megabytes of tracks there.
+	MaxTracksInBounds = 1000
+	// MaxTrackPointsInBounds is the most points of the tracks
+	// ListTracksInBounds lists, about 24 MB decoded.
+	MaxTrackPointsInBounds = 1_000_000
 )
 
 // Track is the GPS track of an activity.
@@ -36,49 +43,73 @@ type Track struct {
 // ones: they are the tracks from the streams, simplified to
 // TrackToleranceMeters, or for a precision of SummaryPrecisionMeters or more
 // the much smaller summary polylines. Activities without a track, such as
-// manual ones, are left out.
-func (r *Repository) ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) ([]Track, error) {
+// manual ones, are left out. It lists the tracks of the most recent
+// activities first, at most MaxTracksInBounds of them and
+// MaxTrackPointsInBounds points, and truncated is whether it left any out.
+func (r *Repository) ListTracksInBounds(ctx context.Context, userID pgtype.UUID, bounds geo.Bounds, startDate, endDate time.Time, precision float64) (tracks []Track, truncated bool, err error) {
+	// One more than the most listed, to know whether there are more.
+	const maxActivities = MaxTracksInBounds + 1
+	type trackRow struct {
+		id       pgtype.UUID
+		polyline string
+	}
+	var rows []trackRow
 	if precision >= SummaryPrecisionMeters {
-		rows, err := r.q.ListActivitySummaryTracksInBounds(ctx, &gen.ListActivitySummaryTracksInBoundsParams{
-			UserID:    userID,
-			North:     bounds.MaxLat,
-			South:     bounds.MinLat,
-			East:      bounds.MaxLng,
-			West:      bounds.MinLng,
-			StartDate: store.DateToPG(startDate),
-			EndDate:   store.DateToPG(endDate),
+		summaries, err := r.q.ListActivitySummaryTracksInBounds(ctx, &gen.ListActivitySummaryTracksInBoundsParams{
+			UserID:        userID,
+			North:         bounds.MaxLat,
+			South:         bounds.MinLat,
+			East:          bounds.MaxLng,
+			West:          bounds.MinLng,
+			StartDate:     store.DateToPG(startDate),
+			EndDate:       store.DateToPG(endDate),
+			MaxActivities: maxActivities,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to list tracks: %w", err)
+			return nil, false, fmt.Errorf("failed to list tracks: %w", err)
 		}
-		tracks := make([]Track, 0, len(rows))
-		for _, row := range rows {
-			tracks = r.appendTrack(ctx, tracks, row.ID, row.SummaryPolyline)
+		for _, row := range summaries {
+			rows = append(rows, trackRow{id: row.ID, polyline: row.SummaryPolyline})
 		}
-		return tracks, nil
+	} else {
+		detailed, err := r.q.ListActivityTracksInBounds(ctx, &gen.ListActivityTracksInBoundsParams{
+			UserID:        userID,
+			North:         bounds.MaxLat,
+			South:         bounds.MinLat,
+			East:          bounds.MaxLng,
+			West:          bounds.MinLng,
+			StartDate:     store.DateToPG(startDate),
+			EndDate:       store.DateToPG(endDate),
+			MaxActivities: maxActivities,
+		})
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to list tracks: %w", err)
+		}
+		for _, row := range detailed {
+			polyline := row.TrackPolyline.String
+			// Streams without positions, or none at all.
+			if polyline == "" {
+				polyline = row.SummaryPolyline
+			}
+			rows = append(rows, trackRow{id: row.ID, polyline: polyline})
+		}
 	}
-	rows, err := r.q.ListActivityTracksInBounds(ctx, &gen.ListActivityTracksInBoundsParams{
-		UserID:    userID,
-		North:     bounds.MaxLat,
-		South:     bounds.MinLat,
-		East:      bounds.MaxLng,
-		West:      bounds.MinLng,
-		StartDate: store.DateToPG(startDate),
-		EndDate:   store.DateToPG(endDate),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list tracks: %w", err)
+	if len(rows) > MaxTracksInBounds {
+		rows, truncated = rows[:MaxTracksInBounds], true
 	}
-	tracks := make([]Track, 0, len(rows))
+	tracks = make([]Track, 0, len(rows))
+	points := 0
 	for _, row := range rows {
-		polyline := row.TrackPolyline.String
-		// Streams without positions, or none at all.
-		if polyline == "" {
-			polyline = row.SummaryPolyline
+		n := len(tracks)
+		tracks = r.appendTrack(ctx, tracks, row.id, row.polyline)
+		if len(tracks) == n {
+			continue
 		}
-		tracks = r.appendTrack(ctx, tracks, row.ID, polyline)
+		if points += len(tracks[n].Points); points > MaxTrackPointsInBounds {
+			return tracks[:n], true, nil
+		}
 	}
-	return tracks, nil
+	return tracks, truncated, nil
 }
 
 // appendTrack appends the track of an encoded polyline to tracks, unless it's

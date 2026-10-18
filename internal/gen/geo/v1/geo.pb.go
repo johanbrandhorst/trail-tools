@@ -1780,8 +1780,8 @@ type ListHeatmapTracksRequest_builder struct {
 	Bounds *BoundingBox
 	// How far in meters the simplified tracks may stray from the recorded
 	// ones. Defaults to 10, minimum 1. The tracks are stored simplified to 2
-	// meters, and from 50 meters the activities' summary polylines are used,
-	// which are much faster to list.
+	// meters, and from 50 meters, or for areas more than 100 km across, the
+	// activities' summary polylines are used, which are much faster to list.
 	ToleranceMeters float64
 }
 
@@ -1854,8 +1854,9 @@ type ListHeatmapTracksResponse_builder struct {
 
 	// The parts of the tracks inside the bounds, as encoded polylines.
 	Polylines []string
-	// Whether there were too many points to return all of them. The longest
-	// parts are returned first.
+	// Whether there were too many tracks or points to return all of them. The
+	// tracks of the 1,000 most recent activities are listed, and of those the
+	// longest parts are returned first. Use a smaller area to see the rest.
 	Truncated bool
 }
 
@@ -1873,6 +1874,7 @@ type GetPersonalHeatmapResponse struct {
 	xxx_hidden_Cells          *[]*HeatmapCell        `protobuf:"bytes,1,rep,name=cells,proto3"`
 	xxx_hidden_CellSizeMeters float64                `protobuf:"fixed64,2,opt,name=cell_size_meters,json=cellSizeMeters,proto3"`
 	xxx_hidden_ActivityCount  int32                  `protobuf:"varint,3,opt,name=activity_count,json=activityCount,proto3"`
+	xxx_hidden_Truncated      bool                   `protobuf:"varint,4,opt,name=truncated,proto3"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1925,6 +1927,13 @@ func (x *GetPersonalHeatmapResponse) GetActivityCount() int32 {
 	return 0
 }
 
+func (x *GetPersonalHeatmapResponse) GetTruncated() bool {
+	if x != nil {
+		return x.xxx_hidden_Truncated
+	}
+	return false
+}
+
 func (x *GetPersonalHeatmapResponse) SetCells(v []*HeatmapCell) {
 	x.xxx_hidden_Cells = &v
 }
@@ -1937,6 +1946,10 @@ func (x *GetPersonalHeatmapResponse) SetActivityCount(v int32) {
 	x.xxx_hidden_ActivityCount = v
 }
 
+func (x *GetPersonalHeatmapResponse) SetTruncated(v bool) {
+	x.xxx_hidden_Truncated = v
+}
+
 type GetPersonalHeatmapResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1944,8 +1957,12 @@ type GetPersonalHeatmapResponse_builder struct {
 	Cells []*HeatmapCell
 	// The size of each cell in meters.
 	CellSizeMeters float64
-	// The number of activities that intersected the bounds.
+	// The number of activities that intersected the bounds and were counted.
 	ActivityCount int32
+	// Whether there were too many activities in the bounds to count all of
+	// them, so only the most recent (up to 1,000) were. Use a smaller area or
+	// date range to count them all.
+	Truncated bool
 }
 
 func (b0 GetPersonalHeatmapResponse_builder) Build() *GetPersonalHeatmapResponse {
@@ -1955,6 +1972,7 @@ func (b0 GetPersonalHeatmapResponse_builder) Build() *GetPersonalHeatmapResponse
 	x.xxx_hidden_Cells = &b.Cells
 	x.xxx_hidden_CellSizeMeters = b.CellSizeMeters
 	x.xxx_hidden_ActivityCount = b.ActivityCount
+	x.xxx_hidden_Truncated = b.Truncated
 	return m0
 }
 
@@ -2037,11 +2055,12 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\x10tolerance_meters\x18\x02 \x01(\x01R\x0ftoleranceMeters\"W\n" +
 	"\x19ListHeatmapTracksResponse\x12\x1c\n" +
 	"\tpolylines\x18\x01 \x03(\tR\tpolylines\x12\x1c\n" +
-	"\ttruncated\x18\x02 \x01(\bR\ttruncated\"\x98\x01\n" +
+	"\ttruncated\x18\x02 \x01(\bR\ttruncated\"\xb6\x01\n" +
 	"\x1aGetPersonalHeatmapResponse\x12)\n" +
 	"\x05cells\x18\x01 \x03(\v2\x13.geo.v1.HeatmapCellR\x05cells\x12(\n" +
 	"\x10cell_size_meters\x18\x02 \x01(\x01R\x0ecellSizeMeters\x12%\n" +
-	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount*s\n" +
+	"\x0eactivity_count\x18\x03 \x01(\x05R\ractivityCount\x12\x1c\n" +
+	"\ttruncated\x18\x04 \x01(\bR\ttruncated*s\n" +
 	"\aTerrain\x12\x17\n" +
 	"\x13TERRAIN_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rTERRAIN_PAVED\x10\x01\x12\x12\n" +

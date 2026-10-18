@@ -19,6 +19,27 @@ import (
 	"gitlab.com/greyxor/slogor"
 )
 
+const (
+	// trackToleranceMeters is how far the path of a route may stray from the
+	// recorded track it follows exactly, well within the accuracy of GPS.
+	// Simplifying drops most points of tracks recorded every second.
+	trackToleranceMeters = 1
+	// trackElevationToleranceMeters is how far the elevation of a route may
+	// stray from the recorded track it follows exactly, within the noise of
+	// recorded elevations.
+	trackElevationToleranceMeters = 2
+	// maxTrackPoints limits the points of a recorded track, about five days
+	// recorded every second.
+	maxTrackPoints = 500_000
+	// maxRouteTrackPoints limits the points of a route that follows a
+	// recorded track exactly, once simplified, which are all stored and sent
+	// with the route.
+	maxRouteTrackPoints = 100_000
+	// maxTrackMeters is the longest recorded track a route can be made from.
+	// Longer tracks usually have stray points far from the rest.
+	maxTrackMeters = 5_000_000
+)
+
 func (s *Service) PreviewRoute(ctx context.Context, req *routesv1.PreviewRouteRequest) (*routesv1.PreviewRouteResponse, error) {
 	userID, ok := authn.GetUserID(ctx)
 	if !ok {
@@ -231,8 +252,22 @@ type recording struct {
 }
 
 // recordedTrack returns the recorded track a request names: a GPX file, an
-// activity or a saved route. It returns nil if the request names none.
+// activity or a saved route, checked with checkTrack. It returns nil if the
+// request names none.
 func (s *Service) recordedTrack(ctx context.Context, userID pgtype.UUID, req trackSource) (*recording, error) {
+	track, err := s.uncheckedTrack(ctx, userID, req)
+	if err != nil || track == nil {
+		return nil, err
+	}
+	if err := checkTrack(track.points); err != nil {
+		return nil, err
+	}
+	return track, nil
+}
+
+// uncheckedTrack returns the recorded track a request names, or nil if it
+// names none.
+func (s *Service) uncheckedTrack(ctx context.Context, userID pgtype.UUID, req trackSource) (*recording, error) {
 	switch {
 	case req.HasGpx():
 		parsed, err := geo.ParseGPX(strings.NewReader(req.GetGpx()))
@@ -265,6 +300,24 @@ func (s *Service) recordedTrack(ctx context.Context, userID pgtype.UUID, req tra
 	}
 }
 
+// checkTrack checks that a route can be made from a recorded track.
+func checkTrack(points []geo.Point) error {
+	if len(points) > maxTrackPoints {
+		return connect.Errorf(connect.CodeInvalidArgument,
+			"the track has %d points, but at most %d are supported; split it into shorter tracks", len(points), maxTrackPoints)
+	}
+	length := 0.0
+	for i := 1; i < len(points); i++ {
+		length += geo.Distance(points[i-1], points[i])
+	}
+	if length > maxTrackMeters {
+		return connect.Errorf(connect.CodeInvalidArgument,
+			"the track is %.0f km long, but at most %d km is supported; remove any stray points far from the rest, or split it into shorter tracks",
+			length/1000, maxTrackMeters/1000)
+	}
+	return nil
+}
+
 // routeFromTrack sets a route's waypoints and legs from a recorded track,
 // keeping the track exactly or snapping it to the map. If the track can't be
 // snapped, the route follows it with straight legs between waypoints about a
@@ -290,6 +343,9 @@ func (s *Service) routeFromTrack(ctx context.Context, route *routes.Route, track
 			s.report.Report(ctx, "Failed to snap a track to the map, following it with straight legs", err)
 		}
 		route.Waypoints, route.Legs = legsFromTrack(track)
+		if err := checkRoutePoints(route.Legs); err != nil {
+			return "", err
+		}
 		for i := range route.Legs {
 			route.Legs[i].Profile = routes.ProfileStraight
 		}
@@ -297,7 +353,22 @@ func (s *Service) routeFromTrack(ctx context.Context, route *routes.Route, track
 			"Move its waypoints, or route legs along trails, to adjust it.", reason), nil
 	}
 	route.Waypoints, route.Legs = legsFromTrack(track)
-	return "", nil
+	return "", checkRoutePoints(route.Legs)
+}
+
+// checkRoutePoints checks that the legs of a route that follows a recorded
+// track have at most maxRouteTrackPoints points.
+func checkRoutePoints(legs []routes.Leg) error {
+	n := 0
+	for _, leg := range legs {
+		n += len(leg.Points)
+	}
+	if n > maxRouteTrackPoints {
+		return connect.Errorf(connect.CodeInvalidArgument,
+			"the track has %d points even when simplified, but at most %d are supported; split it into shorter tracks, or convert it with SNAP",
+			n, maxRouteTrackPoints)
+	}
+	return nil
 }
 
 // getRoute gets one of the authenticated user's routes by ID.

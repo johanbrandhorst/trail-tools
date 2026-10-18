@@ -19,6 +19,14 @@ const (
 	// directions of the track and the earlier part it repeats: they run along
 	// the same line, either way, rather than crossing it.
 	repeatMinAlignment = 0.85
+	// repeatMaxGap is the longest line between two points of a track that is
+	// sampled. Longer ones, such as where a recording paused or a bogus
+	// point, aren't where the track went.
+	repeatMaxGap = 5000.0
+	// maxRepeatSamples limits the samples of a track, which take about 50
+	// bytes each with their index. Tracks longer than about 2,000 km are
+	// sampled further apart, which finds fewer repeats.
+	maxRepeatSamples = 200_000
 )
 
 // RepeatedDistance returns the distance in meters of a track that retraces
@@ -27,7 +35,8 @@ const (
 // almost nothing. It's approximate: separate trails within about 15 m of each
 // other count as the same.
 func RepeatedDistance(points []Point) float64 {
-	samples := resample(points, repeatSpacing)
+	spacing := math.Max(repeatSpacing, sampledDistance(points)/maxRepeatSamples)
+	samples := resample(points, spacing)
 	if len(samples) < 2 {
 		return 0
 	}
@@ -46,7 +55,7 @@ func RepeatedDistance(points []Point) float64 {
 		}
 		return dx / n, dy / n
 	}
-	gap := int(repeatMinGap / repeatSpacing)
+	gap := max(1, int(repeatMinGap/spacing))
 	repeated := 0
 	for i, s := range samples {
 		if i >= gap {
@@ -76,14 +85,27 @@ func RepeatedDistance(points []Point) float64 {
 		}
 	}
 	total := CumulativeDistances(points)[len(points)-1]
-	return math.Min(total, float64(repeated)*repeatSpacing)
+	return math.Min(total, float64(repeated)*spacing)
 }
 
 // xy is a position in meters on a local flat projection.
 type xy struct{ x, y float64 }
 
+// sampledDistance returns the length in meters of the lines of a track that
+// resample samples.
+func sampledDistance(points []Point) float64 {
+	total := 0.0
+	for i := 1; i < len(points); i++ {
+		if d := Distance(points[i-1], points[i]); d <= repeatMaxGap {
+			total += d
+		}
+	}
+	return total
+}
+
 // resample returns points spaced along a track, projected to meters around
-// its first point.
+// its first point. Lines longer than repeatMaxGap aren't sampled, but
+// sampling starts again from their end.
 func resample(points []Point, spacing float64) []xy {
 	if len(points) == 0 {
 		return nil
@@ -102,6 +124,11 @@ func resample(points []Point, spacing float64) []xy {
 	walked := 0.0
 	for i := 1; i < len(points); i++ {
 		d := Distance(points[i-1], points[i])
+		if d > repeatMaxGap {
+			samples = append(samples, project(points[i]))
+			walked, next = 0, spacing
+			continue
+		}
 		for d > 0 && walked+d >= next {
 			samples = append(samples, project(Interpolate(points[i-1], points[i], (next-walked)/d)))
 			next += spacing

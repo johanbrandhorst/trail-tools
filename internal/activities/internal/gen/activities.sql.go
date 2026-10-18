@@ -294,16 +294,19 @@ where user_id = $1
   and max_lng >= $5::double precision
   and ($6::date is null or start_date_local >= $6::date)
   and ($7::date is null or start_date_local <= $7::date)
+order by start_date_local desc, id
+limit $8
 `
 
 type ListActivitySummaryTracksInBoundsParams struct {
-	UserID    pgtype.UUID
-	North     float64
-	South     float64
-	East      float64
-	West      float64
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
+	UserID        pgtype.UUID
+	North         float64
+	South         float64
+	East          float64
+	West          float64
+	StartDate     pgtype.Date
+	EndDate       pgtype.Date
+	MaxActivities int32
 }
 
 type ListActivitySummaryTracksInBoundsRow struct {
@@ -320,6 +323,7 @@ func (q *Queries) ListActivitySummaryTracksInBounds(ctx context.Context, arg *Li
 		arg.West,
 		arg.StartDate,
 		arg.EndDate,
+		arg.MaxActivities,
 	)
 	if err != nil {
 		return nil, err
@@ -404,16 +408,19 @@ where a.user_id = $1
   and a.max_lng >= $5::double precision
   and ($6::date is null or a.start_date_local >= $6::date)
   and ($7::date is null or a.start_date_local <= $7::date)
+order by a.start_date_local desc, a.id
+limit $8
 `
 
 type ListActivityTracksInBoundsParams struct {
-	UserID    pgtype.UUID
-	North     float64
-	South     float64
-	East      float64
-	West      float64
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
+	UserID        pgtype.UUID
+	North         float64
+	South         float64
+	East          float64
+	West          float64
+	StartDate     pgtype.Date
+	EndDate       pgtype.Date
+	MaxActivities int32
 }
 
 type ListActivityTracksInBoundsRow struct {
@@ -431,6 +438,7 @@ func (q *Queries) ListActivityTracksInBounds(ctx context.Context, arg *ListActiv
 		arg.West,
 		arg.StartDate,
 		arg.EndDate,
+		arg.MaxActivities,
 	)
 	if err != nil {
 		return nil, err

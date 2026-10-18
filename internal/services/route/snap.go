@@ -27,6 +27,15 @@ const (
 	// snapSpacingMeters is the spacing the track is resampled to, which also
 	// limits where waypoints can be placed.
 	snapSpacingMeters = 20
+	// maxSnapFillMeters is the longest gap between points of the track that
+	// is filled in when resampling it. Longer gaps, such as where a
+	// recording paused, aren't where the track went, and filling them would
+	// take memory in proportion to their length.
+	maxSnapFillMeters = 2000
+	// maxSnapPoints limits the points of the resampled track, about 1,000 km
+	// of it. Longer tracks would need more routing calls than
+	// maxSnapRoutingCalls to follow anyway.
+	maxSnapPoints = 50_000
 	// minSnapLegMeters is the shortest section of track that is routed. A
 	// shorter section that no route follows becomes straight legs.
 	minSnapLegMeters = 150
@@ -76,6 +85,9 @@ type trackSnapper struct {
 // follows the track.
 func (s *Service) snapTrack(ctx context.Context, track []geo.Point) ([]routes.LatLng, []routes.Leg, error) {
 	points := resample(track, snapSpacingMeters)
+	if len(points) > maxSnapPoints {
+		return nil, nil, fmt.Errorf("%w: the track is longer than about %d km", errInvalidRoute, maxSnapPoints*snapSpacingMeters/1000)
+	}
 	if len(points) < 2 {
 		return nil, nil, fmt.Errorf("%w: the track is too short", errInvalidRoute)
 	}
@@ -357,21 +369,22 @@ func roundCoordinate(v float64) float64 {
 
 // resample returns points of the track at least spacing meters apart, in a
 // straight line, including its first and last points. Gaps longer than
-// spacing, such as in low resolution polylines, are filled in, and GPS
-// jitter between nearby points is dropped.
+// spacing, such as in low resolution polylines, are filled in up to
+// maxSnapFillMeters, and GPS jitter between nearby points is dropped. It
+// stops after more than maxSnapPoints points.
 func resample(track []geo.Point, spacing float64) []geo.Point {
 	if len(track) == 0 {
 		return nil
 	}
 	result := []geo.Point{track[0]}
-	for i := 1; i < len(track); i++ {
+	for i := 1; i < len(track) && len(result) <= maxSnapPoints; i++ {
 		last := result[len(result)-1]
 		p := track[i]
 		d := geo.Distance(last, p)
 		if d < spacing {
 			continue
 		}
-		if d >= 2*spacing {
+		if d >= 2*spacing && d <= maxSnapFillMeters {
 			result = append(result, geo.Densify(last, p, spacing)[1:]...)
 			continue
 		}

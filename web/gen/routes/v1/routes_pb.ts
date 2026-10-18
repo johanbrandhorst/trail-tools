@@ -278,7 +278,9 @@ export const RouteSchema: GenMessage<Route> = /*@__PURE__*/
  */
 export type PreviewRouteRequest = Message<"routes.v1.PreviewRouteRequest"> & {
   /**
-   * The ordered waypoints. At least 2 are required.
+   * The ordered waypoints. At least 2 and at most 200 are required, and
+   * the waypoints of each leg that is routed must be at most 50 km apart:
+   * add waypoints in between for longer legs.
    *
    * @generated from field: repeated geo.v1.LatLng waypoints = 1;
    */
@@ -354,7 +356,9 @@ export const PreviewRouteResponseSchema: GenMessage<PreviewRouteResponse> = /*@_
  */
 export type Waypoints = Message<"routes.v1.Waypoints"> & {
   /**
-   * The ordered waypoints. At least 2 are required.
+   * The ordered waypoints. At least 2 and at most 200 are required, and
+   * the waypoints of each leg that is routed must be at most 50 km apart:
+   * add waypoints in between for longer legs.
    *
    * @generated from field: repeated geo.v1.LatLng waypoints = 1;
    */
@@ -422,6 +426,8 @@ export type CreateRouteRequest = Message<"routes.v1.CreateRouteRequest"> & {
   } | {
     /**
      * The contents of a GPX file. The first track (or route) is imported.
+     * Files can be at most 32 MB, and tracks at most 500,000 points and
+     * 5,000 km long.
      *
      * @generated from field: string gpx = 4;
      */
@@ -687,6 +693,7 @@ export type CheckTrackCoverageRequest = Message<"routes.v1.CheckTrackCoverageReq
   source: {
     /**
      * The contents of a GPX file. The first track (or route) is checked.
+     * Files can be at most 32 MB.
      *
      * @generated from field: string gpx = 1;
      */
@@ -758,6 +765,8 @@ export type GetRouteForecastRequest = Message<"routes.v1.GetRouteForecastRequest
   } | {
     /**
      * The contents of a GPX file. The first track (or route) is used.
+     * Files can be at most 32 MB, and tracks at most 500,000 points and
+     * 5,000 km long.
      *
      * @generated from field: string gpx = 2;
      */
@@ -1116,10 +1125,12 @@ export enum TrackConversion {
   UNSPECIFIED = 0,
 
   /**
-   * Keep the recorded track exactly. Waypoints are placed about every
-   * kilometer, but the path between them is the recording, so the route can't
-   * be meaningfully redesigned by moving waypoints. Best for official race
-   * courses and routes that must match a recording.
+   * Keep the recorded track exactly, but for points within a meter, and 2
+   * meters of elevation, of the line through their neighbors. Waypoints are
+   * placed about every kilometer, but the path between them is the
+   * recording, so the route can't be meaningfully redesigned by moving
+   * waypoints. Best for official race courses and routes that must match a
+   * recording.
    *
    * @generated from enum value: TRACK_CONVERSION_EXACT = 1;
    */
