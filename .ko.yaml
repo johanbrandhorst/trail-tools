@@ -1,5 +1,6 @@
 # Configuration for building the container image with ko (https://ko.build).
-defaultBaseImage: gcr.io/distroless/static-debian12:nonroot
+# The base image is the ko-base stage in images/Dockerfile, where Dependabot
+# updates it. CI passes it to ko in KO_DEFAULTBASEIMAGE.
 defaultPlatforms:
   - linux/amd64
 builds:

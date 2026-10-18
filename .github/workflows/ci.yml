@@ -10,16 +10,20 @@ on:
   # check regenerated code, and on main to deploy a merge.
   workflow_dispatch:
 
+# Third-party actions are pinned to commits, as tags can be moved to
+# different code. The deploy job holds credentials that can change anything
+# in the Google Cloud project. Dependabot updates the pins.
+
 # A new push to a pull request cancels its now stale run. Runs on main all
 # complete, so each commit is deployed.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  # Keep in sync with the version used locally, as Terraform refuses to read
-  # state written by a newer version.
-  TERRAFORM_VERSION: "1.14.8"
+# Jobs that need more ask for it. Most jobs run code that Dependabot's pull
+# requests update, before anyone has reviewed it.
+permissions:
+  contents: read
 
 jobs:
   format:
@@ -27,7 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         # Lint and code generation tools must support the Go version, so
         # use the one in go.mod rather than the latest.
@@ -49,7 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         # Lint and code generation tools must support the Go version, so
         # use the one in go.mod rather than the latest.
@@ -71,7 +79,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         # Lint and code generation tools must support the Go version, so
         # use the one in go.mod rather than the latest.
@@ -97,7 +107,9 @@ jobs:
         go-version: ["stable", "oldstable"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
@@ -131,7 +143,9 @@ jobs:
       TEST_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         # Lint and code generation tools must support the Go version, so
         # use the one in go.mod rather than the latest.
@@ -151,7 +165,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         # Lint and code generation tools must support the Go version, so
         # use the one in go.mod rather than the latest.
@@ -174,11 +190,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          persist-credentials: false
+      - name: Read the Terraform version
+        id: terraform-version
+        # Kept in images/Dockerfile for Dependabot to update. The Makefile
+        # applies locally with the same version.
+        run: echo "version=$(images/image.sh --tag terraform)" >> "$GITHUB_OUTPUT"
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
       - name: Check formatting and validate
         run: |
           terraform -chdir=infra fmt -check -recursive
@@ -203,22 +226,34 @@ jobs:
       KO_DOCKER_REPO: us-west1-docker.pkg.dev/trail-tools-444904/trail-tools/server
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
           cache-name: deploy
+      - name: Read the Terraform version
+        id: terraform-version
+        # Kept in images/Dockerfile for Dependabot to update. The Makefile
+        # applies locally with the same version.
+        run: echo "version=$(images/image.sh --tag terraform)" >> "$GITHUB_OUTPUT"
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: projects/296221712346/locations/global/workloadIdentityPools/github/providers/github
           service_account: github-terraform@trail-tools-444904.iam.gserviceaccount.com
       - name: Build and push the image
-        run: echo "IMAGE=$(go tool ko build --bare --tags "${GITHUB_SHA},latest" .)" >> "$GITHUB_ENV"
+        run: |
+          # The base image, kept in images/Dockerfile for Dependabot to
+          # update.
+          KO_DEFAULTBASEIMAGE=$(images/image.sh ko-base)
+          export KO_DEFAULTBASEIMAGE
+          echo "IMAGE=$(go tool ko build --bare --tags "${GITHUB_SHA},latest" .)" >> "$GITHUB_ENV"
       - name: Apply Terraform
         run: |
           terraform -chdir=infra init -input=false
@@ -239,18 +274,21 @@ jobs:
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    # Code generation runs the updated npm packages and Go tools, so it gets
+    # a read-only token, which it doesn't keep in the checkout either. A
+    # compromised dependency could otherwise push to main, or start the
+    # deployment. commit-dependabot commits its changes, without running any
+    # of the pull request's code.
     permissions:
-      contents: write
-      # Needed to start the checks of the regenerated commit.
-      actions: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      BRANCH: ${{ github.head_ref }}
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
@@ -259,16 +297,69 @@ jobs:
         run: |
           make web-deps
           make gen
-      - name: Commit the regenerated code
+      - name: Save the regenerated code as a patch
+        id: diff
         run: |
-          if [ -z "$(git status --porcelain)" ]; then
+          git add -A
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          git diff --cached --binary > "$RUNNER_TEMP/regenerated.patch"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Upload the patch
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: regenerated-patch
+          path: ${{ runner.temp }}/regenerated.patch
+          retention-days: 1
+
+  commit-dependabot:
+    name: Commit regenerated code to Dependabot's pull request
+    needs: regenerate-dependabot
+    if: needs.regenerate-dependabot.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Needed to start the checks of the regenerated commit.
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: ${{ github.head_ref }}
+    steps:
+      # Keeps the token in the checkout to push the commit. This job runs
+      # none of the checked out code.
+      - name: Checkout code # zizmor: ignore[artipacked]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Download the patch
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: regenerated-patch
+          path: ${{ runner.temp }}
+      - name: Commit the regenerated code
+        run: |
+          git apply --index "$RUNNER_TEMP/regenerated.patch"
+          # The patch comes from a job that ran the updated dependencies, so
+          # only commit generated code, see AGENTS.md. Anything else needs a
+          # person to look at it.
+          git diff --cached --name-only | while read -r file; do
+            case "$file" in
+              internal/gen/* | internal/*/internal/gen/* | web/gen/* | web/dist/* | internal/apidesc/descriptor.binpb) ;;
+              *)
+                echo "::error::Regenerating code changed $file, which isn't generated code. Regenerate the code by hand and review the change."
+                exit 1
+                ;;
+            esac
+          done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
           git commit -m "Regenerate code"
-          git push
+          # Fails if Dependabot pushed to the branch since, whose run
+          # regenerates the code again.
+          git push origin "HEAD:refs/heads/$BRANCH"
           # Pushes with the workflow's token don't trigger workflows, so start
           # the checks of the new commit, which merge it if they pass.
           gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"

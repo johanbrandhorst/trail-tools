@@ -1,5 +1,3 @@
-NPM_TAG := 26.11.1-alpine
-PG_TAG  := 18
 CONTAINER_BIN ?= $(shell if command -v docker >/dev/null 2>&1; then printf '%s' docker; elif command -v container >/dev/null 2>&1; then printf '%s' container; fi)
 CPUS ?= $(shell (nproc --all || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
 MAKEFLAGS += --jobs=$(CPUS)
@@ -21,6 +19,10 @@ endif
 
 UID_GID := $(shell id -u):$(shell id -g)
 
+# The image of a stage in images/Dockerfile, by its name, e.g.
+# $(call image,node). The images are kept there for Dependabot to update.
+image = $(shell images/image.sh $(1))
+
 # Boilerplate for running a one-off node tool against ./web in a container, as
 # the host user so written files aren't owned by root. Append the command, e.g.
 # `$(NODE_RUN) npx oxlint`.
@@ -31,7 +33,7 @@ NODE_ARGS := \
 	-e NPM_CONFIG_CACHE=/srv/node_modules/.npm \
 	-e NODE_OPTIONS='--disable-warning=ExperimentalWarning' \
 	-e BROWSERSLIST_IGNORE_OLD_DATA=true \
-	node:$(NPM_TAG)
+	$(call image,node)
 NODE_RUN := $(CONTAINER_BIN) run --rm $(NODE_ARGS)
 
 # The admin bootstrap token of the local server. Its invitation creates the
@@ -86,8 +88,8 @@ db: ## Start the postgres container, with PostGIS and pgRouting
 		$(CONTAINER_BIN) exec postgres psql -U postgres -tAc "select 1 from pg_available_extensions where name = 'pgrouting'" | grep -q 1 || \
 			{ echo "the running postgres container has no pgRouting; restart it with make clean db" >&2; exit 1; }; \
 	else \
-		$(CONTAINER_BIN) build -t trail-tools-postgres:$(PG_TAG) --build-arg PG_TAG=$(PG_TAG) --build-arg PG_MAJOR=$(PG_TAG) test/postgres && \
-		$(CONTAINER_BIN) run --rm --name postgres -p 5432:5432 -d --memory 4g -e POSTGRES_PASSWORD=password trail-tools-postgres:$(PG_TAG); \
+		$(CONTAINER_BIN) build -t trail-tools-postgres test/postgres && \
+		$(CONTAINER_BIN) run --rm --name postgres -p 5432:5432 -d --memory 4g -e POSTGRES_PASSWORD=password trail-tools-postgres; \
 	fi
 
 .PHONY: grafana
@@ -148,6 +150,43 @@ import-osm: db ## Import OpenStreetMap data for routing, e.g. make import-osm RE
 	go run . import-osm \
 		-database-url postgres://postgres:password@localhost:5432/postgres?sslmode=disable \
 		-region "$(REGION)" -pbf "$(PBF)" $(if $(BOUNDS),-bounds "$(BOUNDS)")
+
+# The Terraform CI plans and applies with, in images/Dockerfile, where
+# Dependabot updates it. Local applies use the same version, downloaded into
+# .bin on first use: Terraform refuses to read state written by a newer
+# version, so applying with another version breaks either CI's deployments
+# or local applies. Terraform can't be installed with go install, as its
+# go.mod has replace directives.
+TERRAFORM_VERSION := $(shell images/image.sh --tag terraform)
+TERRAFORM := $(CURDIR)/.bin/terraform-$(TERRAFORM_VERSION)
+TERRAFORM_RELEASE := https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)
+
+$(TERRAFORM):
+	rm -rf $(CURDIR)/.bin/download && mkdir -p $(CURDIR)/.bin/download && cd $(CURDIR)/.bin/download && \
+		zip=terraform_$(TERRAFORM_VERSION)_$$(uname -s | tr '[:upper:]' '[:lower:]')_$$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/').zip && \
+		curl -fsSLO $(TERRAFORM_RELEASE)/$$zip && \
+		curl -fsSL $(TERRAFORM_RELEASE)/terraform_$(TERRAFORM_VERSION)_SHA256SUMS | grep " $$zip$$" | shasum -a 256 -c && \
+		unzip -q $$zip terraform && \
+		mv terraform $@
+	rm -rf $(CURDIR)/.bin/download
+
+.PHONY: infra-plan
+infra-plan: $(TERRAFORM) ## Plan changes to the Google Cloud project, with your gcloud credentials
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false && \
+		$(TERRAFORM) -chdir=infra plan
+
+.PHONY: infra-apply
+infra-apply: $(TERRAFORM) ## Apply changes to the Google Cloud project, with your gcloud credentials
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false && \
+		$(TERRAFORM) -chdir=infra apply
+
+.PHONY: infra-output
+infra-output: $(TERRAFORM) ## Print Terraform's outputs, e.g. make infra-output NAME=domain_records
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra init -input=false >/dev/null && \
+		$(TERRAFORM) -chdir=infra output $(NAME)
 
 .PHONY: web-deps
 web-deps: ## Install web dependencies

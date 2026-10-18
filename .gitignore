@@ -4,6 +4,9 @@ localhost.pem
 # Binaries built with go build
 /trail-tools
 
+# Tools the Makefile installs, like Terraform
+/.bin/
+
 # Trip report photos stored locally, see -photo-dir
 /photos/
 

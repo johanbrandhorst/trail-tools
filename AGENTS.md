@@ -23,6 +23,9 @@ Directories have their own AGENTS.md with the rules for their code: `api/`,
   telemetry and error reporting (`telemetry`, `errreport`).
 - `web/`: the React app. Its bundle in `web/dist/` is embedded in the server.
 - `infra/`: Terraform for Google Cloud.
+- `images/Dockerfile`: the container images the Makefile and CI run, like
+  Node's and the server's base image, and the Terraform version, kept there
+  for Dependabot to update. `images/image.sh` reads them.
 
 ## Commands
 

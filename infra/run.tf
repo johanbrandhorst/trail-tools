@@ -116,7 +116,7 @@ resource "google_cloud_run_v2_job" "import" {
   template {
     task_count = 1
     template {
-      service_account = google_service_account.run.email
+      service_account = google_service_account.import.email
       # Matches the time limit on imports, importTimeout in
       # internal/routing/imports.go, which the app relies on to tell when an
       # import stopped without recording its result.
@@ -170,10 +170,10 @@ resource "google_cloud_run_v2_job" "import" {
   }
 
   depends_on = [
-    google_secret_manager_secret_iam_member.run,
-    google_storage_bucket_iam_member.run_dem,
-    google_project_iam_member.run_error_reporting,
-    google_project_iam_member.run_tracing,
+    google_secret_manager_secret_iam_member.import,
+    google_storage_bucket_iam_member.import_dem,
+    google_project_iam_member.import_error_reporting,
+    google_project_iam_member.import_tracing,
   ]
 }
 
@@ -245,12 +245,28 @@ resource "google_project_iam_member" "run_error_reporting" {
   depends_on = [google_project_service.services]
 }
 
+resource "google_project_iam_member" "import_error_reporting" {
+  project = var.project
+  role    = "roles/errorreporting.writer"
+  member  = google_service_account.import.member
+
+  depends_on = [google_project_service.services]
+}
+
 # Lets the service and the import job export traces, which is free up to
 # 2.5 million spans a month.
 resource "google_project_iam_member" "run_tracing" {
   project = var.project
   role    = "roles/cloudtrace.agent"
   member  = google_service_account.run.member
+
+  depends_on = [google_project_service.services]
+}
+
+resource "google_project_iam_member" "import_tracing" {
+  project = var.project
+  role    = "roles/cloudtrace.agent"
+  member  = google_service_account.import.member
 
   depends_on = [google_project_service.services]
 }
