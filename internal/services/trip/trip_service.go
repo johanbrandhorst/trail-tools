@@ -22,6 +22,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1/tripsv1connect"
@@ -640,6 +641,33 @@ func (s *Service) UpdateTripPhoto(ctx context.Context, req *tripsv1.UpdateTripPh
 		}
 	}
 	return tripsv1.UpdateTripPhotoResponse_builder{Photo: s.photoToProto(photo)}.Build(), nil
+}
+
+func (s *Service) GetTripPhoto(ctx context.Context, req *tripsv1.GetTripPhotoRequest) (*tripsv1.GetTripPhotoResponse, error) {
+	userID, photoID, err := s.parsePhotoID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	size := sizeThumb
+	switch req.GetSize() {
+	case tripsv1.PhotoSize_PHOTO_SIZE_UNSPECIFIED, tripsv1.PhotoSize_PHOTO_SIZE_THUMBNAIL:
+	case tripsv1.PhotoSize_PHOTO_SIZE_LARGE:
+		size = sizeLarge
+	default:
+		return nil, connect.Errorf(connect.CodeInvalidArgument, "unknown size %v; use PHOTO_SIZE_THUMBNAIL or PHOTO_SIZE_LARGE", req.GetSize())
+	}
+	photo, err := s.repo.GetPhoto(ctx, userID, photoID)
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to get photo")
+	}
+	data, err := s.blobs.Get(ctx, imageKey(photo.ObjectKey, size))
+	if err != nil {
+		return nil, s.toConnectError(ctx, err, "failed to read the photo's image")
+	}
+	return tripsv1.GetTripPhotoResponse_builder{
+		Photo: s.photoToProto(photo),
+		Image: mcpv1.Image_builder{MimeType: "image/jpeg", Data: data}.Build(),
+	}.Build(), nil
 }
 
 func (s *Service) DeleteTripPhoto(ctx context.Context, req *tripsv1.DeleteTripPhotoRequest) (*tripsv1.DeleteTripPhotoResponse, error) {
