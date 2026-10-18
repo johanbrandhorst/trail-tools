@@ -168,7 +168,9 @@ export type Activity = Message<"activities.v1.Activity"> & {
   relativeEffort: number;
 
   /**
-   * The number of photos added to the activity on Strava.
+   * The number of photos added to the activity on Strava, not counting
+   * videos. Until the activity's details are synced, it's the count from
+   * Strava's list of activities, which may include videos or miss photos.
    *
    * @generated from field: int32 photo_count = 22;
    */

@@ -48,7 +48,8 @@ select
   id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, photo_count
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where id = $1 and user_id = $2
 `
@@ -144,7 +145,8 @@ select
   id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, photo_count
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where user_id = $1
   and ($4::date is null or start_date_local >= $4::date)
@@ -537,18 +539,25 @@ const setActivityDetail = `-- name: SetActivityDetail :exec
 update strava_activities set
   description = $2,
   device_name = $3,
+  synced_photo_count = $4,
   update_time = now()
 where id = $1
 `
 
 type SetActivityDetailParams struct {
-	ID          pgtype.UUID
-	Description string
-	DeviceName  string
+	ID               pgtype.UUID
+	Description      string
+	DeviceName       string
+	SyncedPhotoCount pgtype.Int4
 }
 
 func (q *Queries) SetActivityDetail(ctx context.Context, arg *SetActivityDetailParams) error {
-	_, err := q.db.Exec(ctx, setActivityDetail, arg.ID, arg.Description, arg.DeviceName)
+	_, err := q.db.Exec(ctx, setActivityDetail,
+		arg.ID,
+		arg.Description,
+		arg.DeviceName,
+		arg.SyncedPhotoCount,
+	)
 	return err
 }
 

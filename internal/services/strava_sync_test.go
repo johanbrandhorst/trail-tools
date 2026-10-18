@@ -580,3 +580,63 @@ func TestScheduledStravaSyncOrder(t *testing.T) {
 		t.Errorf("got order %v, want the connection whose sync started first first", order)
 	}
 }
+
+func TestStravaSyncPhotosListedWithoutCount(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	e.strava.mu.Lock()
+	e.strava.listWithoutPhotos = true
+	e.strava.mu.Unlock()
+	e.connectStrava()
+	sync := func(full bool) {
+		t.Helper()
+		if _, err := e.stravaAPI.SyncStrava(ctx, stravav1.SyncStravaRequest_builder{Full: full}.Build()); err != nil {
+			t.Fatal(err)
+		}
+		e.waitForSync()
+	}
+	photoCount := func() int32 {
+		t.Helper()
+		list, err := e.activity.ListActivities(ctx, activitiesv1.ListActivitiesRequest_builder{}.Build())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, a := range list.GetActivities() {
+			if a.GetStravaId() == "1000" {
+				got, err := e.activity.GetActivity(ctx, activitiesv1.GetActivityRequest_builder{Id: a.GetId()}.Build())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got.GetActivity().GetPhotoCount() != a.GetPhotoCount() {
+					t.Errorf("got photo count %d, want %d as listed", got.GetActivity().GetPhotoCount(), a.GetPhotoCount())
+				}
+				return a.GetPhotoCount()
+			}
+		}
+		t.Fatal("the activity with photos wasn't synced")
+		return 0
+	}
+
+	// The photos are synced with the details, so the activity has them
+	// although the list said it had none.
+	sync(false)
+	if got := photoCount(); got != 2 {
+		t.Errorf("got photo count %d, want the 2 synced photos", got)
+	}
+	// Listing the activity again doesn't fetch its details again, nor
+	// forget its photos.
+	e.strava.mu.Lock()
+	streamCalls := len(e.strava.streamIDs)
+	e.strava.mu.Unlock()
+	sync(true)
+	e.strava.mu.Lock()
+	refetched := slices.Clone(e.strava.streamIDs[streamCalls:])
+	e.strava.mu.Unlock()
+	if len(refetched) != 0 {
+		t.Errorf("got details fetched again for %v", refetched)
+	}
+	if got := photoCount(); got != 2 {
+		t.Errorf("got photo count %d after listing again, want 2", got)
+	}
+}

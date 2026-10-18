@@ -1109,6 +1109,7 @@ type StravaActivity struct {
 	UpdateTime          pgtype.Timestamptz
 	SyncRequested       bool
 	SyncFailures        int32
+	SyncedPhotoCount    pgtype.Int4
 }
 
 type StravaActivityPhoto struct {

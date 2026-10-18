@@ -360,6 +360,9 @@ func (r *Repository) StoreActivityDetail(ctx context.Context, userID, activityID
 			ID:          activityID,
 			Description: detail.Description,
 			DeviceName:  detail.DeviceName,
+			// Strava's list of activities sometimes says an activity has no
+			// photos when it has, so count the ones synced.
+			SyncedPhotoCount: pgtype.Int4{Int32: int32(len(detail.Photos)), Valid: true},
 		}); err != nil {
 			return err
 		}
