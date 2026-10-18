@@ -11,28 +11,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createSession = `-- name: CreateSession :one
-insert into sessions (user_id, expiry) values ($1, $2) returning id
+const createSession = `-- name: CreateSession :exec
+with expired as (
+  delete from sessions where expiry <= now()
+)
+insert into sessions (user_id, token_sha256, expiry) values ($1, $2, $3)
 `
 
 type CreateSessionParams struct {
-	UserID pgtype.UUID
-	Expiry pgtype.Timestamptz
+	UserID      pgtype.UUID
+	TokenSHA256 []byte
+	Expiry      pgtype.Timestamptz
 }
 
-func (q *Queries) CreateSession(ctx context.Context, arg *CreateSessionParams) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, createSession, arg.UserID, arg.Expiry)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+// CreateSession creates a session, and deletes the expired ones in the same
+// round trip, as nothing else does.
+func (q *Queries) CreateSession(ctx context.Context, arg *CreateSessionParams) error {
+	_, err := q.db.Exec(ctx, createSession, arg.UserID, arg.TokenSHA256, arg.Expiry)
+	return err
 }
 
 const deleteSession = `-- name: DeleteSession :exec
-delete from sessions where id = $1
+delete from sessions where token_sha256 = $1
 `
 
-func (q *Queries) DeleteSession(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteSession, id)
+func (q *Queries) DeleteSession(ctx context.Context, tokenSha256 []byte) error {
+	_, err := q.db.Exec(ctx, deleteSession, tokenSha256)
 	return err
 }
 
@@ -40,7 +44,7 @@ const getSessionUser = `-- name: GetSessionUser :one
 select p.id, p.user_handle, p.name, u.is_admin, u.avatar_key from sessions s
 join passkey_users p on p.id = s.user_id
 join users u on u.id = s.user_id
-where s.id = $1 and s.expiry > now()
+where s.token_sha256 = $1 and s.expiry > now()
 `
 
 type GetSessionUserRow struct {
@@ -51,8 +55,8 @@ type GetSessionUserRow struct {
 	AvatarKey  pgtype.Text
 }
 
-func (q *Queries) GetSessionUser(ctx context.Context, id pgtype.UUID) (*GetSessionUserRow, error) {
-	row := q.db.QueryRow(ctx, getSessionUser, id)
+func (q *Queries) GetSessionUser(ctx context.Context, tokenSha256 []byte) (*GetSessionUserRow, error) {
+	row := q.db.QueryRow(ctx, getSessionUser, tokenSha256)
 	var i GetSessionUserRow
 	err := row.Scan(
 		&i.ID,

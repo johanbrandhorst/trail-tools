@@ -1045,9 +1045,10 @@ type RoutingRegion struct {
 }
 
 type Session struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
-	Expiry pgtype.Timestamptz
+	ID          pgtype.UUID
+	UserID      pgtype.UUID
+	Expiry      pgtype.Timestamptz
+	TokenSHA256 []byte
 }
 
 type StravaActivity struct {
