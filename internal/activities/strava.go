@@ -37,8 +37,14 @@ type StravaConnection struct {
 	SyncStateTime time.Time
 	// Zero if the user has never synced.
 	LastSyncTime time.Time
-	// Zero unless the sync is rate limited.
+	// When a rate limited sync resumes, or a failed one is retried. Zero
+	// unless the sync is rate limited or failed; a failed sync with a zero
+	// ResumeTime waits for Strava to be reconnected.
 	ResumeTime time.Time
+	// The number of syncs that failed in a row.
+	SyncFailures int32
+	// When the latest sync started, or zero if it never synced.
+	SyncStartTime time.Time
 	// Activities are listed newest first. While a listing is unfinished,
 	// the activities that started before ListBefore remain to be listed,
 	// otherwise it is zero.
@@ -46,6 +52,8 @@ type StravaConnection struct {
 }
 
 // UpsertStravaConnection creates or replaces the user's Strava connection.
+// Replacing it resets its sync state, so a sync that failed, e.g. as the
+// athlete revoked access, is retried.
 func (r *Repository) UpsertStravaConnection(ctx context.Context, conn *StravaConnection) (*StravaConnection, error) {
 	dbConn, err := r.q.UpsertStravaConnection(ctx, &gen.UpsertStravaConnectionParams{
 		UserID:       conn.UserID,
@@ -74,7 +82,8 @@ func (r *Repository) GetStravaConnection(ctx context.Context, userID pgtype.UUID
 	return connectionFromDB(dbConn), nil
 }
 
-// ListStravaConnections lists all users' Strava connections.
+// ListStravaConnections lists all users' Strava connections, those whose
+// latest sync started longest ago first.
 func (r *Repository) ListStravaConnections(ctx context.Context) ([]*StravaConnection, error) {
 	dbConns, err := r.q.ListStravaConnections(ctx)
 	if err != nil {
@@ -109,6 +118,95 @@ func (r *Repository) UpdateStravaTokens(ctx context.Context, userID pgtype.UUID,
 		Expiry:       pgtype.Timestamptz{Time: expiry, Valid: true},
 	}); err != nil {
 		return fmt.Errorf("failed to update Strava tokens: %w", err)
+	}
+	return nil
+}
+
+// StravaTokens are the OAuth tokens of a Strava connection.
+type StravaTokens struct {
+	AccessToken  string
+	RefreshToken string
+	Expiry       time.Time
+}
+
+// RefreshStravaTokens refreshes the tokens of the user's Strava connection
+// one at a time: it locks the connection, calls refresh with it as stored,
+// and stores the tokens refresh returns, if any, before unlocking it. Strava
+// replaces refresh tokens, so concurrent refreshes, including those of other
+// servers, must use the latest one rather than the one they read before. It
+// returns the connection with its current tokens, or store.ErrNotFound if
+// the user disconnected Strava. The connection's other updates wait while it
+// is locked, so refresh should be quick.
+func (r *Repository) RefreshStravaTokens(ctx context.Context, userID pgtype.UUID, refresh func(stored *StravaConnection) (*StravaTokens, error)) (*StravaConnection, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+	q := r.q.WithTx(tx)
+	dbConn, err := q.GetStravaConnectionForUpdate(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, store.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get Strava connection: %w", err)
+	}
+	conn := connectionFromDB(dbConn)
+	tokens, err := refresh(conn)
+	if err != nil {
+		return nil, err
+	}
+	if tokens == nil {
+		// Nothing to store. Rolling back unlocks the connection.
+		return conn, nil
+	}
+	if err := q.UpdateStravaTokens(ctx, &gen.UpdateStravaTokensParams{
+		UserID:       userID,
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		Expiry:       pgtype.Timestamptz{Time: tokens.Expiry, Valid: true},
+	}); err != nil {
+		return nil, fmt.Errorf("failed to update Strava tokens: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit Strava tokens: %w", err)
+	}
+	conn.AccessToken, conn.RefreshToken, conn.Expiry = tokens.AccessToken, tokens.RefreshToken, tokens.Expiry
+	return conn, nil
+}
+
+// StartStravaSync records that a sync of the user's activities started.
+func (r *Repository) StartStravaSync(ctx context.Context, userID pgtype.UUID, message string) error {
+	if err := r.q.StartStravaSync(ctx, &gen.StartStravaSyncParams{UserID: userID, SyncMessage: message}); err != nil {
+		return fmt.Errorf("failed to update Strava sync state: %w", err)
+	}
+	return nil
+}
+
+// FinishStravaSync records that the user's sync finished at lastSyncTime,
+// which resets its failures.
+func (r *Repository) FinishStravaSync(ctx context.Context, userID pgtype.UUID, message string, lastSyncTime time.Time) error {
+	if err := r.q.FinishStravaSync(ctx, &gen.FinishStravaSyncParams{
+		UserID:       userID,
+		SyncMessage:  message,
+		LastSyncTime: pgtype.Timestamptz{Time: lastSyncTime, Valid: true},
+	}); err != nil {
+		return fmt.Errorf("failed to update Strava sync state: %w", err)
+	}
+	return nil
+}
+
+// FailStravaSync records that the user's sync failed, after failures syncs
+// in a row, and is retried at retryTime, or once Strava is reconnected if
+// retryTime is zero.
+func (r *Repository) FailStravaSync(ctx context.Context, userID pgtype.UUID, message string, failures int32, retryTime time.Time) error {
+	if err := r.q.FailStravaSync(ctx, &gen.FailStravaSyncParams{
+		UserID:       userID,
+		SyncMessage:  message,
+		SyncFailures: failures,
+		ResumeTime:   pgtype.Timestamptz{Time: retryTime, Valid: !retryTime.IsZero()},
+	}); err != nil {
+		return fmt.Errorf("failed to update Strava sync state: %w", err)
 	}
 	return nil
 }
@@ -178,6 +276,8 @@ func connectionFromDB(c *gen.StravaConnection) *StravaConnection {
 		SyncStateTime: c.SyncStateTime.Time,
 		LastSyncTime:  c.LastSyncTime.Time,
 		ResumeTime:    c.ResumeTime.Time,
+		SyncFailures:  c.SyncFailures,
+		SyncStartTime: c.SyncStartTime.Time,
 		ListBefore:    c.ListBefore.Time,
 	}
 }

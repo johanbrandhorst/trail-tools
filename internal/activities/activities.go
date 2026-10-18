@@ -207,14 +207,23 @@ type PendingStreams struct {
 	StravaID int64
 }
 
+// MaxActivitySyncFailures is how many times syncing an activity's details
+// may fail before the backlog skips it, so an activity that can't be synced
+// doesn't fail every sync. It is synced again once it changes on Strava or
+// a user asks for it with RequestActivitySync.
+const MaxActivitySyncFailures = 3
+
 // ListActivitiesWithoutStreams lists activities whose streams have not been
-// synced yet: those requested with RequestActivitySync first, then the most
-// recent first, back to those that started window before the latest one.
+// synced yet: those requested with RequestActivitySync first, then those
+// that failed to sync less often, then the most recent first, back to those
+// that started window before the latest one. Activities that failed
+// MaxActivitySyncFailures times are left out.
 func (r *Repository) ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, window time.Duration, limit int32) ([]PendingStreams, error) {
 	rows, err := r.q.ListActivitiesWithoutStreams(ctx, &gen.ListActivitiesWithoutStreamsParams{
 		UserID:       userID,
+		MaxFailures:  MaxActivitySyncFailures,
 		RecentWindow: intervalOf(window),
-		Limit:        limit,
+		RowLimit:     limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list activities without streams: %w", err)
@@ -227,8 +236,8 @@ func (r *Repository) ListActivitiesWithoutStreams(ctx context.Context, userID pg
 }
 
 // RequestActivitySync marks one of the user's activities as requested, so
-// it's synced before the rest of the activities waiting for streams. The
-// mark is cleared once its streams are synced.
+// it's synced before the rest of the activities waiting for streams, even if
+// it failed to sync before. The mark is cleared once its streams are synced.
 func (r *Repository) RequestActivitySync(ctx context.Context, userID, activityID pgtype.UUID) error {
 	if err := r.q.RequestActivitySync(ctx, &gen.RequestActivitySyncParams{ID: activityID, UserID: userID}); err != nil {
 		return fmt.Errorf("failed to request an activity sync: %w", err)
@@ -236,14 +245,46 @@ func (r *Repository) RequestActivitySync(ctx context.Context, userID, activityID
 	return nil
 }
 
+// RecordActivitySyncFailure records that syncing the details of one of the
+// user's activities failed, so the backlog syncs it after the others, and
+// skips it after MaxActivitySyncFailures failures.
+func (r *Repository) RecordActivitySyncFailure(ctx context.Context, userID, activityID pgtype.UUID) error {
+	if err := r.q.RecordActivitySyncFailure(ctx, &gen.RecordActivitySyncFailureParams{ID: activityID, UserID: userID}); err != nil {
+		return fmt.Errorf("failed to record an activity sync failure: %w", err)
+	}
+	return nil
+}
+
+// ActivityCounts counts a user's activities.
+type ActivityCounts struct {
+	Total int64
+	// The activities waiting for streams that the backlog syncs.
+	PendingStreams int64
+	// The activities waiting for streams that the backlog skips, as they
+	// failed to sync MaxActivitySyncFailures times.
+	FailedStreams int64
+}
+
 // CountActivities returns the number of activities and the number waiting
 // for streams, as listed by ListActivitiesWithoutStreams with window.
 func (r *Repository) CountActivities(ctx context.Context, userID pgtype.UUID, window time.Duration) (total, pendingStreams int64, err error) {
-	row, err := r.q.CountActivities(ctx, &gen.CountActivitiesParams{UserID: userID, RecentWindow: intervalOf(window)})
+	counts, err := r.CountActivitiesByState(ctx, userID, window)
+	return counts.Total, counts.PendingStreams, err
+}
+
+// CountActivitiesByState counts the user's activities by their sync state,
+// with the pending ones as listed by ListActivitiesWithoutStreams with
+// window.
+func (r *Repository) CountActivitiesByState(ctx context.Context, userID pgtype.UUID, window time.Duration) (ActivityCounts, error) {
+	row, err := r.q.CountActivities(ctx, &gen.CountActivitiesParams{
+		UserID:       userID,
+		MaxFailures:  MaxActivitySyncFailures,
+		RecentWindow: intervalOf(window),
+	})
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to count activities: %w", err)
+		return ActivityCounts{}, fmt.Errorf("failed to count activities: %w", err)
 	}
-	return row.Total, row.PendingStreams, nil
+	return ActivityCounts{Total: row.Total, PendingStreams: row.PendingStreams, FailedStreams: row.FailedStreams}, nil
 }
 
 // intervalOf converts a duration to an interval.
