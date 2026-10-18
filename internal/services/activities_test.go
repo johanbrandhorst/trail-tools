@@ -64,6 +64,9 @@ type fakeStrava struct {
 	validRefreshToken string
 	// How long refreshing takes, to let concurrent refreshes overlap.
 	refreshDelay time.Duration
+	// Whether the list of activities reports no photos, as Strava's
+	// sometimes does for activities whose details have them.
+	listWithoutPhotos bool
 }
 
 func newFakeStrava() *fakeStrava {
@@ -140,6 +143,11 @@ func (f *fakeStrava) ListActivities(_ context.Context, token string, before time
 	var result []*strava.Activity
 	for _, a := range f.activities {
 		if before.IsZero() || a.StartDate.Before(before) {
+			if f.listWithoutPhotos {
+				listed := *a
+				listed.TotalPhotoCount = 0
+				a = &listed
+			}
 			result = append(result, a)
 		}
 	}

@@ -484,7 +484,9 @@ type Activity_builder struct {
 	DeviceName string
 	// Strava's relative effort score, 0 if not available.
 	RelativeEffort int32
-	// The number of photos added to the activity on Strava.
+	// The number of photos added to the activity on Strava, not counting
+	// videos. Until the activity's details are synced, it's the count from
+	// Strava's list of activities, which may include videos or miss photos.
 	PhotoCount int32
 	// The page of the activity on Strava.
 	StravaUrl string
