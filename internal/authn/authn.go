@@ -18,12 +18,19 @@ import (
 )
 
 const (
-	sessionCookieName = "session"
-	logoutPath        = "/logout"
+	// sessionCookieName is the name of the session cookie. Its __Host- prefix
+	// makes browsers only accept it from this host over HTTPS for every path,
+	// so a subdomain or an insecure page can't set or shadow it.
+	sessionCookieName = "__Host-session"
+	// legacySessionCookieName is the session cookie's name before it had the
+	// prefix. A session in it moves to the prefixed cookie on its next
+	// request, so nobody is signed out.
+	legacySessionCookieName = "session"
+	logoutPath              = "/logout"
 )
 
 type SessionRepository interface {
-	GetSession(ctx context.Context, token string) (users.User, error)
+	GetSession(ctx context.Context, token string) (*users.Session, error)
 	DeleteSession(ctx context.Context, token string) error
 	GetAPITokenUser(ctx context.Context, secret string) (users.User, error)
 }
@@ -34,9 +41,9 @@ type authCtx struct{}
 // authenticated.
 type authInfo struct {
 	user users.User
-	// session is whether the user authenticated with a session cookie,
-	// rather than a bearer token.
-	session bool
+	// sessionToken is the token of the session cookie the user authenticated
+	// with, or "" if they authenticated with a bearer token.
+	sessionToken string
 }
 
 // Option configures the authn middleware.
@@ -78,7 +85,7 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authCtx{}, authInfo{user: user})))
 			return
 		}
-		sessionCookie, err := r.Cookie(sessionCookieName)
+		sessionCookie, legacy, err := getSessionCookie(r)
 		if errors.Is(err, http.ErrNoCookie) {
 			log.DebugContext(r.Context(), "User had no session cookie, continue unauthenticated", slog.String("path", r.URL.Path))
 			next.ServeHTTP(w, r)
@@ -89,7 +96,7 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 			next.ServeHTTP(w, r)
 			return
 		}
-		user, err := repo.GetSession(r.Context(), sessionCookie.Value)
+		session, err := repo.GetSession(r.Context(), sessionCookie.Value)
 		if err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				log.DebugContext(r.Context(), "session could not be found, continue unauthenticated")
@@ -101,9 +108,24 @@ func NewAuthnMiddleware(ctx context.Context, log *slog.Logger, report *errreport
 			http.Error(w, "failed to get session", http.StatusInternalServerError)
 			return
 		}
-		newCtx := context.WithValue(r.Context(), authCtx{}, authInfo{user: user, session: true})
+		if legacy {
+			http.SetCookie(w, SessionCookie(sessionCookie.Value, session.Expiry))
+			expireCookie(w, sessionCookie)
+		}
+		newCtx := context.WithValue(r.Context(), authCtx{}, authInfo{user: session.User, sessionToken: sessionCookie.Value})
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	}), nil
+}
+
+// getSessionCookie returns the request's session cookie, and whether it has
+// the legacy name.
+func getSessionCookie(r *http.Request) (*http.Cookie, bool, error) {
+	c, err := r.Cookie(sessionCookieName)
+	if !errors.Is(err, http.ErrNoCookie) {
+		return c, false, err
+	}
+	c, err = r.Cookie(legacySessionCookieName)
+	return c, err == nil, err
 }
 
 // GetUser gets the authenticated user, if there is one. It returns
@@ -117,7 +139,14 @@ func GetUser(ctx context.Context) (users.User, bool) {
 // cookie, which only the web app has, rather than a bearer token.
 func ViaSession(ctx context.Context) bool {
 	info, ok := ctx.Value(authCtx{}).(authInfo)
-	return ok && info.session
+	return ok && info.sessionToken != ""
+}
+
+// SessionToken returns the token of the session cookie the request was
+// authenticated with, or "" if it wasn't authenticated with one.
+func SessionToken(ctx context.Context) string {
+	info, _ := ctx.Value(authCtx{}).(authInfo)
+	return info.sessionToken
 }
 
 // GetSessionUser gets the user authenticated with a session cookie, for
@@ -132,7 +161,7 @@ func GetSessionUser(ctx context.Context) (users.User, error) {
 	if !ok {
 		return nil, connect.NewError(connect.CodeUnauthenticated, "")
 	}
-	if !info.session {
+	if info.sessionToken == "" {
 		return nil, connect.NewError(connect.CodePermissionDenied, "API tokens and OAuth access tokens can't manage passkeys, invitations, API tokens or connections; sign in to the trailrunn.ing web app to do this in the settings")
 	}
 	return info.user, nil
@@ -196,7 +225,11 @@ func SessionCookie(token string, expiry time.Time) *http.Cookie {
 // expiring the session cookie and redirecting to the root path.
 func RegisterLogoutHandler(report *errreport.Reporter, mux *http.ServeMux, sessionRepo SessionRepository) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if c, err := r.Cookie(sessionCookieName); err == nil {
+		for _, name := range []string{sessionCookieName, legacySessionCookieName} {
+			c, err := r.Cookie(name)
+			if err != nil {
+				continue
+			}
 			if err := sessionRepo.DeleteSession(r.Context(), c.Value); err != nil && !errors.Is(err, store.ErrNotFound) {
 				report.Report(r.Context(), "failed to delete session", err)
 			}
@@ -207,9 +240,14 @@ func RegisterLogoutHandler(report *errreport.Reporter, mux *http.ServeMux, sessi
 	mux.Handle(logoutPath, h)
 }
 
+// expireCookie tells the browser to delete a cookie of the request.
 func expireCookie(w http.ResponseWriter, oldCookie *http.Cookie) {
-	oldCookie.Expires = time.Now().Add(-time.Hour)
-	oldCookie.Path = "/"
-	oldCookie.Value = ""
-	http.SetCookie(w, oldCookie)
+	http.SetCookie(w, &http.Cookie{
+		Name:    oldCookie.Name,
+		Path:    "/",
+		Expires: time.Now().Add(-time.Hour),
+		// Browsers ignore __Host- cookies that aren't secure, deletions too.
+		Secure:   true,
+		HttpOnly: true,
+	})
 }

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -72,9 +71,9 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
 	"github.com/johanbrandhorst/trail-tools/internal/telemetry"
+	"github.com/johanbrandhorst/trail-tools/internal/timeouts"
 	"github.com/johanbrandhorst/trail-tools/internal/trips"
 	"github.com/johanbrandhorst/trail-tools/internal/users"
-	"github.com/johanbrandhorst/trail-tools/web"
 	"gitlab.com/greyxor/slogor"
 	"google.golang.org/api/option"
 )
@@ -93,6 +92,31 @@ const (
 	stravaTimeout    = 60 * time.Second
 	liveTrackTimeout = 20 * time.Second
 	geofabrikTimeout = 2 * time.Minute
+)
+
+// Timeouts of incoming requests. Cloud Run lets a request run for 15
+// minutes, the longest the scheduled Strava sync takes, so without them a
+// slow or stalled client could hold one of the instance's 80 concurrent
+// requests, and its memory and database connections, for that long.
+const (
+	// readHeaderTimeout bounds reading a request's headers.
+	readHeaderTimeout = 10 * time.Second
+	// bodyReadTimeout bounds reading a request's body, which is up to 32 MiB
+	// for uploads of GPX files and photos from phones on slow connections.
+	bodyReadTimeout = 2 * time.Minute
+	// handlerTimeout bounds how long requests run, other than the scheduled
+	// Strava sync, which bounds itself. Routing many legs or importing
+	// photos from Strava takes the longest.
+	handlerTimeout = 2 * time.Minute
+	// idleTimeout is how long an idle connection is kept open. Google's front
+	// ends keep idle connections to backends for up to 600 seconds, and one
+	// closed by the server first can fail the request the front end sends on
+	// it, so this is longer.
+	idleTimeout = 620 * time.Second
+	// shutdownTimeout bounds waiting for requests to finish on shutdown.
+	// Cloud Run stops an instance 10 seconds after sending SIGTERM, which
+	// leaves the rest for sending the remaining traces.
+	shutdownTimeout = 5 * time.Second
 )
 
 var (
@@ -703,17 +727,14 @@ func run(
 	// Register the logout handler directly on the mux
 	authn.RegisterLogoutHandler(report, mux, users)
 
-	// Create the FS used to serve the frontend.
-	webFs, _ := fs.Sub(web.Dist, "dist")
-	if serveDir != "" {
-		webFs = os.DirFS(serveDir)
-	}
-	var fileServer http.Handler = http.FileServerFS(webFs)
+	// Serve the frontend's bundle, embedded in the server or, while watching
+	// for changes, from its directory.
+	fileServer := html.ServeBundle()
 	if serveDir != "" {
 		// The watched bundle can be rebuilt within the second the browser
 		// cached it, which Last-Modified can't tell apart, so browsers
 		// mustn't keep it at all.
-		next := fileServer
+		next := http.FileServerFS(os.DirFS(serveDir))
 		fileServer = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "no-store")
 			next.ServeHTTP(w, r)
@@ -776,8 +797,15 @@ func run(
 	srv := &http.Server{
 		Addr: address,
 		// The secret in the Strava webhook's path is left out of the traces.
-		Handler:   telemetry.Handler(srvHandler, stravasvc.WebhookPath+"/"),
-		Protocols: protocols,
+		Handler: timeouts.Handler(telemetry.Handler(srvHandler, stravasvc.WebhookPath+"/"), timeouts.Config{
+			BodyRead: bodyReadTimeout,
+			Handler:  handlerTimeout,
+			// The reload middleware's websocket stays open while developing.
+			LongPaths: []string{stravasvc.SyncPath, "/watch"},
+		}),
+		Protocols:         protocols,
+		ReadHeaderTimeout: readHeaderTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 	serveFn := srv.ListenAndServe
 	if cert.Certificate != nil {
@@ -790,13 +818,18 @@ func run(
 			return srv.ListenAndServeTLS("", "")
 		}
 	}
+	// Serving stops as soon as the shutdown starts, so wait for it to let the
+	// requests in flight finish.
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		<-ctx.Done()
 		log.InfoContext(ctx, "Interrupt received, shutting down")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			report.Report(ctx, "Failed to shutdown server", err)
+			report.Report(ctx, "Failed to finish the requests in flight before shutting down, canceling them", err)
+			_ = srv.Close()
 		}
 	}()
 	if stravaWebhook != nil {
@@ -810,9 +843,10 @@ func run(
 		}()
 	}
 	log.InfoContext(ctx, "Serving on", slog.String("addr", address))
-	if err := serveFn(); err != nil && err != http.ErrServerClosed {
+	if err := serveFn(); !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("failed to serve: %w", err)
 	}
+	<-shutdownDone
 	return nil
 }
 

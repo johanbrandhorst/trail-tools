@@ -39,6 +39,9 @@ const (
 	AuthServiceListPasskeysProcedure = "/auth.v1.AuthService/ListPasskeys"
 	// AuthServiceDeletePasskeyProcedure is the procedure name of the AuthService's DeletePasskey RPC.
 	AuthServiceDeletePasskeyProcedure = "/auth.v1.AuthService/DeletePasskey"
+	// AuthServiceSignOutOtherSessionsProcedure is the procedure name of the AuthService's
+	// SignOutOtherSessions RPC.
+	AuthServiceSignOutOtherSessionsProcedure = "/auth.v1.AuthService/SignOutOtherSessions"
 	// AuthServiceBeginPasskeyRegistrationProcedure is the procedure name of the AuthService's
 	// BeginPasskeyRegistration RPC.
 	AuthServiceBeginPasskeyRegistrationProcedure = "/auth.v1.AuthService/BeginPasskeyRegistration"
@@ -96,6 +99,13 @@ var (
 			Procedure:  AuthServiceDeletePasskeyProcedure,
 		}
 	})
+	authServiceSignOutOtherSessionsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_auth_v1_auth_proto.Services().ByName("AuthService").Methods().ByName("SignOutOtherSessions"),
+			Procedure:  AuthServiceSignOutOtherSessionsProcedure,
+		}
+	})
 	authServiceBeginPasskeyRegistrationSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -140,9 +150,13 @@ type AuthServiceClient interface {
 	DeleteInvitation(context.Context, *v1.DeleteInvitationRequest) (*v1.DeleteInvitationResponse, error)
 	// List the signed in user's passkeys.
 	ListPasskeys(context.Context, *v1.ListPasskeysRequest) (*v1.ListPasskeysResponse, error)
-	// Delete one of the signed in user's passkeys. The last passkey of an
+	// Delete one of the signed in user's passkeys, and sign out the sessions
+	// signed in with it, other than the current one. The last passkey of an
 	// account can't be deleted.
 	DeletePasskey(context.Context, *v1.DeletePasskeyRequest) (*v1.DeletePasskeyResponse, error)
+	// Sign the signed in user out on every other device and browser, keeping
+	// the current session.
+	SignOutOtherSessions(context.Context, *v1.SignOutOtherSessionsRequest) (*v1.SignOutOtherSessionsResponse, error)
 	// Start registering a passkey, with an invitation token or as the signed in
 	// user. Returns the options for navigator.credentials.create().
 	BeginPasskeyRegistration(context.Context, *v1.BeginPasskeyRegistrationRequest) (*v1.BeginPasskeyRegistrationResponse, error)
@@ -175,9 +189,13 @@ type AuthServiceHandler interface {
 	DeleteInvitation(context.Context, *v1.DeleteInvitationRequest) (*v1.DeleteInvitationResponse, error)
 	// List the signed in user's passkeys.
 	ListPasskeys(context.Context, *v1.ListPasskeysRequest) (*v1.ListPasskeysResponse, error)
-	// Delete one of the signed in user's passkeys. The last passkey of an
+	// Delete one of the signed in user's passkeys, and sign out the sessions
+	// signed in with it, other than the current one. The last passkey of an
 	// account can't be deleted.
 	DeletePasskey(context.Context, *v1.DeletePasskeyRequest) (*v1.DeletePasskeyResponse, error)
+	// Sign the signed in user out on every other device and browser, keeping
+	// the current session.
+	SignOutOtherSessions(context.Context, *v1.SignOutOtherSessionsRequest) (*v1.SignOutOtherSessionsResponse, error)
 	// Start registering a passkey, with an invitation token or as the signed in
 	// user. Returns the options for navigator.credentials.create().
 	BeginPasskeyRegistration(context.Context, *v1.BeginPasskeyRegistrationRequest) (*v1.BeginPasskeyRegistrationResponse, error)
@@ -200,6 +218,7 @@ func RegisterAuthServiceHandler(server *connect.Server, svc AuthServiceHandler) 
 		connect.Method{Spec: authServiceDeleteInvitationSpec(), Handler: adapter.deleteInvitation},
 		connect.Method{Spec: authServiceListPasskeysSpec(), Handler: adapter.listPasskeys},
 		connect.Method{Spec: authServiceDeletePasskeySpec(), Handler: adapter.deletePasskey},
+		connect.Method{Spec: authServiceSignOutOtherSessionsSpec(), Handler: adapter.signOutOtherSessions},
 		connect.Method{Spec: authServiceBeginPasskeyRegistrationSpec(), Handler: adapter.beginPasskeyRegistration},
 		connect.Method{Spec: authServiceFinishPasskeyRegistrationSpec(), Handler: adapter.finishPasskeyRegistration},
 		connect.Method{Spec: authServiceBeginPasskeyLoginSpec(), Handler: adapter.beginPasskeyLogin},
@@ -232,6 +251,10 @@ func (UnimplementedAuthServiceHandler) ListPasskeys(context.Context, *v1.ListPas
 
 func (UnimplementedAuthServiceHandler) DeletePasskey(context.Context, *v1.DeletePasskeyRequest) (*v1.DeletePasskeyResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "auth.v1.AuthService.DeletePasskey is not implemented")
+}
+
+func (UnimplementedAuthServiceHandler) SignOutOtherSessions(context.Context, *v1.SignOutOtherSessionsRequest) (*v1.SignOutOtherSessionsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "auth.v1.AuthService.SignOutOtherSessions is not implemented")
 }
 
 func (UnimplementedAuthServiceHandler) BeginPasskeyRegistration(context.Context, *v1.BeginPasskeyRegistrationRequest) (*v1.BeginPasskeyRegistrationResponse, error) {
@@ -297,6 +320,14 @@ func (c *authServiceClient) ListPasskeys(ctx context.Context, req *v1.ListPasske
 func (c *authServiceClient) DeletePasskey(ctx context.Context, req *v1.DeletePasskeyRequest) (*v1.DeletePasskeyResponse, error) {
 	var res v1.DeletePasskeyResponse
 	if err := c.client.CallUnary(ctx, authServiceDeletePasskeySpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *authServiceClient) SignOutOtherSessions(ctx context.Context, req *v1.SignOutOtherSessionsRequest) (*v1.SignOutOtherSessionsResponse, error) {
+	var res v1.SignOutOtherSessionsResponse
+	if err := c.client.CallUnary(ctx, authServiceSignOutOtherSessionsSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -402,6 +433,18 @@ func (h authServiceHandler) deletePasskey(ctx context.Context, _ connect.Spec, s
 		return err
 	}
 	res, err := h.svc.DeletePasskey(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h authServiceHandler) signOutOtherSessions(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SignOutOtherSessionsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SignOutOtherSessions(ctx, &req)
 	if err != nil {
 		return err
 	}

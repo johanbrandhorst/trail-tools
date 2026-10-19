@@ -15,19 +15,64 @@ const createSession = `-- name: CreateSession :exec
 with expired as (
   delete from sessions where expiry <= now()
 )
-insert into sessions (user_id, token_sha256, expiry) values ($1, $2, $3)
+insert into sessions (user_id, token_sha256, expiry, passkey_id) values ($1, $2, $3, $4)
 `
 
 type CreateSessionParams struct {
 	UserID      pgtype.UUID
 	TokenSHA256 []byte
 	Expiry      pgtype.Timestamptz
+	PasskeyID   []byte
 }
 
 // CreateSession creates a session, and deletes the expired ones in the same
 // round trip, as nothing else does.
 func (q *Queries) CreateSession(ctx context.Context, arg *CreateSessionParams) error {
-	_, err := q.db.Exec(ctx, createSession, arg.UserID, arg.TokenSHA256, arg.Expiry)
+	_, err := q.db.Exec(ctx, createSession,
+		arg.UserID,
+		arg.TokenSHA256,
+		arg.Expiry,
+		arg.PasskeyID,
+	)
+	return err
+}
+
+const deleteOtherSessions = `-- name: DeleteOtherSessions :execrows
+delete from sessions
+where user_id = $1 and token_sha256 <> $2::bytea
+`
+
+type DeleteOtherSessionsParams struct {
+	UserID          pgtype.UUID
+	KeepTokenSHA256 []byte
+}
+
+// DeleteOtherSessions deletes a user's sessions other than the one with the
+// token hash.
+func (q *Queries) DeleteOtherSessions(ctx context.Context, arg *DeleteOtherSessionsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteOtherSessions, arg.UserID, arg.KeepTokenSHA256)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deletePasskeySessions = `-- name: DeletePasskeySessions :exec
+delete from sessions
+where user_id = $1 and (passkey_id = $2::bytea or passkey_id is null)
+  and token_sha256 <> $3::bytea
+`
+
+type DeletePasskeySessionsParams struct {
+	UserID          pgtype.UUID
+	PasskeyID       []byte
+	KeepTokenSHA256 []byte
+}
+
+// DeletePasskeySessions deletes the sessions a passkey started, and those
+// that don't record their passkey, other than the one with the token hash.
+func (q *Queries) DeletePasskeySessions(ctx context.Context, arg *DeletePasskeySessionsParams) error {
+	_, err := q.db.Exec(ctx, deletePasskeySessions, arg.UserID, arg.PasskeyID, arg.KeepTokenSHA256)
 	return err
 }
 
@@ -41,7 +86,7 @@ func (q *Queries) DeleteSession(ctx context.Context, tokenSha256 []byte) error {
 }
 
 const getSessionUser = `-- name: GetSessionUser :one
-select p.id, p.user_handle, p.name, u.is_admin, u.avatar_key from sessions s
+select p.id, p.user_handle, p.name, u.is_admin, u.avatar_key, s.expiry from sessions s
 join passkey_users p on p.id = s.user_id
 join users u on u.id = s.user_id
 where s.token_sha256 = $1 and s.expiry > now()
@@ -53,6 +98,7 @@ type GetSessionUserRow struct {
 	Name       string
 	IsAdmin    bool
 	AvatarKey  pgtype.Text
+	Expiry     pgtype.Timestamptz
 }
 
 func (q *Queries) GetSessionUser(ctx context.Context, tokenSha256 []byte) (*GetSessionUserRow, error) {
@@ -64,6 +110,7 @@ func (q *Queries) GetSessionUser(ctx context.Context, tokenSha256 []byte) (*GetS
 		&i.Name,
 		&i.IsAdmin,
 		&i.AvatarKey,
+		&i.Expiry,
 	)
 	return &i, err
 }
