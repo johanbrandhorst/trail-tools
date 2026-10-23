@@ -127,6 +127,12 @@ where id = $1 and user_id = $2;
 select * from race_plans
 where share_token = $1;
 
+-- name: GetRacePlanForRace :one
+select * from race_plans
+where race_id = $1 and user_id = $2
+order by create_time, id
+limit 1;
+
 -- name: ListRacePlans :many
 select * from race_plans
 where user_id = $1

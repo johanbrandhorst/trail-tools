@@ -36,6 +36,7 @@ type RacePlanRepository interface {
 	ListRaces(ctx context.Context, userID pgtype.UUID, onCalendarOnly bool) ([]*races.Race, error)
 	CreateRacePlan(ctx context.Context, plan *races.RacePlan) (*races.RacePlan, error)
 	GetRacePlan(ctx context.Context, userID, planID pgtype.UUID) (*races.RacePlan, error)
+	GetRacePlanForRace(ctx context.Context, userID, raceID pgtype.UUID) (*races.RacePlan, error)
 	GetSharedRacePlan(ctx context.Context, token string) (*races.RacePlan, *races.Race, error)
 	ListRacePlans(ctx context.Context, userID pgtype.UUID) ([]*races.RacePlan, error)
 	UpdateRacePlan(ctx context.Context, plan *races.RacePlan, sections []races.RacePlanSection) (*races.RacePlan, error)
@@ -277,15 +278,31 @@ func (s *Service) GetSharedRacePlan(ctx context.Context, req *racesv1.GetSharedR
 	if len(course) > 0 {
 		coursePoints = route.PathToProto(course, maxSharedCoursePoints)
 	}
-	raceProto := race.RaceToProto(r)
-	// The course route belongs to the owner and can't be viewed.
-	raceProto.SetCourseRouteId("")
 	return racesv1.GetSharedRacePlanResponse_builder{
 		Plan:     plan,
-		Race:     raceProto,
+		Race:     sharedRace(r),
 		Analysis: Analyze(plan, raceInfo(r, course)),
 		Course:   coursePoints,
 	}.Build(), nil
+}
+
+// sharedRace returns the race of a shared plan, with what crew need to know
+// about it. The plan itself is shared in full, but the race's notes are the
+// owner's own, and its IDs and calendar state only mean something to the
+// owner: the course route, for one, can't be viewed by others.
+func sharedRace(r *races.Race) *racesv1.Race {
+	full := race.RaceToProto(r)
+	return racesv1.Race_builder{
+		Name:                full.GetName(),
+		Date:                full.GetDate(),
+		StartTime:           full.GetStartTime(),
+		Location:            full.GetLocation(),
+		WebsiteUrl:          full.GetWebsiteUrl(),
+		DistanceMeters:      full.GetDistanceMeters(),
+		ElevationGainMeters: full.GetElevationGainMeters(),
+		CutoffSeconds:       full.GetCutoffSeconds(),
+		Priority:            full.GetPriority(),
+	}.Build()
 }
 
 // parsePlanID returns the authenticated user's ID and the parsed plan ID.

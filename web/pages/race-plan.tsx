@@ -65,8 +65,10 @@ const ShareControls: React.FC<ShareControlsProps> = ({ plan }) => {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-gray-600">
-        Share a read-only link with your crew and pacers. Anyone with the link
-        can view the plan.
+        Share a link with your crew and pacers. Anyone with the link can view
+        the plan and, on race day, record your start and checkpoint times and
+        link your LiveTrack. Share it only with people you trust, and stop
+        sharing when the race is over.
       </p>
       {shareUrl === "" ? (
         <button

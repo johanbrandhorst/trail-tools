@@ -156,7 +156,8 @@ type RacePlanServiceClient interface {
 	// Delete a race plan.
 	DeleteRacePlan(context.Context, *v1.DeleteRacePlanRequest) (*v1.DeleteRacePlanResponse, error)
 	// Create a share link for a race plan. Anyone with the link can view the
-	// plan. Calling this again returns the existing link.
+	// plan, and record race day data: the start time, the LiveTrack link and
+	// checkpoint times. Calling this again returns the existing link.
 	ShareRacePlan(context.Context, *v1.ShareRacePlanRequest) (*v1.ShareRacePlanResponse, error)
 	// Revoke a race plan's share link.
 	UnshareRacePlan(context.Context, *v1.UnshareRacePlanRequest) (*v1.UnshareRacePlanResponse, error)
@@ -202,7 +203,8 @@ type RacePlanServiceHandler interface {
 	// Delete a race plan.
 	DeleteRacePlan(context.Context, *v1.DeleteRacePlanRequest) (*v1.DeleteRacePlanResponse, error)
 	// Create a share link for a race plan. Anyone with the link can view the
-	// plan. Calling this again returns the existing link.
+	// plan, and record race day data: the start time, the LiveTrack link and
+	// checkpoint times. Calling this again returns the existing link.
 	ShareRacePlan(context.Context, *v1.ShareRacePlanRequest) (*v1.ShareRacePlanResponse, error)
 	// Revoke a race plan's share link.
 	UnshareRacePlan(context.Context, *v1.UnshareRacePlanRequest) (*v1.UnshareRacePlanResponse, error)

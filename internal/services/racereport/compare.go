@@ -9,6 +9,7 @@ import (
 	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/races"
 	"github.com/johanbrandhorst/trail-tools/internal/services/raceplan"
+	"github.com/johanbrandhorst/trail-tools/internal/track"
 )
 
 // recording is an activity's elapsed time by distance.
@@ -25,6 +26,15 @@ func newRecording(streams *activitiesv1.ActivityStreams) *recording {
 		return nil
 	}
 	return &recording{times: times, distances: distances}
+}
+
+// trackRecording returns the recording of a report's track, or nil if it
+// has no times.
+func trackRecording(t *track.Track) *recording {
+	if len(t.Times) < 2 || len(t.Times) != len(t.Dists) {
+		return nil
+	}
+	return &recording{times: t.Times, distances: t.Dists}
 }
 
 // totalMeters returns the recorded distance.

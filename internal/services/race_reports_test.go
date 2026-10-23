@@ -107,6 +107,14 @@ func TestRaceReports(t *testing.T) {
 	if public.GetAuthorName() != "Jane Doe" || public.GetReport().GetSummary() != "A solid B goal." || !public.GetComparison().GetHasPlan() {
 		t.Errorf("unexpected public report %v", public)
 	}
+	// Anonymous viewers get the same comparison, its times from the report's
+	// track rather than the activity's streams.
+	checkpoints = public.GetComparison().GetCheckpoints()
+	if public.GetComparison().GetActualTimesSource() != racesv1.ActualTimesSource_ACTUAL_TIMES_SOURCE_ACTIVITY || len(checkpoints) != 2 ||
+		checkpoints[0].GetPlannedArrivalSeconds() != 1700 || checkpoints[0].GetActualArrivalSeconds() != 1800 ||
+		checkpoints[1].GetActualArrivalSeconds() != 3600 || public.GetComparison().GetPlannedFinishSeconds() != 3400 {
+		t.Errorf("unexpected public comparison %v", public.GetComparison())
+	}
 	list, err := e.anonRaceReports.ListPublicRaceReports(ctx, racesv1.ListPublicRaceReportsRequest_builder{Handle: "jane-doe"}.Build())
 	if err != nil || len(list.GetReports()) != 1 {
 		t.Fatalf("ListPublicRaceReports = %v, %v", list, err)
