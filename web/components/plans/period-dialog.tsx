@@ -15,12 +15,13 @@ import {
 import type { PeriodGranularity, PlanPeriod } from "gen/plans/v1/plans_pb";
 import { TrainingPlanService } from "gen/plans/v1/plans_pb";
 import {
-  durationInput,
+  hoursMinutesInput,
   kmInput,
   numberInput,
   parseDuration,
+  parseEdited,
   parseKm,
-  parseNumber,
+  parseMeters,
 } from "helpers/parse";
 import { invalidateServices } from "helpers/query";
 import React, { useState } from "react";
@@ -54,7 +55,7 @@ const PeriodDialog: React.FC<PeriodDialogProps> = ({
     numberInput(period?.targetElevationGainMeters ?? 0)
   );
   const [duration, setDuration] = useState(
-    durationInput(period?.targetDurationSeconds ?? 0, false)
+    hoursMinutesInput(period?.targetDurationSeconds ?? 0)
   );
   const [validation, setValidation] = useState("");
 
@@ -71,9 +72,25 @@ const PeriodDialog: React.FC<PeriodDialogProps> = ({
         className="flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault();
-          const distanceMeters = parseKm(distance);
-          const vertMeters = parseNumber(vert);
-          const durationSeconds = parseDuration(duration);
+          // Unedited inputs keep the stored values they show rounded.
+          const distanceMeters = parseEdited(
+            distance,
+            period?.targetDistanceMeters ?? 0,
+            kmInput,
+            parseKm
+          );
+          const vertMeters = parseEdited(
+            vert,
+            period?.targetElevationGainMeters ?? 0,
+            numberInput,
+            parseMeters
+          );
+          const durationSeconds = parseEdited(
+            duration,
+            period?.targetDurationSeconds ?? 0,
+            hoursMinutesInput,
+            parseDuration
+          );
           if (
             distanceMeters === null ||
             vertMeters === null ||
@@ -93,7 +110,7 @@ const PeriodDialog: React.FC<PeriodDialogProps> = ({
                 startDate,
                 targetDistanceMeters: distanceMeters,
                 targetDurationSeconds: durationSeconds,
-                targetElevationGainMeters: Math.round(vertMeters),
+                targetElevationGainMeters: vertMeters,
                 title,
               },
             ],

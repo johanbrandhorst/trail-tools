@@ -44,6 +44,9 @@ import {
   secondaryButton,
   secondaryDangerButton,
 } from "@components/ui/styles";
+import UnsavedChangesGuard, {
+  leaveUnsaved,
+} from "@components/ui/unsaved-changes-guard";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
 import {
   ArrowTopRightOnSquareIcon,
@@ -277,20 +280,6 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
     (section) => rangeError(section) !== undefined
   );
   const saving = update.isPending || saveSections.isPending;
-
-  // Warn before leaving with unsaved changes.
-  useEffect(() => {
-    if (!dirty) {
-      return undefined;
-    }
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-    };
-    globalThis.addEventListener("beforeunload", onBeforeUnload);
-    return () => {
-      globalThis.removeEventListener("beforeunload", onBeforeUnload);
-    };
-  }, [dirty]);
 
   const save = async () => {
     if (detailsDirty) {
@@ -591,6 +580,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
           <ErrorText error={update.error ?? saveSections.error} />
         </div>
       </form>
+      <UnsavedChangesGuard dirty={dirty} />
       <Lightbox
         photos={photos}
         index={openIndex}
@@ -713,7 +703,8 @@ const TripReportPage: React.FC = () => {
   const unpublish = useMutation(unpublishTripReport, { onSuccess: invalidate });
   const remove = useMutation(deleteTripReport, {
     onSuccess: async () => {
-      await navigate("/trip-reports");
+      // The report's unsaved changes went with it.
+      await navigate("/trip-reports", leaveUnsaved);
       await invalidate();
     },
   });

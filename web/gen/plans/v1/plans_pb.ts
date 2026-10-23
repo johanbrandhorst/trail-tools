@@ -1290,7 +1290,10 @@ export const TrainingPlanService: GenService<{
     output: typeof ListTrainingPlansResponseSchema;
   },
   /**
-   * Update a training plan's details.
+   * Update a training plan's details. Fails with FAILED_PRECONDITION if the
+   * new start_date and end_date would leave workouts, weeks or months of the
+   * plan outside them, naming their dates: move or delete those first with
+   * UpdateWorkout, DeleteWorkouts or DeletePlanPeriods.
    *
    * @generated from rpc plans.v1.TrainingPlanService.UpdateTrainingPlan
    */

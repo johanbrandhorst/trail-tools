@@ -40,8 +40,7 @@ type PlanRepository interface {
 	GetWorkout(ctx context.Context, userID, workoutID pgtype.UUID) (*plans.Workout, error)
 	UpdateWorkout(ctx context.Context, w *plans.Workout) (*plans.Workout, error)
 	DeleteWorkouts(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error
-	RouteExists(ctx context.Context, userID, routeID pgtype.UUID) (bool, error)
-	ActivityExists(ctx context.Context, userID, activityID pgtype.UUID) (bool, error)
+	FindReferences(ctx context.Context, userID pgtype.UUID, routeIDs, activityIDs []pgtype.UUID) (routes, activities map[pgtype.UUID]bool, err error)
 	RacesExist(ctx context.Context, userID pgtype.UUID, raceIDs []pgtype.UUID) (bool, error)
 }
 
@@ -253,11 +252,14 @@ func (s *Service) CreateWorkouts(ctx context.Context, req *plansv1.CreateWorkout
 	}
 	workouts := make([]*plans.Workout, n)
 	for i, w := range req.GetWorkouts() {
-		workout, err := s.workoutFromProto(ctx, w, plan)
+		workout, err := workoutFromProto(w, plan)
 		if err != nil {
 			return nil, prefixError(fmt.Sprintf("workout %d", i+1), err)
 		}
 		workouts[i] = workout
+	}
+	if err := s.checkReferences(ctx, plan.UserID, workouts); err != nil {
+		return nil, err
 	}
 	created, err := s.plans.CreateWorkouts(ctx, plan.ID, workouts)
 	if err != nil {
@@ -307,8 +309,11 @@ func (s *Service) UpdateWorkout(ctx context.Context, req *plansv1.UpdateWorkoutR
 	if err := protomask.Apply(merged, req.GetWorkout(), req.GetUpdateMask(), "id", "plan_id"); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
-	workout, err := s.workoutFromProto(ctx, merged, plan)
+	workout, err := workoutFromProto(merged, plan)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReferences(ctx, plan.UserID, []*plans.Workout{workout}); err != nil {
 		return nil, err
 	}
 	workout.ID = existing.ID
@@ -427,7 +432,9 @@ func periodFromProto(p *plansv1.PlanPeriod, plan *plans.TrainingPlan) (*plans.Pe
 	}, nil
 }
 
-func (s *Service) workoutFromProto(ctx context.Context, w *plansv1.Workout, plan *plans.TrainingPlan) (*plans.Workout, error) {
+// workoutFromProto converts and validates a workout of a plan. The caller
+// must check its references with checkReferences.
+func workoutFromProto(w *plansv1.Workout, plan *plans.TrainingPlan) (*plans.Workout, error) {
 	date, err := store.ParseDate(w.GetDate())
 	if err != nil {
 		return nil, invalidArgument("%v", err)
@@ -456,27 +463,45 @@ func (s *Service) workoutFromProto(ctx context.Context, w *plansv1.Workout, plan
 		if workout.RouteID, err = store.StringToUUID(w.GetRouteId()); err != nil {
 			return nil, invalidArgument("invalid route_id: %v", err)
 		}
-		exists, err := s.plans.RouteExists(ctx, plan.UserID, workout.RouteID)
-		if err != nil {
-			return nil, s.toConnectError(ctx, err, "failed to check route")
-		}
-		if !exists {
-			return nil, invalidArgument("route %s does not exist", w.GetRouteId())
-		}
 	}
 	if w.GetCompletedActivityId() != "" {
 		if workout.CompletedActivityID, err = store.StringToUUID(w.GetCompletedActivityId()); err != nil {
 			return nil, invalidArgument("invalid completed_activity_id: %v", err)
 		}
-		exists, err := s.plans.ActivityExists(ctx, plan.UserID, workout.CompletedActivityID)
-		if err != nil {
-			return nil, s.toConnectError(ctx, err, "failed to check activity")
-		}
-		if !exists {
-			return nil, invalidArgument("activity %s does not exist", w.GetCompletedActivityId())
-		}
 	}
 	return workout, nil
+}
+
+// checkReferences checks that the routes and activities of workouts exist and
+// belong to the user. It checks them all in one query, as a plan can be
+// created with hundreds of workouts at once.
+func (s *Service) checkReferences(ctx context.Context, userID pgtype.UUID, workouts []*plans.Workout) error {
+	var routeIDs, activityIDs []pgtype.UUID
+	for _, w := range workouts {
+		if w.RouteID.Valid {
+			routeIDs = append(routeIDs, w.RouteID)
+		}
+		if w.CompletedActivityID.Valid {
+			activityIDs = append(activityIDs, w.CompletedActivityID)
+		}
+	}
+	routes, activities, err := s.plans.FindReferences(ctx, userID, routeIDs, activityIDs)
+	if err != nil {
+		return s.toConnectError(ctx, err, "failed to check routes and activities")
+	}
+	for i, w := range workouts {
+		prefix := ""
+		if len(workouts) > 1 {
+			prefix = fmt.Sprintf("workout %d: ", i+1)
+		}
+		if w.RouteID.Valid && !routes[w.RouteID] {
+			return invalidArgument("%sroute %s does not exist", prefix, store.UUIDToString(w.RouteID))
+		}
+		if w.CompletedActivityID.Valid && !activities[w.CompletedActivityID] {
+			return invalidArgument("%sactivity %s does not exist", prefix, store.UUIDToString(w.CompletedActivityID))
+		}
+	}
+	return nil
 }
 
 func validateTargets(distance, elevation float64, duration int32) error {
@@ -553,6 +578,8 @@ func (s *Service) toConnectError(ctx context.Context, err error, msg string) err
 		return err
 	case errors.Is(err, store.ErrNotFound):
 		return connect.NewError(connect.CodeNotFound, "not found")
+	case errors.As(err, new(*plans.OutsideDatesError)):
+		return connect.NewError(connect.CodeFailedPrecondition, err.Error()).WithCause(err)
 	default:
 		s.report.Report(ctx, msg, err)
 		return connect.NewError(connect.CodeInternal, msg).WithCause(err)

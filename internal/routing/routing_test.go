@@ -190,6 +190,69 @@ func TestRoute(t *testing.T) {
 	}
 }
 
+// loopRouter returns a router on a graph with a loop: a path north from A
+// (0, 0) to V (0.005, 0), and a square loop trail from V east to (0.005,
+// 0.002), north to (0.007, 0.002), west to (0.007, 0) and back south to V,
+// about 890 meters around. The loop is a single edge from V back to itself.
+func loopRouter(t *testing.T) *routing.Router {
+	t.Helper()
+	db := storetest.New(t)
+	nodes := &routing.Nodes{
+		IDs:  []int64{1, 5, 21, 22, 23},
+		Lats: []float64{0, 0.005, 0.005, 0.007, 0.007},
+		Lngs: []float64{0, 0, 0.002, 0.002, 0},
+	}
+	ways := []routing.Way{
+		{ID: 20, Nodes: []int64{1, 5}, Highway: "path", Terrain: geo.TerrainTrail},
+		{ID: 21, Nodes: []int64{5, 21, 22, 23, 5}, Highway: "path", Terrain: geo.TerrainTrail, Name: "Loop Trail"},
+	}
+	bounds := geo.Bounds{MinLat: -0.01, MinLng: -0.01, MaxLat: 0.02, MaxLng: 0.02}
+	edges := routing.BuildEdges(ways, nodes, make([]float64, len(nodes.IDs)), bounds)
+	if count, err := routing.SaveRegion(context.Background(), db, "loop", bounds, edges, nil); err != nil || count != 2 {
+		t.Fatalf("SaveRegion: %d edges, %v", count, err)
+	}
+	return routing.NewRouter(db)
+}
+
+func TestRouteLoop(t *testing.T) {
+	t.Parallel()
+	router := loopRouter(t)
+	ctx := context.Background()
+	// Points on the loop: near the end of its geometry, on its way back
+	// south to V, and near its start, on its way east from V.
+	loopEnd, loopStart := geo.Point{Lat: 0.006}, geo.Point{Lat: 0.0051, Lng: 0.0005}
+	for name, tc := range map[string]struct {
+		from, to   geo.Point
+		wantMeters float64
+		// The easternmost longitude the path may reach; the loop's far side
+		// is at 0.002.
+		maxEast float64
+	}{
+		// Leaving the loop through the end of its geometry, not around it.
+		"off the end of the loop":  {loopEnd, geo.Point{Lat: 0.001}, 556, 0.0001},
+		"onto the end of the loop": {geo.Point{Lat: 0.001}, loopEnd, 556, 0.0001},
+		// Leaving the loop through its start.
+		"off the start of the loop": {loopStart, geo.Point{Lat: 0.001}, 501, 0.0006},
+		// Along the loop through V, from its start to its end, rather than
+		// around its far side.
+		"through the ends of the loop":      {loopStart, loopEnd, 167, 0.0006},
+		"back through the ends of the loop": {loopEnd, loopStart, 167, 0.0006},
+		// Along the loop between points on the same side of V.
+		"along the loop": {loopStart, geo.Point{Lat: 0.0049, Lng: 0.0015}, 111, 0.0016},
+	} {
+		path, err := router.Route(ctx, routing.Request{From: tc.from, To: tc.to, Profile: routing.ProfileShortest})
+		if err != nil {
+			t.Fatalf("%s: Route: %v", name, err)
+		}
+		if got := pathLength(path); math.Abs(got-tc.wantMeters) > 3 {
+			t.Errorf("%s: got length %v, want %v", name, got, tc.wantMeters)
+		}
+		if _, east := lngRange(path); east > tc.maxEast {
+			t.Errorf("%s: path reaches longitude %v, want at most %v", name, east, tc.maxEast)
+		}
+	}
+}
+
 func TestRegions(t *testing.T) {
 	t.Parallel()
 	router := newRouter(t)

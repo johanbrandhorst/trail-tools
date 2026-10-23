@@ -30,11 +30,13 @@ import { addDays, isDateString } from "helpers/dates";
 import { formatKm } from "helpers/format";
 import { PRIORITY_OPTIONS } from "helpers/labels";
 import {
-  durationInput,
+  hoursMinutesInput,
   kmInput,
   numberInput,
   parseDuration,
+  parseEdited,
   parseKm,
+  parseMeters,
   parseNumber,
 } from "helpers/parse";
 import { invalidateServices } from "helpers/query";
@@ -97,7 +99,7 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
   const [distance, setDistance] = useState(kmInput(race?.distanceMeters ?? 0));
   const [vert, setVert] = useState(numberInput(race?.elevationGainMeters ?? 0));
   const [cutoff, setCutoff] = useState(
-    durationInput(race?.cutoffSeconds ?? 0, false)
+    hoursMinutesInput(race?.cutoffSeconds ?? 0)
   );
   const [priority, setPriority] = useState(
     String(race?.priority ?? RacePriority.A)
@@ -193,9 +195,25 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
   };
 
   const submit = async () => {
-    const distanceMeters = parseKm(distance);
-    const vertMeters = parseNumber(vert);
-    const cutoffSeconds = parseDuration(cutoff);
+    // Unedited inputs keep the stored values, which they show rounded.
+    const distanceMeters = parseEdited(
+      distance,
+      race?.distanceMeters ?? 0,
+      kmInput,
+      parseKm
+    );
+    const vertMeters = parseEdited(
+      vert,
+      race?.elevationGainMeters ?? 0,
+      numberInput,
+      parseMeters
+    );
+    const cutoffSeconds = parseEdited(
+      cutoff,
+      race?.cutoffSeconds ?? 0,
+      hoursMinutesInput,
+      parseDuration
+    );
     if (name.trim() === "" || !isDateString(date)) {
       setValidation("Name and date are required.");
       return;
@@ -230,7 +248,7 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
       cutoffSeconds,
       date,
       distanceMeters,
-      elevationGainMeters: Math.round(vertMeters),
+      elevationGainMeters: vertMeters,
       eventId: raceEventId,
       location,
       name: name.trim(),

@@ -99,3 +99,34 @@ export const parseKm = (text: string): number | null => {
   }
   return Math.round(km * 1000);
 };
+
+// ParseMeters parses a whole number of meters, rounding decimals.
+export const parseMeters = (text: string): number | null => {
+  const meters = parseNumber(text);
+  if (meters === null) {
+    return null;
+  }
+  return Math.round(meters);
+};
+
+/**
+ * ParseEdited parses an input that was initialized with format(original),
+ * returning original if the input still shows it. Inputs show values
+ * rounded, e.g. durations without seconds and distances to 10 m, so parsing
+ * an input the user didn't touch would change its value when saving.
+ */
+export const parseEdited = (
+  text: string,
+  original: number,
+  format: (value: number) => string,
+  parse: (text: string) => number | null
+): number | null => {
+  if (text === format(original)) {
+    return original;
+  }
+  return parse(text);
+};
+
+// HoursMinutesInput formats seconds as "h:mm" for an input.
+export const hoursMinutesInput = (seconds: number): string =>
+  durationInput(seconds, false);

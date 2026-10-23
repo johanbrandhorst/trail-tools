@@ -1,6 +1,9 @@
 package store
 
-import "github.com/jackc/pgx/v5/pgtype"
+import (
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 func UUIDToString(in pgtype.UUID) string {
 	if !in.Valid {
@@ -16,4 +19,10 @@ func StringToUUID(in string) (pgtype.UUID, error) {
 		return pgtype.UUID{}, err
 	}
 	return u, nil
+}
+
+// NewUUID returns a new random UUID, for rows whose ID must be known before
+// they're inserted, e.g. to reference them in the same batch.
+func NewUUID() pgtype.UUID {
+	return pgtype.UUID{Bytes: uuid.New(), Valid: true}
 }

@@ -30,7 +30,9 @@ export const listRacePlans = RacePlanService.method.listRacePlans;
 /**
  * Update sections of a race plan. Each top level field is a section that is
  * replaced as a whole, e.g. updating "checkpoints" replaces all
- * checkpoints. Returns the updated plan and analysis.
+ * checkpoints: send every checkpoint with its id, from GetRacePlan, so that
+ * race day splits stay with their checkpoints. Returns the updated plan and
+ * analysis.
  *
  * @generated from rpc races.v1.RacePlanService.UpdateRacePlan
  */

@@ -807,6 +807,7 @@ type Checkpoint struct {
 	xxx_hidden_Tasks                 string                 `protobuf:"bytes,13,opt,name=tasks,proto3"`
 	xxx_hidden_CrewInstructions      string                 `protobuf:"bytes,14,opt,name=crew_instructions,json=crewInstructions,proto3"`
 	xxx_hidden_DropBagContents       string                 `protobuf:"bytes,15,opt,name=drop_bag_contents,json=dropBagContents,proto3"`
+	xxx_hidden_Id                    string                 `protobuf:"bytes,16,opt,name=id,proto3"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -943,6 +944,13 @@ func (x *Checkpoint) GetDropBagContents() string {
 	return ""
 }
 
+func (x *Checkpoint) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
 func (x *Checkpoint) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
@@ -1003,6 +1011,10 @@ func (x *Checkpoint) SetDropBagContents(v string) {
 	x.xxx_hidden_DropBagContents = v
 }
 
+func (x *Checkpoint) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
 type Checkpoint_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1042,6 +1054,13 @@ type Checkpoint_builder struct {
 	// The contents of the drop bag at this checkpoint. Required if drop_bag is
 	// set.
 	DropBagContents string
+	// The checkpoint's ID, set by the server. Race day splits recorded at the
+	// checkpoint belong to it. When updating the checkpoints, keep the IDs of
+	// the checkpoints that stay, so their splits follow them when checkpoints
+	// are added, removed or reordered, and leave it empty for a new
+	// checkpoint. A checkpoint without an ID, or with one the plan doesn't
+	// have, is new.
+	Id string
 }
 
 func (b0 Checkpoint_builder) Build() *Checkpoint {
@@ -1063,6 +1082,7 @@ func (b0 Checkpoint_builder) Build() *Checkpoint {
 	x.xxx_hidden_Tasks = b.Tasks
 	x.xxx_hidden_CrewInstructions = b.CrewInstructions
 	x.xxx_hidden_DropBagContents = b.DropBagContents
+	x.xxx_hidden_Id = b.Id
 	return m0
 }
 
@@ -5743,7 +5763,7 @@ const file_races_v1_race_plans_proto_rawDesc = "" +
 	"\x10a_finish_seconds\x18\x01 \x01(\x05R\x0eaFinishSeconds\x12(\n" +
 	"\x10b_finish_seconds\x18\x02 \x01(\x05R\x0ebFinishSeconds\x12(\n" +
 	"\x10c_finish_seconds\x18\x03 \x01(\x05R\x0ecFinishSeconds\x12\x14\n" +
-	"\x05notes\x18\x04 \x01(\tR\x05notes\"\xd4\x04\n" +
+	"\x05notes\x18\x04 \x01(\tR\x05notes\"\xe4\x04\n" +
 	"\n" +
 	"Checkpoint\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12'\n" +
@@ -5762,7 +5782,8 @@ const file_races_v1_race_plans_proto_rawDesc = "" +
 	"\x06intake\x18\f \x03(\v2\x10.races.v1.IntakeR\x06intake\x12\x14\n" +
 	"\x05tasks\x18\r \x01(\tR\x05tasks\x12+\n" +
 	"\x11crew_instructions\x18\x0e \x01(\tR\x10crewInstructions\x12*\n" +
-	"\x11drop_bag_contents\x18\x0f \x01(\tR\x0fdropBagContents\">\n" +
+	"\x11drop_bag_contents\x18\x0f \x01(\tR\x0fdropBagContents\x12\x0e\n" +
+	"\x02id\x18\x10 \x01(\tR\x02id\">\n" +
 	"\x06Intake\x12\x18\n" +
 	"\aproduct\x18\x01 \x01(\tR\aproduct\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\x01R\bquantity\"\x9d\x01\n" +
