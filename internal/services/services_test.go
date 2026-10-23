@@ -165,7 +165,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.session, err = userRepo.CreateSession(ctx, e.userID, time.Now().Add(time.Hour))
+	e.session, err = userRepo.CreateSession(ctx, e.userID, nil, time.Now().Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,7 +324,7 @@ func sessionInterceptor(sessionID string) connect.ClientInterceptor {
 	return func(next connect.ClientFunc) connect.ClientFunc {
 		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
 			if info, ok := connect.CallInfoForClientContext(ctx); ok {
-				info.RequestHeader().Set("Cookie", "session="+sessionID)
+				info.RequestHeader().Set("Cookie", "__Host-session="+sessionID)
 			}
 			return next(ctx, spec)
 		}

@@ -1075,6 +1075,7 @@ type Session struct {
 	UserID      pgtype.UUID
 	Expiry      pgtype.Timestamptz
 	TokenSHA256 []byte
+	PasskeyID   []byte
 }
 
 type StravaActivity struct {

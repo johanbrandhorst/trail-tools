@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
@@ -451,6 +452,8 @@ func (s *Service) toConnectError(ctx context.Context, err error, msg string) err
 	case errors.Is(err, store.ErrNotFound):
 		return connect.NewError(connect.CodeNotFound, "route not found")
 	case errors.Is(err, errInvalidRoute):
+		return connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+	case errors.Is(err, elevation.ErrInvalidCoordinates), errors.Is(err, elevation.ErrTooManyTiles):
 		return connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	case errors.Is(err, context.Canceled):
 		return connect.NewError(connect.CodeCanceled, err.Error()).WithCause(err)

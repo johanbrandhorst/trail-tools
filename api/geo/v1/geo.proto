@@ -24,7 +24,9 @@ service GeoService {
   // Only areas whose map data has been imported can be searched; elsewhere
   // this fails with FAILED_PRECONDITION.
   rpc FindPointsOfInterest(FindPointsOfInterestRequest) returns (FindPointsOfInterestResponse);
-  // Look up the ground elevation of up to 100 points.
+  // Look up the ground elevation of up to 100 points. The points must lie
+  // within 16 one degree squares of latitude and longitude, such as along a
+  // route; look up points further apart in separate requests.
   rpc GetElevation(GetElevationRequest) returns (GetElevationResponse);
   // Aggregate the user's own GPS tracks from synced activities into a grid of
   // cells inside a bounding box. Cells with a high count are places the user

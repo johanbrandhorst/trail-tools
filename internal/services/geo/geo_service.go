@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/activities"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1/geov1connect"
@@ -277,6 +278,9 @@ func (s *Service) GetElevation(ctx context.Context, req *geov1.GetElevationReque
 		points[i] = geo.Point{Lat: p.GetLat(), Lng: p.GetLng()}
 	}
 	elevations, err := s.mapData.Elevations(ctx, points)
+	if errors.Is(err, elevation.ErrInvalidCoordinates) || errors.Is(err, elevation.ErrTooManyTiles) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err.Error()).WithCause(err)
 	}
