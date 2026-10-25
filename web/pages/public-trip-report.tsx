@@ -40,12 +40,16 @@ const NotAvailable: React.FC = () => (
   </div>
 );
 
-// How a photo is framed.
+/**
+ * How a photo is framed. The cover photo on top (hero) and photos on their
+ * own (single) keep their aspect ratio, so portrait photos aren't cropped;
+ * photos side by side (grid) are cropped to line up.
+ */
 type PhotoLayout = "hero" | "single" | "grid";
 
 const imageClasses: Record<PhotoLayout, string> = {
   grid: "aspect-[4/3] w-full rounded-xl bg-gray-200 object-cover shadow-sm",
-  hero: "max-h-[70vh] w-full rounded-2xl bg-gray-200 object-cover shadow-sm",
+  hero: "mx-auto h-auto max-h-[80vh] w-auto max-w-full rounded-2xl bg-gray-200 shadow-sm",
   single:
     "mx-auto h-auto max-h-[85vh] w-auto max-w-full rounded-2xl bg-gray-200 shadow-sm",
 };
@@ -85,7 +89,7 @@ const PhotoFigure: React.FC<PhotoFigureProps> = ({
   >
     <button
       type="button"
-      className={`block cursor-zoom-in rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${layout === "single" ? "mx-auto w-fit" : "w-full"}`}
+      className={`block cursor-zoom-in rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${layout === "grid" ? "w-full" : "mx-auto w-fit"}`}
       onClick={onOpen}
       aria-label={`Open photo ${number}`}
     >
