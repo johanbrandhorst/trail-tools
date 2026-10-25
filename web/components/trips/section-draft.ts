@@ -84,9 +84,20 @@ export const draftRange = (
   return { endMeters: section.end, startMeters: section.start };
 };
 
-// RangeError describes what's wrong with a section's stretch, if anything.
-export const rangeError = (section: DraftSection): string | undefined => {
-  if (section.start === undefined && section.end === undefined) {
+/**
+ * RangeError describes what's wrong with the stretch of the section at the
+ * index, if anything: it must be complete, and it can't overlap another
+ * section's, as the server checks.
+ */
+export const rangeError = (
+  sections: DraftSection[],
+  index: number
+): string | undefined => {
+  const section = sections[index];
+  if (
+    section === undefined ||
+    (section.start === undefined && section.end === undefined)
+  ) {
     return undefined;
   }
   if (section.start === undefined || section.end === undefined) {
@@ -95,7 +106,119 @@ export const rangeError = (section: DraftSection): string | undefined => {
   if (section.start < 0 || !(section.end > section.start)) {
     return "The stretch must end after it starts.";
   }
+  for (const [position, other] of sections.entries()) {
+    const range = draftRange(other);
+    if (
+      position !== index &&
+      range !== undefined &&
+      range.startMeters < section.end &&
+      section.start < range.endMeters
+    ) {
+      return `The stretch overlaps section ${position + 1}'s. Make one end where the other starts.`;
+    }
+  }
   return undefined;
+};
+
+/**
+ * MinStretchMeters is the shortest a neighbor's stretch gets when another
+ * section's stretch grows into it: the step of the kilometer inputs.
+ */
+const MIN_STRETCH_METERS = 100;
+
+// SameDistance returns whether two distances are the same boundary.
+const sameDistance = (first: number, second: number): boolean =>
+  Math.abs(first - second) < 1;
+
+/**
+ * SetStretch sets the stretch of the section with the key and adjusts its
+ * neighbors along the track, so stretches that met still meet and none
+ * overlap: the nearest section before it ends where it now starts, if it
+ * ended where it started or now overlaps it, and the nearest section after
+ * it likewise starts where it now ends. The stretch can't swallow a
+ * neighbor: it stops short of the neighbor's far end.
+ */
+export const setStretch = (
+  sections: DraftSection[],
+  key: string,
+  start: number | undefined,
+  end: number | undefined
+): DraftSection[] => {
+  const section = sections.find((other) => other.key === key);
+  if (section === undefined) {
+    return sections;
+  }
+  const edited: DraftSection = { ...section, end, start };
+  const range = draftRange(edited);
+  if (range === undefined || range.startMeters < 0) {
+    return sections.map((other) => (other.key === key ? edited : other));
+  }
+  /*
+   * Neighbors are on the side of the stretch their middle is, as it was
+   * before the edit, so a stretch that grows past one's middle doesn't
+   * change sides.
+   */
+  const old = draftRange(section) ?? range;
+  const middle = (old.startMeters + old.endMeters) / 2;
+  let before: { key: string; range: DistanceRange } | undefined = undefined;
+  let after: { key: string; range: DistanceRange } | undefined = undefined;
+  for (const other of sections) {
+    const otherRange = draftRange(other);
+    if (other.key === key || otherRange === undefined) {
+      continue;
+    }
+    if ((otherRange.startMeters + otherRange.endMeters) / 2 < middle) {
+      if (
+        before === undefined ||
+        otherRange.startMeters > before.range.startMeters
+      ) {
+        before = { key: other.key, range: otherRange };
+      }
+    } else if (
+      after === undefined ||
+      otherRange.startMeters < after.range.startMeters
+    ) {
+      after = { key: other.key, range: otherRange };
+    }
+  }
+  let nextStart = range.startMeters;
+  let nextEnd = range.endMeters;
+  if (before !== undefined) {
+    nextStart = Math.max(
+      nextStart,
+      before.range.startMeters + MIN_STRETCH_METERS
+    );
+  }
+  if (after !== undefined) {
+    nextEnd = Math.min(nextEnd, after.range.endMeters - MIN_STRETCH_METERS);
+  }
+  if (!(nextEnd > nextStart)) {
+    // Squeezed between its neighbors: leave them be and show the overlap.
+    return sections.map((other) => (other.key === key ? edited : other));
+  }
+  const draft = draftRange(section);
+  return sections.map((other) => {
+    if (other.key === key) {
+      return { ...edited, end: nextEnd, start: nextStart };
+    }
+    if (
+      other.key === before?.key &&
+      (before.range.endMeters > nextStart ||
+        (draft !== undefined &&
+          sameDistance(before.range.endMeters, draft.startMeters)))
+    ) {
+      return { ...other, end: nextStart };
+    }
+    if (
+      other.key === after?.key &&
+      (after.range.startMeters < nextEnd ||
+        (draft !== undefined &&
+          sameDistance(after.range.startMeters, draft.endMeters)))
+    ) {
+      return { ...other, start: nextEnd };
+    }
+    return other;
+  });
 };
 
 /**

@@ -1,5 +1,5 @@
 import type { DraftSection } from "@components/trips/section-draft";
-import { draftRange, rangeError } from "@components/trips/section-draft";
+import { draftRange } from "@components/trips/section-draft";
 import { climbWithin } from "@components/trips/sections";
 import { locationSourceLabel } from "@components/trips/trip-bits";
 import ConfirmButton from "@components/ui/confirm-button";
@@ -48,7 +48,11 @@ interface KmInputProps {
 const formatKmValue = (meters: number | undefined): string =>
   meters === undefined ? "" : String(Math.round(meters / 100) / 10);
 
-// KmInput edits a distance in kilometers. It's empty for no distance.
+/**
+ * KmInput edits a distance in kilometers. It's empty for no distance. The
+ * distance changes when the input loses focus or on Enter, not on each
+ * keystroke, so neighboring sections adjust to the finished number.
+ */
 const KmInput: React.FC<KmInputProps> = ({ label, meters, onChange }) => {
   const [text, setText] = useState(formatKmValue(meters));
   const [shown, setShown] = useState(meters);
@@ -57,6 +61,13 @@ const KmInput: React.FC<KmInputProps> = ({ label, meters, onChange }) => {
     setShown(meters);
     setText(formatKmValue(meters));
   }
+  const commit = () => {
+    const value = Number.parseFloat(text);
+    const next = Number.isFinite(value) ? Math.round(value * 1000) : undefined;
+    if (next !== meters) {
+      onChange(next);
+    }
+  };
   return (
     <span className="w-20">
       <input
@@ -70,10 +81,14 @@ const KmInput: React.FC<KmInputProps> = ({ label, meters, onChange }) => {
         className={`${inputClass} py-1 tabular-nums`}
         onChange={(event) => {
           setText(event.target.value);
-          const value = Number.parseFloat(event.target.value);
-          const next = Number.isFinite(value) ? value * 1000 : undefined;
-          setShown(next);
-          onChange(next);
+        }}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            // Commit instead of submitting the form with the old distance.
+            event.preventDefault();
+            commit();
+          }
         }}
       />
     </span>
@@ -360,7 +375,11 @@ interface SectionCardProps {
   placingPhotoId: string | null;
   coverPhotoId: string;
   onActivate: () => void;
+  // What's wrong with the section's stretch, if anything.
+  stretchError: string | undefined;
   onChange: (section: DraftSection) => void;
+  // Sets the section's stretch, adjusting its neighbors.
+  onStretch: (start: number | undefined, end: number | undefined) => void;
   onMove: (delta: number) => void;
   onMergeWithNext: () => void;
   onSplit: () => void;
@@ -395,7 +414,9 @@ export const SectionCard: React.FC<SectionCardProps> = ({
   placingPhotoId,
   coverPhotoId,
   onActivate,
+  stretchError,
   onChange,
+  onStretch,
   onMove,
   onMergeWithNext,
   onSplit,
@@ -412,7 +433,6 @@ export const SectionCard: React.FC<SectionCardProps> = ({
   // Where a photo being dragged over the section would drop.
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const range = draftRange(section);
-  const error = rangeError(section);
   let climbing = "";
   if (
     range !== undefined &&
@@ -463,7 +483,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
             label="Start of the stretch in km"
             meters={section.start}
             onChange={(start) => {
-              onChange({ ...section, start });
+              onStretch(start, section.end);
             }}
           />
           <span>to</span>
@@ -471,7 +491,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
             label="End of the stretch in km"
             meters={section.end}
             onChange={(end) => {
-              onChange({ ...section, end });
+              onStretch(section.start, end);
             }}
           />
           <span className="ml-1">km</span>
@@ -545,7 +565,9 @@ export const SectionCard: React.FC<SectionCardProps> = ({
           </button>
         </span>
       </div>
-      {error !== undefined && <p className="text-xs text-red-700">{error}</p>}
+      {stretchError !== undefined && (
+        <p className="text-xs text-red-700">{stretchError}</p>
+      )}
       <input
         value={section.title}
         aria-label="Heading"
