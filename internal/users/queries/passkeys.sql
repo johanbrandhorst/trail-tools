@@ -17,6 +17,9 @@ update users set is_admin = $2 where id = $1;
 -- name: HasAdmin :one
 select exists(select 1 from users where is_admin);
 
+-- name: GetFirstAdmin :one
+select id from users where is_admin order by create_time, id limit 1;
+
 -- name: CreatePasskey :one
 insert into passkeys (
   id,

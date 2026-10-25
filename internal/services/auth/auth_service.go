@@ -47,6 +47,9 @@ const (
 	// the token in the fragment, which browsers don't send, so it doesn't
 	// end up in request logs.
 	InvitePath = "/invite"
+	// LocalSignInPath is where visitors from the server's machine sign in
+	// without a passkey, with -local-sign-in.
+	LocalSignInPath = "/local-sign-in"
 )
 
 // Repository stores users, passkeys and invitations.
@@ -68,6 +71,7 @@ type Repository interface {
 	RegisterPasskey(ctx context.Context, reg *users.Registration) (users.User, error)
 	CreateSession(ctx context.Context, userID pgtype.UUID, passkeyID []byte, expiry time.Time) (string, error)
 	DeleteOtherSessions(ctx context.Context, userID pgtype.UUID, keepToken string) (int64, error)
+	LocalAdmin(ctx context.Context) (pgtype.UUID, error)
 }
 
 // Service implements API handlers for the auth service.
@@ -463,6 +467,65 @@ func (s *Service) BootstrapHandler(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// LocalSignInHandler signs in visitors from the same machine as the server
+// as the first administrator, creating one without a passkey if there is
+// none, and sends them to the page in the next query parameter, or the home
+// page. It lets agents and tests use a local server, since their browsers
+// can't register passkeys. Other visitors get a 404, and main only
+// registers it for a server on localhost.
+func (s *Service) LocalSignInHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || !isLocal(r) {
+			http.NotFound(w, r)
+			return
+		}
+		ctx := r.Context()
+		userID, err := s.repo.LocalAdmin(ctx)
+		if err != nil {
+			s.report.Report(ctx, "Failed to get the local administrator", err)
+			http.Error(w, "failed to sign in", http.StatusInternalServerError)
+			return
+		}
+		expiry := s.nowFn().Add(sessionTTL)
+		// The session has no passkey, as the local administrator may have
+		// none.
+		token, err := s.repo.CreateSession(ctx, userID, nil, expiry)
+		if err != nil {
+			s.report.Report(ctx, "Failed to create a local session", err)
+			http.Error(w, "failed to sign in", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, authn.SessionCookie(token, expiry))
+		http.Redirect(w, r, localRedirect(r.URL.Query().Get("next")), http.StatusFound)
+	})
+}
+
+// localRedirect returns the page to go to after signing in locally: next if
+// it's a path on this server, or else the home page.
+func localRedirect(next string) string {
+	u, err := url.Parse(next)
+	if err != nil || u.Scheme != "" || u.Host != "" || !strings.HasPrefix(next, "/") ||
+		strings.HasPrefix(next, "//") || strings.HasPrefix(next, "/\\") {
+		return "/"
+	}
+	return next
+}
+
+// IsLocalURL returns whether a URL is on this machine: localhost, a
+// .localhost name or a loopback address.
+func IsLocalURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	name := u.Hostname()
+	if name == "localhost" || strings.HasSuffix(name, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(name)
+	return ip != nil && ip.IsLoopback()
 }
 
 // isLocal returns whether a request comes from the same machine, for a
