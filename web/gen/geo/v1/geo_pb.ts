@@ -846,7 +846,9 @@ export const GeoService: GenService<{
     output: typeof FindPointsOfInterestResponseSchema;
   },
   /**
-   * Look up the ground elevation of up to 100 points.
+   * Look up the ground elevation of up to 100 points. The points must lie
+   * within 16 one degree squares of latitude and longitude, such as along a
+   * route; look up points further apart in separate requests.
    *
    * @generated from rpc geo.v1.GeoService.GetElevation
    */

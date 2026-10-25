@@ -5,18 +5,26 @@ package store
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
+	iofs "io/fs"
 	"log/slog"
+	"maps"
 	"net/url"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/exaring/otelpgx"
 	migrate "github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/golang-migrate/migrate/v4/source"
+	migrateiofs "github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/multitracer"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jackc/pgx/v5/tracelog"
@@ -86,7 +94,7 @@ func New(ctx context.Context, logger *slog.Logger, pgURL *url.URL) (*DB, error) 
 	)
 
 	// Validate and/or run migrations
-	err = validateSchema(*poolConf.ConnConfig, pgURL.Scheme)
+	err = validateSchema(ctx, logger, *poolConf.ConnConfig, pgURL.Scheme)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate schema: %w", err)
 	}
@@ -106,12 +114,63 @@ func New(ctx context.Context, logger *slog.Logger, pgURL *url.URL) (*DB, error) 
 	return &DB{Pool: pool}, nil
 }
 
-// validateSchema migrates the Postgres schema to the current version.
-func validateSchema(conf pgx.ConnConfig, scheme string) error {
-	sourceInstance, err := iofs.New(fs, "migrations")
+// Timeouts of migrations. Migrations run while the previous revision
+// serves, so a migration waiting for a lock its queries hold would also hold
+// up every query after it; it fails instead, and is retried.
+const (
+	// migrationLockTimeout bounds waiting for a lock, of a table or of the
+	// migrations, which another instance holds while migrating.
+	migrationLockTimeout = "10s"
+	// migrationStatementTimeout bounds each migration. Cloud Run gives the
+	// server 4 minutes to start listening.
+	migrationStatementTimeout = "2min"
+	// migrationAttempts is how many times migrating is tried when waiting for
+	// a lock times out.
+	migrationAttempts = 5
+	// migrationRetryDelay is the wait between attempts.
+	migrationRetryDelay = 5 * time.Second
+)
+
+// validateSchema migrates the Postgres schema to the current version,
+// retrying when a lock is held for too long.
+func validateSchema(ctx context.Context, logger *slog.Logger, conf pgx.ConnConfig, scheme string) error {
+	conf.RuntimeParams = maps.Clone(conf.RuntimeParams)
+	if conf.RuntimeParams == nil {
+		conf.RuntimeParams = map[string]string{}
+	}
+	conf.RuntimeParams["lock_timeout"] = migrationLockTimeout
+	conf.RuntimeParams["statement_timeout"] = migrationStatementTimeout
+	for attempt := 1; ; attempt++ {
+		err := migrateSchema(ctx, logger, fs, conf, scheme)
+		if err == nil || !isLockTimeout(err) || attempt == migrationAttempts {
+			return err
+		}
+		logger.WarnContext(ctx, "Timed out waiting for a lock while migrating, retrying", slog.String("error", err.Error()))
+		select {
+		case <-time.After(migrationRetryDelay):
+		case <-ctx.Done():
+			return err
+		}
+	}
+}
+
+// migrateSchema applies the migrations in migrations/ in fsys.
+//
+// golang-migrate marks the version dirty before running a migration and
+// clean after, and refuses to run with a dirty version, until someone sets
+// it by hand. Each migration file runs as a single query, so Postgres runs
+// it in one transaction (and migrations must keep it that way, see
+// TestMigrationsAreAtomic): a failed migration left nothing behind, and is
+// retried. golang-migrate also refuses to run if the database's version
+// isn't among the migrations, as when a revision is rolled back to after a
+// newer one migrated. As migrations keep the previous revision working, it
+// runs without migrating instead.
+func migrateSchema(ctx context.Context, logger *slog.Logger, fsys iofs.FS, conf pgx.ConnConfig, scheme string) error {
+	sourceInstance, err := migrateiofs.New(fsys, "migrations")
 	if err != nil {
 		return err
 	}
+	defer sourceInstance.Close()
 	db := stdlib.OpenDB(conf)
 	defer db.Close()
 	var driverInstance database.Driver
@@ -124,6 +183,10 @@ func validateSchema(conf pgx.ConnConfig, scheme string) error {
 	if err != nil {
 		return err
 	}
+	upToDate, err := prepareMigration(ctx, logger, sourceInstance, driverInstance)
+	if err != nil || upToDate {
+		return err
+	}
 	m, err := migrate.NewWithInstance("iofs", sourceInstance, scheme, driverInstance)
 	if err != nil {
 		return err
@@ -132,7 +195,86 @@ func validateSchema(conf pgx.ConnConfig, scheme string) error {
 	if err != nil && err != migrate.ErrNoChange {
 		return err
 	}
-	return sourceInstance.Close()
+	return nil
+}
+
+// prepareMigration clears the dirty version a failed migration left, and
+// reports whether the database is already at or past the last migration.
+func prepareMigration(ctx context.Context, logger *slog.Logger, src source.Driver, drv database.Driver) (upToDate bool, err error) {
+	// Hold the migrations' lock, so a migration another instance is running
+	// isn't taken for a failed one.
+	if err := drv.Lock(); err != nil {
+		return false, err
+	}
+	defer func() {
+		if unlockErr := drv.Unlock(); unlockErr != nil && err == nil {
+			err = unlockErr
+		}
+	}()
+	version, dirty, err := drv.Version()
+	if err != nil {
+		return false, err
+	}
+	last, err := lastVersion(src)
+	if err != nil {
+		return false, err
+	}
+	if version > last {
+		// A dirty version newer than the migrations is cleared by the next
+		// revision that knows the migration.
+		logger.WarnContext(ctx, "The database was migrated by a newer revision, running without migrating",
+			slog.Int("version", version), slog.Bool("dirty", dirty), slog.Int("last_migration", last))
+		return true, nil
+	}
+	if !dirty {
+		return version == last, nil
+	}
+	prev := database.NilVersion
+	if p, err := src.Prev(uint(version)); err == nil {
+		prev = int(p)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	logger.WarnContext(ctx, "A migration failed earlier and was rolled back, retrying it",
+		slog.Int("version", version), slog.Int("previous_version", prev))
+	return false, drv.SetVersion(prev, false)
+}
+
+// lastVersion returns the version of the last migration in src.
+func lastVersion(src source.Driver) (int, error) {
+	v, err := src.First()
+	if err != nil {
+		return 0, err
+	}
+	for {
+		next, err := src.Next(v)
+		if errors.Is(err, os.ErrNotExist) {
+			return int(v), nil
+		}
+		if err != nil {
+			return 0, err
+		}
+		v = next
+	}
+}
+
+// isLockTimeout reports whether err is from waiting for a lock for longer
+// than the lock timeout.
+func isLockTimeout(err error) bool {
+	if errors.Is(err, migrate.ErrLockTimeout) {
+		return true
+	}
+	// golang-migrate's database errors don't unwrap.
+	var dbErr database.Error
+	if errors.As(err, &dbErr) {
+		err = dbErr.OrigErr
+	}
+	var dbErrPtr *database.Error
+	if errors.As(err, &dbErrPtr) {
+		err = dbErrPtr.OrigErr
+	}
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.LockNotAvailable
 }
 
 // getEnumTypes returns a list of all enum types in the database.

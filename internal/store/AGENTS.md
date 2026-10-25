@@ -13,6 +13,22 @@ doesn't support.
 - Explain tables, columns and non-obvious changes in `--` comments.
 - Write lowercase SQL, indented by two spaces.
 - After changing the schema, run `make sqlc` to regenerate the queries.
+- A migration must run in a single transaction, so a failed one leaves
+  nothing behind: no `commit` before the end of the file, and no `create index
+  concurrently` or `vacuum` (`TestMigrationsAreAtomic` checks). golang-migrate
+  marks a failed migration's version dirty; `store.New` sets it back to the
+  previous version and retries it, so fixing the migration and deploying
+  again is enough.
+- Keep the previous revision working with the new schema: Cloud Run serves
+  with it while the new one starts, and rolling back to it runs it without
+  migrating (`store.New` skips migrating a database newer than its
+  migrations). Add columns and tables in one release and stop using old
+  ones before dropping them in a later one, and give new `not null` columns
+  defaults.
+- Migrations wait at most 10 seconds for a lock, and a migration runs for at
+  most 2 minutes, as a migration waiting for a lock would hold up every query
+  after it. Starting retries a few times when waiting for a lock times out.
+  Long backfills belong in the server or a job, in batches.
 
 ## Tables
 

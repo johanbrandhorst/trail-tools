@@ -42,12 +42,21 @@ export const deleteInvitation = AuthService.method.deleteInvitation;
 export const listPasskeys = AuthService.method.listPasskeys;
 
 /**
- * Delete one of the signed in user's passkeys. The last passkey of an
+ * Delete one of the signed in user's passkeys, and sign out the sessions
+ * signed in with it, other than the current one. The last passkey of an
  * account can't be deleted.
  *
  * @generated from rpc auth.v1.AuthService.DeletePasskey
  */
 export const deletePasskey = AuthService.method.deletePasskey;
+
+/**
+ * Sign the signed in user out on every other device and browser, keeping
+ * the current session.
+ *
+ * @generated from rpc auth.v1.AuthService.SignOutOtherSessions
+ */
+export const signOutOtherSessions = AuthService.method.signOutOtherSessions;
 
 /**
  * Start registering a passkey, with an invitation token or as the signed in

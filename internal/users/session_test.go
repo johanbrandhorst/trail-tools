@@ -40,17 +40,21 @@ func TestSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	token, err := repo.CreateSession(ctx, userID, time.Now().Add(time.Hour))
+	expiry := time.Now().Add(time.Hour).Truncate(time.Microsecond)
+	token, err := repo.CreateSession(ctx, userID, nil, expiry)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, tok := range []string{token, oldToken} {
-		user, err := repo.GetSession(ctx, tok)
+		session, err := repo.GetSession(ctx, tok)
 		if err != nil {
 			t.Fatalf("GetSession(%q): %v", tok, err)
 		}
-		if user.ID() != userID {
-			t.Errorf("GetSession(%q) = user %v, want %v", tok, user.ID(), userID)
+		if session.User.ID() != userID {
+			t.Errorf("GetSession(%q) = user %v, want %v", tok, session.User.ID(), userID)
+		}
+		if tok == token && !session.Expiry.Equal(expiry) {
+			t.Errorf("GetSession(%q) = expiry %v, want %v", tok, session.Expiry, expiry)
 		}
 	}
 

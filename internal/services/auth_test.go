@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"strings"
 	"testing"
@@ -14,12 +15,14 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
 	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // browser is a client that keeps the session cookie, like a browser.
 type browser struct {
-	auth  authv1connect.AuthServiceClient
-	users usersv1connect.UserServiceClient
+	auth    authv1connect.AuthServiceClient
+	users   usersv1connect.UserServiceClient
+	cookies *cookieTransport
 }
 
 // cookieTransport sends the session cookie it was last given, like a
@@ -38,7 +41,7 @@ func (t *cookieTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.next.RoundTrip(req)
 	if err == nil {
 		for _, c := range resp.Cookies() {
-			if c.Name == "session" {
+			if c.Name == "__Host-session" {
 				t.cookie = c.Name + "=" + c.Value
 			}
 		}
@@ -52,15 +55,16 @@ func (e *env) newBrowser() *browser {
 
 // signedInBrowser is a browser signed in as the test user.
 func (e *env) signedInBrowser() *browser {
-	return e.browserWithCookie("session=" + e.session)
+	return e.browserWithCookie("__Host-session=" + e.session)
 }
 
 func (e *env) browserWithCookie(cookie string) *browser {
-	httpClient := &http.Client{Transport: &cookieTransport{next: e.srv.Client().Transport, cookie: cookie}}
-	client := connect.NewClient(connecthttp.NewTransport(httpClient, e.srv.URL))
+	cookies := &cookieTransport{next: e.srv.Client().Transport, cookie: cookie}
+	client := connect.NewClient(connecthttp.NewTransport(&http.Client{Transport: cookies}, e.srv.URL))
 	return &browser{
-		auth:  authv1connect.NewAuthServiceClient(client),
-		users: usersv1connect.NewUserServiceClient(client),
+		auth:    authv1connect.NewAuthServiceClient(client),
+		users:   usersv1connect.NewUserServiceClient(client),
+		cookies: cookies,
 	}
 }
 
@@ -105,6 +109,13 @@ func (b *browser) login(t *testing.T, a *authenticator, credentialID []byte) err
 		UserHandle:        a.keys[string(credentialID)].userHandle,
 	}.Build())
 	return err
+}
+
+// wantSignedOut fails the test unless the browser is signed out.
+func (b *browser) wantSignedOut(t *testing.T) {
+	t.Helper()
+	_, err := b.users.GetCurrentUser(context.Background(), usersv1.GetCurrentUserRequest_builder{}.Build())
+	wantCode(t, err, connect.CodeUnauthenticated)
 }
 
 func (b *browser) currentUser(t *testing.T) *usersv1.User {
@@ -233,6 +244,102 @@ func TestPasskeysAndInvitations(t *testing.T) {
 	}
 }
 
+func TestSessions(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// A browser with the session cookie from before it had the __Host-
+	// prefix stays signed in, and gets the prefixed cookie.
+	legacy := e.browserWithCookie("session=" + e.session)
+	legacy.currentUser(t)
+	if got, want := legacy.cookies.cookie, "__Host-session="+e.session; got != want {
+		t.Errorf("got cookie %q, want %q", got, want)
+	}
+	legacy.currentUser(t)
+
+	// An administrator signs in on their laptop, adds their phone, and
+	// signs in with the phone on a tablet too.
+	laptop := newAuthenticator(t, "http://localhost:8080", "localhost")
+	admin := e.newBrowser()
+	if _, err := admin.register(t, laptop, bootstrapToken, "Johan"); err != nil {
+		t.Fatalf("bootstrap registration: %v", err)
+	}
+	addDevice, err := admin.auth.CreateInvitation(ctx, authv1.CreateInvitationRequest_builder{
+		Kind: authv1.InvitationKind_INVITATION_KIND_ADD_PASSKEY,
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateInvitation: %v", err)
+	}
+	phone := newAuthenticator(t, "http://localhost:8080", "localhost")
+	phoneBrowser := e.newBrowser()
+	phoneKey, err := phoneBrowser.register(t, phone, strings.TrimPrefix(addDevice.GetUrl(), "http://localhost:8080/invite#"), "")
+	if err != nil {
+		t.Fatalf("adding the phone: %v", err)
+	}
+	tablet := e.newBrowser()
+	if err := tablet.login(t, phone, phoneKey); err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	// A session from before sessions recorded their passkey.
+	adminID, err := store.StringToUUID(admin.currentUser(t).GetId())
+	if err != nil {
+		t.Fatal(err)
+	}
+	const oldToken = "an-old-session-token"
+	if _, err := e.db.Exec(ctx, "insert into sessions (user_id, token_sha256, expiry) values ($1, sha256(convert_to($2, 'UTF8')), now() + interval '1 hour')",
+		adminID, oldToken); err != nil {
+		t.Fatal(err)
+	}
+	old := e.browserWithCookie("__Host-session=" + oldToken)
+	old.currentUser(t)
+
+	// Deleting the phone's passkey on the laptop signs out the phone and
+	// the tablet, and the session that may have been signed in with it, but
+	// not the laptop.
+	var phonePasskeyID string
+	for _, p := range passkeysFor(t, admin) {
+		if p.GetId() == base64.RawURLEncoding.EncodeToString(phoneKey) {
+			phonePasskeyID = p.GetId()
+		}
+	}
+	if _, err := admin.auth.DeletePasskey(ctx, authv1.DeletePasskeyRequest_builder{Id: phonePasskeyID}.Build()); err != nil {
+		t.Fatalf("DeletePasskey: %v", err)
+	}
+	phoneBrowser.wantSignedOut(t)
+	tablet.wantSignedOut(t)
+	old.wantSignedOut(t)
+	admin.currentUser(t)
+
+	// The administrator signs in on another browser, then signs out
+	// everywhere else from the laptop.
+	other := e.newBrowser()
+	if err := other.login(t, laptop, passkeyID(t, passkeysFor(t, admin)[0])); err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	signedOut, err := admin.auth.SignOutOtherSessions(ctx, authv1.SignOutOtherSessionsRequest_builder{}.Build())
+	if err != nil {
+		t.Fatalf("SignOutOtherSessions: %v", err)
+	}
+	if got := signedOut.GetSignedOutSessions(); got != 1 {
+		t.Errorf("signed out %d sessions, want 1", got)
+	}
+	other.wantSignedOut(t)
+	admin.currentUser(t)
+	// Other users stay signed in.
+	legacy.currentUser(t)
+}
+
+// passkeyID returns the credential ID of a passkey.
+func passkeyID(t *testing.T, p *authv1.Passkey) []byte {
+	t.Helper()
+	id, err := base64.RawURLEncoding.DecodeString(p.GetId())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
 func passkeysFor(t *testing.T, b *browser) []*authv1.Passkey {
 	t.Helper()
 	resp, err := b.auth.ListPasskeys(context.Background(), authv1.ListPasskeysRequest_builder{}.Build())
@@ -293,6 +400,10 @@ func TestCredentialsRequireSession(t *testing.T) {
 			},
 			"ListPasskeys": func() error {
 				_, err := authClient.ListPasskeys(ctx, authv1.ListPasskeysRequest_builder{}.Build())
+				return err
+			},
+			"SignOutOtherSessions": func() error {
+				_, err := authClient.SignOutOtherSessions(ctx, authv1.SignOutOtherSessionsRequest_builder{}.Build())
 				return err
 			},
 			"DeletePasskey": func() error {

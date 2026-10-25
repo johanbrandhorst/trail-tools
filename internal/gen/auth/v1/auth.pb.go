@@ -1114,6 +1114,107 @@ func (b0 DeletePasskeyResponse_builder) Build() *DeletePasskeyResponse {
 	return m0
 }
 
+type SignOutOtherSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignOutOtherSessionsRequest) Reset() {
+	*x = SignOutOtherSessionsRequest{}
+	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignOutOtherSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignOutOtherSessionsRequest) ProtoMessage() {}
+
+func (x *SignOutOtherSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type SignOutOtherSessionsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 SignOutOtherSessionsRequest_builder) Build() *SignOutOtherSessionsRequest {
+	m0 := &SignOutOtherSessionsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type SignOutOtherSessionsResponse struct {
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_SignedOutSessions int32                  `protobuf:"varint,1,opt,name=signed_out_sessions,json=signedOutSessions,proto3"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
+}
+
+func (x *SignOutOtherSessionsResponse) Reset() {
+	*x = SignOutOtherSessionsResponse{}
+	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignOutOtherSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignOutOtherSessionsResponse) ProtoMessage() {}
+
+func (x *SignOutOtherSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SignOutOtherSessionsResponse) GetSignedOutSessions() int32 {
+	if x != nil {
+		return x.xxx_hidden_SignedOutSessions
+	}
+	return 0
+}
+
+func (x *SignOutOtherSessionsResponse) SetSignedOutSessions(v int32) {
+	x.xxx_hidden_SignedOutSessions = v
+}
+
+type SignOutOtherSessionsResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// How many sessions were signed out.
+	SignedOutSessions int32
+}
+
+func (b0 SignOutOtherSessionsResponse_builder) Build() *SignOutOtherSessionsResponse {
+	m0 := &SignOutOtherSessionsResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_SignedOutSessions = b.SignedOutSessions
+	return m0
+}
+
 type BeginPasskeyRegistrationRequest struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_InvitationToken string                 `protobuf:"bytes,1,opt,name=invitation_token,json=invitationToken,proto3"`
@@ -1123,7 +1224,7 @@ type BeginPasskeyRegistrationRequest struct {
 
 func (x *BeginPasskeyRegistrationRequest) Reset() {
 	*x = BeginPasskeyRegistrationRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	mi := &file_auth_v1_auth_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1135,7 +1236,7 @@ func (x *BeginPasskeyRegistrationRequest) String() string {
 func (*BeginPasskeyRegistrationRequest) ProtoMessage() {}
 
 func (x *BeginPasskeyRegistrationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[14]
+	mi := &file_auth_v1_auth_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1188,7 +1289,7 @@ type BeginPasskeyRegistrationResponse struct {
 
 func (x *BeginPasskeyRegistrationResponse) Reset() {
 	*x = BeginPasskeyRegistrationResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	mi := &file_auth_v1_auth_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1200,7 +1301,7 @@ func (x *BeginPasskeyRegistrationResponse) String() string {
 func (*BeginPasskeyRegistrationResponse) ProtoMessage() {}
 
 func (x *BeginPasskeyRegistrationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[15]
+	mi := &file_auth_v1_auth_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1342,7 +1443,7 @@ type FinishPasskeyRegistrationRequest struct {
 
 func (x *FinishPasskeyRegistrationRequest) Reset() {
 	*x = FinishPasskeyRegistrationRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[16]
+	mi := &file_auth_v1_auth_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1354,7 +1455,7 @@ func (x *FinishPasskeyRegistrationRequest) String() string {
 func (*FinishPasskeyRegistrationRequest) ProtoMessage() {}
 
 func (x *FinishPasskeyRegistrationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[16]
+	mi := &file_auth_v1_auth_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1562,7 @@ type FinishPasskeyRegistrationResponse struct {
 
 func (x *FinishPasskeyRegistrationResponse) Reset() {
 	*x = FinishPasskeyRegistrationResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[17]
+	mi := &file_auth_v1_auth_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1473,7 +1574,7 @@ func (x *FinishPasskeyRegistrationResponse) String() string {
 func (*FinishPasskeyRegistrationResponse) ProtoMessage() {}
 
 func (x *FinishPasskeyRegistrationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[17]
+	mi := &file_auth_v1_auth_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1504,7 +1605,7 @@ type BeginPasskeyLoginRequest struct {
 
 func (x *BeginPasskeyLoginRequest) Reset() {
 	*x = BeginPasskeyLoginRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[18]
+	mi := &file_auth_v1_auth_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1516,7 +1617,7 @@ func (x *BeginPasskeyLoginRequest) String() string {
 func (*BeginPasskeyLoginRequest) ProtoMessage() {}
 
 func (x *BeginPasskeyLoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[18]
+	mi := &file_auth_v1_auth_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1550,7 +1651,7 @@ type BeginPasskeyLoginResponse struct {
 
 func (x *BeginPasskeyLoginResponse) Reset() {
 	*x = BeginPasskeyLoginResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[19]
+	mi := &file_auth_v1_auth_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1562,7 +1663,7 @@ func (x *BeginPasskeyLoginResponse) String() string {
 func (*BeginPasskeyLoginResponse) ProtoMessage() {}
 
 func (x *BeginPasskeyLoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[19]
+	mi := &file_auth_v1_auth_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1644,7 +1745,7 @@ type FinishPasskeyLoginRequest struct {
 
 func (x *FinishPasskeyLoginRequest) Reset() {
 	*x = FinishPasskeyLoginRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[20]
+	mi := &file_auth_v1_auth_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1656,7 +1757,7 @@ func (x *FinishPasskeyLoginRequest) String() string {
 func (*FinishPasskeyLoginRequest) ProtoMessage() {}
 
 func (x *FinishPasskeyLoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[20]
+	mi := &file_auth_v1_auth_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1786,7 +1887,7 @@ type FinishPasskeyLoginResponse struct {
 
 func (x *FinishPasskeyLoginResponse) Reset() {
 	*x = FinishPasskeyLoginResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[21]
+	mi := &file_auth_v1_auth_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1798,7 +1899,7 @@ func (x *FinishPasskeyLoginResponse) String() string {
 func (*FinishPasskeyLoginResponse) ProtoMessage() {}
 
 func (x *FinishPasskeyLoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[21]
+	mi := &file_auth_v1_auth_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1871,7 +1972,10 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\bpasskeys\x18\x01 \x03(\v2\x10.auth.v1.PasskeyR\bpasskeys\"&\n" +
 	"\x14DeletePasskeyRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x17\n" +
-	"\x15DeletePasskeyResponse\"L\n" +
+	"\x15DeletePasskeyResponse\"\x1d\n" +
+	"\x1bSignOutOtherSessionsRequest\"N\n" +
+	"\x1cSignOutOtherSessionsResponse\x12.\n" +
+	"\x13signed_out_sessions\x18\x01 \x01(\x05R\x11signedOutSessions\"L\n" +
 	"\x1fBeginPasskeyRegistrationRequest\x12)\n" +
 	"\x10invitation_token\x18\x01 \x01(\tR\x0finvitationToken\"\x85\x02\n" +
 	" BeginPasskeyRegistrationResponse\x12!\n" +
@@ -1909,14 +2013,15 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x0eInvitationKind\x12\x1f\n" +
 	"\x1bINVITATION_KIND_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18INVITATION_KIND_NEW_USER\x10\x01\x12\x1f\n" +
-	"\x1bINVITATION_KIND_ADD_PASSKEY\x10\x022\xa2\a\n" +
+	"\x1bINVITATION_KIND_ADD_PASSKEY\x10\x022\x87\b\n" +
 	"\vAuthService\x12N\n" +
 	"\rGetInvitation\x12\x1d.auth.v1.GetInvitationRequest\x1a\x1e.auth.v1.GetInvitationResponse\x12W\n" +
 	"\x10CreateInvitation\x12 .auth.v1.CreateInvitationRequest\x1a!.auth.v1.CreateInvitationResponse\x12T\n" +
 	"\x0fListInvitations\x12\x1f.auth.v1.ListInvitationsRequest\x1a .auth.v1.ListInvitationsResponse\x12W\n" +
 	"\x10DeleteInvitation\x12 .auth.v1.DeleteInvitationRequest\x1a!.auth.v1.DeleteInvitationResponse\x12K\n" +
 	"\fListPasskeys\x12\x1c.auth.v1.ListPasskeysRequest\x1a\x1d.auth.v1.ListPasskeysResponse\x12N\n" +
-	"\rDeletePasskey\x12\x1d.auth.v1.DeletePasskeyRequest\x1a\x1e.auth.v1.DeletePasskeyResponse\x12o\n" +
+	"\rDeletePasskey\x12\x1d.auth.v1.DeletePasskeyRequest\x1a\x1e.auth.v1.DeletePasskeyResponse\x12c\n" +
+	"\x14SignOutOtherSessions\x12$.auth.v1.SignOutOtherSessionsRequest\x1a%.auth.v1.SignOutOtherSessionsResponse\x12o\n" +
 	"\x18BeginPasskeyRegistration\x12(.auth.v1.BeginPasskeyRegistrationRequest\x1a).auth.v1.BeginPasskeyRegistrationResponse\x12r\n" +
 	"\x19FinishPasskeyRegistration\x12).auth.v1.FinishPasskeyRegistrationRequest\x1a*.auth.v1.FinishPasskeyRegistrationResponse\x12Z\n" +
 	"\x11BeginPasskeyLogin\x12!.auth.v1.BeginPasskeyLoginRequest\x1a\".auth.v1.BeginPasskeyLoginResponse\x12]\n" +
@@ -1924,7 +2029,7 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\vcom.auth.v1B\tAuthProtoP\x01ZBgithub.com/johanbrandhorst/trail-tools/internal/gen/auth/v1;authv1\xa2\x02\x03AXX\xaa\x02\aAuth.V1\xca\x02\aAuth\\V1\xe2\x02\x13Auth\\V1\\GPBMetadata\xea\x02\bAuth::V1b\x06proto3"
 
 var file_auth_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_auth_v1_auth_proto_goTypes = []any{
 	(InvitationKind)(0),                       // 0: auth.v1.InvitationKind
 	(*Invitation)(nil),                        // 1: auth.v1.Invitation
@@ -1941,27 +2046,29 @@ var file_auth_v1_auth_proto_goTypes = []any{
 	(*ListPasskeysResponse)(nil),              // 12: auth.v1.ListPasskeysResponse
 	(*DeletePasskeyRequest)(nil),              // 13: auth.v1.DeletePasskeyRequest
 	(*DeletePasskeyResponse)(nil),             // 14: auth.v1.DeletePasskeyResponse
-	(*BeginPasskeyRegistrationRequest)(nil),   // 15: auth.v1.BeginPasskeyRegistrationRequest
-	(*BeginPasskeyRegistrationResponse)(nil),  // 16: auth.v1.BeginPasskeyRegistrationResponse
-	(*FinishPasskeyRegistrationRequest)(nil),  // 17: auth.v1.FinishPasskeyRegistrationRequest
-	(*FinishPasskeyRegistrationResponse)(nil), // 18: auth.v1.FinishPasskeyRegistrationResponse
-	(*BeginPasskeyLoginRequest)(nil),          // 19: auth.v1.BeginPasskeyLoginRequest
-	(*BeginPasskeyLoginResponse)(nil),         // 20: auth.v1.BeginPasskeyLoginResponse
-	(*FinishPasskeyLoginRequest)(nil),         // 21: auth.v1.FinishPasskeyLoginRequest
-	(*FinishPasskeyLoginResponse)(nil),        // 22: auth.v1.FinishPasskeyLoginResponse
-	(*timestamppb.Timestamp)(nil),             // 23: google.protobuf.Timestamp
+	(*SignOutOtherSessionsRequest)(nil),       // 15: auth.v1.SignOutOtherSessionsRequest
+	(*SignOutOtherSessionsResponse)(nil),      // 16: auth.v1.SignOutOtherSessionsResponse
+	(*BeginPasskeyRegistrationRequest)(nil),   // 17: auth.v1.BeginPasskeyRegistrationRequest
+	(*BeginPasskeyRegistrationResponse)(nil),  // 18: auth.v1.BeginPasskeyRegistrationResponse
+	(*FinishPasskeyRegistrationRequest)(nil),  // 19: auth.v1.FinishPasskeyRegistrationRequest
+	(*FinishPasskeyRegistrationResponse)(nil), // 20: auth.v1.FinishPasskeyRegistrationResponse
+	(*BeginPasskeyLoginRequest)(nil),          // 21: auth.v1.BeginPasskeyLoginRequest
+	(*BeginPasskeyLoginResponse)(nil),         // 22: auth.v1.BeginPasskeyLoginResponse
+	(*FinishPasskeyLoginRequest)(nil),         // 23: auth.v1.FinishPasskeyLoginRequest
+	(*FinishPasskeyLoginResponse)(nil),        // 24: auth.v1.FinishPasskeyLoginResponse
+	(*timestamppb.Timestamp)(nil),             // 25: google.protobuf.Timestamp
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: auth.v1.Invitation.kind:type_name -> auth.v1.InvitationKind
-	23, // 1: auth.v1.Invitation.create_time:type_name -> google.protobuf.Timestamp
-	23, // 2: auth.v1.Invitation.expire_time:type_name -> google.protobuf.Timestamp
-	23, // 3: auth.v1.Invitation.use_time:type_name -> google.protobuf.Timestamp
+	25, // 1: auth.v1.Invitation.create_time:type_name -> google.protobuf.Timestamp
+	25, // 2: auth.v1.Invitation.expire_time:type_name -> google.protobuf.Timestamp
+	25, // 3: auth.v1.Invitation.use_time:type_name -> google.protobuf.Timestamp
 	1,  // 4: auth.v1.GetInvitationResponse.invitation:type_name -> auth.v1.Invitation
 	0,  // 5: auth.v1.CreateInvitationRequest.kind:type_name -> auth.v1.InvitationKind
 	1,  // 6: auth.v1.CreateInvitationResponse.invitation:type_name -> auth.v1.Invitation
 	1,  // 7: auth.v1.ListInvitationsResponse.invitations:type_name -> auth.v1.Invitation
-	23, // 8: auth.v1.Passkey.create_time:type_name -> google.protobuf.Timestamp
-	23, // 9: auth.v1.Passkey.last_used_time:type_name -> google.protobuf.Timestamp
+	25, // 8: auth.v1.Passkey.create_time:type_name -> google.protobuf.Timestamp
+	25, // 9: auth.v1.Passkey.last_used_time:type_name -> google.protobuf.Timestamp
 	10, // 10: auth.v1.ListPasskeysResponse.passkeys:type_name -> auth.v1.Passkey
 	2,  // 11: auth.v1.AuthService.GetInvitation:input_type -> auth.v1.GetInvitationRequest
 	4,  // 12: auth.v1.AuthService.CreateInvitation:input_type -> auth.v1.CreateInvitationRequest
@@ -1969,22 +2076,24 @@ var file_auth_v1_auth_proto_depIdxs = []int32{
 	8,  // 14: auth.v1.AuthService.DeleteInvitation:input_type -> auth.v1.DeleteInvitationRequest
 	11, // 15: auth.v1.AuthService.ListPasskeys:input_type -> auth.v1.ListPasskeysRequest
 	13, // 16: auth.v1.AuthService.DeletePasskey:input_type -> auth.v1.DeletePasskeyRequest
-	15, // 17: auth.v1.AuthService.BeginPasskeyRegistration:input_type -> auth.v1.BeginPasskeyRegistrationRequest
-	17, // 18: auth.v1.AuthService.FinishPasskeyRegistration:input_type -> auth.v1.FinishPasskeyRegistrationRequest
-	19, // 19: auth.v1.AuthService.BeginPasskeyLogin:input_type -> auth.v1.BeginPasskeyLoginRequest
-	21, // 20: auth.v1.AuthService.FinishPasskeyLogin:input_type -> auth.v1.FinishPasskeyLoginRequest
-	3,  // 21: auth.v1.AuthService.GetInvitation:output_type -> auth.v1.GetInvitationResponse
-	5,  // 22: auth.v1.AuthService.CreateInvitation:output_type -> auth.v1.CreateInvitationResponse
-	7,  // 23: auth.v1.AuthService.ListInvitations:output_type -> auth.v1.ListInvitationsResponse
-	9,  // 24: auth.v1.AuthService.DeleteInvitation:output_type -> auth.v1.DeleteInvitationResponse
-	12, // 25: auth.v1.AuthService.ListPasskeys:output_type -> auth.v1.ListPasskeysResponse
-	14, // 26: auth.v1.AuthService.DeletePasskey:output_type -> auth.v1.DeletePasskeyResponse
-	16, // 27: auth.v1.AuthService.BeginPasskeyRegistration:output_type -> auth.v1.BeginPasskeyRegistrationResponse
-	18, // 28: auth.v1.AuthService.FinishPasskeyRegistration:output_type -> auth.v1.FinishPasskeyRegistrationResponse
-	20, // 29: auth.v1.AuthService.BeginPasskeyLogin:output_type -> auth.v1.BeginPasskeyLoginResponse
-	22, // 30: auth.v1.AuthService.FinishPasskeyLogin:output_type -> auth.v1.FinishPasskeyLoginResponse
-	21, // [21:31] is the sub-list for method output_type
-	11, // [11:21] is the sub-list for method input_type
+	15, // 17: auth.v1.AuthService.SignOutOtherSessions:input_type -> auth.v1.SignOutOtherSessionsRequest
+	17, // 18: auth.v1.AuthService.BeginPasskeyRegistration:input_type -> auth.v1.BeginPasskeyRegistrationRequest
+	19, // 19: auth.v1.AuthService.FinishPasskeyRegistration:input_type -> auth.v1.FinishPasskeyRegistrationRequest
+	21, // 20: auth.v1.AuthService.BeginPasskeyLogin:input_type -> auth.v1.BeginPasskeyLoginRequest
+	23, // 21: auth.v1.AuthService.FinishPasskeyLogin:input_type -> auth.v1.FinishPasskeyLoginRequest
+	3,  // 22: auth.v1.AuthService.GetInvitation:output_type -> auth.v1.GetInvitationResponse
+	5,  // 23: auth.v1.AuthService.CreateInvitation:output_type -> auth.v1.CreateInvitationResponse
+	7,  // 24: auth.v1.AuthService.ListInvitations:output_type -> auth.v1.ListInvitationsResponse
+	9,  // 25: auth.v1.AuthService.DeleteInvitation:output_type -> auth.v1.DeleteInvitationResponse
+	12, // 26: auth.v1.AuthService.ListPasskeys:output_type -> auth.v1.ListPasskeysResponse
+	14, // 27: auth.v1.AuthService.DeletePasskey:output_type -> auth.v1.DeletePasskeyResponse
+	16, // 28: auth.v1.AuthService.SignOutOtherSessions:output_type -> auth.v1.SignOutOtherSessionsResponse
+	18, // 29: auth.v1.AuthService.BeginPasskeyRegistration:output_type -> auth.v1.BeginPasskeyRegistrationResponse
+	20, // 30: auth.v1.AuthService.FinishPasskeyRegistration:output_type -> auth.v1.FinishPasskeyRegistrationResponse
+	22, // 31: auth.v1.AuthService.BeginPasskeyLogin:output_type -> auth.v1.BeginPasskeyLoginResponse
+	24, // 32: auth.v1.AuthService.FinishPasskeyLogin:output_type -> auth.v1.FinishPasskeyLoginResponse
+	22, // [22:33] is the sub-list for method output_type
+	11, // [11:22] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
@@ -2001,7 +2110,7 @@ func file_auth_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -60,9 +60,9 @@ var indexTemplate = template.Must(template.New(templateName).Parse(
     {{- end }}
     {{- end }}
     {{- end }}
-    <link rel="stylesheet" href="/index.css" />
+    <link rel="stylesheet" href="{{ .CSS }}" />
     <link rel="icon" href="/favicon.svg" />
-    <script src="/index.js" defer></script>
+    <script src="{{ .JS }}" defer></script>
   </head>
   <body class="h-full">
     <div id="root" class="h-full"></div>
@@ -99,6 +99,24 @@ type Page struct {
 	NoIndex bool
 }
 
+// contentSecurityPolicy allows the app to load only its own scripts, and to
+// connect only to its own server, so that markup injected into a page, such
+// as through a bug rendering a user's text, can't run scripts or send data
+// elsewhere. Images come from anywhere over HTTPS: the map tiles from the
+// tile servers the user picks, and activity photos from Strava. Styles may
+// be inline, as Leaflet and the charts set them on elements. Other sites
+// can't frame the pages, so they can't trick users into clicking in them,
+// like on the OAuth consent page.
+const contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self'; object-src 'none'; " +
+	"base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
+// watchContentSecurityPolicy is contentSecurityPolicy while watching for
+// changes, which allows the inline live reload script and its websocket.
+const watchContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' ws: wss:; object-src 'none'; " +
+	"base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
 // Render writes index.html with the status code, with the page's metadata
 // in its head. watch adds the live reload script.
 func Render(w http.ResponseWriter, watch bool, status int, page Page) {
@@ -113,11 +131,26 @@ func Render(w http.ResponseWriter, watch bool, status int, page Page) {
 			page.Image = (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: defaultImagePath}).String()
 		}
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Content-Security-Policy", contentSecurityPolicy)
+	if watch {
+		h.Set("Content-Security-Policy", watchContentSecurityPolicy)
+	}
+	// For browsers without CSP's frame-ancestors.
+	h.Set("X-Frame-Options", "DENY")
+	h.Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
+	// The bundle being watched is served from its directory, without hashes.
+	css, js := "/index.css", "/index.js"
+	if !watch {
+		css, js = bundleURL("index.css"), bundleURL("index.js")
+	}
 	_ = indexTemplate.ExecuteTemplate(w, templateName, map[string]any{
 		"Watch": watch,
 		"Page":  page,
+		"CSS":   css,
+		"JS":    js,
 	})
 }
 

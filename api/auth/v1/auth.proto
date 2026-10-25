@@ -22,9 +22,13 @@ service AuthService {
   rpc DeleteInvitation(DeleteInvitationRequest) returns (DeleteInvitationResponse);
   // List the signed in user's passkeys.
   rpc ListPasskeys(ListPasskeysRequest) returns (ListPasskeysResponse);
-  // Delete one of the signed in user's passkeys. The last passkey of an
+  // Delete one of the signed in user's passkeys, and sign out the sessions
+  // signed in with it, other than the current one. The last passkey of an
   // account can't be deleted.
   rpc DeletePasskey(DeletePasskeyRequest) returns (DeletePasskeyResponse);
+  // Sign the signed in user out on every other device and browser, keeping
+  // the current session.
+  rpc SignOutOtherSessions(SignOutOtherSessionsRequest) returns (SignOutOtherSessionsResponse);
   // Start registering a passkey, with an invitation token or as the signed in
   // user. Returns the options for navigator.credentials.create().
   rpc BeginPasskeyRegistration(BeginPasskeyRegistrationRequest) returns (BeginPasskeyRegistrationResponse);
@@ -134,6 +138,13 @@ message DeletePasskeyRequest {
 }
 
 message DeletePasskeyResponse {}
+
+message SignOutOtherSessionsRequest {}
+
+message SignOutOtherSessionsResponse {
+  // How many sessions were signed out.
+  int32 signed_out_sessions = 1;
+}
 
 message BeginPasskeyRegistrationRequest {
   // The invitation token. If empty, the passkey is added to the signed in

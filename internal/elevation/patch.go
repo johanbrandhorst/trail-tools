@@ -120,7 +120,7 @@ func (d *DEM) Patch(ctx context.Context, bounds geo.Bounds) (*Patch, error) {
 			lngs = append(lngs, west+float64(col)*step)
 		}
 	}
-	elevations, err := d.tileElevations(ctx, lats, lngs)
+	elevations, err := d.tileElevations(ctx, lats, lngs, 0)
 	if err != nil {
 		return nil, err
 	}

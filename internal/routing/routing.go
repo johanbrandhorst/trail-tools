@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
@@ -35,6 +37,17 @@ const (
 	// minSearchMarginMeters is the smallest margin around the points within
 	// which paths are searched.
 	minSearchMarginMeters = 2000
+	// maxSearchMarginMeters is the largest margin around the points within
+	// which paths are searched. The database loads every edge in the area to
+	// search it, and the area grows with the square of the margin: legs are
+	// at most 50 km, and without a cap a second attempt at one searched an
+	// area 250 km across.
+	maxSearchMarginMeters = 20_000
+	// statementTimeout bounds each query of a route, so a search of a dense
+	// area can't keep the database busy, or hold one of the connections
+	// shared with other requests, for long. It's set in the query beginning
+	// the route's transaction, so it costs no round trip of its own.
+	statementTimeout = "20s"
 	// searchAttempts is the number of times the search area is grown when no
 	// path is found.
 	searchAttempts = 2
@@ -185,35 +198,47 @@ func (e *edge) length() float64 {
 
 // Route computes a path between two points.
 func (r *Router) Route(ctx context.Context, req Request) (*Path, error) {
-	// The preferred paths are stored in a temporary table, which the search
-	// needs a transaction for. Without them, it runs without one, saving the
-	// round trips of starting and ending it.
-	var db store.Querier = r.db
+	path, err := r.route(ctx, req)
+	if pgErr := (*pgconn.PgError)(nil); errors.As(err, &pgErr) && pgErr.Code == pgerrcode.QueryCanceled && ctx.Err() == nil {
+		return nil, fmt.Errorf("%w: finding a path between the points took too long; add waypoints in between", ErrNotRoutable)
+	}
+	return path, err
+}
+
+func (r *Router) route(ctx context.Context, req Request) (*Path, error) {
+	// The queries run in a transaction, for the statement timeout and the
+	// temporary table of the preferred paths. Beginning and ending it take
+	// two round trips, but routing runs legs concurrently, so they add little
+	// to a route. Nothing is written, so it's rolled back at the end, which
+	// also drops the table.
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{BeginQuery: "begin; set local statement_timeout = '" + statementTimeout + "'"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin routing: %w", err)
+	}
+	defer tx.Rollback(context.WithoutCancel(ctx))
 	prefer := len(req.Prefer) > 0
 	if prefer {
-		tx, err := r.db.Begin(ctx)
-		if err != nil {
-			return nil, err
-		}
-		defer tx.Rollback(ctx)
 		if err := savePreferred(ctx, tx, req.Prefer); err != nil {
 			return nil, err
 		}
-		db = tx
 	}
 	cost, reverseCost := costs(req.Profile, prefer)
-	ends, err := snap(ctx, db, []geo.Point{req.From, req.To}, cost, reverseCost)
+	ends, err := snap(ctx, tx, []geo.Point{req.From, req.To}, cost, reverseCost)
 	if err != nil {
 		return nil, err
 	}
 	from, to := ends[0], ends[1]
-	margin := math.Max(minSearchMarginMeters, geo.Distance(req.From, req.To)/2)
+	margin := min(maxSearchMarginMeters, max(minSearchMarginMeters, geo.Distance(req.From, req.To)/2))
 	for range searchAttempts {
-		path, err := search(ctx, db, from, to, cost, reverseCost, margin)
+		path, err := search(ctx, tx, from, to, cost, reverseCost, margin)
 		if err != nil || path != nil {
 			return path, err
 		}
-		margin *= 4
+		if margin == maxSearchMarginMeters {
+			// Searching the same area again would find nothing either.
+			break
+		}
+		margin = min(maxSearchMarginMeters, margin*4)
 	}
 	return nil, fmt.Errorf("%w: no path was found between the points", ErrNotRoutable)
 }

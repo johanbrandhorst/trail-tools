@@ -28,7 +28,7 @@ func TestRender(t *testing.T) {
 		`<meta property="og:image" content="https://trail.example/photos/1/large.jpg" />`,
 		`<meta name="twitter:card" content="summary_large_image" />`,
 		`<meta property="article:published_time" content="2026-09-07T08:00:00Z" />`,
-		`<script src="/index.js" defer></script>`,
+		`<script src="/index.js?v=`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("page does not contain %q:\n%s", want, body)
@@ -77,5 +77,69 @@ func TestRenderDefault(t *testing.T) {
 	Render(rec, false, http.StatusNotFound, Page{Title: "Not found", NoIndex: true})
 	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), `<meta name="robots" content="noindex" />`) {
 		t.Errorf("not found page: %d\n%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRenderSecurityHeaders(t *testing.T) {
+	t.Parallel()
+	for _, watch := range []bool{false, true} {
+		rec := httptest.NewRecorder()
+		Render(rec, watch, http.StatusOK, Page{})
+		h := rec.Header()
+		csp := h.Get("Content-Security-Policy")
+		for _, want := range []string{"frame-ancestors 'none'", "object-src 'none'", "img-src 'self' data: blob: https:"} {
+			if !strings.Contains(csp, want) {
+				t.Errorf("watch %v: Content-Security-Policy %q doesn't contain %q", watch, csp, want)
+			}
+		}
+		// The live reload script is inline, so it's only allowed while
+		// watching.
+		if got := strings.Contains(csp, "script-src 'self' 'unsafe-inline'"); got != watch {
+			t.Errorf("watch %v: inline scripts allowed: %v", watch, got)
+		}
+		if got := h.Get("X-Frame-Options"); got != "DENY" {
+			t.Errorf("watch %v: X-Frame-Options = %q, want DENY", watch, got)
+		}
+		if got := h.Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("watch %v: X-Content-Type-Options = %q, want nosniff", watch, got)
+		}
+	}
+}
+
+func TestServeBundle(t *testing.T) {
+	t.Parallel()
+	// The page links the script with the hash of its contents.
+	rec := httptest.NewRecorder()
+	Render(rec, false, http.StatusOK, Page{})
+	jsURL := bundleURL("index.js")
+	if !strings.Contains(jsURL, "?v=") || !strings.Contains(rec.Body.String(), `<script src="`+jsURL+`" defer>`) {
+		t.Fatalf("page doesn't link %q:\n%s", jsURL, rec.Body.String())
+	}
+
+	h := ServeBundle()
+	for url, wantCache := range map[string]string{
+		jsURL:                  "public, max-age=31536000, immutable",
+		"/index.js":            "no-cache",
+		"/index.js?v=outdated": "no-cache",
+		"/favicon.svg":         "no-cache",
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
+		etag := rec.Header().Get("ETag")
+		if rec.Code != http.StatusOK || etag == "" {
+			t.Errorf("GET %s: got status %d and ETag %q, want 200 with an ETag", url, rec.Code, etag)
+			continue
+		}
+		if got := rec.Header().Get("Cache-Control"); got != wantCache {
+			t.Errorf("GET %s: Cache-Control = %q, want %q", url, got, wantCache)
+		}
+		// Browsers with the current file get no body.
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		req.Header.Set("If-None-Match", etag)
+		rec = httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNotModified || rec.Body.Len() != 0 {
+			t.Errorf("GET %s with its ETag: got status %d and %d bytes, want 304 and none", url, rec.Code, rec.Body.Len())
+		}
 	}
 }

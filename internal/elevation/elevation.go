@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
@@ -45,6 +46,26 @@ const maxCachedTiles = 3
 // demVoid marks missing data in HGT tiles.
 const demVoid = -32768
 
+// maxPointsTiles is the most tiles Points loads for one lookup. Each takes a
+// second or two to download and up to 50 MB to decode, so a lookup of points
+// spread around the world would keep the server busy for minutes. Routes and
+// tracks span a few tiles, which are about 110 km a side.
+const maxPointsTiles = 16
+
+// tileDownloadTimeout bounds downloading a tile, which takes a second or
+// two, so a stalled download doesn't hold up the loading of other tiles.
+const tileDownloadTimeout = 30 * time.Second
+
+// ErrInvalidCoordinates is returned for points that aren't on the Earth's
+// surface, with latitudes outside -90 to 90 or longitudes outside -180 to
+// 180, or that aren't numbers.
+var ErrInvalidCoordinates = errors.New("latitudes must be between -90 and 90 and longitudes between -180 and 180")
+
+// ErrTooManyTiles is returned by Points for points spread over more than
+// maxPointsTiles tiles.
+var ErrTooManyTiles = fmt.Errorf("the points are spread over more than %d areas of elevation data, which are about 110 km a side; look up the elevations of points closer together",
+	maxPointsTiles)
+
 // DEM looks up ground elevations from HGT tiles, downloading them to a cache
 // directory, if it has one, as needed, and keeping the most recently used
 // ones decoded in memory. It is safe for concurrent use.
@@ -52,10 +73,15 @@ type DEM struct {
 	baseURL  string
 	cacheDir string
 	client   *http.Client
+	// loadSlot is held while loading a tile. Decoding one takes up to 50 MB,
+	// so tiles are loaded one at a time, while lookups of loaded tiles go on.
+	loadSlot chan struct{}
 
-	// mu serialises loading tiles, so concurrent lookups don't download or
-	// decode the same tile twice, and guards the fields below.
+	// mu guards the fields below. It isn't held while loading tiles.
 	mu sync.Mutex
+	// The tiles being loaded, so concurrent lookups don't download or decode
+	// the same tile twice.
+	loading map[tileCoord]*tileLoad
 	// An optional durable cache of the tiles, e.g. a Cloud Storage bucket,
 	// for when the cache directory doesn't outlive the process.
 	store  blob.Store
@@ -67,16 +93,32 @@ type DEM struct {
 	patches []*Patch
 }
 
+// tileCoord is the south west corner of a tile.
+type tileCoord struct{ lat, lng int }
+
 type cachedTile struct {
-	lat, lng int
-	tile     *hgtTile
+	tileCoord
+	tile *hgtTile
+}
+
+// tileLoad is a tile being loaded. done is closed once tile or err is set.
+type tileLoad struct {
+	done chan struct{}
+	tile *hgtTile
+	err  error
 }
 
 // NewDEM creates a DEM that downloads tiles from baseURL into cacheDir with
 // client. If cacheDir is empty, tiles aren't kept on disk, only the most
 // recently used ones in memory.
 func NewDEM(baseURL, cacheDir string, client *http.Client) *DEM {
-	return &DEM{baseURL: baseURL, cacheDir: cacheDir, client: client}
+	return &DEM{
+		baseURL:  baseURL,
+		cacheDir: cacheDir,
+		client:   client,
+		loadSlot: make(chan struct{}, 1),
+		loading:  map[tileCoord]*tileLoad{},
+	}
 }
 
 // SetTileStore makes the DEM look for tiles missing from the cache directory,
@@ -92,26 +134,76 @@ func (d *DEM) SetTileStore(store blob.Store, report *errreport.Reporter) {
 // cachedTile returns the tile with the south west corner lat, lng, loading it
 // if it isn't in memory.
 func (d *DEM) cachedTile(ctx context.Context, lat, lng int) (*hgtTile, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	for i, c := range d.tiles {
-		if c.lat == lat && c.lng == lng {
-			// Move it to the front.
+	c := tileCoord{lat, lng}
+	for {
+		d.mu.Lock()
+		if t, ok := d.recentTile(c); ok {
+			d.mu.Unlock()
+			return t, nil
+		}
+		if load, ok := d.loading[c]; ok {
+			// Wait for the lookup loading the tile.
+			d.mu.Unlock()
+			select {
+			case <-load.done:
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+			if errors.Is(load.err, context.Canceled) || errors.Is(load.err, context.DeadlineExceeded) {
+				// The lookup loading it gave up, so try again.
+				continue
+			}
+			return load.tile, load.err
+		}
+		load := &tileLoad{done: make(chan struct{})}
+		d.loading[c] = load
+		store, report := d.store, d.report
+		d.mu.Unlock()
+
+		load.tile, load.err = d.loadTile(ctx, c, store, report)
+		d.mu.Lock()
+		delete(d.loading, c)
+		if load.err == nil {
+			d.addTile(c, load.tile)
+		}
+		d.mu.Unlock()
+		close(load.done)
+		return load.tile, load.err
+	}
+}
+
+// recentTile returns a tile kept in memory, moving it to the front. It must
+// be called with mu held.
+func (d *DEM) recentTile(c tileCoord) (*hgtTile, bool) {
+	for i, cached := range d.tiles {
+		if cached.tileCoord == c {
 			copy(d.tiles[1:i+1], d.tiles[:i])
-			d.tiles[0] = c
-			return c.tile, nil
+			d.tiles[0] = cached
+			return cached.tile, true
 		}
 	}
-	t, err := d.tile(ctx, lat, lng)
-	if err != nil {
-		return nil, err
-	}
+	return nil, false
+}
+
+// addTile keeps a tile in memory, in place of the least recently used one
+// if there are maxCachedTiles. It must be called with mu held.
+func (d *DEM) addTile(c tileCoord, t *hgtTile) {
 	if len(d.tiles) < maxCachedTiles {
 		d.tiles = append(d.tiles, cachedTile{})
 	}
 	copy(d.tiles[1:], d.tiles)
-	d.tiles[0] = cachedTile{lat: lat, lng: lng, tile: t}
-	return t, nil
+	d.tiles[0] = cachedTile{tileCoord: c, tile: t}
+}
+
+// loadTile loads a tile when no other tile is being loaded.
+func (d *DEM) loadTile(ctx context.Context, c tileCoord, store blob.Store, report *errreport.Reporter) (*hgtTile, error) {
+	select {
+	case d.loadSlot <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	defer func() { <-d.loadSlot }()
+	return d.tile(ctx, c.lat, c.lng, store, report)
 }
 
 // hgtTile is a 1x1 degree tile of elevations in meters, stored row by row
@@ -144,9 +236,9 @@ func abs(v int) int {
 
 // tile loads the tile with the south west corner lat, lng. It returns nil if
 // there is no tile, e.g. over the sea.
-func (d *DEM) tile(ctx context.Context, lat, lng int) (*hgtTile, error) {
+func (d *DEM) tile(ctx context.Context, lat, lng int, store blob.Store, report *errreport.Reporter) (*hgtTile, error) {
 	name := tileName(lat, lng)
-	data, err := d.tileData(ctx, name)
+	data, err := d.tileData(ctx, name, store, report)
 	if err != nil {
 		return nil, err
 	}
@@ -176,16 +268,16 @@ func (d *DEM) tile(ctx context.Context, lat, lng int) (*hgtTile, error) {
 // tileData returns the gzipped tile from the cache directory, if the DEM
 // has one, or else fetches it and adds it to the cache directory. No data
 // records that the tile doesn't exist.
-func (d *DEM) tileData(ctx context.Context, name string) ([]byte, error) {
+func (d *DEM) tileData(ctx context.Context, name string, store blob.Store, report *errreport.Reporter) ([]byte, error) {
 	if d.cacheDir == "" {
-		return d.fetch(ctx, name)
+		return d.fetch(ctx, name, store, report)
 	}
 	path := filepath.Join(d.cacheDir, name+".hgt.gz")
 	data, err := os.ReadFile(path)
 	if err == nil || !errors.Is(err, os.ErrNotExist) {
 		return data, err
 	}
-	data, err = d.fetch(ctx, name)
+	data, err = d.fetch(ctx, name, store, report)
 	if err != nil {
 		return nil, err
 	}
@@ -204,18 +296,18 @@ func tileKey(name string) string {
 	return "skadi/" + name[:3] + "/" + name + ".hgt.gz"
 }
 
-// fetch returns the gzipped tile from the tile store if it has it, or else
-// downloads it and adds it to the tile store. No data, or an empty object,
-// records that the tile doesn't exist.
-func (d *DEM) fetch(ctx context.Context, name string) ([]byte, error) {
+// fetch returns the gzipped tile from the tile store, if there is one and it
+// has it, or else downloads it and adds it to the tile store. No data, or an
+// empty object, records that the tile doesn't exist.
+func (d *DEM) fetch(ctx context.Context, name string, store blob.Store, report *errreport.Reporter) ([]byte, error) {
 	key := tileKey(name)
-	if d.store != nil {
-		data, err := d.store.Get(ctx, key)
+	if store != nil {
+		data, err := store.Get(ctx, key)
 		if err == nil {
 			return data, nil
 		}
 		if !errors.Is(err, blob.ErrNotFound) && ctx.Err() == nil {
-			d.report.Report(ctx, "Failed to read an elevation tile from the tile store, downloading it", err,
+			report.Report(ctx, "Failed to read an elevation tile from the tile store, downloading it", err,
 				slog.String("tile", name))
 		}
 	}
@@ -223,9 +315,9 @@ func (d *DEM) fetch(ctx context.Context, name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if d.store != nil {
-		if err := d.store.Put(ctx, key, data, "application/gzip"); err != nil && ctx.Err() == nil {
-			d.report.Report(ctx, "Failed to add an elevation tile to the tile store", err,
+	if store != nil {
+		if err := store.Put(ctx, key, data, "application/gzip"); err != nil && ctx.Err() == nil {
+			report.Report(ctx, "Failed to add an elevation tile to the tile store", err,
 				slog.String("tile", name))
 		}
 	}
@@ -235,6 +327,8 @@ func (d *DEM) fetch(ctx context.Context, name string) ([]byte, error) {
 // download downloads the gzipped tile. It returns no data if there is no
 // tile, e.g. over the sea.
 func (d *DEM) download(ctx context.Context, name string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, tileDownloadTimeout)
+	defer cancel()
 	url := fmt.Sprintf("%s/%s/%s.hgt.gz", d.baseURL, name[:3], name)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -305,8 +399,24 @@ func (t *hgtTile) elevation(lat, lng float64) float64 {
 
 // Elevations returns the elevation of each point, from the patches or else
 // the tiles, loading one tile at a time to limit memory use. Elevations are
-// NaN where there is no data.
+// NaN where there is no data. It loads as many tiles as the points need, for
+// imports of map data; lookups for requests use Points.
 func (d *DEM) Elevations(ctx context.Context, lats, lngs []float64) ([]float64, error) {
+	return d.elevations(ctx, lats, lngs, 0)
+}
+
+// elevations is Elevations, loading at most maxTiles tiles, or any number
+// if it's 0.
+func (d *DEM) elevations(ctx context.Context, lats, lngs []float64, maxTiles int) ([]float64, error) {
+	if len(lats) != len(lngs) {
+		return nil, fmt.Errorf("got %d latitudes and %d longitudes", len(lats), len(lngs))
+	}
+	for i := range lats {
+		// NaN fails both comparisons.
+		if !(lats[i] >= -90 && lats[i] <= 90 && lngs[i] >= -180 && lngs[i] <= 180) {
+			return nil, ErrInvalidCoordinates
+		}
+	}
 	elevations := make([]float64, len(lats))
 	var rest []int
 	for i := range lats {
@@ -324,7 +434,7 @@ func (d *DEM) Elevations(ctx context.Context, lats, lngs []float64) ([]float64, 
 	for j, i := range rest {
 		restLats[j], restLngs[j] = lats[i], lngs[i]
 	}
-	fromTiles, err := d.tileElevations(ctx, restLats, restLngs)
+	fromTiles, err := d.tileElevations(ctx, restLats, restLngs, maxTiles)
 	if err != nil {
 		return nil, err
 	}
@@ -334,13 +444,18 @@ func (d *DEM) Elevations(ctx context.Context, lats, lngs []float64) ([]float64, 
 	return elevations, nil
 }
 
-// tileElevations returns the elevation of each point from the tiles.
-func (d *DEM) tileElevations(ctx context.Context, lats, lngs []float64) ([]float64, error) {
-	type key struct{ lat, lng int }
-	byTile := map[key][]int{}
+// tileElevations returns the elevation of each point from the tiles, of
+// which it loads at most maxTiles, or any number if it's 0.
+func (d *DEM) tileElevations(ctx context.Context, lats, lngs []float64, maxTiles int) ([]float64, error) {
+	byTile := map[tileCoord][]int{}
 	for i := range lats {
-		k := key{int(math.Floor(lats[i])), int(math.Floor(lngs[i]))}
+		// The north and east edges of the Earth are in the tiles south and
+		// west of them, as there are no tiles beyond.
+		k := tileCoord{min(int(math.Floor(lats[i])), 89), min(int(math.Floor(lngs[i])), 179)}
 		byTile[k] = append(byTile[k], i)
+	}
+	if maxTiles > 0 && len(byTile) > maxTiles {
+		return nil, ErrTooManyTiles
 	}
 	elevations := make([]float64, len(lats))
 	for k, idxs := range byTile {
@@ -358,15 +473,16 @@ func (d *DEM) tileElevations(ctx context.Context, lats, lngs []float64) ([]float
 	return elevations, nil
 }
 
-// Points returns the elevation of each point. Points without data, e.g. over
-// the sea, are at sea level.
+// Points returns the elevation of each point, loading at most
+// maxPointsTiles tiles. Points without data, e.g. over the sea, are at sea
+// level.
 func (d *DEM) Points(ctx context.Context, points []geo.Point) ([]float64, error) {
 	lats := make([]float64, len(points))
 	lngs := make([]float64, len(points))
 	for i, p := range points {
 		lats[i], lngs[i] = p.Lat, p.Lng
 	}
-	elevations, err := d.Elevations(ctx, lats, lngs)
+	elevations, err := d.elevations(ctx, lats, lngs, maxPointsTiles)
 	if err != nil {
 		return nil, err
 	}

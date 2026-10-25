@@ -16,6 +16,7 @@ import {
   createInvitation,
   deletePasskey,
   listPasskeys,
+  signOutOtherSessions,
 } from "gen/auth/v1/auth-AuthService_connectquery";
 import { AuthService, InvitationKind } from "gen/auth/v1/auth_pb";
 import { formatTimestamp } from "helpers/format";
@@ -42,10 +43,16 @@ const Passkeys: React.FC = () => {
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
+  const [signedOut, setSignedOut] = useState<number | undefined>(undefined);
   const onChanged = async () => {
     await invalidateServices(queryClient, [AuthService]);
   };
   const remove = useMutation(deletePasskey, { onSuccess: onChanged });
+  const signOutOthers = useMutation(signOutOtherSessions, {
+    onSuccess: (response) => {
+      setSignedOut(response.signedOutSessions);
+    },
+  });
   const invite = useMutation(createInvitation, {
     onSuccess: async (response) => {
       setInviteUrl(response.url);
@@ -108,7 +115,7 @@ const Passkeys: React.FC = () => {
             <ConfirmButton
               className={ghostDangerButton}
               title="Delete passkey?"
-              message="You won't be able to sign in with this passkey any more."
+              message="You won't be able to sign in with this passkey any more, and other devices signed in with it will be signed out."
               disabled={onlyOne || remove.isPending}
               onConfirm={() => {
                 remove.mutate({ id: passkey.id });
@@ -137,7 +144,9 @@ const Passkeys: React.FC = () => {
           screen lock. Add one on each device you use, or use a synced passkey.
         </p>
         {list}
-        <ErrorText error={remove.error ?? invite.error} />
+        <ErrorText
+          error={remove.error ?? invite.error ?? signOutOthers.error}
+        />
         {addError !== "" && <p className="text-sm text-red-700">{addError}</p>}
         {inviteUrl !== "" && (
           <InvitationLink
@@ -169,7 +178,27 @@ const Passkeys: React.FC = () => {
           >
             Add a passkey on another device
           </button>
+          <ConfirmButton
+            className={secondaryButton}
+            title="Sign out other devices?"
+            confirmLabel="Sign out"
+            message="Every other device and browser signed in to your account will be signed out. This one stays signed in."
+            disabled={signOutOthers.isPending}
+            onConfirm={() => {
+              setSignedOut(undefined);
+              signOutOthers.mutate({});
+            }}
+          >
+            Sign out other devices
+          </ConfirmButton>
         </div>
+        {signedOut !== undefined && (
+          <p className="text-sm text-gray-600">
+            {signedOut === 0
+              ? "No other devices were signed in."
+              : `Signed out ${signedOut.toString()} other ${signedOut === 1 ? "session" : "sessions"}.`}
+          </p>
+        )}
       </div>
     </Card>
   );
