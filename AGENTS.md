@@ -38,6 +38,12 @@ make format   # Format Go, TypeScript and protos
 make lint     # Lint Go, TypeScript and protos
 ```
 
+`make run` and `make watch` pass `-local-sign-in`, so agents and tests can
+sign in to the local server without a passkey: open
+http://localhost:8080/local-sign-in, optionally with `?next=/some/page`, to
+sign in as the local administrator. The server only allows the flag on
+localhost.
+
 Node tools run in containers, and Go tools with `go tool` (buf, sqlc,
 esbuild, gofumpt, staticcheck, ko). `make` with no target lists the rest.
 

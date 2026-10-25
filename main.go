@@ -245,6 +245,13 @@ var (
 		"A secret that can be used as an invitation to create the first administrator,"+
 			" at /invite#<token>, while there are no administrators",
 	)
+	localSignIn = flag.Bool(
+		"local-sign-in",
+		false,
+		"Let browsers and agents on the server's machine sign in without a passkey at "+auth.LocalSignInPath+
+			", as the first administrator, which is created if there is none. For testing a local server only:"+
+			" the server refuses to start with it unless its URL is on localhost",
+	)
 	importJob = flag.String(
 		"import-job",
 		"",
@@ -323,6 +330,7 @@ func main() {
 		*stravaClientSecret,
 		*fakeStrava,
 		*adminBootstrapToken,
+		*localSignIn,
 		*stravaSyncMode,
 		*stravaWebhookVerifyToken,
 		*stravaBackgroundReserve,
@@ -415,6 +423,7 @@ func run(
 	stravaClientSecret string,
 	fakeStrava bool,
 	adminBootstrapToken string,
+	localSignIn bool,
 	stravaSyncMode string,
 	stravaWebhookVerifyToken string,
 	stravaBackgroundReserve float64,
@@ -468,6 +477,11 @@ func run(
 	if publicURL != "" {
 		baseURL = strings.TrimSuffix(publicURL, "/")
 	}
+	if localSignIn && !auth.IsLocalURL(baseURL) {
+		return fmt.Errorf("local-sign-in signs anyone on the server's machine in as an administrator,"+
+			" so it's only allowed for a server on localhost, not %s", baseURL)
+	}
+
 	db, err := store.New(ctx, log, dbURL)
 	if err != nil {
 		return fmt.Errorf("failed to create store: %w", err)
@@ -753,6 +767,10 @@ func run(
 	// A local server without an administrator sends its first visitor to
 	// the invitation to create one.
 	mux.Handle("/", authService.BootstrapHandler(indexHandler))
+	if localSignIn {
+		mux.Handle(auth.LocalSignInPath, authService.LocalSignInHandler())
+		log.InfoContext(ctx, "Local sign-in enabled", slog.String("url", baseURL+auth.LocalSignInPath))
+	}
 	if fakeStravaServer != nil {
 		mux.Handle(fakestrava.Path, fakeStravaServer)
 	}

@@ -230,6 +230,17 @@ func (q *Queries) DeletePasskey(ctx context.Context, arg *DeletePasskeyParams) (
 	return result.RowsAffected(), nil
 }
 
+const getFirstAdmin = `-- name: GetFirstAdmin :one
+select id from users where is_admin order by create_time, id limit 1
+`
+
+func (q *Queries) GetFirstAdmin(ctx context.Context) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getFirstAdmin)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getInvitation = `-- name: GetInvitation :one
 select id, token_sha256, kind, created_by, user_id, note, create_time, expire_time, use_time from invitations where id = $1
 `
