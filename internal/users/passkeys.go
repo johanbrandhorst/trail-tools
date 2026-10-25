@@ -293,9 +293,12 @@ func (r *Repository) UsePasskey(ctx context.Context, credentialID []byte, signCo
 	return nil
 }
 
-// DeletePasskey deletes one of a user's passkeys. Passkey users can't delete
-// their last passkey, as they would be locked out.
-func (r *Repository) DeletePasskey(ctx context.Context, userID pgtype.UUID, credentialID []byte) error {
+// DeletePasskey deletes one of a user's passkeys, and ends the sessions it
+// started, other than the session with keepToken, which the user deletes it
+// from. Sessions started before sessions recorded their passkey end too, as
+// any passkey may have started them. Passkey users can't delete their last
+// passkey, as they would be locked out.
+func (r *Repository) DeletePasskey(ctx context.Context, userID pgtype.UUID, credentialID []byte, keepToken string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
@@ -308,6 +311,12 @@ func (r *Repository) DeletePasskey(ctx context.Context, userID pgtype.UUID, cred
 	}
 	if _, err := q.GetPasskeyUser(ctx, userID); err == nil && count <= 1 {
 		return ErrLastPasskey
+	}
+	keepHash := sha256.Sum256([]byte(keepToken))
+	if err := q.DeletePasskeySessions(ctx, &gen.DeletePasskeySessionsParams{
+		UserID: userID, PasskeyID: credentialID, KeepTokenSHA256: keepHash[:],
+	}); err != nil {
+		return fmt.Errorf("failed to end the passkey's sessions: %w", err)
 	}
 	n, err := q.DeletePasskey(ctx, &gen.DeletePasskeyParams{ID: credentialID, UserID: userID})
 	if err != nil {
@@ -419,15 +428,17 @@ func (r *Repository) GetUser(ctx context.Context, userID pgtype.UUID) (User, err
 	return r.loadUser(ctx, r.querier, userID)
 }
 
-// CreateSession creates a session for the user and returns its secret
-// token, for the session cookie. Only a hash of the token is stored.
-func (r *Repository) CreateSession(ctx context.Context, userID pgtype.UUID, expiry time.Time) (string, error) {
+// CreateSession creates a session for the user, signed in with the passkey
+// with the credential ID, and returns its secret token, for the session
+// cookie. Only a hash of the token is stored.
+func (r *Repository) CreateSession(ctx context.Context, userID pgtype.UUID, passkeyID []byte, expiry time.Time) (string, error) {
 	token := rand.Text()
 	hash := sha256.Sum256([]byte(token))
 	err := r.querier.CreateSession(ctx, &gen.CreateSessionParams{
 		UserID:      userID,
 		TokenSHA256: hash[:],
 		Expiry:      pgtype.Timestamptz{Time: expiry, Valid: true},
+		PasskeyID:   passkeyID,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)

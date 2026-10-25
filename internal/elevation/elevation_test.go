@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/johanbrandhorst/trail-tools/internal/blob"
 	"github.com/johanbrandhorst/trail-tools/internal/elevation"
@@ -270,5 +271,99 @@ func TestDEMLimitsDownloads(t *testing.T) {
 	_, err := dem.Elevations(context.Background(), []float64{46.5}, []float64{7.5})
 	if err == nil || !strings.Contains(err.Error(), "larger than") {
 		t.Errorf("got error %v, want the download to be too large", err)
+	}
+}
+
+func TestDEMValidatesPoints(t *testing.T) {
+	t.Parallel()
+	// The URL is never used, as the points are rejected first.
+	dem := elevation.NewDEM("http://invalid.test", "", &http.Client{})
+	ctx := context.Background()
+	for name, p := range map[string]geo.Point{
+		"latitude too large":  {Lat: 91, Lng: 7},
+		"longitude too small": {Lat: 46, Lng: -181},
+		"not a number":        {Lat: math.NaN(), Lng: 7},
+		"infinite":            {Lat: 46, Lng: math.Inf(1)},
+	} {
+		if _, err := dem.Points(ctx, []geo.Point{p}); !errors.Is(err, elevation.ErrInvalidCoordinates) {
+			t.Errorf("%s: got %v, want %v", name, err, elevation.ErrInvalidCoordinates)
+		}
+	}
+	// Points spread around the world need too many tiles.
+	var spread []geo.Point
+	for lat := range 20 {
+		spread = append(spread, geo.Point{Lat: float64(lat * 4), Lng: 0})
+	}
+	if _, err := dem.Points(ctx, spread); !errors.Is(err, elevation.ErrTooManyTiles) {
+		t.Errorf("points in 20 tiles: got %v, want %v", err, elevation.ErrTooManyTiles)
+	}
+}
+
+func TestDEMLoadsTilesOnce(t *testing.T) {
+	t.Parallel()
+	tile := gzipTile(t, 3, func(row, col int) int16 { return int16(col * 100) })
+	url, requests := serveTiles(t, map[string][]byte{"/N46/N46E007.hgt.gz": tile})
+	dem := elevation.NewDEM(url, "", &http.Client{})
+	// Concurrent lookups in the same tile download it once.
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			if _, err := dem.Elevations(context.Background(), []float64{46.5}, []float64{7.5}); err != nil {
+				t.Errorf("Elevations: %v", err)
+			}
+		})
+	}
+	wg.Wait()
+	if got := requests("/N46/N46E007.hgt.gz"); got != 1 {
+		t.Errorf("downloaded the tile %d times, want once", got)
+	}
+}
+
+func TestDEMLookupsDontWaitForDownloads(t *testing.T) {
+	t.Parallel()
+	tile := gzipTile(t, 3, func(row, col int) int16 { return int16(col * 100) })
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/N10/N10E010.hgt.gz" {
+			// A slow download.
+			<-release
+		}
+		_, _ = w.Write(tile)
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	})
+	dem := elevation.NewDEM(srv.URL, "", srv.Client())
+	ctx := context.Background()
+	if _, err := dem.Elevations(ctx, []float64{46.5}, []float64{7.5}); err != nil {
+		t.Fatalf("Elevations: %v", err)
+	}
+	slow := make(chan error, 1)
+	go func() {
+		_, err := dem.Elevations(ctx, []float64{10.5}, []float64{10.5})
+		slow <- err
+	}()
+	// A lookup in the loaded tile doesn't wait for the slow download.
+	done := make(chan error, 1)
+	go func() {
+		_, err := dem.Elevations(ctx, []float64{46.25}, []float64{7.25})
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Errorf("Elevations: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Error("a lookup in a loaded tile waited for another tile's download")
+	}
+	close(release)
+	if err := <-slow; err != nil {
+		t.Errorf("Elevations with the slow download: %v", err)
 	}
 }

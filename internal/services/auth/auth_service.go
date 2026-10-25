@@ -64,9 +64,10 @@ type Repository interface {
 	ListPasskeyIDs(ctx context.Context, userID pgtype.UUID) ([][]byte, error)
 	GetPasskey(ctx context.Context, credentialID []byte) (*users.Passkey, error)
 	UsePasskey(ctx context.Context, credentialID []byte, signCount uint32, backedUp bool) error
-	DeletePasskey(ctx context.Context, userID pgtype.UUID, credentialID []byte) error
+	DeletePasskey(ctx context.Context, userID pgtype.UUID, credentialID []byte, keepToken string) error
 	RegisterPasskey(ctx context.Context, reg *users.Registration) (users.User, error)
-	CreateSession(ctx context.Context, userID pgtype.UUID, expiry time.Time) (string, error)
+	CreateSession(ctx context.Context, userID pgtype.UUID, passkeyID []byte, expiry time.Time) (string, error)
+	DeleteOtherSessions(ctx context.Context, userID pgtype.UUID, keepToken string) (int64, error)
 }
 
 // Service implements API handlers for the auth service.
@@ -228,10 +229,22 @@ func (s *Service) DeletePasskey(ctx context.Context, req *authv1.DeletePasskeyRe
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "invalid passkey ID")
 	}
-	if err := s.repo.DeletePasskey(ctx, userID, id); err != nil {
+	if err := s.repo.DeletePasskey(ctx, userID, id, authn.SessionToken(ctx)); err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to delete passkey")
 	}
 	return authv1.DeletePasskeyResponse_builder{}.Build(), nil
+}
+
+func (s *Service) SignOutOtherSessions(ctx context.Context, req *authv1.SignOutOtherSessionsRequest) (*authv1.SignOutOtherSessionsResponse, error) {
+	user, err := authn.GetSessionUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := s.repo.DeleteOtherSessions(ctx, user.ID(), authn.SessionToken(ctx))
+	if err != nil {
+		return nil, s.internalError(ctx, "failed to sign out other sessions", err)
+	}
+	return authv1.SignOutOtherSessionsResponse_builder{SignedOutSessions: int32(n)}.Build(), nil
 }
 
 func (s *Service) BeginPasskeyRegistration(ctx context.Context, req *authv1.BeginPasskeyRegistrationRequest) (*authv1.BeginPasskeyRegistrationResponse, error) {
@@ -346,7 +359,7 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, req *authv1.Fin
 		return nil, s.toConnectError(ctx, err, "failed to register passkey")
 	}
 	resp := authv1.FinishPasskeyRegistrationResponse_builder{}.Build()
-	if err := s.signIn(ctx, info.ResponseHeader(), user.ID()); err != nil {
+	if err := s.signIn(ctx, info.ResponseHeader(), user.ID(), att.CredentialID); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -411,7 +424,7 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, req *authv1.FinishPass
 		return nil, s.internalError(ctx, "failed to update passkey", err)
 	}
 	resp := authv1.FinishPasskeyLoginResponse_builder{}.Build()
-	if err := s.signIn(ctx, info.ResponseHeader(), passkey.UserID); err != nil {
+	if err := s.signIn(ctx, info.ResponseHeader(), passkey.UserID, passkey.ID); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -502,10 +515,11 @@ func (s *Service) takeChallenge(ctx context.Context, id string, ceremony users.C
 	return challenge, nil
 }
 
-// signIn creates a session for the user and sets the session cookie.
-func (s *Service) signIn(ctx context.Context, header *connect.Header, userID pgtype.UUID) error {
+// signIn creates a session for the user, signed in with the passkey with
+// the credential ID, and sets the session cookie.
+func (s *Service) signIn(ctx context.Context, header *connect.Header, userID pgtype.UUID, passkeyID []byte) error {
 	expiry := s.nowFn().Add(sessionTTL)
-	token, err := s.repo.CreateSession(ctx, userID, expiry)
+	token, err := s.repo.CreateSession(ctx, userID, passkeyID, expiry)
 	if err != nil {
 		return s.internalError(ctx, "failed to create session", err)
 	}
