@@ -79,7 +79,7 @@ import type { PrivacyZone } from "gen/users/v1/users_pb";
 import { invalidateServices } from "helpers/query";
 import { isValidSlug, slugify } from "helpers/slug";
 import type { LatLng, LatLngTuple } from "leaflet";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 interface SuggestionPanelProps {
@@ -316,6 +316,15 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
   const change = (next: DraftSection[]) => {
     setDraft(next);
   };
+  /*
+   * The sections as they were when the stretch being edited started
+   * changing. Each change of the edit adjusts the neighbors from them, so a
+   * number on its way to the final one, e.g. "1" while typing "15", can't
+   * squash a neighbor for good.
+   */
+  const stretchEdit = useRef<{ key: string; base: DraftSection[] } | null>(
+    null
+  );
   const place = (photoId: string, position: LatLng) => {
     movePhoto.mutate({
       id: photoId,
@@ -482,7 +491,20 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
                   );
                 }}
                 onStretch={(start, end) => {
-                  change(setStretch(sections, section.key, start, end));
+                  if (stretchEdit.current?.key !== section.key) {
+                    stretchEdit.current = { base: sections, key: section.key };
+                  }
+                  change(
+                    setStretch(
+                      stretchEdit.current.base,
+                      section.key,
+                      start,
+                      end
+                    )
+                  );
+                }}
+                onStretchDone={() => {
+                  stretchEdit.current = null;
                 }}
                 onMove={(delta) => {
                   change(moveSection(sections, index, delta));
