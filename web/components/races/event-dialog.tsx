@@ -32,6 +32,11 @@ const EventDialog: React.FC<EventDialogProps> = ({ event, onClose }) => {
   };
   const create = useMutation(createRaceEvent, { onSuccess });
   const update = useMutation(updateRaceEvent, { onSuccess });
+  const dirty =
+    name !== (event?.name ?? "") ||
+    location !== (event?.location ?? "") ||
+    website !== (event?.websiteUrl ?? "") ||
+    notes !== (event?.notes ?? "");
 
   const submit = () => {
     const fields = {
@@ -55,6 +60,7 @@ const EventDialog: React.FC<EventDialogProps> = ({ event, onClose }) => {
       open
       onClose={onClose}
       title={event === undefined ? "Add event" : "Edit event"}
+      dirty={dirty}
     >
       <form
         className="flex flex-col gap-3"

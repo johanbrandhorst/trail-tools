@@ -10,6 +10,7 @@ require (
 	github.com/go-passkeys/go-passkeys v0.4.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/jsonschema-go v0.4.3
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/johanbrandhorst/reload v1.0.0
 	github.com/mcosta74/pgx-slog v0.4.1
@@ -152,7 +153,6 @@ require (
 	github.com/google/go-containerregistry v0.22.1 // indirect
 	github.com/google/ko v0.19.1 // indirect
 	github.com/google/s2a-go v0.1.11 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.23 // indirect
 	github.com/googleapis/gax-go/v2 v2.26.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect

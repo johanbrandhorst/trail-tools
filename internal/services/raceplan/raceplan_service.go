@@ -376,6 +376,11 @@ func validatePlan(plan *racesv1.RacePlan) error {
 		}
 	}
 	for i, cp := range plan.GetCheckpoints() {
+		if id := cp.GetId(); id != "" {
+			if _, err := store.StringToUUID(id); err != nil {
+				return fmt.Errorf("checkpoint %d: invalid checkpoint ID %q; keep the id from GetRacePlan, or leave it empty for a new checkpoint", i+1, id)
+			}
+		}
 		if cp.GetDistanceMeters() < 0 || cp.GetPlannedSegmentSeconds() < 0 || cp.GetPlannedStopSeconds() < 0 || cp.GetCutoffSeconds() < 0 {
 			return fmt.Errorf("checkpoint %d: distances and times must not be negative", i+1)
 		}
