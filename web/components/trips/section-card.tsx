@@ -41,7 +41,10 @@ const isPhotoDrag = (event: DragEvent): boolean =>
 interface KmInputProps {
   label: string;
   meters: number | undefined;
+  // Called on every change: each keystroke, and each step of the arrows.
   onChange: (meters: number | undefined) => void;
+  // Called when editing ends, when the input loses focus.
+  onDone: () => void;
 }
 
 // FormatKmValue formats meters as kilometers for an input.
@@ -49,25 +52,36 @@ const formatKmValue = (meters: number | undefined): string =>
   meters === undefined ? "" : String(Math.round(meters / 100) / 10);
 
 /**
- * KmInput edits a distance in kilometers. It's empty for no distance. The
- * distance changes when the input loses focus or on Enter, not on each
- * keystroke, so neighboring sections adjust to the finished number.
+ * ParseKmValue parses kilometers from an input as meters, rounded to the
+ * input's 0.1 km step, so a stretch that ends where the next starts shows the
+ * same number in both, and the browser doesn't reject the value when saving.
  */
-const KmInput: React.FC<KmInputProps> = ({ label, meters, onChange }) => {
+const parseKmValue = (text: string): number | undefined => {
+  const value = Number.parseFloat(text);
+  return Number.isFinite(value) ? Math.round(value * 10) * 100 : undefined;
+};
+
+/**
+ * KmInput edits a distance in kilometers. It's empty for no distance. Each
+ * change applies at once, so neighboring sections follow as the arrows are
+ * clicked. While the input has focus it keeps showing what was typed, even if
+ * the distance is adjusted to fit between the neighbors, so typing isn't
+ * interrupted; it shows the adjusted distance once it loses focus.
+ */
+const KmInput: React.FC<KmInputProps> = ({
+  label,
+  meters,
+  onChange,
+  onDone,
+}) => {
   const [text, setText] = useState(formatKmValue(meters));
   const [shown, setShown] = useState(meters);
-  // Follow changes made elsewhere, e.g. by splitting the section.
-  if (shown !== meters) {
+  const [editing, setEditing] = useState(false);
+  // Follow changes made elsewhere, and adjustments to what was typed.
+  if (!editing && shown !== meters) {
     setShown(meters);
     setText(formatKmValue(meters));
   }
-  const commit = () => {
-    const value = Number.parseFloat(text);
-    const next = Number.isFinite(value) ? Math.round(value * 1000) : undefined;
-    if (next !== meters) {
-      onChange(next);
-    }
-  };
   return (
     <span className="w-20">
       <input
@@ -79,15 +93,27 @@ const KmInput: React.FC<KmInputProps> = ({ label, meters, onChange }) => {
         aria-label={label}
         placeholder="km"
         className={`${inputClass} py-1 tabular-nums`}
+        onFocus={() => {
+          setEditing(true);
+        }}
         onChange={(event) => {
           setText(event.target.value);
+          const next = parseKmValue(event.target.value);
+          setShown(next);
+          onChange(next);
         }}
-        onBlur={commit}
+        onBlur={() => {
+          // Show the distance as stored, e.g. 4.3 after typing 4.25.
+          setEditing(false);
+          setShown(meters);
+          setText(formatKmValue(meters));
+          onDone();
+        }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
-            // Commit instead of submitting the form with the old distance.
+            // Finish editing rather than submitting the form.
             event.preventDefault();
-            commit();
+            event.currentTarget.blur();
           }
         }}
       />
@@ -378,8 +404,12 @@ interface SectionCardProps {
   // What's wrong with the section's stretch, if anything.
   stretchError: string | undefined;
   onChange: (section: DraftSection) => void;
-  // Sets the section's stretch, adjusting its neighbors.
+  /**
+   * Sets the section's stretch while it's edited, adjusting its neighbors,
+   * and onStretchDone is called when the edit ends.
+   */
   onStretch: (start: number | undefined, end: number | undefined) => void;
+  onStretchDone: () => void;
   onMove: (delta: number) => void;
   onMergeWithNext: () => void;
   onSplit: () => void;
@@ -417,6 +447,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
   stretchError,
   onChange,
   onStretch,
+  onStretchDone,
   onMove,
   onMergeWithNext,
   onSplit,
@@ -485,6 +516,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
             onChange={(start) => {
               onStretch(start, section.end);
             }}
+            onDone={onStretchDone}
           />
           <span>to</span>
           <KmInput
@@ -493,6 +525,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
             onChange={(end) => {
               onStretch(section.start, end);
             }}
+            onDone={onStretchDone}
           />
           <span className="ml-1">km</span>
         </div>
