@@ -762,7 +762,8 @@ type TripSection_builder struct {
 	Body string
 	// Where the stretch of the track the section is about starts and ends, in
 	// meters along the track. Both are unset for a section that isn't about a
-	// stretch, e.g. an introduction.
+	// stretch, e.g. an introduction. The stretches of a report's sections
+	// can't overlap, but one may end where another starts.
 	StartDistanceMeters *float64
 	EndDistanceMeters   *float64
 	// The IDs of the section's photos, in order.

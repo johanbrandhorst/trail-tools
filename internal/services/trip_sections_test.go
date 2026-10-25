@@ -145,11 +145,20 @@ func TestTripSections(t *testing.T) {
 		"start only":       {tripsv1.TripSection_builder{StartDistanceMeters: new(0.0)}.Build()},
 		"end before start": {tripsv1.TripSection_builder{StartDistanceMeters: new(500.0), EndDistanceMeters: new(500.0)}.Build()},
 		"negative":         {tripsv1.TripSection_builder{StartDistanceMeters: new(-1.0), EndDistanceMeters: new(500.0)}.Build()},
-		"long title":       {tripsv1.TripSection_builder{Title: strings.Repeat("a", 201)}.Build()},
-		"other report":     {tripsv1.TripSection_builder{Id: otherSection}.Build()},
-		"twice":            {got[0], got[0]},
-		"photo twice":      {tripsv1.TripSection_builder{PhotoIds: []string{at2km, at2km}}.Build()},
-		"bad photo":        {tripsv1.TripSection_builder{PhotoIds: []string{otherSection}}.Build()},
+		"overlapping": {
+			tripsv1.TripSection_builder{StartDistanceMeters: new(4000.0), EndDistanceMeters: new(8000.0)}.Build(),
+			tripsv1.TripSection_builder{Body: "Introduction"}.Build(),
+			tripsv1.TripSection_builder{StartDistanceMeters: new(0.0), EndDistanceMeters: new(5000.0)}.Build(),
+		},
+		"inside another": {
+			tripsv1.TripSection_builder{StartDistanceMeters: new(0.0), EndDistanceMeters: new(10000.0)}.Build(),
+			tripsv1.TripSection_builder{StartDistanceMeters: new(2000.0), EndDistanceMeters: new(3000.0)}.Build(),
+		},
+		"long title":   {tripsv1.TripSection_builder{Title: strings.Repeat("a", 201)}.Build()},
+		"other report": {tripsv1.TripSection_builder{Id: otherSection}.Build()},
+		"twice":        {got[0], got[0]},
+		"photo twice":  {tripsv1.TripSection_builder{PhotoIds: []string{at2km, at2km}}.Build()},
+		"bad photo":    {tripsv1.TripSection_builder{PhotoIds: []string{otherSection}}.Build()},
 	} {
 		if _, err := set(sections...); connect.CodeOf(err) != connect.CodeInvalidArgument {
 			t.Errorf("SetTripSections with %s: got %v, want invalid argument", name, err)

@@ -213,7 +213,8 @@ export type TripSection = Message<"trips.v1.TripSection"> & {
   /**
    * Where the stretch of the track the section is about starts and ends, in
    * meters along the track. Both are unset for a section that isn't about a
-   * stretch, e.g. an introduction.
+   * stretch, e.g. an introduction. The stretches of a report's sections
+   * can't overlap, but one may end where another starts.
    *
    * @generated from field: optional double start_distance_meters = 4;
    */
