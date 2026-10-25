@@ -104,6 +104,10 @@ func TestStaleImports(t *testing.T) {
 	if _, err := db.Exec(ctx, "update routing_imports set create_time = create_time - interval '10 minutes' where id = $1", queued.ID); err != nil {
 		t.Fatal(err)
 	}
+	stale, err := routing.FailStaleImports(ctx, db)
+	if err != nil || len(stale) != 1 || stale[0].ID != queued.ID {
+		t.Fatalf("FailStaleImports: got %v %v, want the queued import", stale, err)
+	}
 	if active, err := routing.HasActiveImport(ctx, db); err != nil || active {
 		t.Errorf("HasActiveImport: got %v %v, want false", active, err)
 	}
@@ -114,11 +118,18 @@ func TestStaleImports(t *testing.T) {
 	if _, err := db.Exec(ctx, "update routing_imports set state = 'running', start_time = current_timestamp - interval '30 minutes' where id = $1", running.ID); err != nil {
 		t.Fatal(err)
 	}
+	if stale, err := routing.FailStaleImports(ctx, db); err != nil || len(stale) != 0 {
+		t.Errorf("FailStaleImports: got %v %v, want none", stale, err)
+	}
 	if active, err := routing.HasActiveImport(ctx, db); err != nil || !active {
 		t.Errorf("HasActiveImport: got %v %v, want true", active, err)
 	}
 	if _, err := db.Exec(ctx, "update routing_imports set start_time = current_timestamp - interval '2 hours' where id = $1", running.ID); err != nil {
 		t.Fatal(err)
+	}
+	stale, err = routing.FailStaleImports(ctx, db)
+	if err != nil || len(stale) != 1 || stale[0].ID != running.ID || stale[0].Message != "the import stopped without finishing" {
+		t.Fatalf("FailStaleImports: got %v %v, want the running import", stale, err)
 	}
 	imports, err := routing.ListImports(ctx, db, 10)
 	if err != nil || len(imports) != 2 {
