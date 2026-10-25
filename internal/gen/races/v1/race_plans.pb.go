@@ -4920,7 +4920,9 @@ type GetSharedRacePlanResponse_builder struct {
 
 	// The plan.
 	Plan *RacePlan
-	// The race.
+	// The race, with only what crew need: its name, date, start time,
+	// location, website, distance, elevation gain, cutoff and priority. Its
+	// notes and IDs are the owner's own and aren't shared.
 	Race *Race
 	// The analysis of the plan.
 	Analysis *RacePlanAnalysis
