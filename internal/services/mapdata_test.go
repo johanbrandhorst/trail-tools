@@ -1,18 +1,26 @@
 package services_test
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect/v2"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	routingv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routing/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/routing"
+	mapdatasvc "github.com/johanbrandhorst/trail-tools/internal/services/mapdata"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
@@ -181,5 +189,100 @@ func TestMapData(t *testing.T) {
 	if len(imports) != 3 || imports[0].GetState() != routingv1.ImportState_IMPORT_STATE_QUEUED ||
 		imports[2].GetState() != routingv1.ImportState_IMPORT_STATE_FAILED || imports[2].GetMessage() != "the import didn't start" {
 		t.Errorf("unexpected imports %v", imports)
+	}
+}
+
+func TestRefreshMapData(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	// The local reporter logs the errors it's given.
+	var reported bytes.Buffer
+	reportLog := slog.New(slog.NewTextHandler(&reported, nil))
+	runner := &fakeImportRunner{}
+	handler := mapdatasvc.NewService(log, errreport.NewLocal(reportLog), e.db, fakeExtracts{}, runner).RefreshHandler()
+	refresh := func() int {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, mapdatasvc.RefreshPath, nil))
+		return rec.Code
+	}
+	edges := func() func(func(routing.Edge) bool) {
+		return slices.Values([]routing.Edge{
+			{Source: 1, Target: 2, Points: []geo.Point{{Lat: 47, Lng: 8, Ele: 500}, {Lat: 47.01, Lng: 8, Ele: 520}}, Highway: "path", Terrain: geo.TerrainTrail},
+		})
+	}
+
+	// A region imported from extracts and one loaded otherwise, like the
+	// demo region, both imported 40 days ago.
+	bounds := geo.Bounds{MinLat: 46.6, MinLng: 7.9, MaxLat: 47.5, MaxLng: 9.2}
+	for _, name := range []string{"central-switzerland", "demo"} {
+		if _, err := routing.SaveRegion(ctx, e.db, name, bounds, edges(), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := routing.CreateImport(ctx, e.db, "central-switzerland", bounds, nil, e.userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.db.Exec(ctx, "update routing_imports set state = 'done' where id = $1", first.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.db.Exec(ctx, "update routing_regions set import_time = now() - interval '40 days'"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Only the scheduler's POST refreshes.
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, mapdatasvc.RefreshPath, nil))
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("GET: got status %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	// The imported region is imported again, with the extracts of its area.
+	if code := refresh(); code != http.StatusAccepted {
+		t.Fatalf("refresh: got status %d, want %d", code, http.StatusAccepted)
+	}
+	if len(runner.ids) != 1 {
+		t.Fatalf("the runner got %v, want one import", runner.ids)
+	}
+	record, err := routing.GetImport(ctx, e.db, runner.ids[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.Region != "central-switzerland" || record.State != routing.ImportQueued || len(record.Extracts) != 2 {
+		t.Errorf("unexpected import %+v", record)
+	}
+
+	// Nothing else starts while it runs.
+	if code := refresh(); code != http.StatusNoContent || len(runner.ids) != 1 {
+		t.Errorf("refresh during an import: got status %d and imports %v, want %d and one import", code, runner.ids, http.StatusNoContent)
+	}
+
+	// Once it's done, the region isn't due, and the demo region never is.
+	if _, err := e.db.Exec(ctx, "update routing_imports set state = 'done' where id = $1", record.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := routing.SaveRegion(ctx, e.db, "central-switzerland", bounds, edges(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if code := refresh(); code != http.StatusNoContent || len(runner.ids) != 1 {
+		t.Errorf("refresh after the import: got status %d and imports %v, want %d and one import", code, runner.ids, http.StatusNoContent)
+	}
+
+	// An import whose process died without recording its result, e.g. out
+	// of memory, is reported once it's taken to have stopped.
+	died, err := routing.CreateImport(ctx, e.db, "central-switzerland", bounds, nil, e.userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.db.Exec(ctx, "update routing_imports set state = 'running', start_time = now() - interval '2 hours' where id = $1", died.ID); err != nil {
+		t.Fatal(err)
+	}
+	if code := refresh(); code != http.StatusNoContent {
+		t.Errorf("refresh after an import died: got status %d, want %d", code, http.StatusNoContent)
+	}
+	if got := reported.String(); !strings.Contains(got, "stopped without recording its result") || !strings.Contains(got, "central-switzerland") {
+		t.Errorf("got reports %q, want the import that stopped", got)
 	}
 }
