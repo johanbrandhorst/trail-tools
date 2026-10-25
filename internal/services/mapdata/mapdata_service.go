@@ -80,6 +80,9 @@ func (s *Service) GetMapData(ctx context.Context, req *routingv1.GetMapDataReque
 	if err != nil {
 		return nil, s.internalError(ctx, err)
 	}
+	if err := s.failStaleImports(ctx); err != nil {
+		return nil, s.internalError(ctx, err)
+	}
 	imports, err := routing.ListImports(ctx, s.db, recentImports)
 	if err != nil {
 		return nil, s.internalError(ctx, err)
@@ -137,6 +140,9 @@ func (s *Service) StartImport(ctx context.Context, req *routingv1.StartImportReq
 	}
 	// Check before looking up the extracts, though only creating the import
 	// ensures no other import started meanwhile.
+	if err := s.failStaleImports(ctx); err != nil {
+		return nil, s.internalError(ctx, err)
+	}
 	active, err := routing.HasActiveImport(ctx, s.db)
 	if err != nil {
 		return nil, s.internalError(ctx, err)
@@ -208,6 +214,12 @@ func (s *Service) RefreshHandler() http.Handler {
 // it's due. It returns whether it started an import: not when no region is
 // due or another import is queued or running, which the next call retries.
 func (s *Service) refreshOldest(ctx context.Context) (bool, error) {
+	// Checking daily reports imports that stopped soon after they did,
+	// including refreshes, which would otherwise be retried and fail
+	// unnoticed every day.
+	if err := s.failStaleImports(ctx); err != nil {
+		return false, err
+	}
 	regions, err := routing.ListRegions(ctx, s.db)
 	if err != nil {
 		return false, err
@@ -262,6 +274,21 @@ func (s *Service) refreshOldest(ctx context.Context) (bool, error) {
 	s.log.InfoContext(ctx, "Refreshing map data",
 		slog.String("region", due.Name), slog.Time("import_time", due.ImportTime))
 	return true, nil
+}
+
+// failStaleImports marks imports that stopped without recording their
+// result as failed, and reports them: their process died without reporting
+// why, e.g. out of memory or at the import job's timeout.
+func (s *Service) failStaleImports(ctx context.Context) error {
+	stale, err := routing.FailStaleImports(ctx, s.db)
+	if err != nil {
+		return err
+	}
+	for _, r := range stale {
+		s.report.Report(ctx, "An OpenStreetMap import stopped without recording its result", errors.New(r.Message),
+			slog.String("region", r.Region), slog.String("import_id", store.UUIDToString(r.ID)))
+	}
+	return nil
 }
 
 func (s *Service) findExtracts(ctx context.Context, bounds geo.Bounds) ([]routing.Extract, error) {

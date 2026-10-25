@@ -1,12 +1,14 @@
 package services_test
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -195,8 +197,11 @@ func TestRefreshMapData(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	// The local reporter logs the errors it's given.
+	var reported bytes.Buffer
+	reportLog := slog.New(slog.NewTextHandler(&reported, nil))
 	runner := &fakeImportRunner{}
-	handler := mapdatasvc.NewService(log, errreport.NewLocal(log), e.db, fakeExtracts{}, runner).RefreshHandler()
+	handler := mapdatasvc.NewService(log, errreport.NewLocal(reportLog), e.db, fakeExtracts{}, runner).RefreshHandler()
 	refresh := func() int {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, mapdatasvc.RefreshPath, nil))
@@ -263,5 +268,21 @@ func TestRefreshMapData(t *testing.T) {
 	}
 	if code := refresh(); code != http.StatusNoContent || len(runner.ids) != 1 {
 		t.Errorf("refresh after the import: got status %d and imports %v, want %d and one import", code, runner.ids, http.StatusNoContent)
+	}
+
+	// An import whose process died without recording its result, e.g. out
+	// of memory, is reported once it's taken to have stopped.
+	died, err := routing.CreateImport(ctx, e.db, "central-switzerland", bounds, nil, e.userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.db.Exec(ctx, "update routing_imports set state = 'running', start_time = now() - interval '2 hours' where id = $1", died.ID); err != nil {
+		t.Fatal(err)
+	}
+	if code := refresh(); code != http.StatusNoContent {
+		t.Errorf("refresh after an import died: got status %d, want %d", code, http.StatusNoContent)
+	}
+	if got := reported.String(); !strings.Contains(got, "stopped without recording its result") || !strings.Contains(got, "central-switzerland") {
+		t.Errorf("got reports %q, want the import that stopped", got)
 	}
 }

@@ -122,11 +122,9 @@ func GetImport(ctx context.Context, db *store.DB, id pgtype.UUID) (*ImportRecord
 	return r, nil
 }
 
-// ListImports lists the most recent imports, newest first.
+// ListImports lists the most recent imports, newest first. Call
+// FailStaleImports first so imports that stopped show as failed.
 func ListImports(ctx context.Context, db *store.DB, limit int) ([]*ImportRecord, error) {
-	if err := failStaleImports(ctx, db); err != nil {
-		return nil, err
-	}
 	rows, err := db.Query(ctx, `select `+importColumns+` from routing_imports order by create_time desc limit $1`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list imports: %w", err)
@@ -143,11 +141,9 @@ func ListImports(ctx context.Context, db *store.DB, limit int) ([]*ImportRecord,
 	return imports, rows.Err()
 }
 
-// HasActiveImport reports whether an import is queued or running.
+// HasActiveImport reports whether an import is queued or running. Call
+// FailStaleImports first, or an import that stopped counts as running.
 func HasActiveImport(ctx context.Context, db *store.DB) (bool, error) {
-	if err := failStaleImports(ctx, db); err != nil {
-		return false, err
-	}
 	var active bool
 	if err := db.QueryRow(ctx, `select exists(select 1 from routing_imports where state in ('queued', 'running'))`).Scan(&active); err != nil {
 		return false, fmt.Errorf("failed to check for imports: %w", err)
@@ -155,17 +151,27 @@ func HasActiveImport(ctx context.Context, db *store.DB) (bool, error) {
 	return active, nil
 }
 
-// failStaleImports marks imports as failed that stopped without recording
-// their result, so they don't hold up later imports.
-func failStaleImports(ctx context.Context, db *store.DB) error {
-	if _, err := db.Exec(ctx, `update routing_imports set state = 'failed', finish_time = current_timestamp,
+// FailStaleImports marks imports as failed that stopped without recording
+// their result, so they don't hold up later imports, and returns them. Their
+// process died without reporting why, e.g. out of memory or at its job's
+// timeout, so the caller should report them.
+func FailStaleImports(ctx context.Context, db *store.DB) ([]*ImportRecord, error) {
+	rows, err := db.Query(ctx, `update routing_imports set state = 'failed', finish_time = current_timestamp,
 		message = case state when 'queued' then 'the import didn''t start' else 'the import stopped without finishing' end
 		where (state = 'queued' and create_time < current_timestamp - $1::interval)
-			or (state = 'running' and start_time < current_timestamp - $2::interval)`,
-		staleQueuedImport, staleRunningImport); err != nil {
-		return fmt.Errorf("failed to update stale imports: %w", err)
+			or (state = 'running' and start_time < current_timestamp - $2::interval)
+		returning `+importColumns,
+		staleQueuedImport, staleRunningImport)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update stale imports: %w", err)
 	}
-	return nil
+	stale, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*ImportRecord, error) {
+		return scanImport(row)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update stale imports: %w", err)
+	}
+	return stale, nil
 }
 
 // FailImport marks an import as failed, unless it has finished.
