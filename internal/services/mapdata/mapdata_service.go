@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"regexp"
+	"time"
 
 	"connectrpc.com/connect/v2"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -30,6 +32,16 @@ const (
 	maxAreaDegrees = 3
 	// recentImports is the number of imports listed.
 	recentImports = 20
+	// RefreshPath is where a scheduler asks to refresh the map data.
+	RefreshPath = "/internal/map-data/refresh"
+	// refreshAge is how old a region's import gets before it's imported
+	// again. Geofabrik updates its extracts daily, but trails change
+	// slowly, so a month keeps routing current without importing every day,
+	// which takes the import job most of an hour and rewrites the region.
+	refreshAge = 30 * 24 * time.Hour
+	// storageLimitBytes is the storage of Neon's free plan, which the
+	// database should stay within, as on the map data page.
+	storageLimitBytes = 500_000_000
 )
 
 // regionName is the format of region names.
@@ -52,11 +64,12 @@ type Service struct {
 	db       *store.DB
 	extracts ExtractFinder
 	runner   ImportRunner
+	nowFn    func() time.Time
 }
 
 // NewService creates a new Service.
 func NewService(log *slog.Logger, report *errreport.Reporter, db *store.DB, extracts ExtractFinder, runner ImportRunner) *Service {
-	return &Service{log: log, report: report, db: db, extracts: extracts, runner: runner}
+	return &Service{log: log, report: report, db: db, extracts: extracts, runner: runner, nowFn: time.Now}
 }
 
 func (s *Service) GetMapData(ctx context.Context, req *routingv1.GetMapDataRequest) (*routingv1.GetMapDataResponse, error) {
@@ -164,6 +177,91 @@ func (s *Service) DeleteRegion(ctx context.Context, req *routingv1.DeleteRegionR
 		return nil, s.internalError(ctx, err)
 	}
 	return routingv1.DeleteRegionResponse_builder{}.Build(), nil
+}
+
+// RefreshHandler returns a handler that imports again the region imported
+// longest ago, if that was more than refreshAge ago, so routing follows
+// changes to OpenStreetMap. It starts at most one import per call, as
+// imports run one at a time, so a scheduler calling it daily refreshes each
+// region about monthly. It responds 202 when it starts an import and 204
+// otherwise. It must be protected by authorization.
+func (s *Service) RefreshHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		started, err := s.refreshOldest(r.Context())
+		switch {
+		case err != nil:
+			s.report.Report(r.Context(), "Failed to refresh the map data", err)
+			http.Error(w, "failed to refresh the map data", http.StatusInternalServerError)
+		case started:
+			w.WriteHeader(http.StatusAccepted)
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// refreshOldest starts importing again the region imported longest ago, if
+// it's due. It returns whether it started an import: not when no region is
+// due or another import is queued or running, which the next call retries.
+func (s *Service) refreshOldest(ctx context.Context) (bool, error) {
+	regions, err := routing.ListRegions(ctx, s.db)
+	if err != nil {
+		return false, err
+	}
+	imported, err := routing.ImportedRegions(ctx, s.db)
+	if err != nil {
+		return false, err
+	}
+	var due *routing.Region
+	for i, r := range regions {
+		if imported[r.Name] && s.nowFn().Sub(r.ImportTime) >= refreshAge &&
+			(due == nil || r.ImportTime.Before(due.ImportTime)) {
+			due = &regions[i]
+		}
+	}
+	if due == nil {
+		return false, nil
+	}
+	active, err := routing.HasActiveImport(ctx, s.db)
+	if err != nil || active {
+		return false, err
+	}
+	size, err := routing.DatabaseSize(ctx, s.db)
+	if err != nil {
+		return false, err
+	}
+	// Importing a region again replaces it in one transaction, so its old
+	// and new data are stored at once until it commits.
+	if size+due.SizeBytes > storageLimitBytes {
+		return false, fmt.Errorf("refreshing region %s needs about %d MB more than the database's %d MB,"+
+			" past the %d MB of Neon's free plan; delete a region or import a smaller area again",
+			due.Name, due.SizeBytes/1_000_000, size/1_000_000, storageLimitBytes/1_000_000)
+	}
+	extracts, err := s.extracts.Find(ctx, due.Bounds)
+	if err != nil {
+		return false, fmt.Errorf("failed to find the extracts of region %s: %w", due.Name, err)
+	}
+	// The import has no user who started it.
+	record, err := routing.CreateImport(ctx, s.db, due.Name, due.Bounds, extracts, pgtype.UUID{})
+	if err != nil {
+		if errors.Is(err, routing.ErrActiveImport) {
+			return false, nil
+		}
+		return false, err
+	}
+	if err := s.runner.Run(ctx, record.ID); err != nil {
+		if err := routing.FailImport(context.WithoutCancel(ctx), s.db, record.ID, "failed to start the import"); err != nil {
+			s.report.Report(ctx, "Failed to record the failed import", err)
+		}
+		return false, fmt.Errorf("failed to start refreshing region %s: %w", due.Name, err)
+	}
+	s.log.InfoContext(ctx, "Refreshing map data",
+		slog.String("region", due.Name), slog.Time("import_time", due.ImportTime))
+	return true, nil
 }
 
 func (s *Service) findExtracts(ctx context.Context, bounds geo.Bounds) ([]routing.Extract, error) {

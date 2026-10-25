@@ -46,21 +46,21 @@ resource "google_cloud_run_v2_service" "app" {
             TRAIL_TOOLS_LOG_FORMAT = "json"
             TRAIL_TOOLS_LOG_LEVEL  = "info"
             # Errors are reported to Error Reporting rather than logged.
-            TRAIL_TOOLS_ERROR_REPORTING_PROJECT = var.project
-            TRAIL_TOOLS_OTLP_ENDPOINT           = "https://telemetry.googleapis.com"
-            TRAIL_TOOLS_TRACE_PROJECT           = var.project
-            TRAIL_TOOLS_TRACE_SAMPLE_RATE       = tostring(var.trace_sample_rate)
-            TRAIL_TOOLS_IMPORT_JOB              = google_cloud_run_v2_job.import[0].id
-            TRAIL_TOOLS_PHOTO_BUCKET            = google_storage_bucket.photos.name
-            TRAIL_TOOLS_ACTIVITY_BUCKET         = google_storage_bucket.activity_data.name
-            TRAIL_TOOLS_DEM_BUCKET              = google_storage_bucket.dem.name
-          },
-          local.strava ? {
-            TRAIL_TOOLS_STRAVA_CLIENT_ID          = var.strava_client_id
-            TRAIL_TOOLS_STRAVA_SYNC_MODE          = "scheduled"
-            TRAIL_TOOLS_STRAVA_SYNC_JOB           = google_cloud_scheduler_job.strava_sync[0].id
+            TRAIL_TOOLS_ERROR_REPORTING_PROJECT   = var.project
+            TRAIL_TOOLS_OTLP_ENDPOINT             = "https://telemetry.googleapis.com"
+            TRAIL_TOOLS_TRACE_PROJECT             = var.project
+            TRAIL_TOOLS_TRACE_SAMPLE_RATE         = tostring(var.trace_sample_rate)
+            TRAIL_TOOLS_IMPORT_JOB                = google_cloud_run_v2_job.import[0].id
+            TRAIL_TOOLS_PHOTO_BUCKET              = google_storage_bucket.photos.name
+            TRAIL_TOOLS_ACTIVITY_BUCKET           = google_storage_bucket.activity_data.name
+            TRAIL_TOOLS_DEM_BUCKET                = google_storage_bucket.dem.name
             TRAIL_TOOLS_SCHEDULER_SERVICE_ACCOUNT = google_service_account.scheduler.email
             TRAIL_TOOLS_SCHEDULER_AUDIENCE        = "trail-tools-scheduler"
+          },
+          local.strava ? {
+            TRAIL_TOOLS_STRAVA_CLIENT_ID = var.strava_client_id
+            TRAIL_TOOLS_STRAVA_SYNC_MODE = "scheduled"
+            TRAIL_TOOLS_STRAVA_SYNC_JOB  = google_cloud_scheduler_job.strava_sync[0].id
           } : {},
         )
         content {
@@ -225,6 +225,29 @@ resource "google_cloud_scheduler_job" "strava_sync" {
 
   http_target {
     uri         = "${local.public_url}/internal/strava/sync"
+    http_method = "POST"
+    oidc_token {
+      service_account_email = google_service_account.scheduler.email
+      audience              = "trail-tools-scheduler"
+    }
+  }
+
+  depends_on = [google_project_service.services]
+}
+
+# Refreshes the imported OpenStreetMap regions daily: each call imports the
+# region imported longest ago again, if that was more than 30 days ago, with
+# the import job. It only starts the import, so it's quick.
+resource "google_cloud_scheduler_job" "map_data_refresh" {
+  count            = var.service_enabled ? 1 : 0
+  name             = "map-data-refresh"
+  region           = var.region
+  schedule         = "43 3 * * *"
+  time_zone        = "UTC"
+  attempt_deadline = "120s"
+
+  http_target {
+    uri         = "${local.public_url}/internal/map-data/refresh"
     http_method = "POST"
     oidc_token {
       service_account_email = google_service_account.scheduler.email

@@ -270,6 +270,25 @@ func ListRegions(ctx context.Context, db *store.DB) ([]Region, error) {
 	return regions, nil
 }
 
+// ImportedRegions returns the names of the regions imported from
+// OpenStreetMap extracts, as opposed to loaded otherwise, like the demo
+// region of a local server.
+func ImportedRegions(ctx context.Context, db *store.DB) (map[string]bool, error) {
+	rows, err := db.Query(ctx, `select distinct region from routing_imports where state = 'done'`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list imported regions: %w", err)
+	}
+	names, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("failed to list imported regions: %w", err)
+	}
+	result := make(map[string]bool, len(names))
+	for _, name := range names {
+		result[name] = true
+	}
+	return result, nil
+}
+
 // DeleteRegion deletes a region, its edges and its points of interest from
 // the routing graph.
 func DeleteRegion(ctx context.Context, db *store.DB, name string) error {

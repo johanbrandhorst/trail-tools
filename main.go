@@ -231,8 +231,9 @@ var (
 	schedulerServiceAccount = flag.String(
 		"scheduler-service-account",
 		"",
-		"The email of the service account allowed to call "+stravasvc.SyncPath+" with a Google signed ID token,"+
-			" e.g. from Cloud Scheduler. Required with -strava-sync-mode=scheduled",
+		"The email of the service account allowed to call "+stravasvc.SyncPath+" and "+mapdatasvc.RefreshPath+
+			" with a Google signed ID token, e.g. from Cloud Scheduler. Required with -strava-sync-mode=scheduled."+
+			" Without it, map data is only refreshed by importing it again on the map data page",
 	)
 	schedulerAudience = flag.String(
 		"scheduler-audience",
@@ -736,6 +737,15 @@ func run(
 			return fmt.Errorf("failed to create scheduled sync handler: %w", err)
 		}
 		mux.Handle(stravasvc.SyncPath, syncHandler)
+	}
+	// Serve the map data refresh endpoint, only for the scheduler
+	if schedulerServiceAccount != "" {
+		refreshHandler, err := authn.RequireGoogleServiceAccount(googleCtx, log, schedulerAudience, schedulerServiceAccount,
+			mapDataService.RefreshHandler())
+		if err != nil {
+			return fmt.Errorf("failed to create map data refresh handler: %w", err)
+		}
+		mux.Handle(mapdatasvc.RefreshPath, refreshHandler)
 	}
 
 	// Register the logout handler directly on the mux
