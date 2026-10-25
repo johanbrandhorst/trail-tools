@@ -19,6 +19,7 @@ import {
   removeSection,
   sameSections,
   sectionsToSave,
+  setStretch,
   splitSection,
 } from "@components/trips/section-draft";
 import { formatRange, trackSlice } from "@components/trips/sections";
@@ -276,9 +277,10 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
   const sectionsDirty = !sameSections(sections, saved);
   const dirty = detailsDirty || sectionsDirty;
   const slugValid = isValidSlug(slug);
-  const sectionErrors = sections.some(
-    (section) => rangeError(section) !== undefined
+  const stretchErrors = sections.map((_section, index) =>
+    rangeError(sections, index)
   );
+  const sectionErrors = stretchErrors.some((error) => error !== undefined);
   const saving = update.isPending || saveSections.isPending;
 
   const save = async () => {
@@ -471,12 +473,16 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
                 onActivate={() => {
                   setActiveKey(section.key);
                 }}
+                stretchError={stretchErrors[index]}
                 onChange={(next) => {
                   change(
                     sections.map((other) =>
                       other.key === next.key ? next : other
                     )
                   );
+                }}
+                onStretch={(start, end) => {
+                  change(setStretch(sections, section.key, start, end));
                 }}
                 onMove={(delta) => {
                   change(moveSection(sections, index, delta));

@@ -83,7 +83,42 @@ func sectionsFromProto(sections []*tripsv1.TripSection) ([]*trips.Section, error
 		}
 		result[i].PhotoIDs = ids
 	}
+	if err := checkOverlaps(result); err != nil {
+		return nil, err
+	}
 	return result, nil
+}
+
+// checkOverlaps returns an error if the stretches of two sections overlap.
+// A stretch may end where another starts. Each part of the track belongs to
+// at most one section, so the editor and the public page can show which
+// section a point is about.
+func checkOverlaps(sections []*trips.Section) error {
+	var ranged []int
+	for i, sec := range sections {
+		if sec.HasDistances {
+			ranged = append(ranged, i)
+		}
+	}
+	slices.SortFunc(ranged, func(a, b int) int {
+		return cmp.Compare(sections[a].StartDistanceMeters, sections[b].StartDistanceMeters)
+	})
+	for k := 1; k < len(ranged); k++ {
+		prev, next := sections[ranged[k-1]], sections[ranged[k]]
+		if prev.EndDistanceMeters > next.StartDistanceMeters {
+			first, second := min(ranged[k-1], ranged[k]), max(ranged[k-1], ranged[k])
+			return fmt.Errorf("the stretches of sections %d (%s) and %d (%s) overlap; "+
+				"make one end where the other starts, or before",
+				first+1, formatStretch(sections[first]), second+1, formatStretch(sections[second]))
+		}
+	}
+	return nil
+}
+
+// formatStretch formats a section's stretch for error messages, e.g. "km
+// 3.2-9.8".
+func formatStretch(sec *trips.Section) string {
+	return fmt.Sprintf("km %.1f-%.1f", sec.StartDistanceMeters/1000, sec.EndDistanceMeters/1000)
 }
 
 func (s *Service) SuggestTripSections(ctx context.Context, req *tripsv1.SuggestTripSectionsRequest) (*tripsv1.SuggestTripSectionsResponse, error) {
