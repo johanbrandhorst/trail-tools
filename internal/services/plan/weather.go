@@ -167,15 +167,7 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			s.report.Report(ctx, "Failed to get weather forecast", err)
 			return nil, connect.NewError(connect.CodeUnavailable, "the weather forecast is unavailable, try again later")
 		}
-		g.byLocalDay = make(map[string][]mapdata.Weather)
-		for _, h := range hours {
-			local := h.Time.Add(h.UTCOffset)
-			if local.Hour() < daytimeFirstHour || local.Hour() > daytimeLastHour {
-				continue
-			}
-			day := local.Format(time.DateOnly)
-			g.byLocalDay[day] = append(g.byLocalDay[day], h)
-		}
+		g.byLocalDay = daytimeByLocalDay(hours)
 	}
 	var result []*plansv1.WorkoutWeather
 	for _, w := range workouts {
@@ -237,6 +229,27 @@ func (s *Service) workoutLocation(ctx context.Context, userID pgtype.UUID, w *pl
 		return weatherLocation{}, false, nil
 	}
 	return **fallback, true, nil
+}
+
+// daytimeByLocalDay groups the daytime hours of a forecast by their local
+// date, as YYYY-MM-DD. Each hour is placed with its own UTC offset rather
+// than one for the whole forecast: a forecast spans 16 days, and after a
+// daylight saving time transition within it a single offset would shift
+// every later day by an hour, dropping an hour at one end of the daytime and
+// adding one from the night at the other.
+func daytimeByLocalDay(hours []mapdata.Weather) map[string][]mapdata.Weather {
+	byLocalDay := make(map[string][]mapdata.Weather)
+	for _, h := range hours {
+		// Shifting the UTC time by the offset gives a time whose UTC fields
+		// are the local ones, without needing the time zone.
+		local := h.Time.UTC().Add(h.UTCOffset)
+		if local.Hour() < daytimeFirstHour || local.Hour() > daytimeLastHour {
+			continue
+		}
+		day := local.Format(time.DateOnly)
+		byLocalDay[day] = append(byLocalDay[day], h)
+	}
+	return byLocalDay
 }
 
 // summarizeDay summarizes the weather of the hours of a day.

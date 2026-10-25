@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -170,7 +171,52 @@ func (r *Repository) ListTrainingPlans(ctx context.Context, userID pgtype.UUID) 
 	return result, nil
 }
 
-// UpdateTrainingPlan replaces a training plan's details.
+// OutsideDatesError is returned when changing a plan's dates would leave some
+// of its workouts or periods outside them.
+type OutsideDatesError struct {
+	// The dates of the workouts outside, in date order.
+	WorkoutDates []time.Time
+	// The start dates of the weeks and months outside, in date order.
+	WeekStartDates, MonthStartDates []time.Time
+}
+
+// maxOutsideDates is how many dates of each kind an OutsideDatesError
+// names, to keep the message short when a plan is shortened a lot.
+const maxOutsideDates = 5
+
+func (e *OutsideDatesError) Error() string {
+	var parts []string
+	for _, kind := range []struct {
+		one, many string
+		dates     []time.Time
+	}{
+		{"workout", "workouts", e.WorkoutDates},
+		{"week", "weeks", e.WeekStartDates},
+		{"month", "months", e.MonthStartDates},
+	} {
+		if len(kind.dates) == 0 {
+			continue
+		}
+		var dates []string
+		for _, date := range kind.dates[:min(len(kind.dates), maxOutsideDates)] {
+			dates = append(dates, store.FormatDate(date))
+		}
+		if len(kind.dates) > maxOutsideDates {
+			dates = append(dates, "...")
+		}
+		name := kind.many
+		if len(kind.dates) == 1 {
+			name = kind.one
+		}
+		parts = append(parts, fmt.Sprintf("%d %s (%s)", len(kind.dates), name, strings.Join(dates, ", ")))
+	}
+	return fmt.Sprintf("the plan has %s outside the new dates; move or delete them first, or choose dates that include them", strings.Join(parts, " and "))
+}
+
+// UpdateTrainingPlan replaces a training plan's details. If the plan's
+// workouts or periods would be outside its new dates, it returns an
+// *OutsideDatesError and leaves the plan unchanged: they could no longer be
+// updated, as their dates must be within the plan.
 func (r *Repository) UpdateTrainingPlan(ctx context.Context, plan *TrainingPlan) (*TrainingPlan, error) {
 	var updated *TrainingPlan
 	err := r.withGoalRacesOnCalendar(ctx, plan, func(q *gen.Queries) error {
@@ -188,6 +234,31 @@ func (r *Repository) UpdateTrainingPlan(ctx context.Context, plan *TrainingPlan)
 				return store.ErrNotFound
 			}
 			return fmt.Errorf("failed to update training plan: %w", err)
+		}
+		// Updating the plan locks it, so workouts and periods can't be added
+		// outside the new dates after checking.
+		outside, err := q.ListDatesOutsidePlan(ctx, &gen.ListDatesOutsidePlanParams{
+			PlanID:    plan.ID,
+			StartDate: store.DateToPG(plan.StartDate),
+			EndDate:   store.DateToPG(plan.EndDate),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to check workouts and periods: %w", err)
+		}
+		if len(outside) > 0 {
+			var outsideErr OutsideDatesError
+			for _, row := range outside {
+				date := store.DateFromPG(row.Date)
+				switch Granularity(row.Kind) {
+				case GranularityWeek:
+					outsideErr.WeekStartDates = append(outsideErr.WeekStartDates, date)
+				case GranularityMonth:
+					outsideErr.MonthStartDates = append(outsideErr.MonthStartDates, date)
+				default:
+					outsideErr.WorkoutDates = append(outsideErr.WorkoutDates, date)
+				}
+			}
+			return &outsideErr
 		}
 		updated = planFromDB(dbPlan)
 		return nil
@@ -263,37 +334,40 @@ func (r *Repository) DeletePeriods(ctx context.Context, planID pgtype.UUID, ids 
 	return nil
 }
 
-// CreateWorkouts creates workouts in a plan. The caller must check the plan
-// belongs to the user.
+// CreateWorkouts creates workouts in a plan, in a single statement. The
+// caller must check the plan belongs to the user.
 func (r *Repository) CreateWorkouts(ctx context.Context, planID pgtype.UUID, workouts []*Workout) ([]*Workout, error) {
-	tx, err := r.db.Begin(ctx)
+	params := &gen.CreateWorkoutsParams{PlanID: planID}
+	for _, w := range workouts {
+		// The IDs are assigned here to return the workouts in the order
+		// given, which returning doesn't promise.
+		params.Ids = append(params.Ids, store.NewUUID())
+		params.Dates = append(params.Dates, store.DateToPG(w.Date))
+		params.Types = append(params.Types, string(w.Type))
+		params.Titles = append(params.Titles, w.Title)
+		params.Descriptions = append(params.Descriptions, w.Description)
+		params.TargetDistancesMeters = append(params.TargetDistancesMeters, w.TargetDistanceMeters)
+		params.TargetElevationGainsMeters = append(params.TargetElevationGainsMeters, w.TargetElevationGainMeters)
+		params.TargetDurationsSeconds = append(params.TargetDurationsSeconds, w.TargetDurationSeconds)
+		params.TargetTerrains = append(params.TargetTerrains, string(terrainToDB(w.TargetTerrain).Terrain))
+		params.RouteIds = append(params.RouteIds, w.RouteID)
+		params.CompletedActivityIds = append(params.CompletedActivityIds, w.CompletedActivityID)
+	}
+	dbWorkouts, err := r.q.CreateWorkouts(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
+		return nil, fmt.Errorf("failed to create workouts: %w", err)
 	}
-	defer tx.Rollback(context.Background())
-	q := r.q.WithTx(tx)
-	result := make([]*Workout, len(workouts))
-	for i, w := range workouts {
-		dbWorkout, err := q.CreateWorkout(ctx, &gen.CreateWorkoutParams{
-			PlanID:                    planID,
-			Date:                      store.DateToPG(w.Date),
-			Type:                      gen.WorkoutType(w.Type),
-			Title:                     w.Title,
-			Description:               w.Description,
-			TargetDistanceMeters:      w.TargetDistanceMeters,
-			TargetElevationGainMeters: w.TargetElevationGainMeters,
-			TargetDurationSeconds:     w.TargetDurationSeconds,
-			TargetTerrain:             terrainToDB(w.TargetTerrain),
-			RouteID:                   w.RouteID,
-			CompletedActivityID:       w.CompletedActivityID,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create workout: %w", err)
+	byID := make(map[pgtype.UUID]*gen.Workout, len(dbWorkouts))
+	for _, w := range dbWorkouts {
+		byID[w.ID] = w
+	}
+	result := make([]*Workout, len(params.Ids))
+	for i, id := range params.Ids {
+		w, ok := byID[id]
+		if !ok {
+			return nil, fmt.Errorf("created workout %s wasn't returned", store.UUIDToString(id))
 		}
-		result[i] = workoutFromDB(dbWorkout)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		result[i] = workoutFromDB(w)
 	}
 	return result, nil
 }
@@ -381,22 +455,29 @@ func (r *Repository) DeleteWorkouts(ctx context.Context, planID pgtype.UUID, ids
 	return nil
 }
 
-// RouteExists checks whether a route exists and belongs to the user.
-func (r *Repository) RouteExists(ctx context.Context, userID, routeID pgtype.UUID) (bool, error) {
-	exists, err := r.q.RouteExists(ctx, &gen.RouteExistsParams{ID: routeID, UserID: userID})
-	if err != nil {
-		return false, fmt.Errorf("failed to check route: %w", err)
+// FindReferences returns which of the routes and activities exist and belong
+// to the user, in a single query.
+func (r *Repository) FindReferences(ctx context.Context, userID pgtype.UUID, routeIDs, activityIDs []pgtype.UUID) (routes, activities map[pgtype.UUID]bool, err error) {
+	routes = map[pgtype.UUID]bool{}
+	activities = map[pgtype.UUID]bool{}
+	if len(routeIDs) == 0 && len(activityIDs) == 0 {
+		return routes, activities, nil
 	}
-	return exists, nil
-}
-
-// ActivityExists checks whether an activity exists and belongs to the user.
-func (r *Repository) ActivityExists(ctx context.Context, userID, activityID pgtype.UUID) (bool, error) {
-	exists, err := r.q.ActivityExists(ctx, &gen.ActivityExistsParams{ID: activityID, UserID: userID})
+	found, err := r.q.FindReferences(ctx, &gen.FindReferencesParams{
+		UserID:      userID,
+		RouteIds:    nonNil(routeIDs),
+		ActivityIds: nonNil(activityIDs),
+	})
 	if err != nil {
-		return false, fmt.Errorf("failed to check activity: %w", err)
+		return nil, nil, fmt.Errorf("failed to find routes and activities: %w", err)
 	}
-	return exists, nil
+	for _, id := range found.RouteIds {
+		routes[id] = true
+	}
+	for _, id := range found.ActivityIds {
+		activities[id] = true
+	}
+	return routes, activities, nil
 }
 
 // RacesExist checks whether all the races exist and belong to the user.

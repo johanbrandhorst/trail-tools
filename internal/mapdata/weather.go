@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
@@ -22,8 +23,11 @@ const maxForecastLocations = 50
 
 // Weather is the forecast weather for an hour.
 type Weather struct {
+	// Time is the start of the hour.
 	Time time.Time
-	// The UTC offset of the local time zone at the location.
+	// UTCOffset is the offset of the local time zone at the location at
+	// Time, which changes within a forecast when daylight saving time starts
+	// or ends.
 	UTCOffset                time.Duration
 	TemperatureCelsius       float64
 	ApparentTemperature      float64
@@ -51,8 +55,14 @@ const forecastHourlyVariables = "temperature_2m,apparent_temperature,precipitati
 	"wind_direction_10m,freezing_level_height,uv_index,is_day"
 
 type forecastResponse struct {
+	// UTCOffsetSeconds is a single offset for the whole response. Open-Meteo
+	// doesn't change it at daylight saving time transitions, so it's only used
+	// when Timezone can't be loaded.
 	UTCOffsetSeconds int `json:"utc_offset_seconds"`
-	Hourly           struct {
+	// Timezone is the IANA name of the location's time zone, like
+	// "Asia/Kathmandu", which gives the offset of each hour.
+	Timezone string `json:"timezone"`
+	Hourly   struct {
 		Time                     []int64    `json:"time"`
 		Temperature              []*float64 `json:"temperature_2m"`
 		ApparentTemperature      []*float64 `json:"apparent_temperature"`
@@ -68,6 +78,56 @@ type forecastResponse struct {
 		UVIndex                  []*float64 `json:"uv_index"`
 		IsDay                    []*float64 `json:"is_day"`
 	} `json:"hourly"`
+	// location is the loaded Timezone, or nil if it couldn't be loaded.
+	location *time.Location
+}
+
+// locations caches loaded time zones by name, as loading one reads and
+// parses its zone file, and a batch of route forecasts has up to
+// maxForecastLocations responses, mostly in the same zone. It holds at most
+// one entry per IANA zone.
+var locations sync.Map
+
+// resolveLocation loads the response's time zone. If it can't be loaded,
+// such as an empty or unknown name, the response's single UTC offset is used
+// for every hour instead, which is wrong only after a daylight saving time
+// transition, rather than failing the forecast.
+func (r *forecastResponse) resolveLocation() {
+	if r.Timezone == "" {
+		return
+	}
+	if loc, ok := locations.Load(r.Timezone); ok {
+		r.location = loc.(*time.Location)
+		return
+	}
+	loc, err := time.LoadLocation(r.Timezone)
+	if err != nil {
+		return
+	}
+	locations.Store(r.Timezone, loc)
+	r.location = loc
+}
+
+// hourContaining returns the index of the hour containing t: the last hour
+// starting at or before t, if t is within an hour of its start. Hours don't
+// start on the UTC hour in time zones with an offset of a fractional hour,
+// like Nepal's +5:45 or India's +5:30, as Open-Meteo's hours are local hours,
+// so an exact match on the UTC hour would find none there. The hours are in
+// ascending order, so this is a binary search.
+func (r *forecastResponse) hourContaining(t time.Time) (int, bool) {
+	times := r.Hourly.Time
+	// The times are whole seconds, so truncating t to its second doesn't
+	// change which hour contains it.
+	unix := t.Unix()
+	idx, found := slices.BinarySearch(times, unix)
+	if !found {
+		// idx is where t would be inserted, after the hour containing it.
+		idx--
+	}
+	if idx < 0 || unix-times[idx] >= int64(time.Hour/time.Second) {
+		return 0, false
+	}
+	return idx, true
 }
 
 // Forecast returns the hourly weather forecast for each query, for the hour
@@ -143,17 +203,19 @@ func (c *Client) forecastBatch(ctx context.Context, queries []ForecastQuery) ([]
 	}
 	weather := make([]Weather, len(queries))
 	for i, q := range queries {
-		hour := q.Time.UTC().Truncate(time.Hour).Unix()
-		idx := slices.Index(responses[i].Hourly.Time, hour)
-		if idx < 0 {
+		resp := &responses[i]
+		resp.resolveLocation()
+		idx, ok := resp.hourContaining(q.Time)
+		if !ok {
 			return nil, fmt.Errorf("no forecast available for %s", q.Time.UTC().Format(time.RFC3339))
 		}
-		weather[i] = responses[i].hour(idx)
+		weather[i] = resp.hour(idx)
 	}
 	return weather, nil
 }
 
-// hour returns the weather of the hour at index idx.
+// hour returns the weather of the hour at index idx, with the UTC offset of
+// the location's time zone at that hour.
 func (r *forecastResponse) hour(idx int) Weather {
 	hourly := r.Hourly
 	at := func(values []*float64) float64 {
@@ -162,9 +224,14 @@ func (r *forecastResponse) hour(idx int) Weather {
 		}
 		return *values[idx]
 	}
+	start := time.Unix(hourly.Time[idx], 0).UTC()
+	offsetSeconds := r.UTCOffsetSeconds
+	if r.location != nil {
+		_, offsetSeconds = start.In(r.location).Zone()
+	}
 	return Weather{
-		Time:                     time.Unix(hourly.Time[idx], 0).UTC(),
-		UTCOffset:                time.Duration(r.UTCOffsetSeconds) * time.Second,
+		Time:                     start,
+		UTCOffset:                time.Duration(offsetSeconds) * time.Second,
 		TemperatureCelsius:       at(hourly.Temperature),
 		ApparentTemperature:      at(hourly.ApparentTemperature),
 		PrecipitationProbability: int(at(hourly.PrecipitationProbability)),
@@ -212,6 +279,7 @@ func (c *Client) HourlyForecast(ctx context.Context, point geo.Point, start, end
 	if err := c.do(req, &resp); err != nil {
 		return nil, fmt.Errorf("weather forecast failed: %w", err)
 	}
+	resp.resolveLocation()
 	weather := make([]Weather, len(resp.Hourly.Time))
 	for i := range resp.Hourly.Time {
 		weather[i] = resp.hour(i)

@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -266,19 +267,95 @@ func TestRaceDaySplits(t *testing.T) {
 		t.Errorf("updating the start time changed the splits %v", got)
 	}
 
-	// Editing the checkpoints keeps the splits of the remaining checkpoints,
-	// and drops the splits of the removed ones.
-	setCheckpoints("CP1 renamed", "Finish")
-	got := splits()
-	if len(got) != 2 || !got[0].GetArrivalTime().AsTime().Equal(start.Add(time.Hour)) || !got[1].GetArrivalTime().AsTime().Equal(start.Add(2*time.Hour)) {
-		t.Errorf("unexpected splits after removing checkpoints %v", got)
-	}
+	// Editing the checkpoints keeps the splits with their checkpoints, by ID:
+	// removing CP2 drops its split, and inserting a checkpoint before CP1
+	// moves the others along with their splits.
 	plan, err := e.racePlans.GetRacePlan(ctx, racesv1.GetRacePlanRequest_builder{Id: planID}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rd := plan.GetPlan().GetRaceDay(); !rd.GetStartTime().AsTime().Equal(start) || len(rd.GetSplits()) != 2 {
+	cp := plan.GetPlan().GetCheckpoints()
+	cp[0].SetName("CP1 renamed")
+	updateCheckpoints := func(checkpoints ...*racesv1.Checkpoint) {
+		t.Helper()
+		if _, err := e.racePlans.UpdateRacePlan(ctx, racesv1.UpdateRacePlanRequest_builder{
+			Plan:       racesv1.RacePlan_builder{Id: planID, Checkpoints: checkpoints}.Build(),
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"checkpoints"}},
+		}.Build()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	extra := racesv1.Checkpoint_builder{Name: "Extra", DistanceMeters: 5000, PlannedSegmentSeconds: 1800}.Build()
+	updateCheckpoints(extra, cp[0], cp[2], cp[3])
+	arrivals := func() []time.Duration {
+		t.Helper()
+		got := splits()
+		arrivals := make([]time.Duration, 4)
+		for i, split := range got {
+			arrivals[i] = split.GetArrivalTime().AsTime().Sub(start)
+		}
+		if len(got) > 4 {
+			t.Errorf("got %d splits, want at most 4", len(got))
+		}
+		return arrivals
+	}
+	if got, want := arrivals(), []time.Duration{0, time.Hour, 3 * time.Hour, 4 * time.Hour}; !slices.Equal(got, want) {
+		t.Errorf("got arrivals %v after inserting and removing checkpoints, want %v", got, want)
+	}
+	plan, err = e.racePlans.GetRacePlan(ctx, racesv1.GetRacePlanRequest_builder{Id: planID}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rd := plan.GetPlan().GetRaceDay(); !rd.GetStartTime().AsTime().Equal(start) || len(rd.GetSplits()) != 3 {
 		t.Errorf("unexpected race day in plan %v", rd)
+	}
+	var names []string
+	for _, c := range plan.GetPlan().GetCheckpoints() {
+		names = append(names, c.GetName())
+	}
+	if !slices.Equal(names, []string{"Extra", "CP1 renamed", "CP3", "Finish"}) {
+		t.Errorf("got checkpoints %v", names)
+	}
+
+	// Swapping checkpoints swaps their splits too.
+	cp = plan.GetPlan().GetCheckpoints()
+	updateCheckpoints(cp[2], cp[0], cp[1], cp[3])
+	if got, want := arrivals(), []time.Duration{3 * time.Hour, 0, time.Hour, 4 * time.Hour}; !slices.Equal(got, want) {
+		t.Errorf("got arrivals %v after reordering checkpoints, want %v", got, want)
+	}
+
+	// A checkpoint without an ID, or with another plan's, is new.
+	other, err := e.racePlans.CreateRacePlan(ctx, racesv1.CreateRacePlanRequest_builder{RaceId: race.GetRace().GetId()}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	copied, err := e.racePlans.UpdateRacePlan(ctx, racesv1.UpdateRacePlanRequest_builder{
+		Plan:       racesv1.RacePlan_builder{Id: other.GetPlan().GetId(), Checkpoints: cp}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"checkpoints"}},
+	}.Build())
+	if err != nil {
+		t.Fatalf("UpdateRacePlan with another plan's checkpoints: %v", err)
+	}
+	for i, c := range copied.GetPlan().GetCheckpoints() {
+		if c.GetId() == "" || c.GetId() == cp[i].GetId() {
+			t.Errorf("checkpoint %d copied from another plan has ID %q", i, c.GetId())
+		}
+	}
+	if got, want := arrivals(), []time.Duration{3 * time.Hour, 0, time.Hour, 4 * time.Hour}; !slices.Equal(got, want) {
+		t.Errorf("got arrivals %v after copying the checkpoints to another plan, want %v", got, want)
+	}
+	_, err = e.racePlans.UpdateRacePlan(ctx, racesv1.UpdateRacePlanRequest_builder{
+		Plan: racesv1.RacePlan_builder{Id: planID, Checkpoints: []*racesv1.Checkpoint{
+			racesv1.Checkpoint_builder{Id: "not-an-id", Name: "Finish"}.Build(),
+		}}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"checkpoints"}},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+
+	// Removing checkpoints keeps the splits of the remaining ones.
+	updateCheckpoints(cp[2], cp[3])
+	if got, want := arrivals(), []time.Duration{3 * time.Hour, 4 * time.Hour, 0, 0}; !slices.Equal(got, want) {
+		t.Errorf("got arrivals %v after removing checkpoints, want %v", got, want)
 	}
 
 	// Splits for checkpoints the plan doesn't have are rejected.

@@ -27,7 +27,10 @@ service TrainingPlanService {
   rpc GetTrainingPlan(GetTrainingPlanRequest) returns (GetTrainingPlanResponse);
   // List the user's training plans, most recent start date first.
   rpc ListTrainingPlans(ListTrainingPlansRequest) returns (ListTrainingPlansResponse);
-  // Update a training plan's details.
+  // Update a training plan's details. Fails with FAILED_PRECONDITION if the
+  // new start_date and end_date would leave workouts, weeks or months of the
+  // plan outside them, naming their dates: move or delete those first with
+  // UpdateWorkout, DeleteWorkouts or DeletePlanPeriods.
   rpc UpdateTrainingPlan(UpdateTrainingPlanRequest) returns (UpdateTrainingPlanResponse);
   // Delete a training plan, including its periods and workouts.
   rpc DeleteTrainingPlan(DeleteTrainingPlanRequest) returns (DeleteTrainingPlanResponse);

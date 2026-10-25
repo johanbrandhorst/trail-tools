@@ -151,7 +151,9 @@ type RacePlanServiceClient interface {
 	ListRacePlans(context.Context, *v1.ListRacePlansRequest) (*v1.ListRacePlansResponse, error)
 	// Update sections of a race plan. Each top level field is a section that is
 	// replaced as a whole, e.g. updating "checkpoints" replaces all
-	// checkpoints. Returns the updated plan and analysis.
+	// checkpoints: send every checkpoint with its id, from GetRacePlan, so that
+	// race day splits stay with their checkpoints. Returns the updated plan and
+	// analysis.
 	UpdateRacePlan(context.Context, *v1.UpdateRacePlanRequest) (*v1.UpdateRacePlanResponse, error)
 	// Delete a race plan.
 	DeleteRacePlan(context.Context, *v1.DeleteRacePlanRequest) (*v1.DeleteRacePlanResponse, error)
@@ -197,7 +199,9 @@ type RacePlanServiceHandler interface {
 	ListRacePlans(context.Context, *v1.ListRacePlansRequest) (*v1.ListRacePlansResponse, error)
 	// Update sections of a race plan. Each top level field is a section that is
 	// replaced as a whole, e.g. updating "checkpoints" replaces all
-	// checkpoints. Returns the updated plan and analysis.
+	// checkpoints: send every checkpoint with its id, from GetRacePlan, so that
+	// race day splits stay with their checkpoints. Returns the updated plan and
+	// analysis.
 	UpdateRacePlan(context.Context, *v1.UpdateRacePlanRequest) (*v1.UpdateRacePlanResponse, error)
 	// Delete a race plan.
 	DeleteRacePlan(context.Context, *v1.DeleteRacePlanRequest) (*v1.DeleteRacePlanResponse, error)

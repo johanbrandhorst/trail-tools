@@ -11,22 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const activityExists = `-- name: ActivityExists :one
-select exists(select 1 from strava_activities where id = $1 and user_id = $2)
-`
-
-type ActivityExistsParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
-}
-
-func (q *Queries) ActivityExists(ctx context.Context, arg *ActivityExistsParams) (bool, error) {
-	row := q.db.QueryRow(ctx, activityExists, arg.ID, arg.UserID)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const addRacesToCalendar = `-- name: AddRacesToCalendar :exec
 update races set
   on_calendar = true,
@@ -108,8 +92,9 @@ func (q *Queries) CreateTrainingPlan(ctx context.Context, arg *CreateTrainingPla
 	return &i, err
 }
 
-const createWorkout = `-- name: CreateWorkout :one
+const createWorkouts = `-- name: CreateWorkouts :many
 insert into workouts (
+  id,
   plan_id,
   date,
   type,
@@ -121,57 +106,98 @@ insert into workouts (
   target_terrain,
   route_id,
   completed_activity_id
-) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 )
+select
+  w.id,
+  $1::uuid,
+  w.date,
+  w.type::workout_type,
+  w.title,
+  w.description,
+  w.target_distance_meters,
+  w.target_elevation_gain_meters,
+  w.target_duration_seconds,
+  nullif(w.target_terrain, '')::terrain,
+  w.route_id,
+  w.completed_activity_id
+from (
+  select
+    unnest($2::uuid[]) as id,
+    unnest($3::date[]) as date,
+    unnest($4::text[]) as type,
+    unnest($5::text[]) as title,
+    unnest($6::text[]) as description,
+    unnest($7::double precision[]) as target_distance_meters,
+    unnest($8::double precision[]) as target_elevation_gain_meters,
+    unnest($9::integer[]) as target_duration_seconds,
+    -- Empty if the workout has no target terrain.
+    unnest($10::text[]) as target_terrain,
+    unnest($11::uuid[]) as route_id,
+    unnest($12::uuid[]) as completed_activity_id
+) w
 returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time
 `
 
-type CreateWorkoutParams struct {
-	PlanID                    pgtype.UUID
-	Date                      pgtype.Date
-	Type                      WorkoutType
-	Title                     string
-	Description               string
-	TargetDistanceMeters      float64
-	TargetElevationGainMeters float64
-	TargetDurationSeconds     int32
-	TargetTerrain             NullTerrain
-	RouteID                   pgtype.UUID
-	CompletedActivityID       pgtype.UUID
+type CreateWorkoutsParams struct {
+	PlanID                     pgtype.UUID
+	Ids                        []pgtype.UUID
+	Dates                      []pgtype.Date
+	Types                      []string
+	Titles                     []string
+	Descriptions               []string
+	TargetDistancesMeters      []float64
+	TargetElevationGainsMeters []float64
+	TargetDurationsSeconds     []int32
+	TargetTerrains             []string
+	RouteIds                   []pgtype.UUID
+	CompletedActivityIds       []pgtype.UUID
 }
 
-func (q *Queries) CreateWorkout(ctx context.Context, arg *CreateWorkoutParams) (*Workout, error) {
-	row := q.db.QueryRow(ctx, createWorkout,
+func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams) ([]*Workout, error) {
+	rows, err := q.db.Query(ctx, createWorkouts,
 		arg.PlanID,
-		arg.Date,
-		arg.Type,
-		arg.Title,
-		arg.Description,
-		arg.TargetDistanceMeters,
-		arg.TargetElevationGainMeters,
-		arg.TargetDurationSeconds,
-		arg.TargetTerrain,
-		arg.RouteID,
-		arg.CompletedActivityID,
+		arg.Ids,
+		arg.Dates,
+		arg.Types,
+		arg.Titles,
+		arg.Descriptions,
+		arg.TargetDistancesMeters,
+		arg.TargetElevationGainsMeters,
+		arg.TargetDurationsSeconds,
+		arg.TargetTerrains,
+		arg.RouteIds,
+		arg.CompletedActivityIds,
 	)
-	var i Workout
-	err := row.Scan(
-		&i.ID,
-		&i.PlanID,
-		&i.Date,
-		&i.Type,
-		&i.Title,
-		&i.Description,
-		&i.TargetDistanceMeters,
-		&i.TargetElevationGainMeters,
-		&i.TargetDurationSeconds,
-		&i.TargetTerrain,
-		&i.RouteID,
-		&i.CompletedActivityID,
-		&i.CreateTime,
-	)
-	return &i, err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*Workout
+	for rows.Next() {
+		var i Workout
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlanID,
+			&i.Date,
+			&i.Type,
+			&i.Title,
+			&i.Description,
+			&i.TargetDistanceMeters,
+			&i.TargetElevationGainMeters,
+			&i.TargetDurationSeconds,
+			&i.TargetTerrain,
+			&i.RouteID,
+			&i.CompletedActivityID,
+			&i.CreateTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deletePlanPeriods = `-- name: DeletePlanPeriods :execrows
@@ -226,6 +252,37 @@ func (q *Queries) DeleteWorkouts(ctx context.Context, arg *DeleteWorkoutsParams)
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const findReferences = `-- name: FindReferences :one
+select
+  array(
+    select id from routes
+    where user_id = $1::uuid and id = any($2::uuid[])
+  )::uuid[] as route_ids,
+  array(
+    select id from strava_activities
+    where user_id = $1::uuid and id = any($3::uuid[])
+  )::uuid[] as activity_ids
+`
+
+type FindReferencesParams struct {
+	UserID      pgtype.UUID
+	RouteIds    []pgtype.UUID
+	ActivityIds []pgtype.UUID
+}
+
+type FindReferencesRow struct {
+	RouteIds    []pgtype.UUID
+	ActivityIds []pgtype.UUID
+}
+
+// Finds which of the routes and activities exist and belong to the user.
+func (q *Queries) FindReferences(ctx context.Context, arg *FindReferencesParams) (*FindReferencesRow, error) {
+	row := q.db.QueryRow(ctx, findReferences, arg.UserID, arg.RouteIds, arg.ActivityIds)
+	var i FindReferencesRow
+	err := row.Scan(&i.RouteIds, &i.ActivityIds)
+	return &i, err
 }
 
 const getTrainingPlan = `-- name: GetTrainingPlan :one
@@ -285,6 +342,57 @@ func (q *Queries) GetWorkout(ctx context.Context, arg *GetWorkoutParams) (*Worko
 		&i.CreateTime,
 	)
 	return &i, err
+}
+
+const listDatesOutsidePlan = `-- name: ListDatesOutsidePlan :many
+select 'workout'::text as kind, date from workouts
+where plan_id = $1::uuid
+  and (date < $2::date or date > $3::date)
+union all
+select granularity::text as kind, start_date as date from plan_periods
+where plan_id = $1::uuid
+  and (
+    start_date > $3::date
+    or case granularity
+      when 'week' then start_date + 6
+      else (start_date + interval '1 month' - interval '1 day')::date
+    end < $2::date
+  )
+order by date, kind
+`
+
+type ListDatesOutsidePlanParams struct {
+	PlanID    pgtype.UUID
+	StartDate pgtype.Date
+	EndDate   pgtype.Date
+}
+
+type ListDatesOutsidePlanRow struct {
+	Kind string
+	Date pgtype.Date
+}
+
+// Lists the workouts and periods of a plan outside the given dates, as the
+// kind ('workout', 'week' or 'month') and the date of each. Periods are
+// outside if none of their days are within the dates.
+func (q *Queries) ListDatesOutsidePlan(ctx context.Context, arg *ListDatesOutsidePlanParams) ([]*ListDatesOutsidePlanRow, error) {
+	rows, err := q.db.Query(ctx, listDatesOutsidePlan, arg.PlanID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListDatesOutsidePlanRow
+	for rows.Next() {
+		var i ListDatesOutsidePlanRow
+		if err := rows.Scan(&i.Kind, &i.Date); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPlanPeriods = `-- name: ListPlanPeriods :many
@@ -454,22 +562,6 @@ func (q *Queries) ListWorkouts(ctx context.Context, arg *ListWorkoutsParams) ([]
 		return nil, err
 	}
 	return items, nil
-}
-
-const routeExists = `-- name: RouteExists :one
-select exists(select 1 from routes where id = $1 and user_id = $2)
-`
-
-type RouteExistsParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
-}
-
-func (q *Queries) RouteExists(ctx context.Context, arg *RouteExistsParams) (bool, error) {
-	row := q.db.QueryRow(ctx, routeExists, arg.ID, arg.UserID)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
 }
 
 const updateTrainingPlan = `-- name: UpdateTrainingPlan :one

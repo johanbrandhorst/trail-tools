@@ -21,6 +21,9 @@ import {
   secondaryButton,
   secondaryDangerButton,
 } from "@components/ui/styles";
+import UnsavedChangesGuard, {
+  leaveUnsaved,
+} from "@components/ui/unsaved-changes-guard";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
 import {
   ArrowTopRightOnSquareIcon,
@@ -336,6 +339,7 @@ const ReportForm: React.FC<ReportFormProps> = ({ report, handle, onSaved }) => {
         </span>
       </div>
       <ErrorText error={update.error} />
+      <UnsavedChangesGuard dirty={dirty} />
     </form>
   );
 };
@@ -364,7 +368,8 @@ const RaceReportPage: React.FC = () => {
   });
   const remove = useMutation(deleteRaceReport, {
     onSuccess: async () => {
-      await navigate("/race-reports");
+      // The report's unsaved changes went with it.
+      await navigate("/race-reports", leaveUnsaved);
       await invalidate();
     },
   });

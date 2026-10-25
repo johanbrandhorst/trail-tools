@@ -12,11 +12,13 @@ import type {
 import { CheckpointSchema, IntakeSchema } from "gen/races/v1/race_plans_pb";
 import { formatDuration, formatKm } from "helpers/format";
 import {
-  durationInput,
+  hoursMinutesInput,
   kmInput,
   numberInput,
   parseDuration,
+  parseEdited,
   parseKm,
+  parseMeters,
   parseNumber,
 } from "helpers/parse";
 import React, { useState } from "react";
@@ -34,10 +36,17 @@ interface IntakeDraft {
   key: number;
   product: string;
   quantity: string;
+  // The stored quantity, kept unless edited. 0 for new intakes.
+  originalQuantity: number;
 }
 
 interface CheckpointDraft {
   key: number;
+  /**
+   * The stored checkpoint, whose ID and values the draft keeps unless they
+   * are edited. Empty for new checkpoints.
+   */
+  original: Checkpoint;
   name: string;
   distanceKm: string;
   gain: string;
@@ -55,25 +64,39 @@ interface CheckpointDraft {
   intake: IntakeDraft[];
 }
 
+// StopInput formats a stop time in seconds as minutes for an input.
+const stopInput = (seconds: number): string => numberInput(seconds / 60);
+
+// ParseStop parses a stop time in minutes into seconds.
+const parseStop = (text: string): number | null => {
+  const minutes = parseNumber(text);
+  if (minutes === null) {
+    return null;
+  }
+  return Math.round(minutes * 60);
+};
+
 const toDraft = (checkpoint: Checkpoint): CheckpointDraft => ({
   aid: checkpoint.aid,
   crewAccess: checkpoint.crewAccess,
   crewInstructions: checkpoint.crewInstructions,
-  cutoff: durationInput(checkpoint.cutoffSeconds, false),
+  cutoff: hoursMinutesInput(checkpoint.cutoffSeconds),
   distanceKm: kmInput(checkpoint.distanceMeters),
   dropBag: checkpoint.dropBag,
   dropBagContents: checkpoint.dropBagContents,
   gain: numberInput(checkpoint.elevationGainMeters),
   intake: checkpoint.intake.map((intake) => ({
     key: nextKey(),
+    originalQuantity: intake.quantity,
     product: intake.product,
     quantity: numberInput(intake.quantity),
   })),
   key: nextKey(),
   loss: numberInput(checkpoint.elevationLossMeters),
   name: checkpoint.name,
-  segmentTime: durationInput(checkpoint.plannedSegmentSeconds, false),
-  stopMinutes: numberInput(checkpoint.plannedStopSeconds / 60),
+  original: checkpoint,
+  segmentTime: hoursMinutesInput(checkpoint.plannedSegmentSeconds),
+  stopMinutes: stopInput(checkpoint.plannedStopSeconds),
   strategy: checkpoint.segmentStrategy,
   tasks: checkpoint.tasks,
 });
@@ -83,24 +106,61 @@ const emptyDraft = (): CheckpointDraft => toDraft(create(CheckpointSchema));
 // FromDraft converts a draft into a checkpoint, or returns an error message.
 const fromDraft = (draft: CheckpointDraft): Checkpoint | string => {
   const label = draft.name === "" ? "A checkpoint" : draft.name;
-  const distance = parseKm(draft.distanceKm);
-  const gain = parseNumber(draft.gain);
-  const loss = parseNumber(draft.loss);
-  const stopMinutes = parseNumber(draft.stopMinutes);
+  // Unedited inputs keep the stored values, which they show rounded.
+  const { original } = draft;
+  const distance = parseEdited(
+    draft.distanceKm,
+    original.distanceMeters,
+    kmInput,
+    parseKm
+  );
+  const gain = parseEdited(
+    draft.gain,
+    original.elevationGainMeters,
+    numberInput,
+    parseMeters
+  );
+  const loss = parseEdited(
+    draft.loss,
+    original.elevationLossMeters,
+    numberInput,
+    parseMeters
+  );
+  const stop = parseEdited(
+    draft.stopMinutes,
+    original.plannedStopSeconds,
+    stopInput,
+    parseStop
+  );
   if (distance === null || gain === null || loss === null) {
     return `${label}: distance and elevation must be positive numbers.`;
   }
-  if (stopMinutes === null) {
+  if (stop === null) {
     return `${label}: the stop time must be a number of minutes.`;
   }
-  const cutoff = parseDuration(draft.cutoff);
-  const segment = parseDuration(draft.segmentTime);
+  const cutoff = parseEdited(
+    draft.cutoff,
+    original.cutoffSeconds,
+    hoursMinutesInput,
+    parseDuration
+  );
+  const segment = parseEdited(
+    draft.segmentTime,
+    original.plannedSegmentSeconds,
+    hoursMinutesInput,
+    parseDuration
+  );
   if (cutoff === null || segment === null) {
     return `${label}: times must be in the format h:mm.`;
   }
   const intake: Intake[] = [];
   for (const item of draft.intake) {
-    const quantity = parseNumber(item.quantity);
+    const quantity = parseEdited(
+      item.quantity,
+      item.originalQuantity,
+      numberInput,
+      parseNumber
+    );
     if (quantity === null) {
       return `${label}: intake quantities must be numbers.`;
     }
@@ -116,12 +176,13 @@ const fromDraft = (draft: CheckpointDraft): Checkpoint | string => {
     distanceMeters: distance,
     dropBag: draft.dropBag,
     dropBagContents: draft.dropBagContents,
-    elevationGainMeters: Math.round(gain),
-    elevationLossMeters: Math.round(loss),
+    elevationGainMeters: gain,
+    elevationLossMeters: loss,
+    id: original.id,
     intake,
     name: draft.name.trim(),
     plannedSegmentSeconds: segment,
-    plannedStopSeconds: Math.round(stopMinutes * 60),
+    plannedStopSeconds: stop,
     segmentStrategy: draft.strategy,
     tasks: draft.tasks,
   });
@@ -336,7 +397,7 @@ const CheckpointEditor: React.FC<CheckpointEditorProps> = ({
     onChange({
       ...draft,
       intake: draft.intake.map((item) =>
-        item.key === key ? { key, product, quantity } : item
+        item.key === key ? { ...item, product, quantity } : item
       ),
     });
   };
@@ -527,7 +588,12 @@ const CheckpointEditor: React.FC<CheckpointEditorProps> = ({
               ...draft,
               intake: [
                 ...draft.intake,
-                { key: nextKey(), product: products[0] ?? "", quantity: "1" },
+                {
+                  key: nextKey(),
+                  originalQuantity: 0,
+                  product: products[0] ?? "",
+                  quantity: "1",
+                },
               ],
             });
           }}

@@ -38,10 +38,13 @@ const PlanFormDialog: React.FC<PlanFormDialogProps> = ({ plan, onClose }) => {
   const races = useQuery(listRaces, {});
   const [name, setName] = useState(plan?.name ?? "");
   const [description, setDescription] = useState(plan?.description ?? "");
-  const [startDate, setStartDate] = useState(plan?.startDate ?? today());
-  const [endDate, setEndDate] = useState(
-    plan?.endDate ?? addDays(today(), 16 * 7 - 1)
-  );
+  // The dates the form starts with, to tell whether they've been edited.
+  const [initialDates] = useState(() => ({
+    endDate: plan?.endDate ?? addDays(today(), 16 * 7 - 1),
+    startDate: plan?.startDate ?? today(),
+  }));
+  const [startDate, setStartDate] = useState(initialDates.startDate);
+  const [endDate, setEndDate] = useState(initialDates.endDate);
   const [goalRaceIds, setGoalRaceIds] = useState<string[]>(
     plan?.goalRaceIds ?? []
   );
@@ -65,6 +68,13 @@ const PlanFormDialog: React.FC<PlanFormDialogProps> = ({ plan, onClose }) => {
       onClose();
     },
   });
+
+  const dirty =
+    name !== (plan?.name ?? "") ||
+    description !== (plan?.description ?? "") ||
+    startDate !== initialDates.startDate ||
+    endDate !== initialDates.endDate ||
+    goalRaceIds.join() !== (plan?.goalRaceIds ?? []).join();
 
   const toggleRace = (id: string, checked: boolean) => {
     if (checked) {
@@ -123,6 +133,7 @@ const PlanFormDialog: React.FC<PlanFormDialogProps> = ({ plan, onClose }) => {
       onClose={onClose}
       title={plan === undefined ? "New training plan" : "Edit training plan"}
       wide
+      dirty={dirty}
     >
       <form
         className="flex flex-col gap-3"

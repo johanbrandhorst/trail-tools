@@ -38,6 +38,7 @@ func planToProto(p *races.RacePlan, shareURL string) *racesv1.RacePlan {
 			intake[j] = racesv1.Intake_builder{Product: in.Product, Quantity: in.Quantity}.Build()
 		}
 		checkpoints[i] = racesv1.Checkpoint_builder{
+			Id:                    store.UUIDToString(cp.ID),
 			Name:                  cp.Name,
 			DistanceMeters:        cp.DistanceMeters,
 			ElevationGainMeters:   cp.ElevationGainMeters,
@@ -191,7 +192,10 @@ func planFromProto(p *racesv1.RacePlan) *races.RacePlan {
 		for _, in := range cp.GetIntake() {
 			intake = append(intake, &races.Intake{Product: in.GetProduct(), Quantity: in.GetQuantity()})
 		}
+		// validatePlan checked the ID, and an empty one is a new checkpoint.
+		id, _ := store.StringToUUID(cp.GetId())
 		checkpoints = append(checkpoints, &races.Checkpoint{
+			ID:                    id,
 			Name:                  cp.GetName(),
 			DistanceMeters:        cp.GetDistanceMeters(),
 			ElevationGainMeters:   cp.GetElevationGainMeters(),

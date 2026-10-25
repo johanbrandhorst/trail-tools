@@ -293,31 +293,31 @@ func (q *Queries) CreateRacePlanGear(ctx context.Context, arg *CreateRacePlanGea
 const createRacePlanIntakes = `-- name: CreateRacePlanIntakes :exec
 insert into race_plan_intakes (
   plan_id,
-  checkpoint_position,
+  checkpoint_id,
   position,
   product,
   quantity
 )
 select
   $1::uuid,
-  unnest($2::integer[]),
+  unnest($2::uuid[]),
   unnest($3::integer[]),
   unnest($4::text[]),
   unnest($5::double precision[])
 `
 
 type CreateRacePlanIntakesParams struct {
-	PlanID              pgtype.UUID
-	CheckpointPositions []int32
-	Positions           []int32
-	Products            []string
-	Quantities          []float64
+	PlanID        pgtype.UUID
+	CheckpointIds []pgtype.UUID
+	Positions     []int32
+	Products      []string
+	Quantities    []float64
 }
 
 func (q *Queries) CreateRacePlanIntakes(ctx context.Context, arg *CreateRacePlanIntakesParams) error {
 	_, err := q.db.Exec(ctx, createRacePlanIntakes,
 		arg.PlanID,
-		arg.CheckpointPositions,
+		arg.CheckpointIds,
 		arg.Positions,
 		arg.Products,
 		arg.Quantities,
@@ -399,6 +399,22 @@ func (q *Queries) CreateRacePlanRaceMorning(ctx context.Context, arg *CreateRace
 	return err
 }
 
+const deleteOtherRacePlanCheckpoints = `-- name: DeleteOtherRacePlanCheckpoints :exec
+delete from race_plan_checkpoints
+where plan_id = $1 and id <> all(coalesce($2::uuid[], '{}'))
+`
+
+type DeleteOtherRacePlanCheckpointsParams struct {
+	PlanID  pgtype.UUID
+	KeepIds []pgtype.UUID
+}
+
+// A nil array is null, which would keep every checkpoint.
+func (q *Queries) DeleteOtherRacePlanCheckpoints(ctx context.Context, arg *DeleteOtherRacePlanCheckpointsParams) error {
+	_, err := q.db.Exec(ctx, deleteOtherRacePlanCheckpoints, arg.PlanID, arg.KeepIds)
+	return err
+}
+
 const deleteRace = `-- name: DeleteRace :execrows
 delete from races
 where id = $1 and user_id = $2
@@ -453,21 +469,6 @@ func (q *Queries) DeleteRacePlan(ctx context.Context, arg *DeleteRacePlanParams)
 	return result.RowsAffected(), nil
 }
 
-const deleteRacePlanCheckpointsFrom = `-- name: DeleteRacePlanCheckpointsFrom :exec
-delete from race_plan_checkpoints
-where plan_id = $1 and position >= $2
-`
-
-type DeleteRacePlanCheckpointsFromParams struct {
-	PlanID       pgtype.UUID
-	FromPosition int32
-}
-
-func (q *Queries) DeleteRacePlanCheckpointsFrom(ctx context.Context, arg *DeleteRacePlanCheckpointsFromParams) error {
-	_, err := q.db.Exec(ctx, deleteRacePlanCheckpointsFrom, arg.PlanID, arg.FromPosition)
-	return err
-}
-
 const deleteRacePlanContingencies = `-- name: DeleteRacePlanContingencies :exec
 delete from race_plan_contingencies
 where plan_id = $1
@@ -519,8 +520,12 @@ func (q *Queries) DeleteRacePlanRaceMorning(ctx context.Context, planID pgtype.U
 }
 
 const deleteRacePlanSplit = `-- name: DeleteRacePlanSplit :exec
-delete from race_plan_splits
-where plan_id = $1 and checkpoint_position = $2
+delete from race_plan_splits s
+using race_plan_checkpoints c
+where s.plan_id = $1
+  and c.plan_id = s.plan_id
+  and c.id = s.checkpoint_id
+  and c.position = $2
 `
 
 type DeleteRacePlanSplitParams struct {
@@ -791,8 +796,33 @@ func (q *Queries) ListRaceEvents(ctx context.Context, userID pgtype.UUID) ([]*Ra
 	return items, nil
 }
 
+const listRacePlanCheckpointIDs = `-- name: ListRacePlanCheckpointIDs :many
+select id from race_plan_checkpoints
+where plan_id = $1
+`
+
+func (q *Queries) ListRacePlanCheckpointIDs(ctx context.Context, planID pgtype.UUID) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, listRacePlanCheckpointIDs, planID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRacePlanCheckpoints = `-- name: ListRacePlanCheckpoints :many
-select plan_id, position, name, distance_meters, elevation_gain_meters, elevation_loss_meters, cutoff_seconds, crew_access, drop_bag, aid, planned_segment_seconds, planned_stop_seconds, segment_strategy, tasks, crew_instructions, drop_bag_contents from race_plan_checkpoints
+select plan_id, position, name, distance_meters, elevation_gain_meters, elevation_loss_meters, cutoff_seconds, crew_access, drop_bag, aid, planned_segment_seconds, planned_stop_seconds, segment_strategy, tasks, crew_instructions, drop_bag_contents, id from race_plan_checkpoints
 where plan_id = any($1::uuid[])
 order by plan_id, position
 `
@@ -823,6 +853,7 @@ func (q *Queries) ListRacePlanCheckpoints(ctx context.Context, planIds []pgtype.
 			&i.Tasks,
 			&i.CrewInstructions,
 			&i.DropBagContents,
+			&i.ID,
 		); err != nil {
 			return nil, err
 		}
@@ -901,9 +932,9 @@ func (q *Queries) ListRacePlanGear(ctx context.Context, planIds []pgtype.UUID) (
 }
 
 const listRacePlanIntakes = `-- name: ListRacePlanIntakes :many
-select plan_id, checkpoint_position, position, product, quantity from race_plan_intakes
+select plan_id, position, product, quantity, checkpoint_id from race_plan_intakes
 where plan_id = any($1::uuid[])
-order by plan_id, checkpoint_position, position
+order by plan_id, checkpoint_id, position
 `
 
 func (q *Queries) ListRacePlanIntakes(ctx context.Context, planIds []pgtype.UUID) ([]*RacePlanIntake, error) {
@@ -917,10 +948,10 @@ func (q *Queries) ListRacePlanIntakes(ctx context.Context, planIds []pgtype.UUID
 		var i RacePlanIntake
 		if err := rows.Scan(
 			&i.PlanID,
-			&i.CheckpointPosition,
 			&i.Position,
 			&i.Product,
 			&i.Quantity,
+			&i.CheckpointID,
 		); err != nil {
 			return nil, err
 		}
@@ -998,9 +1029,8 @@ func (q *Queries) ListRacePlanRaceMorning(ctx context.Context, planIds []pgtype.
 }
 
 const listRacePlanSplits = `-- name: ListRacePlanSplits :many
-select plan_id, checkpoint_position, arrival_time, departure_time from race_plan_splits
+select plan_id, arrival_time, departure_time, checkpoint_id from race_plan_splits
 where plan_id = any($1::uuid[])
-order by plan_id, checkpoint_position
 `
 
 func (q *Queries) ListRacePlanSplits(ctx context.Context, planIds []pgtype.UUID) ([]*RacePlanSplit, error) {
@@ -1014,9 +1044,9 @@ func (q *Queries) ListRacePlanSplits(ctx context.Context, planIds []pgtype.UUID)
 		var i RacePlanSplit
 		if err := rows.Scan(
 			&i.PlanID,
-			&i.CheckpointPosition,
 			&i.ArrivalTime,
 			&i.DepartureTime,
+			&i.CheckpointID,
 		); err != nil {
 			return nil, err
 		}
@@ -1518,6 +1548,7 @@ func (q *Queries) UpdateRacePlanPacing(ctx context.Context, arg *UpdateRacePlanP
 const upsertRacePlanCheckpoints = `-- name: UpsertRacePlanCheckpoints :exec
 insert into race_plan_checkpoints (
   plan_id,
+  id,
   position,
   name,
   distance_meters,
@@ -1536,22 +1567,24 @@ insert into race_plan_checkpoints (
 )
 select
   $1::uuid,
-  unnest($2::integer[]),
-  unnest($3::text[]),
-  unnest($4::double precision[]),
+  unnest($2::uuid[]),
+  unnest($3::integer[]),
+  unnest($4::text[]),
   unnest($5::double precision[]),
   unnest($6::double precision[]),
-  unnest($7::integer[]),
-  unnest($8::boolean[]),
+  unnest($7::double precision[]),
+  unnest($8::integer[]),
   unnest($9::boolean[]),
-  unnest($10::text[]),
-  unnest($11::integer[]),
+  unnest($10::boolean[]),
+  unnest($11::text[]),
   unnest($12::integer[]),
-  unnest($13::text[]),
+  unnest($13::integer[]),
   unnest($14::text[]),
   unnest($15::text[]),
-  unnest($16::text[])
-on conflict (plan_id, position) do update set
+  unnest($16::text[]),
+  unnest($17::text[])
+on conflict (id) do update set
+  position = excluded.position,
   name = excluded.name,
   distance_meters = excluded.distance_meters,
   elevation_gain_meters = excluded.elevation_gain_meters,
@@ -1570,6 +1603,7 @@ on conflict (plan_id, position) do update set
 
 type UpsertRacePlanCheckpointsParams struct {
 	PlanID                 pgtype.UUID
+	Ids                    []pgtype.UUID
 	Positions              []int32
 	Names                  []string
 	DistancesMeters        []float64
@@ -1590,6 +1624,7 @@ type UpsertRacePlanCheckpointsParams struct {
 func (q *Queries) UpsertRacePlanCheckpoints(ctx context.Context, arg *UpsertRacePlanCheckpointsParams) error {
 	_, err := q.db.Exec(ctx, upsertRacePlanCheckpoints,
 		arg.PlanID,
+		arg.Ids,
 		arg.Positions,
 		arg.Names,
 		arg.DistancesMeters,
@@ -1612,16 +1647,23 @@ func (q *Queries) UpsertRacePlanCheckpoints(ctx context.Context, arg *UpsertRace
 const upsertRacePlanSplits = `-- name: UpsertRacePlanSplits :exec
 insert into race_plan_splits (
   plan_id,
-  checkpoint_position,
+  checkpoint_id,
   arrival_time,
   departure_time
 )
 select
   $1::uuid,
-  unnest($2::integer[]),
-  unnest($3::timestamptz[]),
-  unnest($4::timestamptz[])
-on conflict (plan_id, checkpoint_position) do update set
+  c.id,
+  s.arrival_time,
+  s.departure_time
+from race_plan_checkpoints c
+right join (
+  select
+    unnest($2::integer[]) as checkpoint_position,
+    unnest($3::timestamptz[]) as arrival_time,
+    unnest($4::timestamptz[]) as departure_time
+) s on c.plan_id = $1::uuid and c.position = s.checkpoint_position
+on conflict (plan_id, checkpoint_id) do update set
   arrival_time = excluded.arrival_time,
   departure_time = excluded.departure_time
 `
@@ -1633,6 +1675,8 @@ type UpsertRacePlanSplitsParams struct {
 	DepartureTimes      []pgtype.Timestamptz
 }
 
+// The splits are given by checkpoint position. A position without a
+// checkpoint leaves checkpoint_id null, which fails the insert.
 func (q *Queries) UpsertRacePlanSplits(ctx context.Context, arg *UpsertRacePlanSplitsParams) error {
 	_, err := q.db.Exec(ctx, upsertRacePlanSplits,
 		arg.PlanID,

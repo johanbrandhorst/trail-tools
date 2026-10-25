@@ -35,7 +35,9 @@ service RacePlanService {
   rpc ListRacePlans(ListRacePlansRequest) returns (ListRacePlansResponse);
   // Update sections of a race plan. Each top level field is a section that is
   // replaced as a whole, e.g. updating "checkpoints" replaces all
-  // checkpoints. Returns the updated plan and analysis.
+  // checkpoints: send every checkpoint with its id, from GetRacePlan, so that
+  // race day splits stay with their checkpoints. Returns the updated plan and
+  // analysis.
   rpc UpdateRacePlan(UpdateRacePlanRequest) returns (UpdateRacePlanResponse);
   // Delete a race plan.
   rpc DeleteRacePlan(DeleteRacePlanRequest) returns (DeleteRacePlanResponse);
@@ -156,6 +158,13 @@ message Checkpoint {
   // The contents of the drop bag at this checkpoint. Required if drop_bag is
   // set.
   string drop_bag_contents = 15;
+  // The checkpoint's ID, set by the server. Race day splits recorded at the
+  // checkpoint belong to it. When updating the checkpoints, keep the IDs of
+  // the checkpoints that stay, so their splits follow them when checkpoints
+  // are added, removed or reordered, and leave it empty for a new
+  // checkpoint. A checkpoint without an ID, or with one the plan doesn't
+  // have, is new.
+  string id = 16;
 }
 
 // An amount of a nutrition product.

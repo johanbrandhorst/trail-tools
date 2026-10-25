@@ -24,12 +24,13 @@ import { isDateString, isWithin } from "helpers/dates";
 import { formatKm } from "helpers/format";
 import { TERRAIN_STYLES, WORKOUT_STYLES, sportLabel } from "helpers/labels";
 import {
-  durationInput,
+  hoursMinutesInput,
   kmInput,
   numberInput,
   parseDuration,
+  parseEdited,
   parseKm,
-  parseNumber,
+  parseMeters,
 } from "helpers/parse";
 import { invalidateServices } from "helpers/query";
 import React, { useState } from "react";
@@ -84,7 +85,7 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     numberInput(workout?.targetElevationGainMeters ?? 0)
   );
   const [duration, setDuration] = useState(
-    durationInput(workout?.targetDurationSeconds ?? 0, false)
+    hoursMinutesInput(workout?.targetDurationSeconds ?? 0)
   );
   const [terrain, setTerrain] = useState(String(workout?.targetTerrain ?? 0));
   const [routeId, setRouteId] = useState(workout?.routeId ?? "");
@@ -108,9 +109,25 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
   const pending = create.isPending || update.isPending || remove.isPending;
 
   const save = () => {
-    const distanceMeters = parseKm(distance);
-    const vertMeters = parseNumber(vert);
-    const durationSeconds = parseDuration(duration);
+    // Unedited inputs keep the stored values, which they show rounded.
+    const distanceMeters = parseEdited(
+      distance,
+      workout?.targetDistanceMeters ?? 0,
+      kmInput,
+      parseKm
+    );
+    const vertMeters = parseEdited(
+      vert,
+      workout?.targetElevationGainMeters ?? 0,
+      numberInput,
+      parseMeters
+    );
+    const durationSeconds = parseEdited(
+      duration,
+      workout?.targetDurationSeconds ?? 0,
+      hoursMinutesInput,
+      parseDuration
+    );
     if (!isDateString(date) || !isWithin(date, planStart, planEnd)) {
       setValidation("The date must be within the plan.");
       return;
@@ -133,7 +150,7 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       routeId,
       targetDistanceMeters: distanceMeters,
       targetDurationSeconds: durationSeconds,
-      targetElevationGainMeters: Math.round(vertMeters),
+      targetElevationGainMeters: vertMeters,
       targetTerrain,
       title,
       type: workoutType,
