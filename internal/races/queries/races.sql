@@ -197,6 +197,7 @@ where id = $1 and user_id = $2;
 -- name: UpsertRacePlanCheckpoints :exec
 insert into race_plan_checkpoints (
   plan_id,
+  id,
   position,
   name,
   distance_meters,
@@ -215,6 +216,7 @@ insert into race_plan_checkpoints (
 )
 select
   sqlc.arg(plan_id)::uuid,
+  unnest(sqlc.arg(ids)::uuid[]),
   unnest(sqlc.arg(positions)::integer[]),
   unnest(sqlc.arg(names)::text[]),
   unnest(sqlc.arg(distances_meters)::double precision[]),
@@ -230,7 +232,8 @@ select
   unnest(sqlc.arg(tasks)::text[]),
   unnest(sqlc.arg(crew_instructions)::text[]),
   unnest(sqlc.arg(drop_bag_contents)::text[])
-on conflict (plan_id, position) do update set
+on conflict (id) do update set
+  position = excluded.position,
   name = excluded.name,
   distance_meters = excluded.distance_meters,
   elevation_gain_meters = excluded.elevation_gain_meters,
@@ -246,9 +249,14 @@ on conflict (plan_id, position) do update set
   crew_instructions = excluded.crew_instructions,
   drop_bag_contents = excluded.drop_bag_contents;
 
--- name: DeleteRacePlanCheckpointsFrom :exec
+-- name: DeleteOtherRacePlanCheckpoints :exec
 delete from race_plan_checkpoints
-where plan_id = $1 and position >= sqlc.arg(from_position);
+-- A nil array is null, which would keep every checkpoint.
+where plan_id = sqlc.arg(plan_id) and id <> all(coalesce(sqlc.arg(keep_ids)::uuid[], '{}'));
+
+-- name: ListRacePlanCheckpointIDs :many
+select id from race_plan_checkpoints
+where plan_id = $1;
 
 -- name: ListRacePlanCheckpoints :many
 select * from race_plan_checkpoints
@@ -258,14 +266,14 @@ order by plan_id, position;
 -- name: CreateRacePlanIntakes :exec
 insert into race_plan_intakes (
   plan_id,
-  checkpoint_position,
+  checkpoint_id,
   position,
   product,
   quantity
 )
 select
   sqlc.arg(plan_id)::uuid,
-  unnest(sqlc.arg(checkpoint_positions)::integer[]),
+  unnest(sqlc.arg(checkpoint_ids)::uuid[]),
   unnest(sqlc.arg(positions)::integer[]),
   unnest(sqlc.arg(products)::text[]),
   unnest(sqlc.arg(quantities)::double precision[]);
@@ -277,7 +285,7 @@ where plan_id = $1;
 -- name: ListRacePlanIntakes :many
 select * from race_plan_intakes
 where plan_id = any(sqlc.arg(plan_ids)::uuid[])
-order by plan_id, checkpoint_position, position;
+order by plan_id, checkpoint_id, position;
 
 -- name: CreateRacePlanNutritionProducts :exec
 insert into race_plan_nutrition_products (
@@ -405,18 +413,27 @@ update race_plans set
 where id = $1;
 
 -- name: UpsertRacePlanSplits :exec
+-- The splits are given by checkpoint position. A position without a
+-- checkpoint leaves checkpoint_id null, which fails the insert.
 insert into race_plan_splits (
   plan_id,
-  checkpoint_position,
+  checkpoint_id,
   arrival_time,
   departure_time
 )
 select
   sqlc.arg(plan_id)::uuid,
-  unnest(sqlc.arg(checkpoint_positions)::integer[]),
-  unnest(sqlc.arg(arrival_times)::timestamptz[]),
-  unnest(sqlc.arg(departure_times)::timestamptz[])
-on conflict (plan_id, checkpoint_position) do update set
+  c.id,
+  s.arrival_time,
+  s.departure_time
+from race_plan_checkpoints c
+right join (
+  select
+    unnest(sqlc.arg(checkpoint_positions)::integer[]) as checkpoint_position,
+    unnest(sqlc.arg(arrival_times)::timestamptz[]) as arrival_time,
+    unnest(sqlc.arg(departure_times)::timestamptz[]) as departure_time
+) s on c.plan_id = sqlc.arg(plan_id)::uuid and c.position = s.checkpoint_position
+on conflict (plan_id, checkpoint_id) do update set
   arrival_time = excluded.arrival_time,
   departure_time = excluded.departure_time;
 
@@ -425,10 +442,13 @@ delete from race_plan_splits
 where plan_id = $1;
 
 -- name: DeleteRacePlanSplit :exec
-delete from race_plan_splits
-where plan_id = $1 and checkpoint_position = $2;
+delete from race_plan_splits s
+using race_plan_checkpoints c
+where s.plan_id = sqlc.arg(plan_id)
+  and c.plan_id = s.plan_id
+  and c.id = s.checkpoint_id
+  and c.position = sqlc.arg(checkpoint_position);
 
 -- name: ListRacePlanSplits :many
 select * from race_plan_splits
-where plan_id = any(sqlc.arg(plan_ids)::uuid[])
-order by plan_id, checkpoint_position;
+where plan_id = any(sqlc.arg(plan_ids)::uuid[]);

@@ -356,7 +356,12 @@ func savePreferred(ctx context.Context, tx pgx.Tx, paths [][]geo.Point) error {
 // traveling between the vertex and the snapped point.
 type candidate struct {
 	vertex int64
-	cost   float64
+	// The distance along the snapped point's edge to the vertex in meters: 0
+	// at its source and its length at its target. The vertex alone can't say
+	// which end of the edge is meant, as both ends of a loop, an edge from a
+	// vertex back to itself, are the same vertex.
+	dist float64
+	cost float64
 }
 
 // search finds the cheapest path between two positions, within margin
@@ -365,12 +370,12 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 	fromFraction := from.dist / math.Max(from.edge.length(), 1e-9)
 	toFraction := to.dist / math.Max(to.edge.length(), 1e-9)
 	starts := []candidate{
-		{from.edge.source, fromFraction * from.reverseCost},
-		{from.edge.target, (1 - fromFraction) * from.cost},
+		{from.edge.source, 0, fromFraction * from.reverseCost},
+		{from.edge.target, from.edge.length(), (1 - fromFraction) * from.cost},
 	}
 	ends := []candidate{
-		{to.edge.source, toFraction * to.cost},
-		{to.edge.target, (1 - toFraction) * to.reverseCost},
+		{to.edge.source, 0, toFraction * to.cost},
+		{to.edge.target, to.edge.length(), (1 - toFraction) * to.reverseCost},
 	}
 
 	bounds, _ := geo.BoundsOf([]geo.Point{from.edge.points[0], to.edge.points[0]})
@@ -381,23 +386,27 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 	// The database searches from both start vertices to both end vertices,
 	// picks the cheapest of the paths including the costs of reaching the
 	// vertices, and returns its edges with their geometry, in a single round
-	// trip.
+	// trip. It returns which candidates the path starts and ends with, by
+	// their position counted from 1, rather than their vertices, which both
+	// candidates on a loop share. The vertices are passed to pgRouting once
+	// each, as the candidates of a loop would otherwise ask it for the same
+	// path twice, and its edges would be returned twice.
 	startVertices, startCosts := candidateColumns(starts)
 	endVertices, endCosts := candidateColumns(ends)
 	rows, err := db.Query(ctx, `with paths as (
 		select start_vid, end_vid, path_seq, node, edge, agg_cost
-		from pgr_dijkstra($1, $2::bigint[], $3::bigint[], directed => true)
+		from pgr_dijkstra($1, array(select distinct unnest($2::bigint[])), array(select distinct unnest($3::bigint[])), directed => true)
 	), best as (
-		select paths.start_vid, paths.end_vid, max(paths.agg_cost) + s.cost + e.cost as total
+		select paths.start_vid, paths.end_vid, s.n as start_n, e.n as end_n, max(paths.agg_cost) + s.cost + e.cost as total
 		from paths
-		join unnest($2::bigint[], $4::double precision[]) as s(vertex, cost) on s.vertex = paths.start_vid
-		join unnest($3::bigint[], $5::double precision[]) as e(vertex, cost) on e.vertex = paths.end_vid
-		group by paths.start_vid, paths.end_vid, s.cost, e.cost
-		order by total, paths.start_vid, paths.end_vid
+		join unnest($2::bigint[], $4::double precision[]) with ordinality as s(vertex, cost, n) on s.vertex = paths.start_vid
+		join unnest($3::bigint[], $5::double precision[]) with ordinality as e(vertex, cost, n) on e.vertex = paths.end_vid
+		group by paths.start_vid, paths.end_vid, s.n, e.n, s.cost, e.cost
+		order by total, s.n, e.n
 		limit 1
 	)
 	select r.id, r.source, r.target, ST_AsGeoJSON(r.geom), r.elevations, r.terrain,
-		best.start_vid, best.end_vid, best.total, paths.node
+		best.start_n, best.end_n, best.total, paths.node
 	from best
 	join paths on paths.start_vid = best.start_vid and paths.end_vid = best.end_vid
 	join routing_edges r on r.id = paths.edge
@@ -414,11 +423,13 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 	}
 	var steps []step
 	best := math.Inf(1)
-	var bestStart, bestEnd int64
+	// The positions of the best path's start and end candidates, counted
+	// from 1 as the query returns them.
+	var startN, endN int64
 	for rows.Next() {
 		var s step
 		var err error
-		s.edge, err = scanEdge(rows, &bestStart, &bestEnd, &best, &s.node)
+		s.edge, err = scanEdge(rows, &startN, &endN, &best, &s.node)
 		if err != nil {
 			return nil, fmt.Errorf("failed to search for a path: %w", err)
 		}
@@ -428,12 +439,18 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 		return nil, fmt.Errorf("failed to search for a path: %w", err)
 	}
 
+	var bestStart, bestEnd candidate
+	if len(steps) > 0 {
+		bestStart, bestEnd = starts[startN-1], ends[endN-1]
+	}
 	// pgRouting returns no path from a vertex to itself, so paths through a
-	// vertex both edges share are costed here.
+	// vertex both edges share are costed here. This includes a path around
+	// the end of a loop both points are on, leaving it through one end and
+	// coming back through the other.
 	for _, s := range starts {
 		for _, e := range ends {
 			if s.vertex == e.vertex && s.cost+e.cost < best {
-				best, bestStart, bestEnd, steps = s.cost+e.cost, s.vertex, e.vertex, nil
+				best, bestStart, bestEnd, steps = s.cost+e.cost, s, e, nil
 			}
 		}
 	}
@@ -459,7 +476,7 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 		return b.path(), nil
 	}
 	// The path from the snapped point to the first vertex.
-	b.add(from.edge.piece(from.dist, from.edge.vertexDist(bestStart)), from.edge.terrain)
+	b.add(from.edge.piece(from.dist, bestStart.dist), from.edge.terrain)
 	for _, s := range steps {
 		if s.node == s.edge.source {
 			b.add(s.edge.piece(0, s.edge.length()), s.edge.terrain)
@@ -468,7 +485,7 @@ func search(ctx context.Context, db store.Querier, from, to position, cost, reve
 		}
 	}
 	// The path from the last vertex to the snapped point.
-	b.add(to.edge.piece(to.edge.vertexDist(bestEnd), to.dist), to.edge.terrain)
+	b.add(to.edge.piece(bestEnd.dist, to.dist), to.edge.terrain)
 	return b.path(), nil
 }
 
@@ -480,14 +497,6 @@ func candidateColumns(candidates []candidate) (vertices []int64, costs []float64
 		costs = append(costs, c.cost)
 	}
 	return vertices, costs
-}
-
-// vertexDist returns the distance along the edge to one of its vertices.
-func (e *edge) vertexDist(vertex int64) float64 {
-	if vertex == e.source {
-		return 0
-	}
-	return e.length()
 }
 
 // piece returns the points of the edge between two distances along it, in
