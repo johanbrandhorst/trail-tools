@@ -124,6 +124,44 @@ func (r *Repository) HasAdmin(ctx context.Context) (bool, error) {
 	return has, nil
 }
 
+// localAdminName is the name of the administrator LocalAdmin creates.
+const localAdminName = "Local admin"
+
+// LocalAdmin returns the first administrator, creating one without a
+// passkey if there is none. It lets a local server be used without
+// registering a passkey, which agents' and tests' browsers can't do.
+func (r *Repository) LocalAdmin(ctx context.Context) (pgtype.UUID, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return pgtype.UUID{}, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+	q := r.querier.WithTx(tx)
+	id, err := q.GetFirstAdmin(ctx)
+	switch {
+	case err == nil:
+		return id, nil
+	case !errors.Is(err, pgx.ErrNoRows):
+		return pgtype.UUID{}, fmt.Errorf("failed to get an administrator: %w", err)
+	}
+	user, err := q.CreatePasskeyUser(ctx, &gen.CreatePasskeyUserParams{
+		// A random handle, as for a new passkey user, so the administrator
+		// can add a passkey later.
+		UserHandle: []byte(rand.Text()),
+		Name:       localAdminName,
+	})
+	if err != nil {
+		return pgtype.UUID{}, fmt.Errorf("failed to create user: %w", err)
+	}
+	if err := q.SetAdmin(ctx, &gen.SetAdminParams{ID: user.ID, IsAdmin: true}); err != nil {
+		return pgtype.UUID{}, fmt.Errorf("failed to make user an admin: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return pgtype.UUID{}, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return user.ID, nil
+}
+
 // GetPasskeyUser gets a passkey user by ID. It returns store.ErrNotFound if
 // the user doesn't exist or isn't a passkey user.
 func (r *Repository) GetPasskeyUser(ctx context.Context, userID pgtype.UUID) (*PasskeyUser, error) {

@@ -44,7 +44,8 @@ ADMIN_BOOTSTRAP_TOKEN := local-admin
 SERVER_FLAGS := \
 	-database-url postgres://postgres:password@localhost:5432/postgres?sslmode=disable \
 	-log-level debug \
-	-admin-bootstrap-token $(ADMIN_BOOTSTRAP_TOKEN)
+	-admin-bootstrap-token $(ADMIN_BOOTSTRAP_TOKEN) \
+	-local-sign-in
 
 # Strava sync uses the Strava API application in STRAVA_CLIENT_ID and
 # STRAVA_CLIENT_SECRET, if they're set in the environment, see the README for
