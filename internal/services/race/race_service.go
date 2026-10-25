@@ -169,13 +169,17 @@ func (s *Service) raceFromProto(ctx context.Context, userID pgtype.UUID, r *race
 	if r.GetDistanceMeters() < 0 || r.GetElevationGainMeters() < 0 || r.GetCutoffSeconds() < 0 {
 		return nil, invalid("distance, elevation gain and cutoff must not be negative")
 	}
+	website, err := parseWebsiteURL(r.GetWebsiteUrl())
+	if err != nil {
+		return nil, invalid("%v", err)
+	}
 	race := &races.Race{
 		UserID:              userID,
 		Name:                name,
 		Date:                date,
 		StartTime:           startTime,
 		Location:            r.GetLocation(),
-		WebsiteURL:          strings.TrimSpace(r.GetWebsiteUrl()),
+		WebsiteURL:          website,
 		DistanceMeters:      r.GetDistanceMeters(),
 		ElevationGainMeters: r.GetElevationGainMeters(),
 		CutoffSeconds:       r.GetCutoffSeconds(),
@@ -242,7 +246,7 @@ func RaceToProto(r *races.Race) *racesv1.Race {
 		Date:                store.FormatDate(r.Date),
 		StartTime:           r.StartTime,
 		Location:            r.Location,
-		WebsiteUrl:          r.WebsiteURL,
+		WebsiteUrl:          websiteURL(r.WebsiteURL),
 		DistanceMeters:      r.DistanceMeters,
 		ElevationGainMeters: r.ElevationGainMeters,
 		CutoffSeconds:       r.CutoffSeconds,

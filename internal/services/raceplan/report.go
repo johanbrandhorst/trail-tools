@@ -2,10 +2,12 @@ package raceplan
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/races"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // PlanOutcome is what a race plan planned, and what was recorded on race
@@ -33,29 +35,18 @@ type PlannedCheckpoint struct {
 
 // PlanOutcome returns the plan of one of the user's races, analysed, with
 // what was recorded on race day. It returns nil if the race has no plan.
+//
+// Public race reports call this on every view, so it only reads the plan:
+// the planned times don't depend on the race or its course.
 func (s *Service) PlanOutcome(ctx context.Context, userID, raceID pgtype.UUID) (*PlanOutcome, error) {
-	plans, err := s.repo.ListRacePlans(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	var stored *races.RacePlan
-	for _, p := range plans {
-		if p.RaceID == raceID {
-			stored = p
-			break
-		}
-	}
-	if stored == nil {
+	stored, err := s.repo.GetRacePlanForRace(ctx, userID, raceID)
+	if errors.Is(err, store.ErrNotFound) {
 		return nil, nil
 	}
-	r, err := s.repo.GetRace(ctx, userID, raceID)
 	if err != nil {
 		return nil, err
 	}
-	_, analysis, err := s.planWithAnalysis(ctx, stored, r)
-	if err != nil {
-		return nil, err
-	}
+	analysis := Analyze(planToProto(stored, ""), RaceInfo{})
 	outcome := &PlanOutcome{
 		Goals:                stored.Goals,
 		PlannedFinishSeconds: analysis.GetPlannedFinishSeconds(),

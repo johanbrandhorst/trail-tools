@@ -47,7 +47,8 @@ export const deleteRacePlan = RacePlanService.method.deleteRacePlan;
 
 /**
  * Create a share link for a race plan. Anyone with the link can view the
- * plan. Calling this again returns the existing link.
+ * plan, and record race day data: the start time, the LiveTrack link and
+ * checkpoint times. Calling this again returns the existing link.
  *
  * @generated from rpc races.v1.RacePlanService.ShareRacePlan
  */

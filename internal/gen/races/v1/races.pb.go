@@ -333,7 +333,7 @@ type Race_builder struct {
 	StartTime string
 	// Where the race takes place.
 	Location string
-	// The race website.
+	// The race website, an http or https link.
 	WebsiteUrl string
 	// The race distance in meters.
 	DistanceMeters float64
@@ -1218,7 +1218,7 @@ type RaceEvent_builder struct {
 	Name string
 	// Where the event takes place.
 	Location string
-	// The event website.
+	// The event website, an http or https link.
 	WebsiteUrl string
 	// Free text notes, e.g. the combined results of a multi-day event.
 	Notes string

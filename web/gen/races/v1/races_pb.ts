@@ -57,7 +57,7 @@ export type Race = Message<"races.v1.Race"> & {
   location: string;
 
   /**
-   * The race website.
+   * The race website, an http or https link.
    *
    * @generated from field: string website_url = 6;
    */
@@ -367,7 +367,7 @@ export type RaceEvent = Message<"races.v1.RaceEvent"> & {
   location: string;
 
   /**
-   * The event website.
+   * The event website, an http or https link.
    *
    * @generated from field: string website_url = 4;
    */

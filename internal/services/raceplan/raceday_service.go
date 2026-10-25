@@ -215,7 +215,15 @@ func (s *Service) livePosition(ctx context.Context, course []geo.Point, url stri
 // checkpoint, sorting them by checkpoint and dropping empty ones.
 func normalizeRaceDay(raceDay *racesv1.RaceDay, checkpoints int) error {
 	if url := raceDay.GetLivetrackUrl(); url != "" {
+		if len(url) > livetrack.MaxURLLength {
+			return fmt.Errorf("livetrack_url must be at most %d bytes; paste the session link from the LiveTrack email or app", livetrack.MaxURLLength)
+		}
 		if _, err := livetrack.ParseURL(url); err != nil {
+			return err
+		}
+	}
+	if raceDay.HasStartTime() {
+		if err := validateTime(raceDay.GetStartTime(), "start_time"); err != nil {
 			return err
 		}
 	}
@@ -250,8 +258,38 @@ func validateSplit(split *racesv1.CheckpointSplit, checkpoints int) error {
 	if int(i) == checkpoints-1 && split.HasDepartureTime() {
 		return fmt.Errorf("checkpoint %d is the finish, which has no departure_time", i+1)
 	}
+	if split.HasArrivalTime() {
+		if err := validateTime(split.GetArrivalTime(), fmt.Sprintf("checkpoint %d: arrival_time", i+1)); err != nil {
+			return err
+		}
+	}
+	if split.HasDepartureTime() {
+		if err := validateTime(split.GetDepartureTime(), fmt.Sprintf("checkpoint %d: departure_time", i+1)); err != nil {
+			return err
+		}
+	}
 	if split.HasArrivalTime() && split.HasDepartureTime() && split.GetDepartureTime().AsTime().Before(split.GetArrivalTime().AsTime()) {
 		return fmt.Errorf("checkpoint %d: departure_time must not be before arrival_time", i+1)
+	}
+	return nil
+}
+
+// Recorded race day times must be within these years. Anyone with a share
+// link can record times, and times beyond what the database can store would
+// otherwise fail as internal errors.
+var (
+	minRaceDayTime = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	maxRaceDayTime = time.Date(2100, 1, 1, 0, 0, 0, 0, time.UTC)
+)
+
+// validateTime checks that a recorded race day time is valid, naming it
+// field in errors.
+func validateTime(ts *timestamppb.Timestamp, field string) error {
+	if err := ts.CheckValid(); err != nil {
+		return fmt.Errorf("%s is not a valid time: %w", field, err)
+	}
+	if t := ts.AsTime(); t.Before(minRaceDayTime) || !t.Before(maxRaceDayTime) {
+		return fmt.Errorf("%s must be between the years %d and %d", field, minRaceDayTime.Year(), maxRaceDayTime.Year()-1)
 	}
 	return nil
 }

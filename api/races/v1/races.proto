@@ -63,7 +63,7 @@ message Race {
   string start_time = 4;
   // Where the race takes place.
   string location = 5;
-  // The race website.
+  // The race website, an http or https link.
   string website_url = 6;
   // The race distance in meters.
   double distance_meters = 7;
@@ -151,7 +151,7 @@ message RaceEvent {
   string name = 2;
   // Where the event takes place.
   string location = 3;
-  // The event website.
+  // The event website, an http or https link.
   string website_url = 4;
   // Free text notes, e.g. the combined results of a multi-day event.
   string notes = 5;

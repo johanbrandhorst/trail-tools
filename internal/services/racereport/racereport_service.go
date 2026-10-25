@@ -560,16 +560,17 @@ func (s *Service) GetPublicRaceReport(ctx context.Context, req *racesv1.GetPubli
 		}
 		return nil, s.toConnectError(ctx, err, "failed to get race report")
 	}
-	reportProto, comparison, err := s.withComparison(ctx, report)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.withSegments(ctx, reportProto, report.ID); err != nil {
-		return nil, err
-	}
 	t, err := track.Decode(report.Track)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to decode race report track")
+	}
+	comparison, err := s.comparison(ctx, report, t)
+	if err != nil {
+		return nil, err
+	}
+	reportProto := s.reportToProto(report, profile)
+	if err := s.withSegments(ctx, reportProto, report.ID); err != nil {
+		return nil, err
 	}
 	// The track is hidden in the author's privacy zones, and so are the
 	// locations of the photos taken there.
@@ -620,24 +621,47 @@ func (s *Service) withComparison(ctx context.Context, report *races.RaceReport) 
 	if err != nil {
 		return nil, nil, err
 	}
+	t, err := track.Decode(report.Track)
+	if err != nil {
+		return nil, nil, s.toConnectError(ctx, err, "failed to decode race report track")
+	}
+	comparison, err := s.comparison(ctx, report, t)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.reportToProto(report, profile), comparison, nil
+}
+
+// comparison compares a report with its race plan. The actual times come
+// from the report's track t, which may be nil, if it has times. That's the
+// activity's streams downsampled, which is close enough for times at
+// checkpoints, and saves reading and decoding the whole streams on every
+// view of a public report. Only tracks without times, e.g. from activities
+// whose streams hadn't synced, fall back to the streams.
+func (s *Service) comparison(ctx context.Context, report *races.RaceReport, t *track.Track) (*racesv1.RaceComparison, error) {
 	var outcome *raceplan.PlanOutcome
 	if report.RaceID.Valid {
+		var err error
 		if outcome, err = s.plans.PlanOutcome(ctx, report.UserID, report.RaceID); err != nil && !errors.Is(err, store.ErrNotFound) {
-			return nil, nil, s.toConnectError(ctx, err, "failed to get the race plan")
+			return nil, s.toConnectError(ctx, err, "failed to get the race plan")
 		}
 	}
 	var rec *recording
-	if report.ActivityID.Valid {
+	switch {
+	case outcome == nil:
+		// Without a plan there's nothing to compare the times with.
+	case t != nil && t.Times != nil:
+		rec = trackRecording(t)
+	case report.ActivityID.Valid:
 		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, report.ActivityID)
 		switch {
 		case err == nil:
 			rec = newRecording(streams)
 		case !errors.Is(err, store.ErrNotFound):
-			return nil, nil, s.toConnectError(ctx, err, "failed to get activity streams")
+			return nil, s.toConnectError(ctx, err, "failed to get activity streams")
 		}
 	}
-	comparison := compare(outcome, report, rec)
-	return s.reportToProto(report, profile), comparison, nil
+	return compare(outcome, report, rec), nil
 }
 
 // getReport gets one of the authenticated user's race reports by ID.
