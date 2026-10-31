@@ -256,12 +256,8 @@ func TestQuiz(t *testing.T) {
 	if code := bob.do(http.MethodPost, "/quizzes/easy/submit", map[string]any{"answers": answers}, nil); code != http.StatusConflict {
 		t.Errorf("submit again: got status %d, want 409", code)
 	}
-	// The quiz master doesn't play.
-	if code := master.do(http.MethodPost, "/quizzes/easy/submit", map[string]any{"answers": answers}, nil); code != http.StatusForbidden {
-		t.Errorf("quiz master submit: got status %d, want 403", code)
-	}
-
-	// The leaderboard has Bilbo, but not the quiz master.
+	// The leaderboard has Bilbo, but not the quiz master, who hasn't
+	// submitted anything yet.
 	var board leaderboardResponse
 	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
 	if len(board.Entries) != 1 || board.Entries[0].Name != "Bilbo" || board.Entries[0].Points != 9 || board.Entries[0].Rank != 1 {
@@ -325,5 +321,12 @@ func TestQuiz(t *testing.T) {
 	master.mustDo(http.MethodDelete, "/admin/users/"+bilbo.ID, nil, nil)
 	if code := bob.do(http.MethodGet, "/quizzes/easy", nil, nil); code != http.StatusUnauthorized {
 		t.Errorf("removed player GET quiz: got status %d, want 401", code)
+	}
+
+	// The quiz master plays too, and makes the leaderboard.
+	master.mustDo(http.MethodPost, "/quizzes/easy/submit", map[string]any{"answers": answers}, nil)
+	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	if len(board.Entries) != 1 || board.Entries[0].Name != "Gandalf the Grey" || board.Entries[0].Points != 10 {
+		t.Errorf("leaderboard with the quiz master: got %+v, want Gandalf with 10 points", board.Entries)
 	}
 }
