@@ -462,6 +462,16 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                       }
                     : undefined
                 }
+                onAppend={
+                  geometryEditable && previewCurrent
+                    ? (position) => {
+                        edit((current) =>
+                          appendWaypoint(current, toWaypoint(position), mode)
+                        );
+                        setSelected(null);
+                      }
+                    : undefined
+                }
                 onHover={setMapHover}
               />
             )}
@@ -496,10 +506,11 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
         </div>
         {geometryEditable && (
           <p className="text-xs text-gray-500">
-            Click the map to add a waypoint using the selected mode. Drag the
-            route to reshape it, drag a waypoint to move it, or click a waypoint
-            to select it and press Delete to remove it. Manual sections are
-            dashed.
+            Click the map to add a waypoint using the selected mode. Click the
+            route to add a waypoint on it, or to continue the route back along
+            it. Drag the route to reshape it, drag a waypoint to move it, or
+            click a waypoint to select it and press Delete to remove it. Manual
+            sections are dashed.
           </p>
         )}
         <Card title="Elevation profile">

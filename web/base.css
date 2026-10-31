@@ -183,6 +183,11 @@
   cursor: grab;
 }
 
+/* The choice offered when clicking a route being edited, a compact menu. */
+.route-choice .leaflet-popup-content {
+  margin: 4px;
+}
+
 /* Kilometer labels along a route, distinct from the round waypoints. */
 .distance-marker {
   display: flex;
