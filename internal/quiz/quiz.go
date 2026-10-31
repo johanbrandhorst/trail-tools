@@ -63,6 +63,8 @@ type Server struct {
 	repo   *repository
 	rp     *webauthn.RelyingParty
 	mux    *http.ServeMux
+	// publicURL is the quiz's link, which guests open to join.
+	publicURL string
 }
 
 // New creates the quiz's tables if needed, and returns its server. baseURL is
@@ -87,6 +89,9 @@ func newServer(ctx context.Context, log *slog.Logger, report *errreport.Reporter
 		repo:   &repository{db: db},
 		rp:     &webauthn.RelyingParty{ID: u.Hostname(), Origin: u.Scheme + "://" + u.Host},
 		mux:    http.NewServeMux(),
+		// The relying party's origin is the base URL without a trailing
+		// path, which is where the app is served.
+		publicURL: u.Scheme + "://" + u.Host + Path,
 	}
 	static, err := fs.Sub(staticFS, "static")
 	if err != nil {
@@ -111,6 +116,11 @@ func newServer(ctx context.Context, log *slog.Logger, report *errreport.Reporter
 	}
 	s.mux.HandleFunc("GET "+Path, index)
 	s.mux.HandleFunc("GET "+Path+"/{$}", index)
+	qrHandler, err := s.qrHandler()
+	if err != nil {
+		return nil, err
+	}
+	s.mux.Handle("GET "+Path+"/qr.svg", qrHandler)
 
 	api := func(pattern string, h func(w http.ResponseWriter, r *http.Request) error) {
 		method, path, _ := strings.Cut(pattern, " ")

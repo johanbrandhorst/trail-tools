@@ -164,6 +164,17 @@ func TestQuiz(t *testing.T) {
 		t.Errorf("GET %s: got status %d and CSP %q", Path, resp.StatusCode, resp.Header.Get("Content-Security-Policy"))
 	}
 
+	// The QR code links to the quiz.
+	resp, err = http.Get(srv.URL + Path + "/qr.svg")
+	if err != nil {
+		t.Fatalf("GET QR code: %v", err)
+	}
+	svg, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "image/svg+xml" || !bytes.HasPrefix(svg, []byte("<svg")) {
+		t.Errorf("GET QR code: got status %d, type %q, body %.40q", resp.StatusCode, resp.Header.Get("Content-Type"), svg)
+	}
+
 	// The first player to join becomes the quiz master; the next don't.
 	master, bob := newPlayer(), newPlayer()
 	if got, code := master.register("  Gandalf   the Grey "); code != http.StatusOK || !got.IsAdmin || got.Name != "Gandalf the Grey" {

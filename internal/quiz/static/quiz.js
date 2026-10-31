@@ -1251,8 +1251,13 @@
         "div",
         { class: "card" },
         el("h3", {}, "Invite the Fellowship"),
-        el("p", {}, "Guests join at:"),
-        el("p", { class: "points" }, el("a", { href: link }, link)),
+        el("p", {}, "Guests scan the code with their phone's camera, or open the link:"),
+        el(
+          "a",
+          { class: "qr-link", href: "/quiz/qr.svg", target: "_blank", title: "Open the QR code on its own, e.g. for a big screen" },
+          el("img", { alt: `QR code for ${link}`, class: "qr", src: "/quiz/qr.svg" }),
+        ),
+        el("p", { class: "points center" }, el("a", { href: link }, link)),
         el(
           "p",
           { class: "hint" },

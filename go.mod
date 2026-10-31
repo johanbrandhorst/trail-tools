@@ -31,6 +31,7 @@ require (
 	google.golang.org/api v0.304.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
+	rsc.io/qr v0.2.0
 )
 
 require (
