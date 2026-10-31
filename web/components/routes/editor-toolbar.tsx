@@ -106,63 +106,65 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
       ))}
     </div>
-    <Divider />
-    <ToolButton
-      title={`Undo (${MODIFIER}Z)`}
-      disabled={!canUndo}
-      onClick={onUndo}
-    >
-      <ArrowUturnLeftIcon className="size-4" />
-    </ToolButton>
-    <ToolButton
-      title={`Redo (${MODIFIER}Shift+Z)`}
-      disabled={!canRedo}
-      onClick={onRedo}
-    >
-      <ArrowUturnRightIcon className="size-4" />
-    </ToolButton>
-    <Divider />
-    <ToolButton
-      title="Return to start: route back to the start to close the loop"
-      disabled={waypointCount < 2 || isLoop}
-      onClick={onReturnToStart}
-    >
-      <ArrowPathRoundedSquareIcon className="size-4" />
-      <span className="hidden lg:inline">Loop</span>
-    </ToolButton>
-    <ToolButton
-      title="Out and back: return to the start the same way"
-      disabled={waypointCount < 2}
-      onClick={onOutAndBack}
-    >
-      <ArrowsRightLeftIcon className="size-4" />
-      <span className="hidden lg:inline">Out &amp; back</span>
-    </ToolButton>
-    <ToolButton
-      title="Reverse the direction of the route"
-      disabled={waypointCount < 2}
-      onClick={onReverse}
-    >
-      <ArrowsUpDownIcon className="size-4" />
-    </ToolButton>
-    <ToolButton
-      title="Remove all waypoints"
-      disabled={waypointCount === 0}
-      onClick={onClear}
-    >
-      <TrashIcon className="size-4" />
-    </ToolButton>
+    {/*
+     * The actions wrap as one group, below the modes, rather than one by
+     * one, which would leave a button alone on a row.
+     */}
+    <div className="flex items-center gap-1">
+      <ToolButton
+        title={`Undo (${MODIFIER}Z)`}
+        disabled={!canUndo}
+        onClick={onUndo}
+      >
+        <ArrowUturnLeftIcon className="size-4" />
+      </ToolButton>
+      <ToolButton
+        title={`Redo (${MODIFIER}Shift+Z)`}
+        disabled={!canRedo}
+        onClick={onRedo}
+      >
+        <ArrowUturnRightIcon className="size-4" />
+      </ToolButton>
+      <Divider />
+      <ToolButton
+        title="Return to start: route back to the start to close the loop"
+        disabled={waypointCount < 2 || isLoop}
+        onClick={onReturnToStart}
+      >
+        <ArrowPathRoundedSquareIcon className="size-4" />
+        <span className="hidden lg:inline">Loop</span>
+      </ToolButton>
+      <ToolButton
+        title="Out and back: return to the start the same way"
+        disabled={waypointCount < 2}
+        onClick={onOutAndBack}
+      >
+        <ArrowsRightLeftIcon className="size-4" />
+        <span className="hidden lg:inline">Out &amp; back</span>
+      </ToolButton>
+      <ToolButton
+        title="Reverse the direction of the route"
+        disabled={waypointCount < 2}
+        onClick={onReverse}
+      >
+        <ArrowsUpDownIcon className="size-4" />
+      </ToolButton>
+      <ToolButton
+        title="Remove all waypoints"
+        disabled={waypointCount === 0}
+        onClick={onClear}
+      >
+        <TrashIcon className="size-4" />
+      </ToolButton>
+    </div>
     {selected !== null && (
-      <>
-        <Divider />
-        <ToolButton
-          title="Remove the selected waypoint (Delete)"
-          onClick={onRemoveSelected}
-        >
-          <XMarkIcon className="size-4" />
-          <span>Remove waypoint {selected + 1}</span>
-        </ToolButton>
-      </>
+      <ToolButton
+        title="Remove the selected waypoint (Delete)"
+        onClick={onRemoveSelected}
+      >
+        <XMarkIcon className="size-4" />
+        <span>Remove waypoint {selected + 1}</span>
+      </ToolButton>
     )}
   </div>
 );
