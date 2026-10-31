@@ -106,6 +106,14 @@ create table if not exists quiz.settings (
 -- Whether players see the leaderboard. It's hidden until the quiz master
 -- announces the winner; the quiz master always sees it.
 alter table quiz.settings add column if not exists show_leaderboard boolean not null default false;
+-- Whether the explanations of the seeded questions have been added, to the
+-- questions seeded before explanations existed.
+alter table quiz.settings add column if not exists explanations_seeded boolean not null default false;
+
+-- What the quiz master reads out when going through the answers: why the
+-- answer is right, and a little lore around it. Paragraphs are separated by
+-- blank lines.
+alter table quiz.questions add column if not exists explanation text not null default '';
 `
 
 // migrate creates the schema, and seeds the questions the first time.
@@ -128,15 +136,26 @@ func migrate(ctx context.Context, db pgxBeginner) error {
 	if err != nil {
 		return fmt.Errorf("failed to create the settings: %w", err)
 	}
+	b := &pgx.Batch{}
 	if tag.RowsAffected() == 1 {
-		b := &pgx.Batch{}
 		for _, q := range seedQuestions {
-			b.Queue("insert into quiz.questions (tier, position, prompt, choices, answer_index) values ($1, $2, $3, $4, $5)",
-				q.Tier, q.Position, q.Prompt, q.Choices, q.AnswerIndex)
+			b.Queue("insert into quiz.questions (tier, position, prompt, choices, answer_index, explanation) values ($1, $2, $3, $4, $5, $6)",
+				q.Tier, q.Position, q.Prompt, q.Choices, q.AnswerIndex, q.Explanation)
 		}
-		if err := tx.SendBatch(ctx, b).Close(); err != nil {
-			return fmt.Errorf("failed to seed the questions: %w", err)
+	}
+	// The questions seeded before explanations existed get theirs once,
+	// unless the quiz master has changed the question or written one.
+	tag, err = tx.Exec(ctx, "update quiz.settings set explanations_seeded = true where not explanations_seeded")
+	if err != nil {
+		return fmt.Errorf("failed to update the settings: %w", err)
+	}
+	if tag.RowsAffected() == 1 {
+		for prompt, explanation := range seedExplanations {
+			b.Queue("update quiz.questions set explanation = $2 where prompt = $1 and explanation = ''", prompt, explanation)
 		}
+	}
+	if err := tx.SendBatch(ctx, b).Close(); err != nil {
+		return fmt.Errorf("failed to seed the questions: %w", err)
 	}
 	return tx.Commit(ctx)
 }
