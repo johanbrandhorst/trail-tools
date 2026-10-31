@@ -352,7 +352,7 @@
           "p",
           {},
           me.isAdmin
-            ? "You are the quiz master. Preview the quests here, and edit questions and players on the quiz master's page."
+            ? "You are the quiz master. Take the quests like everyone else (no peeking at the answers!), and edit questions and players on the quiz master's page."
             : "Three quests lie before you. Take them in any order; harder quests are worth more points.",
         ),
       ),
@@ -364,8 +364,6 @@
           let status = "Not yet attempted";
           if (q.submitted) {
             status = `Completed · ${q.correct} of ${q.questionCount} · ${q.correct * q.pointsPerQuestion} points`;
-          } else if (me.isAdmin) {
-            status = "Preview";
           }
           return el(
             "article",
@@ -383,7 +381,7 @@
             el(
               "a",
               { class: "btn btn-primary", href: `#/quiz/${q.tier}` },
-              q.submitted ? "See your answers" : me.isAdmin ? "Preview" : "Begin the quest",
+              q.submitted ? "See your answers" : "Begin the quest",
             ),
           );
         }),
@@ -578,11 +576,9 @@
     const total = quiz.questions.length;
     const update = () => {
       const answered = Object.keys(draft).length;
-      progressText.textContent = me.isAdmin
-        ? "Preview: the quiz master can't take the quiz."
-        : `${answered} of ${total} answered`;
+      progressText.textContent = `${answered} of ${total} answered`;
       progressFill.style.width = `${(answered / total) * 100}%`;
-      submitButton.disabled = me.isAdmin || answered < total;
+      submitButton.disabled = answered < total;
     };
     submitButton.addEventListener("click", async () => {
       if (!window.confirm("Submit your answers? You can't change them afterwards.")) {

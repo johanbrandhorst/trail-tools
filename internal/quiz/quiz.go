@@ -419,7 +419,7 @@ func (s *Server) getQuiz(w http.ResponseWriter, r *http.Request) error {
 				pq.Chosen = c
 				pq.Correct = c == q.AnswerIndex
 			}
-			// The quiz master knows the answers anyway.
+			// The quiz master can see the answers on their page anyway.
 			if reveal || u.IsAdmin {
 				pq.AnswerIndex = q.AnswerIndex
 			}
@@ -439,9 +439,6 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) error {
 	u, ok := currentUser(r)
 	if !ok {
 		return errSignIn
-	}
-	if u.IsAdmin {
-		return errorf(http.StatusForbidden, "the quiz master knows all the answers, so can't take the quiz")
 	}
 	tier, err := pathTier(r)
 	if err != nil {
@@ -529,8 +526,7 @@ func (s *Server) leaderboard(w http.ResponseWriter, r *http.Request) error {
 	entries := []*leaderboardEntry{}
 	for _, u := range users {
 		e := byUser[u.ID]
-		// The quiz master doesn't compete.
-		if e == nil || u.IsAdmin {
+		if e == nil {
 			continue
 		}
 		e.Name = u.Name
