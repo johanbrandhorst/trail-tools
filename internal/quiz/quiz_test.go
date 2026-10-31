@@ -130,6 +130,7 @@ type quizResponse struct {
 		Chosen      int    `json:"chosen"`
 		Correct     bool   `json:"correct"`
 		AnswerIndex int    `json:"answerIndex"`
+		Explanation string `json:"explanation"`
 	} `json:"questions"`
 }
 
@@ -148,6 +149,17 @@ func TestQuiz(t *testing.T) {
 	// Creating the schema again, as on every start, keeps the questions.
 	if err := migrate(ctx, db); err != nil {
 		t.Fatalf("migrate: %v", err)
+	}
+	// Questions seeded before explanations existed get them once.
+	if _, err := db.Exec(ctx, "update quiz.questions set explanation = ''; update quiz.settings set explanations_seeded = false"); err != nil {
+		t.Fatalf("clearing explanations: %v", err)
+	}
+	if err := migrate(ctx, db); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	var missing int
+	if err := db.QueryRow(ctx, "select count(*) from quiz.questions where explanation = ''").Scan(&missing); err != nil || missing != 0 {
+		t.Errorf("explanations: got %d questions without, %v, want none", missing, err)
 	}
 	u, _ := url.Parse(srv.URL)
 	newPlayer := func() *player {
@@ -278,12 +290,41 @@ func TestQuiz(t *testing.T) {
 		t.Errorf("leaderboard after correcting: got %+v, want Bilbo with 10 points", board.Entries)
 	}
 
-	// Revealing the answers shows them to players who submitted.
+	// The quiz master goes through the answers, with how players answered.
+	var walkthrough struct{ Questions []answeredQuestion }
+	master.mustDo(http.MethodGet, "/admin/answers", nil, &walkthrough)
+	if code := bob.do(http.MethodGet, "/admin/answers", nil, nil); code != http.StatusForbidden {
+		t.Errorf("player GET answers: got status %d, want 403", code)
+	}
+	for _, q := range walkthrough.Questions {
+		answered := 0
+		for _, n := range q.ChoiceCounts {
+			answered += n
+		}
+		want := 0
+		if q.Tier == TierEasy {
+			want = 1
+		}
+		if answered != want || len(q.ChoiceCounts) != len(q.Choices) || q.Explanation == "" {
+			t.Errorf("answers of %q: got counts %v and explanation %q, want %d answer and an explanation", q.Prompt, q.ChoiceCounts, q.Explanation, want)
+		}
+		if q.ID == last.ID && q.ChoiceCounts[answers[last.ID]] != 1 {
+			t.Errorf("answers of %q: got counts %v, want Bilbo's choice %d counted", q.Prompt, q.ChoiceCounts, answers[last.ID])
+		}
+	}
+
+	// Revealing the answers shows them, and their explanations, to players
+	// who submitted.
+	for _, q := range quiz.Questions {
+		if q.Explanation != "" {
+			t.Errorf("question %s: got the explanation before revealing", q.ID)
+		}
+	}
 	master.mustDo(http.MethodPut, "/admin/settings", Settings{RevealAnswers: true}, nil)
 	bob.mustDo(http.MethodGet, "/quizzes/easy", nil, &quiz)
 	for _, q := range quiz.Questions {
-		if q.AnswerIndex == -1 {
-			t.Errorf("question %s: got the answer hidden after revealing", q.ID)
+		if q.AnswerIndex == -1 || q.Explanation == "" {
+			t.Errorf("question %s: got the answer or explanation hidden after revealing", q.ID)
 		}
 	}
 

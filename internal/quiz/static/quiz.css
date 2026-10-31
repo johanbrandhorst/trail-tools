@@ -1046,6 +1046,114 @@ tr.me td {
   overflow-wrap: anywhere;
 }
 
+/* Going through the answers */
+
+textarea.tall {
+  min-height: 10rem;
+}
+
+.explanation {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem 0.4rem;
+  border-left: 4px solid var(--gold-deep);
+  border-radius: 0 10px 10px 0;
+  background: rgb(255 250 235 / 55%);
+}
+
+.explanation h3 {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  color: var(--gold-deep);
+  margin-bottom: 0.5rem;
+}
+
+.explanation-preview {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+.present .step {
+  font-family: var(--display);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+
+.present-prompt {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 4.5vw, 2.1rem);
+  letter-spacing: 0;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.present-choices .choice {
+  overflow: hidden;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  min-height: 3.4rem;
+}
+
+.present-choices .choice > span {
+  position: relative;
+}
+
+.present-choices .mark {
+  font-size: 1rem;
+}
+
+.choice-letter {
+  flex: none;
+  font-family: var(--display);
+  font-weight: 800;
+  color: var(--gold-deep);
+  width: 1.4rem;
+}
+
+.count-fill {
+  position: absolute !important;
+  inset: 0 auto 0 0;
+  background: rgb(169 124 18 / 16%);
+  transition: width 0.6s ease;
+}
+
+.choice.right .count-fill {
+  background: rgb(47 107 42 / 22%);
+}
+
+.choice.dim {
+  opacity: 0.6;
+}
+
+.choice.right {
+  animation: reveal 0.5s ease;
+}
+
+@keyframes reveal {
+  from {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 0 rgb(232 185 35 / 70%);
+  }
+  60% {
+    box-shadow: 0 0 0 10px rgb(232 185 35 / 0%);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.tally {
+  margin-top: 1rem;
+  font-weight: 600;
+}
+
+.keys {
+  display: none;
+  color: var(--parchment-2);
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -1098,6 +1206,10 @@ tr.me td {
     margin: 0 -1.5rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+  }
+
+  .keys {
+    display: inline;
   }
 
   .player {
