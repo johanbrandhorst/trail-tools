@@ -55,6 +55,9 @@ type Question struct {
 	Choices []string `json:"choices"`
 	// AnswerIndex is the index of the correct choice.
 	AnswerIndex int `json:"answerIndex"`
+	// Explanation is why the answer is right, with a little lore, for the
+	// quiz master to read out. It's empty if not written.
+	Explanation string `json:"explanation"`
 }
 
 // passkey is a player's registered passkey.
@@ -223,7 +226,7 @@ func (r *repository) setSettings(ctx context.Context, s Settings) error {
 // questions lists the questions, of a tier or, if tier is empty, of all
 // tiers, in order.
 func (r *repository) questions(ctx context.Context, tier Tier) ([]Question, error) {
-	rows, err := r.db.Query(ctx, `select id, tier, position, prompt, choices, answer_index from quiz.questions
+	rows, err := r.db.Query(ctx, `select id, tier, position, prompt, choices, answer_index, explanation from quiz.questions
 		where $1 = '' or tier = $1 order by array_position(array['easy', 'medium', 'hard'], tier), position, create_time`, string(tier))
 	if err != nil {
 		return nil, err
@@ -231,7 +234,7 @@ func (r *repository) questions(ctx context.Context, tier Tier) ([]Question, erro
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Question, error) {
 		var q Question
 		var id pgtype.UUID
-		err := row.Scan(&id, &q.Tier, &q.Position, &q.Prompt, &q.Choices, &q.AnswerIndex)
+		err := row.Scan(&id, &q.Tier, &q.Position, &q.Prompt, &q.Choices, &q.AnswerIndex, &q.Explanation)
 		q.ID = store.UUIDToString(id)
 		return q, err
 	})
@@ -240,9 +243,9 @@ func (r *repository) questions(ctx context.Context, tier Tier) ([]Question, erro
 // createQuestion adds a question at the end of its tier.
 func (r *repository) createQuestion(ctx context.Context, q Question) (Question, error) {
 	var id pgtype.UUID
-	err := r.db.QueryRow(ctx, `insert into quiz.questions (tier, position, prompt, choices, answer_index)
-		values ($1, (select coalesce(max(position) + 1, 0) from quiz.questions where tier = $1), $2, $3, $4)
-		returning id, position`, q.Tier, q.Prompt, q.Choices, q.AnswerIndex).Scan(&id, &q.Position)
+	err := r.db.QueryRow(ctx, `insert into quiz.questions (tier, position, prompt, choices, answer_index, explanation)
+		values ($1, (select coalesce(max(position) + 1, 0) from quiz.questions where tier = $1), $2, $3, $4, $5)
+		returning id, position`, q.Tier, q.Prompt, q.Choices, q.AnswerIndex, q.Explanation).Scan(&id, &q.Position)
 	q.ID = store.UUIDToString(id)
 	return q, err
 }
@@ -251,8 +254,8 @@ func (r *repository) updateQuestion(ctx context.Context, q Question) error {
 	// A question moved to another tier goes to the end of it.
 	tag, err := r.db.Exec(ctx, `update quiz.questions set tier = $2,
 		  position = case when tier = $2 then $3 else (select coalesce(max(position) + 1, 0) from quiz.questions where tier = $2) end,
-		  prompt = $4, choices = $5, answer_index = $6, update_time = now()
-		where id = $1`, q.ID, q.Tier, q.Position, q.Prompt, q.Choices, q.AnswerIndex)
+		  prompt = $4, choices = $5, answer_index = $6, explanation = $7, update_time = now()
+		where id = $1`, q.ID, q.Tier, q.Position, q.Prompt, q.Choices, q.AnswerIndex, q.Explanation)
 	if err == nil && tag.RowsAffected() == 0 {
 		return store.ErrNotFound
 	}
@@ -406,4 +409,32 @@ func (r *repository) resetSubmission(ctx context.Context, userID string, tier Ti
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+// choiceCounts returns how many players chose each choice of each question,
+// by question ID, counting only the quizzes they submitted.
+func (r *repository) choiceCounts(ctx context.Context) (map[string]map[int]int, error) {
+	rows, err := r.db.Query(ctx, `select a.question_id, a.choice_index, count(*)
+		from quiz.answers a
+		join quiz.questions q on q.id = a.question_id
+		join quiz.submissions s on s.user_id = a.user_id and s.tier = q.tier
+		group by a.question_id, a.choice_index`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	counts := map[string]map[int]int{}
+	for rows.Next() {
+		var id pgtype.UUID
+		var choice, n int
+		if err := rows.Scan(&id, &choice, &n); err != nil {
+			return nil, err
+		}
+		key := store.UUIDToString(id)
+		if counts[key] == nil {
+			counts[key] = map[int]int{}
+		}
+		counts[key][choice] = n
+	}
+	return counts, rows.Err()
 }

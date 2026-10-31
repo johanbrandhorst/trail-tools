@@ -46,6 +46,8 @@ const (
 	// maxPromptLength and maxChoiceLength bound questions and their choices.
 	maxPromptLength = 500
 	maxChoiceLength = 200
+	// maxExplanationLength bounds explanations, which are a few paragraphs.
+	maxExplanationLength = 4000
 	// contentSecurityPolicy only allows the quiz's own scripts, styles and
 	// fonts, so text a player enters can't run scripts even through a bug
 	// in rendering it.
@@ -140,6 +142,7 @@ func newServer(ctx context.Context, log *slog.Logger, report *errreport.Reporter
 	api("POST /admin/questions", s.adminOnly(s.createQuestion))
 	api("PUT /admin/questions/{id}", s.adminOnly(s.updateQuestion))
 	api("DELETE /admin/questions/{id}", s.adminOnly(s.deleteQuestion))
+	api("GET /admin/answers", s.adminOnly(s.listAnswers))
 	api("GET /admin/users", s.adminOnly(s.listUsers))
 	api("PUT /admin/users/{id}", s.adminOnly(s.updateUser))
 	api("DELETE /admin/users/{id}", s.adminOnly(s.deleteUser))
@@ -381,6 +384,8 @@ type playerQuestion struct {
 	Correct bool `json:"correct"`
 	// AnswerIndex is the correct answer, or -1 while it's hidden.
 	AnswerIndex int `json:"answerIndex"`
+	// Explanation is the answer's explanation, once the answer is shown.
+	Explanation string `json:"explanation"`
 }
 
 func (s *Server) getQuiz(w http.ResponseWriter, r *http.Request) error {
@@ -424,6 +429,7 @@ func (s *Server) getQuiz(w http.ResponseWriter, r *http.Request) error {
 			// The quiz master can see the answers on their page anyway.
 			if reveal || u.IsAdmin {
 				pq.AnswerIndex = q.AnswerIndex
+				pq.Explanation = q.Explanation
 			}
 		}
 		out[i] = pq
@@ -573,6 +579,38 @@ func (s *Server) listQuestions(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// answeredQuestion is a question with how the players answered it, for the
+// quiz master to go through the answers.
+type answeredQuestion struct {
+	Question
+	// ChoiceCounts is how many players chose each choice.
+	ChoiceCounts []int `json:"choiceCounts"`
+}
+
+func (s *Server) listAnswers(w http.ResponseWriter, r *http.Request) error {
+	questions, err := s.repo.questions(r.Context(), "")
+	if err != nil {
+		return err
+	}
+	counts, err := s.repo.choiceCounts(r.Context())
+	if err != nil {
+		return err
+	}
+	out := make([]answeredQuestion, len(questions))
+	for i, q := range questions {
+		aq := answeredQuestion{Question: q, ChoiceCounts: make([]int, len(q.Choices))}
+		for choice, n := range counts[q.ID] {
+			// Choices removed since players answered aren't counted.
+			if choice < len(aq.ChoiceCounts) {
+				aq.ChoiceCounts[choice] = n
+			}
+		}
+		out[i] = aq
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"questions": out})
+	return nil
+}
+
 // readQuestion reads and validates a question from the request.
 func readQuestion(w http.ResponseWriter, r *http.Request) (Question, error) {
 	var q Question
@@ -601,6 +639,10 @@ func readQuestion(w http.ResponseWriter, r *http.Request) (Question, error) {
 			return Question{}, errorf(http.StatusBadRequest, "choices must be at most %d characters", maxChoiceLength)
 		}
 		q.Choices[i] = c
+	}
+	q.Explanation = strings.TrimSpace(q.Explanation)
+	if utf8.RuneCountInString(q.Explanation) > maxExplanationLength {
+		return Question{}, errorf(http.StatusBadRequest, "explanations must be at most %d characters", maxExplanationLength)
 	}
 	if q.AnswerIndex < 0 || q.AnswerIndex >= len(q.Choices) {
 		return Question{}, errorf(http.StatusBadRequest, "mark which choice is correct")

@@ -108,6 +108,7 @@ var seedQuestions = func() []Question {
 		spot := answerSpots[(i+q.Position)%len(answerSpots)] % len(q.Choices)
 		q.Choices[0], q.Choices[spot] = q.Choices[spot], q.Choices[0]
 		q.AnswerIndex = spot
+		q.Explanation = seedExplanations[q.Prompt]
 	}
 	return all
 }()

@@ -3,7 +3,8 @@
 A temporary quiz for a party, at `/quiz`. Guests join with a passkey, take
 three quizzes (The Shire, Rivendell and Mordor, worth 1, 2 and 3 points a
 question) and compete on a leaderboard. The first player to join becomes the
-quiz master, who edits the questions, manages players and reveals the answers.
+quiz master, who edits the questions, manages players, reveals the answers
+and goes through them with an explanation of each, at `/quiz#/answers`.
 
 It's self-contained so it's easy to remove:
 

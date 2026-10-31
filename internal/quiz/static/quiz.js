@@ -277,6 +277,7 @@
     fill(nav, 
       link("#/", "Quests"),
       canSeeLeaderboard() ? link("#/leaderboard", "Leaderboard") : null,
+      me?.isAdmin ? link("#/answers", "Answers") : null,
       me?.isAdmin ? link("#/admin", "Quiz master") : null,
       me !== null
         ? el(
@@ -325,6 +326,7 @@
     };
     const hash = location.hash || "#/";
     const quiz = hash.match(/^#\/quiz\/(easy|medium|hard)$/);
+    const answers = hash.match(/^#\/answers(?:\/(easy|medium|hard)(?:\/(\d+))?)?$/);
     try {
       if (hash === "#/" || hash === "#") {
         await homePage(show);
@@ -334,6 +336,8 @@
         await leaderboardPage(show);
       } else if (hash === "#/admin") {
         await adminPage(show);
+      } else if (answers !== null) {
+        await answersPage(show, answers[1] ?? "easy", Number(answers[2] ?? "1") - 1);
       } else {
         location.hash = "#/";
         return;
@@ -726,9 +730,20 @@
               );
             }),
           ),
+          q.explanation === "" ? null : explanation(q.explanation),
         ),
       ),
     ];
+  }
+
+  // explanation shows a question's explanation, a paragraph per blank line.
+  function explanation(text) {
+    return el(
+      "div",
+      { class: "explanation" },
+      el("h3", {}, "From the Red Book"),
+      text.split(/\n\s*\n/).map((p) => el("p", {}, p.trim())),
+    );
   }
 
   // title is a player's title by the share of the points they have.
@@ -900,7 +915,16 @@
       }
     };
     renderTabs();
-    show(el("div", { class: "hero" }, el("h1", {}, "The quiz master's study")), tabBar, content);
+    show(
+      el(
+        "div",
+        { class: "hero" },
+        el("h1", {}, "The quiz master's study"),
+        el("a", { class: "btn btn-primary", href: "#/answers" }, "Go through the answers"),
+      ),
+      tabBar,
+      content,
+    );
     await loadTab();
   }
 
@@ -957,6 +981,9 @@
                   el("li", { class: j === q.answerIndex ? "correct" : "" }, c, j === q.answerIndex ? " ✓" : ""),
                 ),
               ),
+              q.explanation === ""
+                ? el("p", { class: "hint" }, "No explanation yet.")
+                : el("p", { class: "explanation-preview" }, q.explanation.split(/\n\s*\n/)[0]),
               el(
                 "div",
                 { class: "btn-row" },
@@ -1018,6 +1045,12 @@
     );
     tierSelect.value = question.tier;
     const prompt = el("textarea", { id: `prompt-${formID}`, maxlength: "500", value: question.prompt });
+    const explanationInput = el("textarea", {
+      class: "tall",
+      id: `explanation-${formID}`,
+      maxlength: "4000",
+      value: question.explanation ?? "",
+    });
     const choicesBox = el("div", {});
     let choices = [...question.choices];
     const readChoices = () => {
@@ -1117,6 +1150,7 @@
             answerIndex,
             choices,
             position: question.position ?? 0,
+            explanation: explanationInput.value,
             prompt: prompt.value,
             tier: tierSelect.value,
           };
@@ -1142,6 +1176,17 @@
         el("label", {}, "Choices"),
         el("p", { class: "hint" }, "Select the correct answer with the button on its left."),
         choicesBox,
+      ),
+      el(
+        "div",
+        { class: "field" },
+        el("label", { for: `explanation-${formID}` }, "Explanation"),
+        el(
+          "p",
+          { class: "hint" },
+          "Why the answer is right, and a little lore, for going through the answers. Separate paragraphs with a blank line.",
+        ),
+        explanationInput,
       ),
       error,
       el(
@@ -1304,6 +1349,167 @@
         el("p", { class: "points center" }, el("a", { href: link }, link)),
       ),
     ];
+  }
+
+  // answersPage goes through the answers of each quest, one question at a
+  // time, for the quiz master to present: the question first, then the
+  // answer, how the players answered, and its explanation.
+  async function answersPage(show, startTier, startIndex) {
+    if (!me?.isAdmin) {
+      show(el("div", { class: "card center" }, el("p", {}, "Only the quiz master may enter here.")));
+      return;
+    }
+    show(el("p", { class: "loading" }, "Opening the Red Book…"));
+    const { questions } = await api("GET", "/admin/answers");
+    const byTier = Object.fromEntries(tierOrder.map((t) => [t, questions.filter((q) => q.tier === t)]));
+    let tier = startTier;
+    let index = Math.max(0, Math.min(startIndex, byTier[tier].length - 1));
+    let revealed = false;
+    const tabBar = el("div", { class: "tabs", role: "tablist" });
+    const stage = el("div", {});
+    const bar = el("div", { class: "submit-bar" });
+
+    const go = (newTier, newIndex) => {
+      tier = newTier;
+      index = newIndex;
+      revealed = false;
+      // Keep the place in the URL without loading the page again, so a
+      // reload comes back to the same question.
+      history.replaceState(null, "", `#/answers/${tier}/${index + 1}`);
+      draw();
+      window.scrollTo({ top: 0 });
+    };
+    const nextTier = () => tierOrder[tierOrder.indexOf(tier) + 1];
+    const forward = () => {
+      const list = byTier[tier];
+      if (!revealed && list.length > 0) {
+        revealed = true;
+        draw();
+      } else if (index < list.length - 1) {
+        go(tier, index + 1);
+      } else if (nextTier() !== undefined) {
+        go(nextTier(), 0);
+      }
+    };
+    const back = () => {
+      if (revealed) {
+        revealed = false;
+        draw();
+      } else if (index > 0) {
+        go(tier, index - 1);
+      } else if (tierOrder.indexOf(tier) > 0) {
+        const previous = tierOrder[tierOrder.indexOf(tier) - 1];
+        go(previous, Math.max(0, byTier[previous].length - 1));
+      }
+    };
+
+    function draw() {
+      fill(
+        tabBar,
+        tierOrder.map((t) =>
+          el(
+            "button",
+            { "aria-selected": String(t === tier), onclick: () => go(t, 0), role: "tab", type: "button" },
+            tiers[t].name,
+          ),
+        ),
+      );
+      const list = byTier[tier];
+      if (list.length === 0) {
+        fill(stage, banner(tier), el("div", { class: "card center" }, el("p", {}, "This quest has no questions.")));
+        fill(bar);
+        return;
+      }
+      const q = list[index];
+      const answered = q.choiceCounts.reduce((sum, n) => sum + n, 0);
+      const right = q.choiceCounts[q.answerIndex] ?? 0;
+      fill(
+        stage,
+        banner(tier),
+        el(
+          "div",
+          { class: "card present" },
+          el("p", { class: "step" }, `Question ${index + 1} of ${list.length} · ${tiers[tier].name}`),
+          el("h2", { class: "present-prompt" }, q.prompt),
+          el(
+            "div",
+            { class: "choices present-choices" },
+            q.choices.map((choice, j) => {
+              const correct = revealed && j === q.answerIndex;
+              const count = q.choiceCounts[j] ?? 0;
+              const fillBar = el("span", { class: "count-fill" });
+              fillBar.style.width = answered === 0 ? "0%" : `${(count / answered) * 100}%`;
+              return el(
+                "div",
+                { class: `choice static ${correct ? "right" : ""} ${revealed && !correct ? "dim" : ""}` },
+                revealed ? fillBar : null,
+                el("span", { class: "choice-letter" }, String.fromCharCode(65 + j)),
+                el("span", {}, choice),
+                revealed
+                  ? el("span", { class: "mark" }, correct ? `✓ ${count}` : String(count))
+                  : null,
+              );
+            }),
+          ),
+          revealed
+            ? el(
+                "p",
+                { class: "tally" },
+                answered === 0
+                  ? "No one has submitted this quest yet."
+                  : `${right} of ${answered} ${answered === 1 ? "player" : "players"} got it right.`,
+              )
+            : null,
+          revealed
+            ? q.explanation === ""
+              ? el("p", { class: "hint" }, "No explanation written yet. Add one on the quiz master's Questions tab.")
+              : explanation(q.explanation)
+            : null,
+        ),
+      );
+      const last = index === list.length - 1;
+      let forwardLabel = "Reveal the answer";
+      if (revealed) {
+        forwardLabel = !last ? "Next question" : nextTier() !== undefined ? `On to ${tiers[nextTier()].name}` : "The end";
+      }
+      const atStart = index === 0 && tierOrder.indexOf(tier) === 0 && !revealed;
+      const atEnd = revealed && last && nextTier() === undefined;
+      fill(
+        bar,
+        el("button", { class: "btn btn-secondary", disabled: atStart, onclick: back, type: "button" }, "Back"),
+        el("span", { class: "hint keys" }, "Arrow keys work too"),
+        el("button", { class: "btn btn-primary", disabled: atEnd, onclick: forward, type: "button" }, forwardLabel),
+      );
+    }
+
+    // The arrow keys step through the answers, e.g. from a laptop connected
+    // to a big screen.
+    const onKey = (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        forward();
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        back();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    cleanups.push(() => document.removeEventListener("keydown", onKey));
+    draw();
+    show(
+      el(
+        "div",
+        { class: "hero" },
+        el("h1", {}, "The Reading of the Red Book"),
+        el("p", {}, "Go through the answers with the Fellowship: show each question, then reveal its answer and its tale."),
+      ),
+      tabBar,
+      stage,
+      bar,
+    );
   }
 
   async function start() {
