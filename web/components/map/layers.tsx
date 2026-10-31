@@ -233,20 +233,46 @@ interface MapClickProps {
   onClick: (position: LatLng) => void;
 }
 
-// MapClick calls onClick with the location of clicks on the map.
+/**
+ * MapClick calls onClick with the location of clicks on the map. A click that
+ * closes a popup only closes it, so dismissing a popup doesn't also act on the
+ * map.
+ */
 export const MapClick: React.FC<MapClickProps> = ({ onClick }) => {
   const map = useMap();
   const handleClick = useEffectEvent((position: LatLng) => {
     onClick(position);
   });
   useEffect(() => {
+    let popupOpen = false;
+    let closingPopup = false;
+    const onPopupOpen = () => {
+      popupOpen = true;
+    };
+    const onPopupClose = () => {
+      popupOpen = false;
+    };
+    // Popups close on preclick, so whether one was open is noted before.
+    const onPreclick = () => {
+      closingPopup = popupOpen;
+    };
     const handler = (event: LeafletMouseEvent) => {
+      if (closingPopup) {
+        closingPopup = false;
+        return;
+      }
       handleClick(event.latlng);
     };
+    map.on("popupopen", onPopupOpen);
+    map.on("popupclose", onPopupClose);
+    map.on("preclick", onPreclick);
     map.on("click", handler);
     const container = map.getContainer();
     container.style.cursor = "crosshair";
     return () => {
+      map.off("popupopen", onPopupOpen);
+      map.off("popupclose", onPopupClose);
+      map.off("preclick", onPreclick);
       map.off("click", handler);
       container.style.cursor = "";
     };
