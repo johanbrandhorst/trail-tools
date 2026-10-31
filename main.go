@@ -51,6 +51,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/mcp"
 	"github.com/johanbrandhorst/trail-tools/internal/oauth"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/quiz"
 	"github.com/johanbrandhorst/trail-tools/internal/races"
 	"github.com/johanbrandhorst/trail-tools/internal/routes"
 	"github.com/johanbrandhorst/trail-tools/internal/routing"
@@ -806,6 +807,14 @@ func run(
 	// The guided lactate test as a Garmin workout. It holds no user data.
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(trip.ProfilePath, authenticate(raceReportService.PageHandler(serveDir != "", tripService.PageHandler(serveDir != ""))))
+	// The Lord of the Rings quiz for a party, with its own players. It's
+	// temporary: remove these lines and internal/quiz to remove it.
+	quizServer, err := quiz.New(ctx, log, report, db, baseURL)
+	if err != nil {
+		return fmt.Errorf("failed to create the quiz: %w", err)
+	}
+	mux.Handle(quiz.Path, quizServer)
+	mux.Handle(quiz.Path+"/", quizServer)
 
 	// Requests are traced, and named after the routes they match.
 	srvHandler := telemetry.Routes(mux)
