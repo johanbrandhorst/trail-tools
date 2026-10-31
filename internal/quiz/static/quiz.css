@@ -1020,6 +1020,12 @@ tr.me td {
   margin-top: 0.15rem;
 }
 
+.rule {
+  border: 0;
+  border-top: 1px solid rgb(120 90 40 / 25%);
+  margin: 1rem 0;
+}
+
 .qr-link {
   display: block;
   width: min(100%, 20rem);

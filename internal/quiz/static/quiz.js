@@ -11,6 +11,11 @@
 
   // The signed in player, or null.
   let me = null;
+  // The quiz master's switches, refreshed on every page.
+  let settings = { revealAnswers: false, showLeaderboard: false };
+  // canSeeLeaderboard is whether the leaderboard is shown to this visitor:
+  // it's secret from players until the quiz master announces the winner.
+  const canSeeLeaderboard = () => settings.showLeaderboard || me?.isAdmin === true;
   // The current page's render, to drop the results of a page left behind.
   let renderID = 0;
   // Functions that stop the current page's timers and prompts.
@@ -271,7 +276,7 @@
       el("a", { "aria-current": hash === href ? "page" : undefined, href }, label);
     fill(nav, 
       link("#/", "Quests"),
-      link("#/leaderboard", "Leaderboard"),
+      canSeeLeaderboard() ? link("#/leaderboard", "Leaderboard") : null,
       me?.isAdmin ? link("#/admin", "Quiz master") : null,
       me !== null
         ? el(
@@ -297,8 +302,20 @@
     }
     cleanups = [];
     abortConditional();
-    renderNav();
     const id = ++renderID;
+    // Pick up the quiz master's switches, like the leaderboard being
+    // shown once the winner is announced.
+    try {
+      const res = await api("GET", "/me");
+      me = res.user;
+      settings = { revealAnswers: res.revealAnswers, showLeaderboard: res.showLeaderboard };
+    } catch {
+      // The page shows the error when it loads its data.
+    }
+    if (id !== renderID) {
+      return;
+    }
+    renderNav();
     // show replaces the page, unless the player has moved on to another.
     const show = (...nodes) => {
       if (id === renderID) {
@@ -353,7 +370,7 @@
           {},
           me.isAdmin
             ? "You are the quiz master. Take the quests like everyone else (no peeking at the answers!), and edit questions and players on the quiz master's page."
-            : "Three quests lie before you. Take them in any order; harder quests are worth more points.",
+            : "Three quests lie before you. Take them in any order; harder quests are worth more points. The quiz master will announce the winner.",
         ),
       ),
       el(
@@ -466,7 +483,7 @@
         el(
           "p",
           {},
-          "Join the quiz with a passkey: no passwords, just your fingerprint, face or PIN. Then take on the three quests and climb the leaderboard.",
+          "Join the quiz with a passkey: no passwords, just your fingerprint, face or PIN. Then take on the three quests; the quiz master will announce the winner.",
         ),
         supported
           ? [
@@ -481,7 +498,7 @@
             ),
         error,
       ),
-      el("p", { class: "center" }, el("a", { href: "#/leaderboard" }, "Peek at the leaderboard")),
+      canSeeLeaderboard() ? el("p", { class: "center" }, el("a", { href: "#/leaderboard" }, "See the leaderboard")) : null,
     );
     // Offer the device's passkeys in the name field's autofill, so
     // returning players can sign in from there too.
@@ -666,7 +683,7 @@
         el(
           "p",
           {},
-          `${correct * quiz.pointsPerQuestion} ${correct * quiz.pointsPerQuestion === 1 ? "point" : "points"} for the leaderboard`,
+          `${correct * quiz.pointsPerQuestion} ${correct * quiz.pointsPerQuestion === 1 ? "point" : "points"}`,
         ),
         el("p", { class: "quote muted" }, scoreQuote(total === 0 ? 0 : correct / total)),
         revealed ? null : el("p", { class: "hint" }, "The quiz master will reveal the correct answers later."),
@@ -674,7 +691,7 @@
           "div",
           { class: "btn-row" },
           el("a", { class: "btn btn-primary", href: "#/" }, "Back to the quests"),
-          el("a", { class: "btn btn-secondary", href: "#/leaderboard" }, "See the leaderboard"),
+          canSeeLeaderboard() ? el("a", { class: "btn btn-secondary", href: "#/leaderboard" }, "See the leaderboard") : null,
         ),
       ),
       quiz.questions.map((q, i) =>
@@ -732,6 +749,18 @@
   }
 
   async function leaderboardPage(show) {
+    if (!canSeeLeaderboard()) {
+      show(
+        el(
+          "div",
+          { class: "card center" },
+          el("h2", {}, "The leaderboard is sealed"),
+          el("p", {}, "Like the One Ring, the winner is kept secret, until the quiz master announces it."),
+          el("a", { class: "btn btn-primary", href: "#/" }, "Back to the quests"),
+        ),
+      );
+      return;
+    }
     show(el("p", { class: "loading" }, "Counting the spoils…"));
     const card = el("div", { class: "card" });
     const load = async () => {
@@ -746,6 +775,13 @@
         el("h1", {}, "The Hall of Fire"),
         el("p", {}, "Shire questions are worth 1 point, Rivendell 2 and Mordor 3. Ties go to whoever finished first."),
       ),
+      settings.showLeaderboard
+        ? null
+        : el(
+            "p",
+            { class: "hint center" },
+            "Only you can see this. Show it to everyone in the quiz master's settings when you announce the winner.",
+          ),
       card,
     );
     // Keep the leaderboard fresh, e.g. on a screen at the party.
@@ -1200,46 +1236,58 @@
   }
 
   async function settingsTab() {
-    const { revealAnswers } = await api("GET", "/me");
+    const current = await api("GET", "/me");
+    const values = { revealAnswers: current.revealAnswers, showLeaderboard: current.showLeaderboard };
     const error = errorBox();
-    const toggle = el("input", {
-      checked: revealAnswers,
-      id: "reveal",
-      onchange: async () => {
-        error.hidden = true;
-        toggle.disabled = true;
-        try {
-          await api("PUT", "/admin/settings", { revealAnswers: toggle.checked });
-          toast(toggle.checked ? "Answers revealed" : "Answers hidden");
-        } catch (e) {
-          toggle.checked = !toggle.checked;
-          showError(error, e);
-        } finally {
-          toggle.disabled = false;
-        }
-      },
-      type: "checkbox",
-    });
+    // toggle is a switch for one of the settings.
+    const toggle = (key, label, hint, on, off) => {
+      const input = el("input", {
+        checked: values[key],
+        id: key,
+        onchange: async () => {
+          error.hidden = true;
+          input.disabled = true;
+          try {
+            await api("PUT", "/admin/settings", { ...values, [key]: input.checked });
+            values[key] = input.checked;
+            settings = { ...values };
+            renderNav();
+            toast(input.checked ? on : off);
+          } catch (e) {
+            input.checked = !input.checked;
+            showError(error, e);
+          } finally {
+            input.disabled = false;
+          }
+        },
+        type: "checkbox",
+      });
+      return el(
+        "label",
+        { class: "toggle", for: key },
+        input,
+        el("span", {}, label, el("span", { class: "hint" }, el("br", {}), hint)),
+      );
+    };
     const link = `${location.origin}/quiz`;
     return [
       el(
         "div",
         { class: "card" },
-        el(
-          "label",
-          { class: "toggle", for: "reveal" },
-          toggle,
-          el(
-            "span",
-            {},
-            "Reveal the correct answers",
-            el(
-              "span",
-              { class: "hint" },
-              el("br", {}),
-              "Players who submitted a quest see which answers were correct. Leave it off until everyone has finished.",
-            ),
-          ),
+        toggle(
+          "showLeaderboard",
+          "Show the leaderboard to everyone",
+          "It's secret until you announce the winner; only you can see it until then. Turn it on for the big reveal, and put it on a big screen: it refreshes by itself every 10 seconds.",
+          "The leaderboard is revealed!",
+          "The leaderboard is secret again",
+        ),
+        el("hr", { class: "rule" }),
+        toggle(
+          "revealAnswers",
+          "Reveal the correct answers",
+          "Players who submitted a quest see which answers were correct. Leave it off until everyone has finished.",
+          "Answers revealed",
+          "Answers hidden",
         ),
         error,
       ),
@@ -1254,23 +1302,12 @@
           el("img", { alt: `QR code for ${link}`, class: "qr", src: "/quiz/qr.svg" }),
         ),
         el("p", { class: "points center" }, el("a", { href: link }, link)),
-        el(
-          "p",
-          { class: "hint" },
-          "Show the leaderboard on a big screen; it refreshes by itself every 10 seconds.",
-        ),
       ),
     ];
   }
 
   async function start() {
     window.addEventListener("hashchange", render);
-    try {
-      const res = await api("GET", "/me");
-      me = res.user;
-    } catch {
-      // The page shows the error when it loads its data.
-    }
     await render();
   }
 

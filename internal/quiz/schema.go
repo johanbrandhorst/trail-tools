@@ -103,6 +103,9 @@ create table if not exists quiz.settings (
   -- Whether players see the correct answers of the quizzes they submitted.
   reveal_answers boolean not null default false
 );
+-- Whether players see the leaderboard. It's hidden until the quiz master
+-- announces the winner; the quiz master always sees it.
+alter table quiz.settings add column if not exists show_leaderboard boolean not null default false;
 `
 
 // migrate creates the schema, and seeds the questions the first time.

@@ -199,14 +199,24 @@ func (r *repository) deleteSession(ctx context.Context, token string) error {
 	return err
 }
 
-func (r *repository) revealAnswers(ctx context.Context) (bool, error) {
-	var reveal bool
-	err := r.db.QueryRow(ctx, "select reveal_answers from quiz.settings").Scan(&reveal)
-	return reveal, err
+// Settings are the quiz master's switches.
+type Settings struct {
+	// RevealAnswers is whether players see the correct answers of the
+	// quizzes they submitted.
+	RevealAnswers bool `json:"revealAnswers"`
+	// ShowLeaderboard is whether players see the leaderboard, which is
+	// secret until the quiz master announces the winner.
+	ShowLeaderboard bool `json:"showLeaderboard"`
 }
 
-func (r *repository) setRevealAnswers(ctx context.Context, reveal bool) error {
-	_, err := r.db.Exec(ctx, "update quiz.settings set reveal_answers = $1", reveal)
+func (r *repository) settings(ctx context.Context) (Settings, error) {
+	var s Settings
+	err := r.db.QueryRow(ctx, "select reveal_answers, show_leaderboard from quiz.settings").Scan(&s.RevealAnswers, &s.ShowLeaderboard)
+	return s, err
+}
+
+func (r *repository) setSettings(ctx context.Context, s Settings) error {
+	_, err := r.db.Exec(ctx, "update quiz.settings set reveal_answers = $1, show_leaderboard = $2", s.RevealAnswers, s.ShowLeaderboard)
 	return err
 }
 

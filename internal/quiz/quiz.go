@@ -307,16 +307,16 @@ func (s *Server) signIn(w http.ResponseWriter, r *http.Request, u User) error {
 
 type meResponse struct {
 	// User is the signed in player, or null.
-	User          *User `json:"user"`
-	RevealAnswers bool  `json:"revealAnswers"`
+	User *User `json:"user"`
+	Settings
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) error {
-	reveal, err := s.repo.revealAnswers(r.Context())
+	settings, err := s.repo.settings(r.Context())
 	if err != nil {
 		return err
 	}
-	resp := meResponse{RevealAnswers: reveal}
+	resp := meResponse{Settings: settings}
 	if u, ok := currentUser(r); ok {
 		resp.User = &u
 	}
@@ -407,9 +407,11 @@ func (s *Server) getQuiz(w http.ResponseWriter, r *http.Request) error {
 		if answers, err = s.repo.answers(r.Context(), u.ID, tier); err != nil {
 			return err
 		}
-		if reveal, err = s.repo.revealAnswers(r.Context()); err != nil {
+		settings, err := s.repo.settings(r.Context())
+		if err != nil {
 			return err
 		}
+		reveal = settings.RevealAnswers
 	}
 	out := make([]playerQuestion, len(questions))
 	for i, q := range questions {
@@ -497,6 +499,13 @@ type leaderboardEntry struct {
 }
 
 func (s *Server) leaderboard(w http.ResponseWriter, r *http.Request) error {
+	settings, err := s.repo.settings(r.Context())
+	if err != nil {
+		return err
+	}
+	if u, _ := currentUser(r); !settings.ShowLeaderboard && !u.IsAdmin {
+		return errorf(http.StatusForbidden, "the leaderboard is secret until the quiz master announces the winner")
+	}
 	users, err := s.repo.users(r.Context())
 	if err != nil {
 		return err
@@ -734,13 +743,11 @@ func (s *Server) resetSubmission(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) error {
-	var req struct {
-		RevealAnswers bool `json:"revealAnswers"`
-	}
+	var req Settings
 	if err := readJSON(w, r, &req); err != nil {
 		return err
 	}
-	if err := s.repo.setRevealAnswers(r.Context(), req.RevealAnswers); err != nil {
+	if err := s.repo.setSettings(r.Context(), req); err != nil {
 		return err
 	}
 	writeJSON(w, http.StatusOK, req)

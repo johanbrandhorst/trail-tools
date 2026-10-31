@@ -194,13 +194,16 @@ func TestQuiz(t *testing.T) {
 		t.Errorf("signIn: got %+v, want Bilbo", got)
 	}
 
-	// Anonymous visitors can see the leaderboard, but not the questions.
+	// Anonymous visitors can't see the questions, and only the quiz master
+	// sees the leaderboard until the winner is announced.
 	anon := newPlayer()
 	if code := anon.do(http.MethodGet, "/quizzes/easy", nil, nil); code != http.StatusUnauthorized {
 		t.Errorf("anonymous GET quiz: got status %d, want 401", code)
 	}
-	if code := anon.do(http.MethodGet, "/leaderboard", nil, nil); code != http.StatusOK {
-		t.Errorf("anonymous GET leaderboard: got status %d, want 200", code)
+	for name, p := range map[string]*player{"anonymous": anon, "player": bob} {
+		if code := p.do(http.MethodGet, "/leaderboard", nil, nil); code != http.StatusForbidden {
+			t.Errorf("%s GET leaderboard: got status %d, want 403", name, code)
+		}
 	}
 	// Players can't use the quiz master's page.
 	if code := bob.do(http.MethodGet, "/admin/questions", nil, nil); code != http.StatusForbidden {
@@ -259,7 +262,7 @@ func TestQuiz(t *testing.T) {
 	// The leaderboard has Bilbo, but not the quiz master, who hasn't
 	// submitted anything yet.
 	var board leaderboardResponse
-	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	master.mustDo(http.MethodGet, "/leaderboard", nil, &board)
 	if len(board.Entries) != 1 || board.Entries[0].Name != "Bilbo" || board.Entries[0].Points != 9 || board.Entries[0].Rank != 1 {
 		t.Errorf("leaderboard: got %+v, want Bilbo first with 9 points", board.Entries)
 	}
@@ -270,13 +273,13 @@ func TestQuiz(t *testing.T) {
 	// Correcting the last question's answer to Bilbo's re-scores him.
 	last.AnswerIndex = answers[last.ID]
 	master.mustDo(http.MethodPut, "/admin/questions/"+last.ID, last, nil)
-	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	master.mustDo(http.MethodGet, "/leaderboard", nil, &board)
 	if len(board.Entries) != 1 || board.Entries[0].Points != 10 {
 		t.Errorf("leaderboard after correcting: got %+v, want Bilbo with 10 points", board.Entries)
 	}
 
 	// Revealing the answers shows them to players who submitted.
-	master.mustDo(http.MethodPut, "/admin/settings", map[string]bool{"revealAnswers": true}, nil)
+	master.mustDo(http.MethodPut, "/admin/settings", Settings{RevealAnswers: true}, nil)
 	bob.mustDo(http.MethodGet, "/quizzes/easy", nil, &quiz)
 	for _, q := range quiz.Questions {
 		if q.AnswerIndex == -1 {
@@ -311,7 +314,7 @@ func TestQuiz(t *testing.T) {
 	// Resetting Bilbo's quiz takes him off the leaderboard, and lets him
 	// take it again.
 	master.mustDo(http.MethodDelete, "/admin/users/"+bilbo.ID+"/submissions/easy", nil, nil)
-	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	master.mustDo(http.MethodGet, "/leaderboard", nil, &board)
 	if len(board.Entries) != 0 {
 		t.Errorf("leaderboard after reset: got %+v, want none", board.Entries)
 	}
@@ -325,8 +328,20 @@ func TestQuiz(t *testing.T) {
 
 	// The quiz master plays too, and makes the leaderboard.
 	master.mustDo(http.MethodPost, "/quizzes/easy/submit", map[string]any{"answers": answers}, nil)
-	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	master.mustDo(http.MethodGet, "/leaderboard", nil, &board)
 	if len(board.Entries) != 1 || board.Entries[0].Name != "Gandalf the Grey" || board.Entries[0].Points != 10 {
 		t.Errorf("leaderboard with the quiz master: got %+v, want Gandalf with 10 points", board.Entries)
+	}
+
+	// Announcing the winner shows the leaderboard to everyone.
+	master.mustDo(http.MethodPut, "/admin/settings", Settings{RevealAnswers: true, ShowLeaderboard: true}, nil)
+	anon.mustDo(http.MethodGet, "/leaderboard", nil, &board)
+	if len(board.Entries) != 1 {
+		t.Errorf("leaderboard after announcing: got %+v, want Gandalf", board.Entries)
+	}
+	var me meResponse
+	anon.mustDo(http.MethodGet, "/me", nil, &me)
+	if !me.ShowLeaderboard || !me.RevealAnswers {
+		t.Errorf("GET me: got settings %+v, want both on", me.Settings)
 	}
 }
