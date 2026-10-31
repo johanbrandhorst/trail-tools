@@ -18,6 +18,7 @@ It's self-contained so it's easy to remove:
 
 1. Delete this directory.
 2. Delete the lines that create and route `quizServer` in `main.go`, and the
-   import.
+   import, then run `go mod tidy` to drop `rsc.io/qr`, which draws the QR
+   code of the quiz's link.
 3. Drop its data: `drop schema quiz cascade;`. To do it on deploy, add a
    migration with `drop schema if exists quiz cascade;`.
