@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file activities/v1/activities.proto.
  */
 export const file_activities_v1_activities: GenFile = /*@__PURE__*/
-  fileDesc("Ch5hY3Rpdml0aWVzL3YxL2FjdGl2aXRpZXMucHJvdG8SDWFjdGl2aXRpZXMudjEi/gUKCEFjdGl2aXR5EgoKAmlkGAEgASgJEhEKCXN0cmF2YV9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEhIKCnNwb3J0X3R5cGUYBSABKAkSLgoKc3RhcnRfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQc3RhcnRfZGF0ZV9sb2NhbBgHIAEoCRIQCgh0aW1lem9uZRgIIAEoCRIXCg9kaXN0YW5jZV9tZXRlcnMYCSABKAESGwoTbW92aW5nX3RpbWVfc2Vjb25kcxgKIAEoBRIcChRlbGFwc2VkX3RpbWVfc2Vjb25kcxgLIAEoBRIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYDCABKAESGQoRYXZlcmFnZV9zcGVlZF9tcHMYDSABKAESFQoNbWF4X3NwZWVkX21wcxgOIAEoARIdChVhdmVyYWdlX2hlYXJ0cmF0ZV9icG0YDyABKAESGQoRbWF4X2hlYXJ0cmF0ZV9icG0YECABKAESGwoTYXZlcmFnZV9jYWRlbmNlX3NwbRgRIAEoARIYChBzdW1tYXJ5X3BvbHlsaW5lGBIgASgJEhMKC2hhc19zdHJlYW1zGBMgASgIEhMKC2RldmljZV9uYW1lGBQgASgJEhcKD3JlbGF0aXZlX2VmZm9ydBgVIAEoBRITCgtwaG90b19jb3VudBgWIAEoBRISCgpzdHJhdmFfdXJsGBcgASgJEhoKEmdhcm1pbl9hY3Rpdml0eV9pZBgYIAEoCRISCgpnYXJtaW5fdXJsGBkgASgJEjIKC2RhdGFfc291cmNlGBogASgOMh0uYWN0aXZpdGllcy52MS5BY3Rpdml0eVNvdXJjZRItCg5zdGFydF9sb2NhdGlvbhgbIAEoCzIVLmFjdGl2aXRpZXMudjEuTGF0TG5nEisKDGVuZF9sb2NhdGlvbhgcIAEoCzIVLmFjdGl2aXRpZXMudjEuTGF0TG5nIrEBCg1BY3Rpdml0eVBob3RvEgoKAmlkGAEgASgJEg8KB2NhcHRpb24YAiABKAkSJwoIbG9jYXRpb24YAyABKAsyFS5hY3Rpdml0aWVzLnYxLkxhdExuZxIuCgp0YWtlbl90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgV3aWR0aBgFIAEoBRIOCgZoZWlnaHQYBiABKAUSCwoDdXJsGAcgASgJIiIKBkxhdExuZxILCgNsYXQYASABKAESCwoDbG5nGAIgASgBIswBCg9BY3Rpdml0eVN0cmVhbXMSFAoMdGltZV9zZWNvbmRzGAEgAygFEhcKD2Rpc3RhbmNlX21ldGVycxgCIAMoARILCgNsYXQYAyADKAESCwoDbG5nGAQgAygBEhcKD2FsdGl0dWRlX21ldGVycxgFIAMoARIVCg1oZWFydHJhdGVfYnBtGAYgAygBEhMKC2NhZGVuY2Vfc3BtGAcgAygBEhQKDHZlbG9jaXR5X21wcxgIIAMoARIVCg1ncmFkZV9wZXJjZW50GAkgAygBIsMBChVMaXN0QWN0aXZpdGllc1JlcXVlc3QSEgoKc3RhcnRfZGF0ZRgBIAEoCRIQCghlbmRfZGF0ZRgCIAEoCRITCgtzcG9ydF90eXBlcxgDIAMoCRIRCglwYWdlX3NpemUYBCABKAUSEgoKcGFnZV90b2tlbhgFIAEoCRIpCgRzb3J0GAYgASgOMhsuYWN0aXZpdGllcy52MS5BY3Rpdml0eVNvcnQSHQoVb21pdF9zdW1tYXJ5X3BvbHlsaW5lGAcgASgIIl4KFkxpc3RBY3Rpdml0aWVzUmVzcG9uc2USKwoKYWN0aXZpdGllcxgBIAMoCzIXLmFjdGl2aXRpZXMudjEuQWN0aXZpdHkSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIlQKEkdldEFjdGl2aXR5UmVxdWVzdBIKCgJpZBgBIAEoCRIXCg9pbmNsdWRlX3N0cmVhbXMYAiABKAgSGQoRbWF4X3N0cmVhbV9wb2ludHMYAyABKAUinwEKE0dldEFjdGl2aXR5UmVzcG9uc2USKQoIYWN0aXZpdHkYASABKAsyFy5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5Ei8KB3N0cmVhbXMYAiABKAsyHi5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5U3RyZWFtcxIsCgZwaG90b3MYAyADKAsyHC5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5UGhvdG8iiQEKGlN1bW1hcml6ZUFjdGl2aXRpZXNSZXF1ZXN0EhIKCnN0YXJ0X2RhdGUYASABKAkSEAoIZW5kX2RhdGUYAiABKAkSMAoIaW50ZXJ2YWwYAyABKA4yHi5hY3Rpdml0aWVzLnYxLlN1bW1hcnlJbnRlcnZhbBITCgtzcG9ydF90eXBlcxgEIAMoCSLFAQoPQWN0aXZpdHlTdW1tYXJ5EhIKCnN0YXJ0X2RhdGUYASABKAkSEAoIZW5kX2RhdGUYAiABKAkSFgoOYWN0aXZpdHlfY291bnQYAyABKAUSFwoPZGlzdGFuY2VfbWV0ZXJzGAQgASgBEhsKE21vdmluZ190aW1lX3NlY29uZHMYBSABKAUSHQoVZWxldmF0aW9uX2dhaW5fbWV0ZXJzGAYgASgBEh8KF2xvbmdlc3RfZGlzdGFuY2VfbWV0ZXJzGAcgASgBIlAKG1N1bW1hcml6ZUFjdGl2aXRpZXNSZXNwb25zZRIxCglzdW1tYXJpZXMYASADKAsyHi5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5U3VtbWFyeSppCg5BY3Rpdml0eVNvdXJjZRIfChtBQ1RJVklUWV9TT1VSQ0VfVU5TUEVDSUZJRUQQABIaChZBQ1RJVklUWV9TT1VSQ0VfU1RSQVZBEAESGgoWQUNUSVZJVFlfU09VUkNFX0dBUk1JThACKooBCgxBY3Rpdml0eVNvcnQSHQoZQUNUSVZJVFlfU09SVF9VTlNQRUNJRklFRBAAEhoKFkFDVElWSVRZX1NPUlRfRElTVEFOQ0UQARIgChxBQ1RJVklUWV9TT1JUX0VMRVZBVElPTl9HQUlOEAISHQoZQUNUSVZJVFlfU09SVF9NT1ZJTkdfVElNRRADKmoKD1N1bW1hcnlJbnRlcnZhbBIgChxTVU1NQVJZX0lOVEVSVkFMX1VOU1BFQ0lGSUVEEAASGQoVU1VNTUFSWV9JTlRFUlZBTF9XRUVLEAESGgoWU1VNTUFSWV9JTlRFUlZBTF9NT05USBACMrQCCg9BY3Rpdml0eVNlcnZpY2USXQoOTGlzdEFjdGl2aXRpZXMSJC5hY3Rpdml0aWVzLnYxLkxpc3RBY3Rpdml0aWVzUmVxdWVzdBolLmFjdGl2aXRpZXMudjEuTGlzdEFjdGl2aXRpZXNSZXNwb25zZRJUCgtHZXRBY3Rpdml0eRIhLmFjdGl2aXRpZXMudjEuR2V0QWN0aXZpdHlSZXF1ZXN0GiIuYWN0aXZpdGllcy52MS5HZXRBY3Rpdml0eVJlc3BvbnNlEmwKE1N1bW1hcml6ZUFjdGl2aXRpZXMSKS5hY3Rpdml0aWVzLnYxLlN1bW1hcml6ZUFjdGl2aXRpZXNSZXF1ZXN0GiouYWN0aXZpdGllcy52MS5TdW1tYXJpemVBY3Rpdml0aWVzUmVzcG9uc2VCyQEKEWNvbS5hY3Rpdml0aWVzLnYxQg9BY3Rpdml0aWVzUHJvdG9QAVpOZ2l0aHViLmNvbS9qb2hhbmJyYW5kaG9yc3QvdHJhaWwtdG9vbHMvaW50ZXJuYWwvZ2VuL2FjdGl2aXRpZXMvdjE7YWN0aXZpdGllc3YxogIDQVhYqgINQWN0aXZpdGllcy5WMcoCDUFjdGl2aXRpZXNcVjHiAhlBY3Rpdml0aWVzXFYxXEdQQk1ldGFkYXRh6gIOQWN0aXZpdGllczo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("Ch5hY3Rpdml0aWVzL3YxL2FjdGl2aXRpZXMucHJvdG8SDWFjdGl2aXRpZXMudjEi/gUKCEFjdGl2aXR5EgoKAmlkGAEgASgJEhEKCXN0cmF2YV9pZBgCIAEoCRIMCgRuYW1lGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEhIKCnNwb3J0X3R5cGUYBSABKAkSLgoKc3RhcnRfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQc3RhcnRfZGF0ZV9sb2NhbBgHIAEoCRIQCgh0aW1lem9uZRgIIAEoCRIXCg9kaXN0YW5jZV9tZXRlcnMYCSABKAESGwoTbW92aW5nX3RpbWVfc2Vjb25kcxgKIAEoBRIcChRlbGFwc2VkX3RpbWVfc2Vjb25kcxgLIAEoBRIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYDCABKAESGQoRYXZlcmFnZV9zcGVlZF9tcHMYDSABKAESFQoNbWF4X3NwZWVkX21wcxgOIAEoARIdChVhdmVyYWdlX2hlYXJ0cmF0ZV9icG0YDyABKAESGQoRbWF4X2hlYXJ0cmF0ZV9icG0YECABKAESGwoTYXZlcmFnZV9jYWRlbmNlX3NwbRgRIAEoARIYChBzdW1tYXJ5X3BvbHlsaW5lGBIgASgJEhMKC2hhc19zdHJlYW1zGBMgASgIEhMKC2RldmljZV9uYW1lGBQgASgJEhcKD3JlbGF0aXZlX2VmZm9ydBgVIAEoBRITCgtwaG90b19jb3VudBgWIAEoBRISCgpzdHJhdmFfdXJsGBcgASgJEhoKEmdhcm1pbl9hY3Rpdml0eV9pZBgYIAEoCRISCgpnYXJtaW5fdXJsGBkgASgJEjIKC2RhdGFfc291cmNlGBogASgOMh0uYWN0aXZpdGllcy52MS5BY3Rpdml0eVNvdXJjZRItCg5zdGFydF9sb2NhdGlvbhgbIAEoCzIVLmFjdGl2aXRpZXMudjEuTGF0TG5nEisKDGVuZF9sb2NhdGlvbhgcIAEoCzIVLmFjdGl2aXRpZXMudjEuTGF0TG5nIrEBCg1BY3Rpdml0eVBob3RvEgoKAmlkGAEgASgJEg8KB2NhcHRpb24YAiABKAkSJwoIbG9jYXRpb24YAyABKAsyFS5hY3Rpdml0aWVzLnYxLkxhdExuZxIuCgp0YWtlbl90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgV3aWR0aBgFIAEoBRIOCgZoZWlnaHQYBiABKAUSCwoDdXJsGAcgASgJIiIKBkxhdExuZxILCgNsYXQYASABKAESCwoDbG5nGAIgASgBIswBCg9BY3Rpdml0eVN0cmVhbXMSFAoMdGltZV9zZWNvbmRzGAEgAygFEhcKD2Rpc3RhbmNlX21ldGVycxgCIAMoARILCgNsYXQYAyADKAESCwoDbG5nGAQgAygBEhcKD2FsdGl0dWRlX21ldGVycxgFIAMoARIVCg1oZWFydHJhdGVfYnBtGAYgAygBEhMKC2NhZGVuY2Vfc3BtGAcgAygBEhQKDHZlbG9jaXR5X21wcxgIIAMoARIVCg1ncmFkZV9wZXJjZW50GAkgAygBIsMBChVMaXN0QWN0aXZpdGllc1JlcXVlc3QSEgoKc3RhcnRfZGF0ZRgBIAEoCRIQCghlbmRfZGF0ZRgCIAEoCRITCgtzcG9ydF90eXBlcxgDIAMoCRIRCglwYWdlX3NpemUYBCABKAUSEgoKcGFnZV90b2tlbhgFIAEoCRIpCgRzb3J0GAYgASgOMhsuYWN0aXZpdGllcy52MS5BY3Rpdml0eVNvcnQSHQoVb21pdF9zdW1tYXJ5X3BvbHlsaW5lGAcgASgIIl4KFkxpc3RBY3Rpdml0aWVzUmVzcG9uc2USKwoKYWN0aXZpdGllcxgBIAMoCzIXLmFjdGl2aXRpZXMudjEuQWN0aXZpdHkSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIlQKEkdldEFjdGl2aXR5UmVxdWVzdBIKCgJpZBgBIAEoCRIXCg9pbmNsdWRlX3N0cmVhbXMYAiABKAgSGQoRbWF4X3N0cmVhbV9wb2ludHMYAyABKAUinwEKE0dldEFjdGl2aXR5UmVzcG9uc2USKQoIYWN0aXZpdHkYASABKAsyFy5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5Ei8KB3N0cmVhbXMYAiABKAsyHi5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5U3RyZWFtcxIsCgZwaG90b3MYAyADKAsyHC5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5UGhvdG8igQIKGlN1bW1hcml6ZUFjdGl2aXRpZXNSZXF1ZXN0EhIKCnN0YXJ0X2RhdGUYASABKAkSEAoIZW5kX2RhdGUYAiABKAkSMAoIaW50ZXJ2YWwYAyABKA4yHi5hY3Rpdml0aWVzLnYxLlN1bW1hcnlJbnRlcnZhbBITCgtzcG9ydF90eXBlcxgEIAMoCRIgChhpbmNsdWRlX2hlYXJ0X3JhdGVfem9uZXMYBSABKAgSKAogYWVyb2JpY190aHJlc2hvbGRfaGVhcnRfcmF0ZV9icG0YBiABKAUSKgoiYW5hZXJvYmljX3RocmVzaG9sZF9oZWFydF9yYXRlX2JwbRgHIAEoBSKnAQoOSGVhcnRSYXRlWm9uZXMSJwofYmVsb3dfYWVyb2JpY190aHJlc2hvbGRfc2Vjb25kcxgBIAEoBRIiChpiZXR3ZWVuX3RocmVzaG9sZHNfc2Vjb25kcxgCIAEoBRIpCiFhYm92ZV9hbmFlcm9iaWNfdGhyZXNob2xkX3NlY29uZHMYAyABKAUSHQoVbm9faGVhcnRfcmF0ZV9zZWNvbmRzGAQgASgFIv4BCg9BY3Rpdml0eVN1bW1hcnkSEgoKc3RhcnRfZGF0ZRgBIAEoCRIQCghlbmRfZGF0ZRgCIAEoCRIWCg5hY3Rpdml0eV9jb3VudBgDIAEoBRIXCg9kaXN0YW5jZV9tZXRlcnMYBCABKAESGwoTbW92aW5nX3RpbWVfc2Vjb25kcxgFIAEoBRIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYBiABKAESHwoXbG9uZ2VzdF9kaXN0YW5jZV9tZXRlcnMYByABKAESNwoQaGVhcnRfcmF0ZV96b25lcxgIIAEoCzIdLmFjdGl2aXRpZXMudjEuSGVhcnRSYXRlWm9uZXMipgEKG1N1bW1hcml6ZUFjdGl2aXRpZXNSZXNwb25zZRIxCglzdW1tYXJpZXMYASADKAsyHi5hY3Rpdml0aWVzLnYxLkFjdGl2aXR5U3VtbWFyeRIoCiBhZXJvYmljX3RocmVzaG9sZF9oZWFydF9yYXRlX2JwbRgCIAEoBRIqCiJhbmFlcm9iaWNfdGhyZXNob2xkX2hlYXJ0X3JhdGVfYnBtGAMgASgFKmkKDkFjdGl2aXR5U291cmNlEh8KG0FDVElWSVRZX1NPVVJDRV9VTlNQRUNJRklFRBAAEhoKFkFDVElWSVRZX1NPVVJDRV9TVFJBVkEQARIaChZBQ1RJVklUWV9TT1VSQ0VfR0FSTUlOEAIqigEKDEFjdGl2aXR5U29ydBIdChlBQ1RJVklUWV9TT1JUX1VOU1BFQ0lGSUVEEAASGgoWQUNUSVZJVFlfU09SVF9ESVNUQU5DRRABEiAKHEFDVElWSVRZX1NPUlRfRUxFVkFUSU9OX0dBSU4QAhIdChlBQ1RJVklUWV9TT1JUX01PVklOR19USU1FEAMqagoPU3VtbWFyeUludGVydmFsEiAKHFNVTU1BUllfSU5URVJWQUxfVU5TUEVDSUZJRUQQABIZChVTVU1NQVJZX0lOVEVSVkFMX1dFRUsQARIaChZTVU1NQVJZX0lOVEVSVkFMX01PTlRIEAIytAIKD0FjdGl2aXR5U2VydmljZRJdCg5MaXN0QWN0aXZpdGllcxIkLmFjdGl2aXRpZXMudjEuTGlzdEFjdGl2aXRpZXNSZXF1ZXN0GiUuYWN0aXZpdGllcy52MS5MaXN0QWN0aXZpdGllc1Jlc3BvbnNlElQKC0dldEFjdGl2aXR5EiEuYWN0aXZpdGllcy52MS5HZXRBY3Rpdml0eVJlcXVlc3QaIi5hY3Rpdml0aWVzLnYxLkdldEFjdGl2aXR5UmVzcG9uc2USbAoTU3VtbWFyaXplQWN0aXZpdGllcxIpLmFjdGl2aXRpZXMudjEuU3VtbWFyaXplQWN0aXZpdGllc1JlcXVlc3QaKi5hY3Rpdml0aWVzLnYxLlN1bW1hcml6ZUFjdGl2aXRpZXNSZXNwb25zZULJAQoRY29tLmFjdGl2aXRpZXMudjFCD0FjdGl2aXRpZXNQcm90b1ABWk5naXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vYWN0aXZpdGllcy92MTthY3Rpdml0aWVzdjGiAgNBWFiqAg1BY3Rpdml0aWVzLlYxygINQWN0aXZpdGllc1xWMeICGUFjdGl2aXRpZXNcVjFcR1BCTWV0YWRhdGHqAg5BY3Rpdml0aWVzOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * An activity recorded by the user.
@@ -598,6 +598,34 @@ export type SummarizeActivitiesRequest = Message<"activities.v1.SummarizeActivit
    * @generated from field: repeated string sport_types = 4;
    */
   sportTypes: string[];
+
+  /**
+   * Include the time in heart rate zones around the user's thresholds, from
+   * the activities' recorded heart rate. It reads every activity's streams,
+   * so the date range is limited to 26 weeks. Use it to check how much easy
+   * running stays below the aerobic threshold, and how much drifts above it.
+   *
+   * @generated from field: bool include_heart_rate_zones = 5;
+   */
+  includeHeartRateZones: boolean;
+
+  /**
+   * The aerobic threshold the zones are around, in beats per minute.
+   * Defaults to the user's latest lactate test that found one. Required for
+   * heart rate zones if the user has no such test.
+   *
+   * @generated from field: int32 aerobic_threshold_heart_rate_bpm = 6;
+   */
+  aerobicThresholdHeartRateBpm: number;
+
+  /**
+   * The anaerobic threshold the zones are around, in beats per minute.
+   * Defaults to the user's latest lactate test that found one. Without one,
+   * time above the aerobic threshold isn't split.
+   *
+   * @generated from field: int32 anaerobic_threshold_heart_rate_bpm = 7;
+   */
+  anaerobicThresholdHeartRateBpm: number;
 };
 
 /**
@@ -606,6 +634,52 @@ export type SummarizeActivitiesRequest = Message<"activities.v1.SummarizeActivit
  */
 export const SummarizeActivitiesRequestSchema: GenMessage<SummarizeActivitiesRequest> = /*@__PURE__*/
   messageDesc(file_activities_v1_activities, 8);
+
+/**
+ * Time in heart rate zones around the user's aerobic threshold (AeT) and
+ * anaerobic threshold (AnT).
+ *
+ * @generated from message activities.v1.HeartRateZones
+ */
+export type HeartRateZones = Message<"activities.v1.HeartRateZones"> & {
+  /**
+   * Time below the aerobic threshold, in seconds: easy, zone 1 and 2.
+   *
+   * @generated from field: int32 below_aerobic_threshold_seconds = 1;
+   */
+  belowAerobicThresholdSeconds: number;
+
+  /**
+   * Time between the aerobic and anaerobic thresholds, in seconds: zone 3,
+   * or all time above the aerobic threshold without an anaerobic threshold.
+   *
+   * @generated from field: int32 between_thresholds_seconds = 2;
+   */
+  betweenThresholdsSeconds: number;
+
+  /**
+   * Time above the anaerobic threshold, in seconds: zone 4 and up. 0 without
+   * an anaerobic threshold.
+   *
+   * @generated from field: int32 above_anaerobic_threshold_seconds = 3;
+   */
+  aboveAnaerobicThresholdSeconds: number;
+
+  /**
+   * The moving time of activities without recorded heart rate, in seconds,
+   * so the zones can be read against the total.
+   *
+   * @generated from field: int32 no_heart_rate_seconds = 4;
+   */
+  noHeartRateSeconds: number;
+};
+
+/**
+ * Describes the message activities.v1.HeartRateZones.
+ * Use `create(HeartRateZonesSchema)` to create a new message.
+ */
+export const HeartRateZonesSchema: GenMessage<HeartRateZones> = /*@__PURE__*/
+  messageDesc(file_activities_v1_activities, 9);
 
 /**
  * Activity totals for a period.
@@ -661,6 +735,13 @@ export type ActivitySummary = Message<"activities.v1.ActivitySummary"> & {
    * @generated from field: double longest_distance_meters = 7;
    */
   longestDistanceMeters: number;
+
+  /**
+   * The time in heart rate zones, if requested.
+   *
+   * @generated from field: activities.v1.HeartRateZones heart_rate_zones = 8;
+   */
+  heartRateZones?: HeartRateZones | undefined;
 };
 
 /**
@@ -668,7 +749,7 @@ export type ActivitySummary = Message<"activities.v1.ActivitySummary"> & {
  * Use `create(ActivitySummarySchema)` to create a new message.
  */
 export const ActivitySummarySchema: GenMessage<ActivitySummary> = /*@__PURE__*/
-  messageDesc(file_activities_v1_activities, 9);
+  messageDesc(file_activities_v1_activities, 10);
 
 /**
  * @generated from message activities.v1.SummarizeActivitiesResponse
@@ -680,6 +761,22 @@ export type SummarizeActivitiesResponse = Message<"activities.v1.SummarizeActivi
    * @generated from field: repeated activities.v1.ActivitySummary summaries = 1;
    */
   summaries: ActivitySummary[];
+
+  /**
+   * The aerobic threshold the heart rate zones are around, in beats per
+   * minute, if requested.
+   *
+   * @generated from field: int32 aerobic_threshold_heart_rate_bpm = 2;
+   */
+  aerobicThresholdHeartRateBpm: number;
+
+  /**
+   * The anaerobic threshold the heart rate zones are around, in beats per
+   * minute, 0 if none.
+   *
+   * @generated from field: int32 anaerobic_threshold_heart_rate_bpm = 3;
+   */
+  anaerobicThresholdHeartRateBpm: number;
 };
 
 /**
@@ -687,7 +784,7 @@ export type SummarizeActivitiesResponse = Message<"activities.v1.SummarizeActivi
  * Use `create(SummarizeActivitiesResponseSchema)` to create a new message.
  */
 export const SummarizeActivitiesResponseSchema: GenMessage<SummarizeActivitiesResponse> = /*@__PURE__*/
-  messageDesc(file_activities_v1_activities, 10);
+  messageDesc(file_activities_v1_activities, 11);
 
 /**
  * Where an activity's data comes from.

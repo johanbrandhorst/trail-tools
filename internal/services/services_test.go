@@ -198,7 +198,11 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	activityService := activity.NewService(log, report, activityRepo, strava.WebURL)
+	lactateRepo, err := lactate.NewRepository(log, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	activityService := activity.NewService(log, report, activityRepo, lactateRepo, strava.WebURL)
 	stravaService := stravasvc.NewService(log, report, activityRepo, e.syncer, nil, strava.WebURL)
 	routeService := route.NewService(log, report, routeRepo, activityRepo, e.router, e.mapData)
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
@@ -250,10 +254,6 @@ func newEnv(t *testing.T) *env {
 	racesv1connect.RegisterRacePlanServiceHandler(srv2, racePlanService)
 	tripsv1connect.RegisterTripReportServiceHandler(srv2, tripService)
 	racesv1connect.RegisterRaceReportServiceHandler(srv2, raceReportService)
-	lactateRepo, err := lactate.NewRepository(log, db)
-	if err != nil {
-		t.Fatal(err)
-	}
 	lactateService := lactatesvc.NewService(log, report, lactateRepo, "https://trail.example")
 	lactatev1connect.RegisterLactateTestServiceHandler(srv2, lactateService)
 	apilimit.Mount(mux, srv2)

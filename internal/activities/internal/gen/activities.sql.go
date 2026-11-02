@@ -445,7 +445,8 @@ func (q *Queries) ListActivitySummaryTracksInBounds(ctx context.Context, arg *Li
 }
 
 const listActivityTotals = `-- name: ListActivityTotals :many
-select start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters
+select id, start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters,
+  (streams_synced or garmin_samples)::boolean as has_streams
 from strava_activities
 where user_id = $1
   and start_date_local >= $2::date
@@ -462,10 +463,12 @@ type ListActivityTotalsParams struct {
 }
 
 type ListActivityTotalsRow struct {
+	ID                  pgtype.UUID
 	StartDateLocal      pgtype.Date
 	DistanceMeters      float64
 	MovingTimeSeconds   int32
 	ElevationGainMeters float64
+	HasStreams          bool
 }
 
 func (q *Queries) ListActivityTotals(ctx context.Context, arg *ListActivityTotalsParams) ([]*ListActivityTotalsRow, error) {
@@ -483,10 +486,12 @@ func (q *Queries) ListActivityTotals(ctx context.Context, arg *ListActivityTotal
 	for rows.Next() {
 		var i ListActivityTotalsRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.StartDateLocal,
 			&i.DistanceMeters,
 			&i.MovingTimeSeconds,
 			&i.ElevationGainMeters,
+			&i.HasStreams,
 		); err != nil {
 			return nil, err
 		}

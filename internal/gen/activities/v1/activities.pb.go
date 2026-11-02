@@ -1533,13 +1533,16 @@ func (b0 GetActivityResponse_builder) Build() *GetActivityResponse {
 }
 
 type SummarizeActivitiesRequest struct {
-	state                 protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_StartDate  string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3"`
-	xxx_hidden_EndDate    string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3"`
-	xxx_hidden_Interval   SummaryInterval        `protobuf:"varint,3,opt,name=interval,proto3,enum=activities.v1.SummaryInterval"`
-	xxx_hidden_SportTypes []string               `protobuf:"bytes,4,rep,name=sport_types,json=sportTypes,proto3"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state                                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_StartDate                      string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3"`
+	xxx_hidden_EndDate                        string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3"`
+	xxx_hidden_Interval                       SummaryInterval        `protobuf:"varint,3,opt,name=interval,proto3,enum=activities.v1.SummaryInterval"`
+	xxx_hidden_SportTypes                     []string               `protobuf:"bytes,4,rep,name=sport_types,json=sportTypes,proto3"`
+	xxx_hidden_IncludeHeartRateZones          bool                   `protobuf:"varint,5,opt,name=include_heart_rate_zones,json=includeHeartRateZones,proto3"`
+	xxx_hidden_AerobicThresholdHeartRateBpm   int32                  `protobuf:"varint,6,opt,name=aerobic_threshold_heart_rate_bpm,json=aerobicThresholdHeartRateBpm,proto3"`
+	xxx_hidden_AnaerobicThresholdHeartRateBpm int32                  `protobuf:"varint,7,opt,name=anaerobic_threshold_heart_rate_bpm,json=anaerobicThresholdHeartRateBpm,proto3"`
+	unknownFields                             protoimpl.UnknownFields
+	sizeCache                                 protoimpl.SizeCache
 }
 
 func (x *SummarizeActivitiesRequest) Reset() {
@@ -1595,6 +1598,27 @@ func (x *SummarizeActivitiesRequest) GetSportTypes() []string {
 	return nil
 }
 
+func (x *SummarizeActivitiesRequest) GetIncludeHeartRateZones() bool {
+	if x != nil {
+		return x.xxx_hidden_IncludeHeartRateZones
+	}
+	return false
+}
+
+func (x *SummarizeActivitiesRequest) GetAerobicThresholdHeartRateBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_AerobicThresholdHeartRateBpm
+	}
+	return 0
+}
+
+func (x *SummarizeActivitiesRequest) GetAnaerobicThresholdHeartRateBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_AnaerobicThresholdHeartRateBpm
+	}
+	return 0
+}
+
 func (x *SummarizeActivitiesRequest) SetStartDate(v string) {
 	x.xxx_hidden_StartDate = v
 }
@@ -1611,6 +1635,18 @@ func (x *SummarizeActivitiesRequest) SetSportTypes(v []string) {
 	x.xxx_hidden_SportTypes = v
 }
 
+func (x *SummarizeActivitiesRequest) SetIncludeHeartRateZones(v bool) {
+	x.xxx_hidden_IncludeHeartRateZones = v
+}
+
+func (x *SummarizeActivitiesRequest) SetAerobicThresholdHeartRateBpm(v int32) {
+	x.xxx_hidden_AerobicThresholdHeartRateBpm = v
+}
+
+func (x *SummarizeActivitiesRequest) SetAnaerobicThresholdHeartRateBpm(v int32) {
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = v
+}
+
 type SummarizeActivitiesRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1623,6 +1659,19 @@ type SummarizeActivitiesRequest_builder struct {
 	Interval SummaryInterval
 	// Only include these sport types, e.g. ["Run", "TrailRun"]. Defaults to all.
 	SportTypes []string
+	// Include the time in heart rate zones around the user's thresholds, from
+	// the activities' recorded heart rate. It reads every activity's streams,
+	// so the date range is limited to 26 weeks. Use it to check how much easy
+	// running stays below the aerobic threshold, and how much drifts above it.
+	IncludeHeartRateZones bool
+	// The aerobic threshold the zones are around, in beats per minute.
+	// Defaults to the user's latest lactate test that found one. Required for
+	// heart rate zones if the user has no such test.
+	AerobicThresholdHeartRateBpm int32
+	// The anaerobic threshold the zones are around, in beats per minute.
+	// Defaults to the user's latest lactate test that found one. Without one,
+	// time above the aerobic threshold isn't split.
+	AnaerobicThresholdHeartRateBpm int32
 }
 
 func (b0 SummarizeActivitiesRequest_builder) Build() *SummarizeActivitiesRequest {
@@ -1633,6 +1682,117 @@ func (b0 SummarizeActivitiesRequest_builder) Build() *SummarizeActivitiesRequest
 	x.xxx_hidden_EndDate = b.EndDate
 	x.xxx_hidden_Interval = b.Interval
 	x.xxx_hidden_SportTypes = b.SportTypes
+	x.xxx_hidden_IncludeHeartRateZones = b.IncludeHeartRateZones
+	x.xxx_hidden_AerobicThresholdHeartRateBpm = b.AerobicThresholdHeartRateBpm
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = b.AnaerobicThresholdHeartRateBpm
+	return m0
+}
+
+// Time in heart rate zones around the user's aerobic threshold (AeT) and
+// anaerobic threshold (AnT).
+type HeartRateZones struct {
+	state                                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_BelowAerobicThresholdSeconds   int32                  `protobuf:"varint,1,opt,name=below_aerobic_threshold_seconds,json=belowAerobicThresholdSeconds,proto3"`
+	xxx_hidden_BetweenThresholdsSeconds       int32                  `protobuf:"varint,2,opt,name=between_thresholds_seconds,json=betweenThresholdsSeconds,proto3"`
+	xxx_hidden_AboveAnaerobicThresholdSeconds int32                  `protobuf:"varint,3,opt,name=above_anaerobic_threshold_seconds,json=aboveAnaerobicThresholdSeconds,proto3"`
+	xxx_hidden_NoHeartRateSeconds             int32                  `protobuf:"varint,4,opt,name=no_heart_rate_seconds,json=noHeartRateSeconds,proto3"`
+	unknownFields                             protoimpl.UnknownFields
+	sizeCache                                 protoimpl.SizeCache
+}
+
+func (x *HeartRateZones) Reset() {
+	*x = HeartRateZones{}
+	mi := &file_activities_v1_activities_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeartRateZones) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartRateZones) ProtoMessage() {}
+
+func (x *HeartRateZones) ProtoReflect() protoreflect.Message {
+	mi := &file_activities_v1_activities_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HeartRateZones) GetBelowAerobicThresholdSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_BelowAerobicThresholdSeconds
+	}
+	return 0
+}
+
+func (x *HeartRateZones) GetBetweenThresholdsSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_BetweenThresholdsSeconds
+	}
+	return 0
+}
+
+func (x *HeartRateZones) GetAboveAnaerobicThresholdSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_AboveAnaerobicThresholdSeconds
+	}
+	return 0
+}
+
+func (x *HeartRateZones) GetNoHeartRateSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_NoHeartRateSeconds
+	}
+	return 0
+}
+
+func (x *HeartRateZones) SetBelowAerobicThresholdSeconds(v int32) {
+	x.xxx_hidden_BelowAerobicThresholdSeconds = v
+}
+
+func (x *HeartRateZones) SetBetweenThresholdsSeconds(v int32) {
+	x.xxx_hidden_BetweenThresholdsSeconds = v
+}
+
+func (x *HeartRateZones) SetAboveAnaerobicThresholdSeconds(v int32) {
+	x.xxx_hidden_AboveAnaerobicThresholdSeconds = v
+}
+
+func (x *HeartRateZones) SetNoHeartRateSeconds(v int32) {
+	x.xxx_hidden_NoHeartRateSeconds = v
+}
+
+type HeartRateZones_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Time below the aerobic threshold, in seconds: easy, zone 1 and 2.
+	BelowAerobicThresholdSeconds int32
+	// Time between the aerobic and anaerobic thresholds, in seconds: zone 3,
+	// or all time above the aerobic threshold without an anaerobic threshold.
+	BetweenThresholdsSeconds int32
+	// Time above the anaerobic threshold, in seconds: zone 4 and up. 0 without
+	// an anaerobic threshold.
+	AboveAnaerobicThresholdSeconds int32
+	// The moving time of activities without recorded heart rate, in seconds,
+	// so the zones can be read against the total.
+	NoHeartRateSeconds int32
+}
+
+func (b0 HeartRateZones_builder) Build() *HeartRateZones {
+	m0 := &HeartRateZones{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_BelowAerobicThresholdSeconds = b.BelowAerobicThresholdSeconds
+	x.xxx_hidden_BetweenThresholdsSeconds = b.BetweenThresholdsSeconds
+	x.xxx_hidden_AboveAnaerobicThresholdSeconds = b.AboveAnaerobicThresholdSeconds
+	x.xxx_hidden_NoHeartRateSeconds = b.NoHeartRateSeconds
 	return m0
 }
 
@@ -1646,13 +1806,14 @@ type ActivitySummary struct {
 	xxx_hidden_MovingTimeSeconds     int32                  `protobuf:"varint,5,opt,name=moving_time_seconds,json=movingTimeSeconds,proto3"`
 	xxx_hidden_ElevationGainMeters   float64                `protobuf:"fixed64,6,opt,name=elevation_gain_meters,json=elevationGainMeters,proto3"`
 	xxx_hidden_LongestDistanceMeters float64                `protobuf:"fixed64,7,opt,name=longest_distance_meters,json=longestDistanceMeters,proto3"`
+	xxx_hidden_HeartRateZones        *HeartRateZones        `protobuf:"bytes,8,opt,name=heart_rate_zones,json=heartRateZones,proto3"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *ActivitySummary) Reset() {
 	*x = ActivitySummary{}
-	mi := &file_activities_v1_activities_proto_msgTypes[9]
+	mi := &file_activities_v1_activities_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1664,7 +1825,7 @@ func (x *ActivitySummary) String() string {
 func (*ActivitySummary) ProtoMessage() {}
 
 func (x *ActivitySummary) ProtoReflect() protoreflect.Message {
-	mi := &file_activities_v1_activities_proto_msgTypes[9]
+	mi := &file_activities_v1_activities_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1724,6 +1885,13 @@ func (x *ActivitySummary) GetLongestDistanceMeters() float64 {
 	return 0
 }
 
+func (x *ActivitySummary) GetHeartRateZones() *HeartRateZones {
+	if x != nil {
+		return x.xxx_hidden_HeartRateZones
+	}
+	return nil
+}
+
 func (x *ActivitySummary) SetStartDate(v string) {
 	x.xxx_hidden_StartDate = v
 }
@@ -1752,6 +1920,21 @@ func (x *ActivitySummary) SetLongestDistanceMeters(v float64) {
 	x.xxx_hidden_LongestDistanceMeters = v
 }
 
+func (x *ActivitySummary) SetHeartRateZones(v *HeartRateZones) {
+	x.xxx_hidden_HeartRateZones = v
+}
+
+func (x *ActivitySummary) HasHeartRateZones() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_HeartRateZones != nil
+}
+
+func (x *ActivitySummary) ClearHeartRateZones() {
+	x.xxx_hidden_HeartRateZones = nil
+}
+
 type ActivitySummary_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1769,6 +1952,8 @@ type ActivitySummary_builder struct {
 	ElevationGainMeters float64
 	// The longest single activity distance in meters.
 	LongestDistanceMeters float64
+	// The time in heart rate zones, if requested.
+	HeartRateZones *HeartRateZones
 }
 
 func (b0 ActivitySummary_builder) Build() *ActivitySummary {
@@ -1782,19 +1967,22 @@ func (b0 ActivitySummary_builder) Build() *ActivitySummary {
 	x.xxx_hidden_MovingTimeSeconds = b.MovingTimeSeconds
 	x.xxx_hidden_ElevationGainMeters = b.ElevationGainMeters
 	x.xxx_hidden_LongestDistanceMeters = b.LongestDistanceMeters
+	x.xxx_hidden_HeartRateZones = b.HeartRateZones
 	return m0
 }
 
 type SummarizeActivitiesResponse struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Summaries *[]*ActivitySummary    `protobuf:"bytes,1,rep,name=summaries,proto3"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Summaries                      *[]*ActivitySummary    `protobuf:"bytes,1,rep,name=summaries,proto3"`
+	xxx_hidden_AerobicThresholdHeartRateBpm   int32                  `protobuf:"varint,2,opt,name=aerobic_threshold_heart_rate_bpm,json=aerobicThresholdHeartRateBpm,proto3"`
+	xxx_hidden_AnaerobicThresholdHeartRateBpm int32                  `protobuf:"varint,3,opt,name=anaerobic_threshold_heart_rate_bpm,json=anaerobicThresholdHeartRateBpm,proto3"`
+	unknownFields                             protoimpl.UnknownFields
+	sizeCache                                 protoimpl.SizeCache
 }
 
 func (x *SummarizeActivitiesResponse) Reset() {
 	*x = SummarizeActivitiesResponse{}
-	mi := &file_activities_v1_activities_proto_msgTypes[10]
+	mi := &file_activities_v1_activities_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1806,7 +1994,7 @@ func (x *SummarizeActivitiesResponse) String() string {
 func (*SummarizeActivitiesResponse) ProtoMessage() {}
 
 func (x *SummarizeActivitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_activities_v1_activities_proto_msgTypes[10]
+	mi := &file_activities_v1_activities_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1826,8 +2014,30 @@ func (x *SummarizeActivitiesResponse) GetSummaries() []*ActivitySummary {
 	return nil
 }
 
+func (x *SummarizeActivitiesResponse) GetAerobicThresholdHeartRateBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_AerobicThresholdHeartRateBpm
+	}
+	return 0
+}
+
+func (x *SummarizeActivitiesResponse) GetAnaerobicThresholdHeartRateBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_AnaerobicThresholdHeartRateBpm
+	}
+	return 0
+}
+
 func (x *SummarizeActivitiesResponse) SetSummaries(v []*ActivitySummary) {
 	x.xxx_hidden_Summaries = &v
+}
+
+func (x *SummarizeActivitiesResponse) SetAerobicThresholdHeartRateBpm(v int32) {
+	x.xxx_hidden_AerobicThresholdHeartRateBpm = v
+}
+
+func (x *SummarizeActivitiesResponse) SetAnaerobicThresholdHeartRateBpm(v int32) {
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = v
 }
 
 type SummarizeActivitiesResponse_builder struct {
@@ -1835,6 +2045,12 @@ type SummarizeActivitiesResponse_builder struct {
 
 	// One summary per period, in chronological order.
 	Summaries []*ActivitySummary
+	// The aerobic threshold the heart rate zones are around, in beats per
+	// minute, if requested.
+	AerobicThresholdHeartRateBpm int32
+	// The anaerobic threshold the heart rate zones are around, in beats per
+	// minute, 0 if none.
+	AnaerobicThresholdHeartRateBpm int32
 }
 
 func (b0 SummarizeActivitiesResponse_builder) Build() *SummarizeActivitiesResponse {
@@ -1842,6 +2058,8 @@ func (b0 SummarizeActivitiesResponse_builder) Build() *SummarizeActivitiesRespon
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Summaries = &b.Summaries
+	x.xxx_hidden_AerobicThresholdHeartRateBpm = b.AerobicThresholdHeartRateBpm
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = b.AnaerobicThresholdHeartRateBpm
 	return m0
 }
 
@@ -1934,14 +2152,22 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x13GetActivityResponse\x123\n" +
 	"\bactivity\x18\x01 \x01(\v2\x17.activities.v1.ActivityR\bactivity\x128\n" +
 	"\astreams\x18\x02 \x01(\v2\x1e.activities.v1.ActivityStreamsR\astreams\x124\n" +
-	"\x06photos\x18\x03 \x03(\v2\x1c.activities.v1.ActivityPhotoR\x06photos\"\xb3\x01\n" +
+	"\x06photos\x18\x03 \x03(\v2\x1c.activities.v1.ActivityPhotoR\x06photos\"\x80\x03\n" +
 	"\x1aSummarizeActivitiesRequest\x12\x1d\n" +
 	"\n" +
 	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
 	"\bend_date\x18\x02 \x01(\tR\aendDate\x12:\n" +
 	"\binterval\x18\x03 \x01(\x0e2\x1e.activities.v1.SummaryIntervalR\binterval\x12\x1f\n" +
 	"\vsport_types\x18\x04 \x03(\tR\n" +
-	"sportTypes\"\xb7\x02\n" +
+	"sportTypes\x127\n" +
+	"\x18include_heart_rate_zones\x18\x05 \x01(\bR\x15includeHeartRateZones\x12F\n" +
+	" aerobic_threshold_heart_rate_bpm\x18\x06 \x01(\x05R\x1caerobicThresholdHeartRateBpm\x12J\n" +
+	"\"anaerobic_threshold_heart_rate_bpm\x18\a \x01(\x05R\x1eanaerobicThresholdHeartRateBpm\"\x93\x02\n" +
+	"\x0eHeartRateZones\x12E\n" +
+	"\x1fbelow_aerobic_threshold_seconds\x18\x01 \x01(\x05R\x1cbelowAerobicThresholdSeconds\x12<\n" +
+	"\x1abetween_thresholds_seconds\x18\x02 \x01(\x05R\x18betweenThresholdsSeconds\x12I\n" +
+	"!above_anaerobic_threshold_seconds\x18\x03 \x01(\x05R\x1eaboveAnaerobicThresholdSeconds\x121\n" +
+	"\x15no_heart_rate_seconds\x18\x04 \x01(\x05R\x12noHeartRateSeconds\"\x80\x03\n" +
 	"\x0fActivitySummary\x12\x1d\n" +
 	"\n" +
 	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
@@ -1950,9 +2176,12 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x0fdistance_meters\x18\x04 \x01(\x01R\x0edistanceMeters\x12.\n" +
 	"\x13moving_time_seconds\x18\x05 \x01(\x05R\x11movingTimeSeconds\x122\n" +
 	"\x15elevation_gain_meters\x18\x06 \x01(\x01R\x13elevationGainMeters\x126\n" +
-	"\x17longest_distance_meters\x18\a \x01(\x01R\x15longestDistanceMeters\"[\n" +
+	"\x17longest_distance_meters\x18\a \x01(\x01R\x15longestDistanceMeters\x12G\n" +
+	"\x10heart_rate_zones\x18\b \x01(\v2\x1d.activities.v1.HeartRateZonesR\x0eheartRateZones\"\xef\x01\n" +
 	"\x1bSummarizeActivitiesResponse\x12<\n" +
-	"\tsummaries\x18\x01 \x03(\v2\x1e.activities.v1.ActivitySummaryR\tsummaries*i\n" +
+	"\tsummaries\x18\x01 \x03(\v2\x1e.activities.v1.ActivitySummaryR\tsummaries\x12F\n" +
+	" aerobic_threshold_heart_rate_bpm\x18\x02 \x01(\x05R\x1caerobicThresholdHeartRateBpm\x12J\n" +
+	"\"anaerobic_threshold_heart_rate_bpm\x18\x03 \x01(\x05R\x1eanaerobicThresholdHeartRateBpm*i\n" +
 	"\x0eActivitySource\x12\x1f\n" +
 	"\x1bACTIVITY_SOURCE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ACTIVITY_SOURCE_STRAVA\x10\x01\x12\x1a\n" +
@@ -1973,7 +2202,7 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x11com.activities.v1B\x0fActivitiesProtoP\x01ZNgithub.com/johanbrandhorst/trail-tools/internal/gen/activities/v1;activitiesv1\xa2\x02\x03AXX\xaa\x02\rActivities.V1\xca\x02\rActivities\\V1\xe2\x02\x19Activities\\V1\\GPBMetadata\xea\x02\x0eActivities::V1b\x06proto3"
 
 var file_activities_v1_activities_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_activities_v1_activities_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_activities_v1_activities_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_activities_v1_activities_proto_goTypes = []any{
 	(ActivitySource)(0),                 // 0: activities.v1.ActivitySource
 	(ActivitySort)(0),                   // 1: activities.v1.ActivitySort
@@ -1987,35 +2216,37 @@ var file_activities_v1_activities_proto_goTypes = []any{
 	(*GetActivityRequest)(nil),          // 9: activities.v1.GetActivityRequest
 	(*GetActivityResponse)(nil),         // 10: activities.v1.GetActivityResponse
 	(*SummarizeActivitiesRequest)(nil),  // 11: activities.v1.SummarizeActivitiesRequest
-	(*ActivitySummary)(nil),             // 12: activities.v1.ActivitySummary
-	(*SummarizeActivitiesResponse)(nil), // 13: activities.v1.SummarizeActivitiesResponse
-	(*timestamppb.Timestamp)(nil),       // 14: google.protobuf.Timestamp
+	(*HeartRateZones)(nil),              // 12: activities.v1.HeartRateZones
+	(*ActivitySummary)(nil),             // 13: activities.v1.ActivitySummary
+	(*SummarizeActivitiesResponse)(nil), // 14: activities.v1.SummarizeActivitiesResponse
+	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
 }
 var file_activities_v1_activities_proto_depIdxs = []int32{
-	14, // 0: activities.v1.Activity.start_time:type_name -> google.protobuf.Timestamp
+	15, // 0: activities.v1.Activity.start_time:type_name -> google.protobuf.Timestamp
 	0,  // 1: activities.v1.Activity.data_source:type_name -> activities.v1.ActivitySource
 	5,  // 2: activities.v1.Activity.start_location:type_name -> activities.v1.LatLng
 	5,  // 3: activities.v1.Activity.end_location:type_name -> activities.v1.LatLng
 	5,  // 4: activities.v1.ActivityPhoto.location:type_name -> activities.v1.LatLng
-	14, // 5: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
+	15, // 5: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
 	1,  // 6: activities.v1.ListActivitiesRequest.sort:type_name -> activities.v1.ActivitySort
 	3,  // 7: activities.v1.ListActivitiesResponse.activities:type_name -> activities.v1.Activity
 	3,  // 8: activities.v1.GetActivityResponse.activity:type_name -> activities.v1.Activity
 	6,  // 9: activities.v1.GetActivityResponse.streams:type_name -> activities.v1.ActivityStreams
 	4,  // 10: activities.v1.GetActivityResponse.photos:type_name -> activities.v1.ActivityPhoto
 	2,  // 11: activities.v1.SummarizeActivitiesRequest.interval:type_name -> activities.v1.SummaryInterval
-	12, // 12: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
-	7,  // 13: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
-	9,  // 14: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
-	11, // 15: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
-	8,  // 16: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
-	10, // 17: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
-	13, // 18: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
-	16, // [16:19] is the sub-list for method output_type
-	13, // [13:16] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	12, // 12: activities.v1.ActivitySummary.heart_rate_zones:type_name -> activities.v1.HeartRateZones
+	13, // 13: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
+	7,  // 14: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
+	9,  // 15: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
+	11, // 16: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
+	8,  // 17: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
+	10, // 18: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
+	14, // 19: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
+	17, // [17:20] is the sub-list for method output_type
+	14, // [14:17] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_activities_v1_activities_proto_init() }
@@ -2029,7 +2260,7 @@ func file_activities_v1_activities_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_activities_v1_activities_proto_rawDesc), len(file_activities_v1_activities_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

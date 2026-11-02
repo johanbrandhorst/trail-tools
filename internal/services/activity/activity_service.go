@@ -37,18 +37,23 @@ type Service struct {
 	log        *slog.Logger
 	report     *errreport.Reporter
 	activities ActivityRepository
+	// The user's lactate tests, whose thresholds heart rate zones default
+	// to.
+	thresholdTests ThresholdRepository
 	// The URL of Strava's website, for links to activities.
 	stravaWebURL string
 }
 
-// NewService creates a new Service. stravaWebURL is the URL of Strava's
-// website, usually strava.WebURL, for links to activities.
-func NewService(log *slog.Logger, report *errreport.Reporter, activities ActivityRepository, stravaWebURL string) *Service {
+// NewService creates a new Service. thresholdTests are the user's lactate
+// tests, for heart rate zones. stravaWebURL is the URL of Strava's website,
+// usually strava.WebURL, for links to activities.
+func NewService(log *slog.Logger, report *errreport.Reporter, activities ActivityRepository, thresholdTests ThresholdRepository, stravaWebURL string) *Service {
 	return &Service{
-		log:          log,
-		report:       report,
-		activities:   activities,
-		stravaWebURL: stravaWebURL,
+		log:            log,
+		report:         report,
+		activities:     activities,
+		thresholdTests: thresholdTests,
+		stravaWebURL:   stravaWebURL,
 	}
 }
 
@@ -178,15 +183,32 @@ func (s *Service) SummarizeActivities(ctx context.Context, req *activitiesv1.Sum
 	}
 	monthly := req.GetInterval() == activitiesv1.SummaryInterval_SUMMARY_INTERVAL_MONTH
 	periods := Periods(startDate, endDate, monthly)
+	var thresholds zoneThresholds
+	if req.GetIncludeHeartRateZones() {
+		if endDate.After(zoneWeeksLimit(periods[0].Start)) {
+			return nil, connect.Errorf(connect.CodeInvalidArgument,
+				"heart rate zones cover at most %d weeks; narrow the date range, or summarize the zones in parts", maxZoneWeeks)
+		}
+		if thresholds, err = s.thresholds(ctx, userID, req); err != nil {
+			return nil, err
+		}
+	}
 	totals, err := s.activities.ListActivityTotals(ctx, userID, periods[0].Start, endDate, req.GetSportTypes())
 	if err != nil {
 		return nil, s.internalError(ctx, "failed to list activity totals", err)
+	}
+	var zones []*zoneTime
+	if req.GetIncludeHeartRateZones() {
+		if zones, err = s.zoneTimes(ctx, userID, totals, thresholds); err != nil {
+			return nil, err
+		}
 	}
 	summaries := make([]*activitiesv1.ActivitySummary, len(periods))
 	p := 0
 	for i, period := range periods {
 		var count, movingTime int32
 		var distance, elevation, longest float64
+		periodZones := &zoneTime{}
 		for p < len(totals) && !totals[p].StartDateLocal.After(period.End) {
 			t := totals[p]
 			count++
@@ -194,9 +216,12 @@ func (s *Service) SummarizeActivities(ctx context.Context, req *activitiesv1.Sum
 			movingTime += t.MovingTimeSeconds
 			elevation += t.ElevationGainMeters
 			longest = max(longest, t.DistanceMeters)
+			if zones != nil {
+				periodZones.add(zones[p])
+			}
 			p++
 		}
-		summaries[i] = activitiesv1.ActivitySummary_builder{
+		b := activitiesv1.ActivitySummary_builder{
 			StartDate:             store.FormatDate(period.Start),
 			EndDate:               store.FormatDate(period.End),
 			ActivityCount:         count,
@@ -204,10 +229,16 @@ func (s *Service) SummarizeActivities(ctx context.Context, req *activitiesv1.Sum
 			MovingTimeSeconds:     movingTime,
 			ElevationGainMeters:   elevation,
 			LongestDistanceMeters: longest,
-		}.Build()
+		}
+		if zones != nil {
+			b.HeartRateZones = periodZones.toProto()
+		}
+		summaries[i] = b.Build()
 	}
 	return activitiesv1.SummarizeActivitiesResponse_builder{
-		Summaries: summaries,
+		Summaries:                      summaries,
+		AerobicThresholdHeartRateBpm:   thresholds.aerobic,
+		AnaerobicThresholdHeartRateBpm: thresholds.anaerobic,
 	}.Build(), nil
 }
 
