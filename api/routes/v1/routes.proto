@@ -194,6 +194,44 @@ message Route {
   google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];
   // When the route was last updated.
   google.protobuf.Timestamp update_time = 10 [(mcp.v1.field).output_only = true];
+  // What to check about the route: sections that retrace ground it already
+  // covered, and waypoints off any mapped path, which the route reaches in
+  // a straight line. They may be intended, like an out-and-back, but often
+  // mean a waypoint is in the wrong place. Not set by ListRoutes.
+  repeated RouteWarning warnings = 12 [(mcp.v1.field).output_only = true];
+}
+
+// Something to check about a route.
+message RouteWarning {
+  // What the warning is about.
+  RouteWarningKind kind = 1;
+  // The warning, for the user, e.g. "Km 5.0-6.0 goes back over km
+  // 0.0-1.0."
+  string message = 2;
+  // Where along the route the warning applies, in meters from the start.
+  // A waypoint's warning starts and ends at the waypoint.
+  double start_distance_meters = 3;
+  double end_distance_meters = 4;
+  // The index in waypoints of the waypoint an OFF_MAP_WAYPOINT warning is
+  // about.
+  optional int32 waypoint_index = 5;
+  // For REPEATED_SECTION, where the ground the section retraces was first
+  // covered, in meters from the start. The start is after the end when the
+  // section goes back over it in the opposite direction.
+  optional double earlier_start_distance_meters = 6;
+  optional double earlier_end_distance_meters = 7;
+}
+
+// The kinds of route warnings.
+enum RouteWarningKind {
+  ROUTE_WARNING_KIND_UNSPECIFIED = 0;
+  // A section of at least 100 m retraces ground the route already covered,
+  // in either direction.
+  ROUTE_WARNING_KIND_REPEATED_SECTION = 1;
+  // A waypoint of a routed leg is more than 25 m from any mapped path, so
+  // the route goes straight to it off the trail. Move it onto the trail, or
+  // make its legs STRAIGHT if that's intended.
+  ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT = 2;
 }
 
 message PreviewRouteRequest {

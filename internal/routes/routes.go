@@ -56,6 +56,12 @@ type Leg struct {
 	// The terrain of each segment of the path, if known. Terrains[i] is the
 	// terrain between Points[i] and Points[i+1].
 	Terrains []geo.Terrain `json:"terrains,omitempty"`
+	// How far the waypoints are from where routing joined the map, in
+	// meters: the leg goes straight between them, off any mapped path.
+	// Zero for legs that weren't routed, and those routed before it was
+	// recorded.
+	FromOffMapMeters float64 `json:"from_off_map_meters,omitempty"`
+	ToOffMapMeters   float64 `json:"to_off_map_meters,omitempty"`
 }
 
 // GeoPoints returns the leg's path as geo points.
@@ -70,7 +76,10 @@ func (l *Leg) GeoPoints() []geo.Point {
 // Reversed returns the leg in the opposite direction.
 func (l Leg) Reversed() Leg {
 	n := len(l.Points)
-	reversed := Leg{From: l.To, To: l.From, Profile: l.Profile, Points: make([][3]float64, n)}
+	reversed := Leg{
+		From: l.To, To: l.From, Profile: l.Profile, Points: make([][3]float64, n),
+		FromOffMapMeters: l.ToOffMapMeters, ToOffMapMeters: l.FromOffMapMeters,
+	}
 	for i, p := range l.Points {
 		reversed.Points[n-1-i] = p
 	}
