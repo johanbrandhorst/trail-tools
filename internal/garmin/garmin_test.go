@@ -53,10 +53,11 @@ func TestCallbacksMustBeGarmins(t *testing.T) {
 func TestStatusErrors(t *testing.T) {
 	t.Parallel()
 	for status, want := range map[int]error{
-		http.StatusUnauthorized:    garmin.ErrUnauthorized,
-		http.StatusNotFound:        garmin.ErrNotFound,
-		http.StatusGone:            garmin.ErrNotFound,
-		http.StatusTooManyRequests: garmin.ErrRateLimited,
+		http.StatusUnauthorized:       garmin.ErrUnauthorized,
+		http.StatusNotFound:           garmin.ErrNotFound,
+		http.StatusGone:               garmin.ErrNotFound,
+		http.StatusTooManyRequests:    garmin.ErrRateLimited,
+		http.StatusPreconditionFailed: garmin.ErrPermissionDenied,
 	} {
 		c, apiURL := newClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(status)
@@ -73,17 +74,17 @@ func TestWorkouts(t *testing.T) {
 	var scheduled map[string]any
 	c, _ := newClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/training-api/workout":
+		case r.Method == http.MethodPost && r.URL.Path == "/workoutportal/workout/v2":
 			if err := json.NewDecoder(r.Body).Decode(&created); err != nil {
 				t.Error(err)
 			}
 			_, _ = io.WriteString(w, `{"workoutId":42}`)
-		case r.Method == http.MethodPost && r.URL.Path == "/training-api/schedule":
+		case r.Method == http.MethodPost && r.URL.Path == "/training-api/schedule/":
 			if err := json.NewDecoder(r.Body).Decode(&scheduled); err != nil {
 				t.Error(err)
 			}
 			_, _ = io.WriteString(w, `7`)
-		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/training-api/workout/"):
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/training-api/workout/v2/"):
 			// Already deleted on Garmin.
 			w.WriteHeader(http.StatusNotFound)
 		default:
@@ -101,6 +102,46 @@ func TestWorkouts(t *testing.T) {
 	// Deleting a workout that's gone isn't an error.
 	if err := c.DeleteWorkout(t.Context(), "token", 42); err != nil {
 		t.Errorf("DeleteWorkout: %v", err)
+	}
+}
+
+func TestUser(t *testing.T) {
+	t.Parallel()
+	c, _ := newClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/partner-gateway/rest/user/id":
+			_, _ = io.WriteString(w, `{"userId":"d3315b10"}`)
+		case "/partner-gateway/rest/user/permissions":
+			_, _ = io.WriteString(w, `{"permissions":["WORKOUT_IMPORT","ACTIVITY_EXPORT"]}`)
+		case "/partner-gateway/rest/user/registration":
+			if r.Method != http.MethodDelete {
+				t.Errorf("got %s to deregister, want DELETE", r.Method)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL)
+		}
+	})
+	id, err := c.UserID(t.Context(), "token")
+	if err != nil || id != "d3315b10" {
+		t.Errorf("UserID: got %q, %v", id, err)
+	}
+	permissions, err := c.Permissions(t.Context(), "token")
+	if err != nil || len(permissions) != 2 || permissions[0] != garmin.PermissionActivityExport {
+		t.Errorf("Permissions: got %v, %v", permissions, err)
+	}
+	if err := c.Deregister(t.Context(), "token"); err != nil {
+		t.Errorf("Deregister: %v", err)
+	}
+}
+
+func TestIDs(t *testing.T) {
+	t.Parallel()
+	var got struct {
+		A, B garmin.ID
+	}
+	if err := json.Unmarshal([]byte(`{"A":5001968355,"B":"5001968356"}`), &got); err != nil || got.A != 5001968355 || got.B != 5001968356 {
+		t.Errorf("got %+v, %v", got, err)
 	}
 }
 

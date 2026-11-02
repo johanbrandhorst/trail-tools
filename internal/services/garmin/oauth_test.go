@@ -108,7 +108,7 @@ func TestOAuthCallback(t *testing.T) {
 	report := errreport.NewLocal(log)
 	client := &fakeOAuthClient{}
 	repo := &fakeConnectionRepo{}
-	o := NewOAuth(log, report, client, repo, NewSyncer(log, report, client, repo, nil), []byte("secret"))
+	o := NewOAuth(log, report, client, repo, NewSyncer(log, report, client, repo, nil, nil), []byte("secret"))
 	userID, err := store.StringToUUID("8f6c1f54-4b1e-4f4e-9a0e-2f0b0a8f6c1f")
 	if err != nil {
 		t.Fatal(err)
@@ -150,11 +150,11 @@ func TestWebhookSecret(t *testing.T) {
 	t.Parallel()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	for _, secret := range []string{"", "short", "a-secret-of-enough-length/with-a-slash"} {
-		if _, err := NewWebhook(log, errreport.NewLocal(log), nil, "https://trail.example"+WebhookPath, secret); err == nil {
+		if _, err := NewWebhook(log, errreport.NewLocal(log), nil, nil, "https://trail.example"+WebhookPath, secret, "client"); err == nil {
 			t.Errorf("secret %q accepted", secret)
 		}
 	}
-	h, err := NewWebhook(log, errreport.NewLocal(log), nil, "https://trail.example"+WebhookPath, "a-secret-of-enough-length")
+	h, err := NewWebhook(log, errreport.NewLocal(log), nil, nil, "https://trail.example"+WebhookPath, "a-secret-of-enough-length", "client")
 	if err != nil {
 		t.Fatal(err)
 	}

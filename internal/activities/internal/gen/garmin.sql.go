@@ -163,6 +163,15 @@ func (q *Queries) DeleteGarminConnection(ctx context.Context, userID pgtype.UUID
 	return result.RowsAffected(), nil
 }
 
+const deleteGarminNotification = `-- name: DeleteGarminNotification :exec
+delete from garmin_notifications where id = $1
+`
+
+func (q *Queries) DeleteGarminNotification(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteGarminNotification, id)
+	return err
+}
+
 const finishGarminWorkoutsSync = `-- name: FinishGarminWorkoutsSync :exec
 update garmin_connections set
   workouts_sync_time = $2,
@@ -375,6 +384,15 @@ func (q *Queries) InsertGarminActivity(ctx context.Context, arg *InsertGarminAct
 	return &i, err
 }
 
+const insertGarminNotification = `-- name: InsertGarminNotification :exec
+insert into garmin_notifications (body) values ($1)
+`
+
+func (q *Queries) InsertGarminNotification(ctx context.Context, body []byte) error {
+	_, err := q.db.Exec(ctx, insertGarminNotification, body)
+	return err
+}
+
 const listGarminActivityFiles = `-- name: ListGarminActivityFiles :many
 select user_id, garmin_activity_id, callback_url, expire_time, attempts, create_time from garmin_activity_files
 where ($1::uuid is null or user_id = $1::uuid)
@@ -454,6 +472,45 @@ func (q *Queries) ListGarminConnections(ctx context.Context) ([]*GarminConnectio
 	return items, nil
 }
 
+const listGarminNotifications = `-- name: ListGarminNotifications :many
+select id, body, attempts, create_time from garmin_notifications
+where attempts < $1
+order by id
+limit $2
+`
+
+type ListGarminNotificationsParams struct {
+	MaxAttempts int32
+	RowLimit    int32
+}
+
+// Lists the queued notifications, oldest first, leaving out those that
+// failed too often.
+func (q *Queries) ListGarminNotifications(ctx context.Context, arg *ListGarminNotificationsParams) ([]*GarminNotification, error) {
+	rows, err := q.db.Query(ctx, listGarminNotifications, arg.MaxAttempts, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GarminNotification
+	for rows.Next() {
+		var i GarminNotification
+		if err := rows.Scan(
+			&i.ID,
+			&i.Body,
+			&i.Attempts,
+			&i.CreateTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recordGarminActivityFileFailure = `-- name: RecordGarminActivityFileFailure :exec
 update garmin_activity_files set
   attempts = attempts + 1
@@ -468,6 +525,19 @@ type RecordGarminActivityFileFailureParams struct {
 func (q *Queries) RecordGarminActivityFileFailure(ctx context.Context, arg *RecordGarminActivityFileFailureParams) error {
 	_, err := q.db.Exec(ctx, recordGarminActivityFileFailure, arg.UserID, arg.GarminActivityID)
 	return err
+}
+
+const recordGarminNotificationFailure = `-- name: RecordGarminNotificationFailure :one
+update garmin_notifications set attempts = attempts + 1
+where id = $1
+returning attempts
+`
+
+func (q *Queries) RecordGarminNotificationFailure(ctx context.Context, id int64) (int32, error) {
+	row := q.db.QueryRow(ctx, recordGarminNotificationFailure, id)
+	var attempts int32
+	err := row.Scan(&attempts)
+	return attempts, err
 }
 
 const setGarminSyncMessage = `-- name: SetGarminSyncMessage :exec

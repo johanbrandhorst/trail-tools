@@ -548,3 +548,68 @@ func (r *Repository) GetGarminActivity(ctx context.Context, userID pgtype.UUID, 
 		SportType:  row.SportType,
 	}, nil
 }
+
+// MaxGarminNotificationAttempts is how often handling a queued notification
+// is tried before it's dropped: one a scheduled sync, for a day.
+const MaxGarminNotificationAttempts = 24
+
+// GarminNotification is a notification from Garmin, queued to be handled.
+type GarminNotification struct {
+	ID int64
+	// The notification's JSON.
+	Body []byte
+}
+
+// AddGarminNotification queues a notification from Garmin to be handled.
+func (r *Repository) AddGarminNotification(ctx context.Context, body []byte) error {
+	compressed, err := gzipped(body)
+	if err != nil {
+		return err
+	}
+	if err := r.q.InsertGarminNotification(ctx, compressed); err != nil {
+		return fmt.Errorf("failed to queue Garmin notification: %w", err)
+	}
+	return nil
+}
+
+// ListGarminNotifications lists the queued notifications, oldest first.
+func (r *Repository) ListGarminNotifications(ctx context.Context, limit int32) ([]*GarminNotification, error) {
+	rows, err := r.q.ListGarminNotifications(ctx, &gen.ListGarminNotificationsParams{MaxAttempts: MaxGarminNotificationAttempts, RowLimit: limit})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Garmin notifications: %w", err)
+	}
+	result := make([]*GarminNotification, 0, len(rows))
+	for _, row := range rows {
+		body, err := gunzipped(row.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress Garmin notification %d: %w", row.ID, err)
+		}
+		result = append(result, &GarminNotification{ID: row.ID, Body: body})
+	}
+	return result, nil
+}
+
+// FinishGarminNotification removes a notification that was handled.
+func (r *Repository) FinishGarminNotification(ctx context.Context, id int64) error {
+	if err := r.q.DeleteGarminNotification(ctx, id); err != nil {
+		return fmt.Errorf("failed to remove Garmin notification: %w", err)
+	}
+	return nil
+}
+
+// RecordGarminNotificationFailure records a failure to handle a
+// notification, and drops it once it failed MaxGarminNotificationAttempts
+// times. It returns whether it was dropped.
+func (r *Repository) RecordGarminNotificationFailure(ctx context.Context, id int64) (dropped bool, err error) {
+	attempts, err := r.q.RecordGarminNotificationFailure(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to record Garmin notification failure: %w", err)
+	}
+	if attempts < MaxGarminNotificationAttempts {
+		return false, nil
+	}
+	return true, r.FinishGarminNotification(ctx, id)
+}

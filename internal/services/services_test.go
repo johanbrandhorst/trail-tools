@@ -94,6 +94,7 @@ type env struct {
 	liveTrack     *fakeLiveTrack
 	garmin        *fakeGarmin
 	garminSyncer  *garminsvc.Syncer
+	garminTrigger *fakeTrigger
 	// The URL Garmin sends notifications to.
 	garminWebhookURL string
 
@@ -203,7 +204,10 @@ func newEnv(t *testing.T) *env {
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
 	e.garmin = newFakeGarmin()
-	e.garminSyncer = garminsvc.NewSyncer(log, report, e.garmin, activityRepo, planRepo)
+	// Notifications are handled when tests say, as by the scheduled
+	// sync the trigger runs.
+	e.garminTrigger = &fakeTrigger{}
+	e.garminSyncer = garminsvc.NewSyncer(log, report, e.garmin, activityRepo, planRepo, e.garminTrigger)
 	planService.OnWorkoutsChanged(e.garminSyncer.WorkoutsChanged)
 	garminService := garminsvc.NewService(report, activityRepo, e.garminSyncer)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
@@ -285,7 +289,7 @@ func newEnv(t *testing.T) *env {
 	root.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
 	root.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	root.Handle("/", handler)
-	garminWebhook, err := garminsvc.NewWebhook(log, report, e.garminSyncer, "http://"+e.srv.Listener.Addr().String()+garminsvc.WebhookPath, garminWebhookSecret)
+	garminWebhook, err := garminsvc.NewWebhook(log, report, activityRepo, e.garminSyncer, "http://"+e.srv.Listener.Addr().String()+garminsvc.WebhookPath, garminWebhookSecret, garminClientID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,6 +334,9 @@ func newEnv(t *testing.T) *env {
 	e.otherLactate = lactatev1connect.NewLactateTestServiceClient(other)
 	return e
 }
+
+// garminClientID is the Garmin app's client ID in tests.
+const garminClientID = "garmin-client"
 
 // garminWebhookSecret is the secret in the Garmin webhook's path in tests.
 const garminWebhookSecret = "garmin-webhook-secret-for-tests"

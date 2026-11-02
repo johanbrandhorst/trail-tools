@@ -1098,6 +1098,13 @@ type GarminConnection struct {
 	UpdateTime       pgtype.Timestamptz
 }
 
+type GarminNotification struct {
+	ID         int64
+	Body       []byte
+	Attempts   int32
+	CreateTime pgtype.Timestamptz
+}
+
 type GarminWorkout struct {
 	ID               pgtype.UUID
 	UserID           pgtype.UUID

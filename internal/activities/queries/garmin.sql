@@ -216,3 +216,22 @@ select
   (select count(*) from garmin_activity_files f
     where f.user_id = sqlc.arg(user_id)::uuid and f.expire_time > now() and f.attempts < sqlc.arg(max_attempts))::bigint as pending_files,
   (select count(*) from garmin_workouts w where w.user_id = sqlc.arg(user_id)::uuid)::bigint as workouts;
+
+-- name: InsertGarminNotification :exec
+insert into garmin_notifications (body) values ($1);
+
+-- name: ListGarminNotifications :many
+-- Lists the queued notifications, oldest first, leaving out those that
+-- failed too often.
+select * from garmin_notifications
+where attempts < sqlc.arg(max_attempts)
+order by id
+limit sqlc.arg(row_limit);
+
+-- name: DeleteGarminNotification :exec
+delete from garmin_notifications where id = $1;
+
+-- name: RecordGarminNotificationFailure :one
+update garmin_notifications set attempts = attempts + 1
+where id = $1
+returning attempts;

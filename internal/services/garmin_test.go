@@ -196,6 +196,31 @@ func (f *fakeGarmin) calendar() map[string][]string {
 	return cal
 }
 
+// stepExercises returns the catalog exercises of the steps of the workout
+// on Garmin with a name.
+func (f *fakeGarmin) stepExercises(name string) []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var exercises []string
+	var walk func(steps []garmin.WorkoutStep)
+	walk = func(steps []garmin.WorkoutStep) {
+		for _, s := range steps {
+			if s.ExerciseCategory != "" {
+				exercises = append(exercises, s.ExerciseCategory+"/"+s.ExerciseName)
+			}
+			walk(s.Steps)
+		}
+	}
+	for _, w := range f.workouts {
+		if w.WorkoutName == name {
+			for _, segment := range w.Segments {
+				walk(segment.Steps)
+			}
+		}
+	}
+	return exercises
+}
+
 // connectGarmin stores a Garmin connection for the user, as the OAuth
 // callback does, with an expired token.
 func (e *env) connectGarmin(permissions ...string) {
@@ -212,15 +237,33 @@ func (e *env) connectGarmin(permissions ...string) {
 	}
 }
 
-// notifyGarmin sends a notification to the webhook, as Garmin does, and
-// returns the status code.
+// notifyGarmin sends a notification to the webhook, as Garmin does, then
+// handles the queue, as the scheduled sync the webhook triggers does, and
+// returns the webhook's status code.
 func (e *env) notifyGarmin(url string, notification any) int {
+	e.t.Helper()
+	code := e.postGarmin(url, garminClientID, notification)
+	if err := e.garminSyncer.HandleNotifications(context.Background()); err != nil {
+		e.t.Fatalf("HandleNotifications: %v", err)
+	}
+	return code
+}
+
+// postGarmin sends a notification to the webhook with a client ID, and
+// returns the status code.
+func (e *env) postGarmin(url, clientID string, notification any) int {
 	e.t.Helper()
 	body, err := json.Marshal(notification)
 	if err != nil {
 		e.t.Fatal(err)
 	}
-	resp, err := e.srv.Client().Post(url, "application/json", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("garmin-client-id", clientID)
+	resp, err := e.srv.Client().Do(req)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -486,7 +529,7 @@ func TestGarminCalendar(t *testing.T) {
 	}
 	planID := plan.GetPlan().GetId()
 	exercise, err := e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{
-		Exercises: []*plansv1.Exercise{plansv1.Exercise_builder{Name: "Step up"}.Build()},
+		Exercises: []*plansv1.Exercise{plansv1.Exercise_builder{Name: "Goblet squat"}.Build()},
 	}.Build())
 	if err != nil {
 		t.Fatal(err)
@@ -524,6 +567,11 @@ func TestGarminCalendar(t *testing.T) {
 	}
 	if conn := resp.GetConnection(); !conn.GetConnected() || !conn.GetWorkoutsAllowed() || conn.GetWorkoutCount() != 2 || !conn.HasWorkoutsSyncTime() {
 		t.Errorf("unexpected connection %v", conn)
+	}
+
+	// The strength workout's exercise is Garmin's, matched by its name.
+	if got := e.garmin.stepExercises("Legs"); fmt.Sprint(got) != "[SQUAT/GOBLET_SQUAT]" {
+		t.Errorf("got exercises %v on Garmin, want the catalog's goblet squat", got)
 	}
 
 	// Syncing again sends nothing, as nothing changed.
@@ -585,6 +633,35 @@ func TestGarminDeregistrationAndPermissions(t *testing.T) {
 		t.Errorf("unexpected connection after a permission change %v (%v)", status, err)
 	}
 
+	// Notifications are answered first and handled after: queued ones wait
+	// for the scheduled sync, which a notification triggers once.
+	runs := e.garminTrigger.count()
+	for range 2 {
+		if code := e.postGarmin(e.garminWebhookURL, garminClientID, map[string]any{"userPermissionsChange": []map[string]any{{
+			"userId": garminUserID, "permissions": []string{garmin.PermissionActivityExport, garmin.PermissionWorkoutImport},
+		}}}); code != http.StatusOK {
+			t.Fatalf("got status %d, want 200", code)
+		}
+	}
+	if got := e.garminTrigger.count() - runs; got != 1 {
+		t.Errorf("triggered the sync %d times for two notifications, want once", got)
+	}
+	status, err = e.garminAPI.GetGarminConnection(ctx, garminv1.GetGarminConnectionRequest_builder{}.Build())
+	if err != nil || status.GetConnection().GetWorkoutsAllowed() {
+		t.Errorf("handled a notification before the sync: %v (%v)", status, err)
+	}
+	if err := e.garminSyncer.HandleNotifications(ctx); err != nil {
+		t.Fatalf("HandleNotifications: %v", err)
+	}
+	status, err = e.garminAPI.GetGarminConnection(ctx, garminv1.GetGarminConnectionRequest_builder{}.Build())
+	if err != nil || !status.GetConnection().GetWorkoutsAllowed() {
+		t.Errorf("unexpected connection after the sync %v (%v)", status, err)
+	}
+	// Notifications for another app are rejected.
+	if code := e.postGarmin(e.garminWebhookURL, "another-client", map[string]any{"deregistrations": []map[string]any{{"userId": garminUserID}}}); code != http.StatusForbidden {
+		t.Errorf("got status %d for another client ID, want 403", code)
+	}
+
 	// Then disconnects the app on Garmin, which forgets the connection.
 	e.notifyGarmin(e.garminWebhookURL, map[string]any{"deregistrations": []map[string]any{{"userId": garminUserID}}})
 	status, err = e.garminAPI.GetGarminConnection(ctx, garminv1.GetGarminConnectionRequest_builder{}.Build())
@@ -607,6 +684,13 @@ func TestGarminDeregistrationAndPermissions(t *testing.T) {
 	}
 }
 
+// count returns how often the trigger ran.
+func (f *fakeTrigger) count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.runs
+}
+
 // mustUUID parses an ID.
 func mustUUID(t *testing.T, id string) pgtype.UUID {
 	t.Helper()
@@ -615,4 +699,33 @@ func mustUUID(t *testing.T, id string) pgtype.UUID {
 		t.Fatal(err)
 	}
 	return u
+}
+
+func TestGarminExercises(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// Agents find the exercise of Garmin's catalog to set.
+	found, err := e.exercises.SearchGarminExercises(ctx, plansv1.SearchGarminExercisesRequest_builder{Query: "bulgarian split squat", PageSize: 5}.Build())
+	if err != nil {
+		t.Fatalf("SearchGarminExercises: %v", err)
+	}
+	if got := found.GetExercises(); len(got) == 0 || got[0].GetCategory() != "LUNGE" || got[0].GetId() != got[0].GetCategory()+"/"+got[0].GetName() {
+		t.Fatalf("unexpected exercises %v", got)
+	}
+	// Only exercises of the catalog can be set, in any case.
+	_, err = e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{
+		Exercises: []*plansv1.Exercise{plansv1.Exercise_builder{Name: "Copenhagen plank", GarminExercise: "PLANK/COPENHAGEN"}.Build()},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	created, err := e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{
+		Exercises: []*plansv1.Exercise{plansv1.Exercise_builder{Name: "Split squat", GarminExercise: "lunge/dumbbell_bulgarian_split_squat"}.Build()},
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateExercises: %v", err)
+	}
+	if got := created.GetExercises()[0].GetGarminExercise(); got != "LUNGE/DUMBBELL_BULGARIAN_SPLIT_SQUAT" {
+		t.Errorf("got Garmin exercise %q", got)
+	}
 }

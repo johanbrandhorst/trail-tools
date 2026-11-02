@@ -14,45 +14,72 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // sportTypes are the sport types activities are stored with, which are
 // Strava's, by Garmin's activity types, so activities from both are told
-// apart the same way, like runs and strength training.
+// apart the same way, like runs and strength training. Garmin's types are
+// from Appendix A of the Activity API's documentation.
 var sportTypes = map[string]string{
-	"RUNNING":                 "Run",
-	"STREET_RUNNING":          "Run",
-	"TRACK_RUNNING":           "Run",
-	"TREADMILL_RUNNING":       "VirtualRun",
-	"TRAIL_RUNNING":           "TrailRun",
-	"ULTRA_RUN":               "TrailRun",
-	"WALKING":                 "Walk",
-	"HIKING":                  "Hike",
-	"MOUNTAINEERING":          "Hike",
-	"CYCLING":                 "Ride",
-	"ROAD_BIKING":             "Ride",
-	"MOUNTAIN_BIKING":         "MountainBikeRide",
-	"GRAVEL_CYCLING":          "GravelRide",
-	"INDOOR_CYCLING":          "VirtualRide",
-	"LAP_SWIMMING":            "Swim",
-	"OPEN_WATER_SWIMMING":     "Swim",
-	"STRENGTH_TRAINING":       "WeightTraining",
-	"INDOOR_CARDIO":           "Workout",
-	"HIIT":                    "HighIntensityIntervalTraining",
-	"YOGA":                    "Yoga",
-	"PILATES":                 "Pilates",
-	"BACKCOUNTRY_SKIING":      "BackcountrySki",
-	"RESORT_SKIING":           "AlpineSki",
-	"CROSS_COUNTRY_SKIING":    "NordicSki",
-	"SKATE_SKIING":            "NordicSki",
-	"SNOWSHOEING":             "Snowshoe",
-	"ROCK_CLIMBING":           "RockClimbing",
-	"INDOOR_CLIMBING":         "RockClimbing",
-	"ELLIPTICAL":              "Elliptical",
-	"STAIR_CLIMBING":          "StairStepper",
-	"INDOOR_ROWING":           "Rowing",
-	"STAND_UP_PADDLEBOARDING": "StandUpPaddling",
+	"RUNNING":                       "Run",
+	"STREET_RUNNING":                "Run",
+	"TRACK_RUNNING":                 "Run",
+	"OBSTACLE_RUN":                  "Run",
+	"INDOOR_RUNNING":                "VirtualRun",
+	"TREADMILL_RUNNING":             "VirtualRun",
+	"VIRTUAL_RUN":                   "VirtualRun",
+	"TRAIL_RUNNING":                 "TrailRun",
+	"ULTRA_RUN":                     "TrailRun",
+	"WALKING":                       "Walk",
+	"CASUAL_WALKING":                "Walk",
+	"SPEED_WALKING":                 "Walk",
+	"HIKING":                        "Hike",
+	"RUCKING":                       "Hike",
+	"MOUNTAINEERING":                "Hike",
+	"CYCLING":                       "Ride",
+	"ROAD_BIKING":                   "Ride",
+	"TRACK_CYCLING":                 "Ride",
+	"RECUMBENT_CYCLING":             "Ride",
+	"CYCLOCROSS":                    "Ride",
+	"MOUNTAIN_BIKING":               "MountainBikeRide",
+	"DOWNHILL_BIKING":               "MountainBikeRide",
+	"ENDURO_MTB":                    "MountainBikeRide",
+	"E_BIKE_MOUNTAIN":               "EMountainBikeRide",
+	"E_ENDURO_MTB":                  "EMountainBikeRide",
+	"E_BIKE_FITNESS":                "EBikeRide",
+	"GRAVEL_CYCLING":                "GravelRide",
+	"INDOOR_CYCLING":                "VirtualRide",
+	"VIRTUAL_RIDE":                  "VirtualRide",
+	"LAP_SWIMMING":                  "Swim",
+	"OPEN_WATER_SWIMMING":           "Swim",
+	"STRENGTH_TRAINING":             "WeightTraining",
+	"INDOOR_CARDIO":                 "Workout",
+	"HIIT":                          "HighIntensityIntervalTraining",
+	"YOGA":                          "Yoga",
+	"PILATES":                       "Pilates",
+	"BACKCOUNTRY_SKIING":            "BackcountrySki",
+	"BACKCOUNTRY_SNOWBOARDING":      "BackcountrySki",
+	"RESORT_SKIING":                 "AlpineSki",
+	"RESORT_SKIING_SNOWBOARDING_WS": "AlpineSki",
+	"SNOWBOARDING_WS":               "Snowboard",
+	"CROSS_COUNTRY_SKIING_WS":       "NordicSki",
+	"SKATE_SKIING_WS":               "NordicSki",
+	"CROSS_COUNTRY_INDOOR_SKIING":   "NordicSki",
+	"SNOW_SHOE_WS":                  "Snowshoe",
+	"ROCK_CLIMBING":                 "RockClimbing",
+	"INDOOR_CLIMBING":               "RockClimbing",
+	"BOULDERING":                    "RockClimbing",
+	"ELLIPTICAL":                    "Elliptical",
+	"STAIR_CLIMBING":                "StairStepper",
+	"INDOOR_ROWING":                 "Rowing",
+	"ROWING":                        "Rowing",
+	"ROWING_V2":                     "Rowing",
+	"KAYAKING":                      "Kayaking",
+	"KAYAKING_V2":                   "Kayaking",
+	"STAND_UP_PADDLEBOARDING":       "StandUpPaddling",
+	"STAND_UP_PADDLEBOARDING_V2":    "StandUpPaddling",
+	"SURFING":                       "Surfing",
+	"SURFING_V2":                    "Surfing",
 }
 
 // sportType returns the sport type of a Garmin activity type, "Workout" for
@@ -97,7 +124,7 @@ func activityFromSummary(s *garmin.ActivitySummary) *activities.GarminActivity {
 		name = strings.ReplaceAll(sport, "Training", " training")
 	}
 	return &activities.GarminActivity{
-		GarminActivityID:    s.ActivityID,
+		GarminActivityID:    int64(s.ActivityID),
 		Name:                name,
 		SportType:           sport,
 		StartTime:           start,
@@ -284,16 +311,21 @@ func weightIn(kilograms float64, unit plans.WeightUnit) plans.Weight {
 	return plans.Weight{Value: math.Round(value*10) / 10, Unit: unit}
 }
 
-// trainingWorkout returns a planned workout as a Training API workout, and
-// whether it's one Garmin takes: runs and strength workouts with
-// exercises.
+// workoutProvider is the app's name on Garmin Connect's workouts, which
+// Garmin also takes as the source ID.
+const workoutProvider = "trailrunn.ing"
+
+// trainingWorkout returns a workout as a Training API workout, if it's a
+// kind Garmin takes: a run, or a strength workout with exercises of at most
+// garmin.MaxWorkoutSteps steps.
 func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
 	gw := &garmin.Workout{
 		WorkoutName:     w.Title,
-		Description:     truncate(w.Description, 512),
-		WorkoutProvider: "trailrunn.ing",
-		WorkoutSourceID: store.UUIDToString(w.ID),
+		Description:     truncate(w.Description, 1024),
+		WorkoutProvider: workoutProvider,
+		WorkoutSourceID: workoutProvider,
 	}
+	var steps []garmin.WorkoutStep
 	switch w.Type {
 	case plans.WorkoutTypeBase, plans.WorkoutTypeIntensity:
 		gw.Sport = garmin.SportRunning
@@ -307,8 +339,7 @@ func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
 		case w.TargetDurationSeconds > 0:
 			step.DurationType, step.DurationValue = "TIME", float64(w.TargetDurationSeconds)
 		}
-		gw.Steps = []garmin.WorkoutStep{step}
-		return gw, true
+		steps = []garmin.WorkoutStep{step}
 	case plans.WorkoutTypeStrength:
 		if len(w.Exercises) == 0 {
 			return nil, false
@@ -323,37 +354,57 @@ func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
 			return order
 		}
 		for _, block := range plans.StrengthBlocks(w.Exercises) {
-			var steps []garmin.WorkoutStep
+			var blockSteps []garmin.WorkoutStep
 			var repeat *garmin.WorkoutStep
 			if block.Rounds > 1 {
 				repeat = &garmin.WorkoutStep{Type: "WorkoutRepeatStep", StepOrder: nextOrder(), RepeatType: "REPEAT_UNTIL_STEPS_CMPLT", RepeatValue: block.Rounds}
 			}
 			for _, i := range block.Exercises {
-				steps = append(steps, exerciseSteps(w.Exercises[i], nextOrder)...)
+				blockSteps = append(blockSteps, exerciseSteps(w.Exercises[i], nextOrder)...)
 			}
 			if repeat != nil {
-				repeat.Steps = steps
-				gw.Steps = append(gw.Steps, *repeat)
+				repeat.Steps = blockSteps
+				steps = append(steps, *repeat)
 			} else {
-				gw.Steps = append(gw.Steps, steps...)
+				steps = append(steps, blockSteps...)
 			}
 		}
-		return gw, true
 	default:
 		return nil, false
 	}
+	gw.Segments = []garmin.WorkoutSegment{{SegmentOrder: 1, Sport: gw.Sport, Steps: steps}}
+	if gw.CountSteps() > garmin.MaxWorkoutSteps {
+		return nil, false
+	}
+	return gw, true
 }
 
-// exerciseSteps returns an exercise's step and its rest.
+// garminExercise returns the exercise of Garmin's catalog a planned
+// exercise is: the one set on the exercise, or else the one named like it,
+// if any.
+func garminExercise(e *plans.PlannedExercise) (garmin.Exercise, bool) {
+	if e.ExerciseGarmin != "" {
+		return garmin.LookupExercise(e.ExerciseGarmin)
+	}
+	return garmin.MatchExercise(e.ExerciseName)
+}
+
+// exerciseSteps returns an exercise's step and its rest. An exercise
+// outside Garmin's catalog is a step without an exercise, described by its
+// name, as Garmin only takes exercises of its catalog.
 func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.WorkoutStep {
 	step := garmin.WorkoutStep{
-		Type:             "WorkoutStep",
-		StepOrder:        nextOrder(),
-		Intensity:        "ACTIVE",
-		Description:      truncate(e.Notes, 512),
-		TargetType:       "OPEN",
-		ExerciseCategory: "UNKNOWN",
-		ExerciseName:     e.ExerciseName,
+		Type:        "WorkoutStep",
+		StepOrder:   nextOrder(),
+		Intensity:   "ACTIVE",
+		Description: truncate(e.Notes, 512),
+		TargetType:  "OPEN",
+	}
+	if catalog, ok := garminExercise(e); ok {
+		step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name
+	} else {
+		step.Description = truncate(strings.TrimSpace(e.ExerciseName+". "+e.Notes), 512)
+		step.Description = strings.TrimSuffix(step.Description, ".")
 	}
 	switch {
 	case e.Reps > 0:

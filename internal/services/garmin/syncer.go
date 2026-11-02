@@ -60,6 +60,15 @@ type ActivityRepository interface {
 	FinishGarminActivityFile(ctx context.Context, userID pgtype.UUID, garminID int64) error
 	RecordGarminActivityFileFailure(ctx context.Context, userID pgtype.UUID, garminID int64) error
 	DeleteExpiredGarminActivityFiles(ctx context.Context) error
+	ListGarminNotifications(ctx context.Context, limit int32) ([]*activities.GarminNotification, error)
+	FinishGarminNotification(ctx context.Context, id int64) error
+	RecordGarminNotificationFailure(ctx context.Context, id int64) (dropped bool, err error)
+}
+
+// Trigger starts the scheduled sync right away, like a Cloud Scheduler job,
+// for handling notifications on servers that only run during requests.
+type Trigger interface {
+	Run(ctx context.Context) error
 }
 
 // PlanRepository stores the workouts put on Garmin calendars.
@@ -85,8 +94,9 @@ const (
 	// filesPerSync is how many activity files a sync downloads at most, to
 	// bound the memory and time a sync takes.
 	filesPerSync = 20
-	// tokenRefreshMargin is how long before expiry tokens are refreshed.
-	tokenRefreshMargin = 5 * time.Minute
+	// tokenRefreshMargin is how long before expiry tokens are refreshed, as
+	// Garmin recommends at least 10 minutes. Access tokens last a day.
+	tokenRefreshMargin = 10 * time.Minute
 )
 
 // Syncer syncs users' Garmin accounts.
@@ -101,11 +111,16 @@ type Syncer struct {
 	// calendar, so a change and the scheduled sync don't both send a
 	// workout. The server runs as one instance, so a local lock is enough.
 	workoutLocks sync.Map
+	// Starts the scheduled sync to handle queued notifications, or nil to
+	// handle them in the background.
+	trigger Trigger
+	queue   notificationQueue
 }
 
-// NewSyncer creates a Syncer.
-func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository) *Syncer {
-	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, nowFn: time.Now}
+// NewSyncer creates a Syncer. trigger starts the scheduled sync, which
+// handles queued notifications; if nil, they're handled in the background.
+func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository, trigger Trigger) *Syncer {
+	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, nowFn: time.Now, trigger: trigger}
 }
 
 // token returns a fresh access token of a connection, refreshing it if it
@@ -145,7 +160,8 @@ func (s *Syncer) Connected(ctx context.Context, conn *activities.GarminConnectio
 	if slices.Contains(conn.Permissions, garmin.PermissionActivityExport) {
 		now := s.nowFn()
 		if err := s.client.BackfillActivities(ctx, token, now.AddDate(0, 0, -backfillDays), now); err != nil {
-			s.report.Report(ctx, "Failed to ask Garmin for recent activities, leaving them out", err)
+			// Garmin only backfills for apps with Enterprise access.
+			log.WarnContext(ctx, "Failed to ask Garmin for recent activities, leaving them out", slogor.Err(err))
 		}
 	}
 	if err := s.SyncUser(ctx, conn.UserID); err != nil {
@@ -322,6 +338,15 @@ func (s *Syncer) SyncUser(ctx context.Context, userID pgtype.UUID) error {
 }
 
 func (s *Syncer) sync(ctx context.Context, conn *activities.GarminConnection) error {
+	// Refresh tokens expire after three months, unless they're used, so
+	// they're refreshed with the access tokens, daily, even for users whose
+	// syncs need no requests.
+	if _, err := s.token(ctx, conn); err != nil {
+		if errors.Is(err, garmin.ErrUnauthorized) {
+			return errors.Join(err, s.activities.SetGarminSyncMessage(ctx, conn.UserID, "Garmin rejected the connection; reconnect Garmin."))
+		}
+		return err
+	}
 	files, err := s.activities.ListGarminActivityFiles(ctx, conn.UserID, filesPerSync)
 	if err != nil {
 		return err
@@ -342,6 +367,9 @@ func (s *Syncer) sync(ctx context.Context, conn *activities.GarminConnection) er
 			message = "Putting workouts on the Garmin calendar failed; it's retried within the hour."
 			if errors.Is(err, garmin.ErrUnauthorized) {
 				message = "Garmin rejected the connection; reconnect Garmin."
+			}
+			if errors.Is(err, garmin.ErrPermissionDenied) {
+				message = "Garmin doesn't allow putting workouts on the calendar; allow it in Garmin Connect, or reconnect Garmin."
 			}
 		}
 		if recordErr := s.activities.FinishGarminWorkoutsSync(ctx, conn.UserID, s.nowFn(), message); recordErr != nil {
@@ -461,6 +489,9 @@ func (s *Syncer) removeWorkout(ctx context.Context, userID pgtype.UUID, token st
 // SyncDue syncs every connection: the files waiting to download, and the
 // workouts of the coming days, for running from a scheduler.
 func (s *Syncer) SyncDue(ctx context.Context) error {
+	if err := s.HandleNotifications(ctx); err != nil {
+		s.report.Report(ctx, "Failed to handle Garmin notifications, retrying with the next sync", err)
+	}
 	if err := s.activities.DeleteExpiredGarminActivityFiles(ctx); err != nil {
 		return err
 	}

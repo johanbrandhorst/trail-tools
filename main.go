@@ -591,6 +591,15 @@ func run(
 			}
 		}()
 	}
+	// The scheduled sync's job, which the server runs right away when a user
+	// asks to sync Strava, or Garmin sends a notification.
+	var syncJob *cloudscheduler.Job
+	if stravaSyncMode == "scheduled" && stravaSyncJob != "" {
+		syncJob, err = cloudscheduler.NewJob(googleCtx, stravaSyncJob)
+		if err != nil {
+			return fmt.Errorf("failed to create the sync job client: %w", err)
+		}
+	}
 	if stravaClientID != "" {
 		conf := strava.Config{
 			ClientID:     stravaClientID,
@@ -608,12 +617,8 @@ func run(
 		stravaClient := strava.New(conf)
 		background := stravaSyncMode == "background"
 		var trigger stravasvc.Trigger
-		if !background && stravaSyncJob != "" {
-			job, err := cloudscheduler.NewJob(googleCtx, stravaSyncJob)
-			if err != nil {
-				return fmt.Errorf("failed to create the Strava sync job client: %w", err)
-			}
-			trigger = job
+		if syncJob != nil {
+			trigger = syncJob
 		}
 		stravaSyncer = stravasvc.NewSyncer(ctx, log, report, activityRepo, stravaClient, background, trigger)
 		stravaOAuth = stravasvc.NewOAuth(log, report, stravaClient, activityRepo, stravaSyncer, []byte(stravaClientSecret))
@@ -643,9 +648,13 @@ func run(
 			RedirectURL:  baseURL + garminsvc.CallbackPath,
 			HTTPClient:   telemetry.NewClient(garminTimeout),
 		})
-		garminSyncer = garminsvc.NewSyncer(log, report, garminClient, activityRepo, planRepo)
+		var garminTrigger garminsvc.Trigger
+		if syncJob != nil {
+			garminTrigger = syncJob
+		}
+		garminSyncer = garminsvc.NewSyncer(log, report, garminClient, activityRepo, planRepo, garminTrigger)
 		garminOAuth = garminsvc.NewOAuth(log, report, garminClient, activityRepo, garminSyncer, []byte(garminConf.ClientSecret))
-		garminWebhook, err = garminsvc.NewWebhook(log, report, garminSyncer, baseURL+garminsvc.WebhookPath, garminConf.WebhookSecret)
+		garminWebhook, err = garminsvc.NewWebhook(log, report, activityRepo, garminSyncer, baseURL+garminsvc.WebhookPath, garminConf.WebhookSecret, garminConf.ClientID)
 		if err != nil {
 			return err
 		}

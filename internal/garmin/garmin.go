@@ -4,8 +4,9 @@
 // planned workouts on the user's Garmin Connect calendar, which syncs them to
 // their watch.
 //
-// The URLs and the shapes of the requests follow Garmin's documentation as
-// of 2026, which is only available to registered developers. They're in this
+// The URLs and the shapes of the requests follow Garmin's documentation of
+// October 2026 (OAuth 2.0 PKCE 2.0, Activity API 2.1 and Training API V2
+// 2.0), which is only available to registered developers. They're in this
 // package, and the base URLs are configurable, so a change on Garmin's side
 // is fixed here.
 package garmin
@@ -55,6 +56,11 @@ var ErrNotFound = errors.New("not found on Garmin")
 // ErrRateLimited is returned when Garmin's rate limit is reached.
 var ErrRateLimited = errors.New("garmin rate limit reached")
 
+// ErrPermissionDenied is returned when the user hasn't given the app the
+// permission a request needs, like WORKOUT_IMPORT, though the token is
+// valid.
+var ErrPermissionDenied = errors.New("the Garmin user hasn't allowed this; change the permissions in Garmin Connect, or reconnect Garmin")
+
 // maxResponseSize bounds the JSON responses read into memory.
 const maxResponseSize = 8 << 20
 
@@ -96,9 +102,12 @@ func NewClient(c Config) *Client {
 			ClientSecret: c.ClientSecret,
 			RedirectURL:  c.RedirectURL,
 			Endpoint: oauth2.Endpoint{
-				AuthURL:   or(c.AuthURL, DefaultAuthURL),
-				TokenURL:  or(c.TokenURL, DefaultTokenURL),
-				AuthStyle: oauth2.AuthStyleInParams,
+				AuthURL:  or(c.AuthURL, DefaultAuthURL),
+				TokenURL: or(c.TokenURL, DefaultTokenURL),
+				// Garmin's documentation lists the client credentials as
+				// form parameters, but its examples send them with basic
+				// authentication, so both are tried.
+				AuthStyle: oauth2.AuthStyleAutoDetect,
 			},
 		},
 		apiURL:     strings.TrimSuffix(or(c.APIURL, DefaultAPIURL), "/"),
@@ -195,6 +204,8 @@ func statusError(status int, body []byte) error {
 		return ErrNotFound
 	case status == http.StatusTooManyRequests:
 		return ErrRateLimited
+	case status == http.StatusPreconditionFailed:
+		return ErrPermissionDenied
 	default:
 		return fmt.Errorf("unexpected status %d from Garmin: %s", status, strings.TrimSpace(string(body[:min(len(body), 256)])))
 	}
@@ -206,7 +217,7 @@ func (c *Client) UserID(ctx context.Context, accessToken string) (string, error)
 	var out struct {
 		UserID string `json:"userId"`
 	}
-	if err := c.do(ctx, accessToken, http.MethodGet, c.apiURL+"/wellness-api/rest/user/id", nil, &out); err != nil {
+	if err := c.do(ctx, accessToken, http.MethodGet, c.apiURL+"/partner-gateway/rest/user/id", nil, &out); err != nil {
 		return "", fmt.Errorf("failed to get user ID: %w", err)
 	}
 	if out.UserID == "" {
@@ -217,18 +228,20 @@ func (c *Client) UserID(ctx context.Context, accessToken string) (string, error)
 
 // Permissions returns the permissions the user granted.
 func (c *Client) Permissions(ctx context.Context, accessToken string) ([]string, error) {
-	var out []string
-	if err := c.do(ctx, accessToken, http.MethodGet, c.apiURL+"/wellness-api/rest/user/permissions", nil, &out); err != nil {
+	var out struct {
+		Permissions []string `json:"permissions"`
+	}
+	if err := c.do(ctx, accessToken, http.MethodGet, c.apiURL+"/partner-gateway/rest/user/permissions", nil, &out); err != nil {
 		return nil, fmt.Errorf("failed to get permissions: %w", err)
 	}
-	slices.Sort(out)
-	return out, nil
+	slices.Sort(out.Permissions)
+	return out.Permissions, nil
 }
 
 // Deregister disconnects the user from the app, so Garmin stops sending
-// their data.
+// their data. Garmin requires it when the user disconnects in the app.
 func (c *Client) Deregister(ctx context.Context, accessToken string) error {
-	err := c.do(ctx, accessToken, http.MethodDelete, c.apiURL+"/wellness-api/rest/user/registration", nil, nil)
+	err := c.do(ctx, accessToken, http.MethodDelete, c.apiURL+"/partner-gateway/rest/user/registration", nil, nil)
 	if err != nil && !errors.Is(err, ErrNotFound) && !errors.Is(err, ErrUnauthorized) {
 		return fmt.Errorf("failed to deregister: %w", err)
 	}
@@ -241,7 +254,8 @@ const maxBackfillRange = 30 * 24 * time.Hour
 // BackfillActivities asks Garmin to send notifications of the activities
 // that started in a range, as for new activities. Garmin answers
 // asynchronously, through the notification endpoints, so no activity data
-// is downloaded until notifications ask for it.
+// is downloaded until notifications ask for it. Garmin offers it with
+// Enterprise access only, and returns an error otherwise.
 func (c *Client) BackfillActivities(ctx context.Context, accessToken string, start, end time.Time) error {
 	for from := start; from.Before(end); from = from.Add(maxBackfillRange) {
 		to := from.Add(maxBackfillRange)
@@ -261,10 +275,28 @@ func (c *Client) BackfillActivities(ctx context.Context, accessToken string, sta
 	return nil
 }
 
+// ID is an ID Garmin sends as a JSON number, or in places as a string.
+type ID int64
+
+// UnmarshalJSON decodes a number or a string of one.
+func (id *ID) UnmarshalJSON(data []byte) error {
+	text := strings.Trim(string(data), `"`)
+	if text == "" || text == "null" {
+		*id = 0
+		return nil
+	}
+	n, err := strconv.ParseInt(text, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid Garmin ID %s: %w", data, err)
+	}
+	*id = ID(n)
+	return nil
+}
+
 // ActivitySummary is an activity's summary, as the Activity API returns it.
 type ActivitySummary struct {
 	SummaryID                         string  `json:"summaryId"`
-	ActivityID                        int64   `json:"activityId"`
+	ActivityID                        ID      `json:"activityId"`
 	ActivityName                      string  `json:"activityName"`
 	ActivityType                      string  `json:"activityType"`
 	StartTimeInSeconds                int64   `json:"startTimeInSeconds"`

@@ -286,6 +286,7 @@ type Exercise struct {
 	xxx_hidden_UpdateTime       *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
 	xxx_hidden_EquipmentNotes   string                 `protobuf:"bytes,11,opt,name=equipment_notes,json=equipmentNotes,proto3"`
 	xxx_hidden_Animations       *[]*ExerciseAnimation  `protobuf:"bytes,12,rep,name=animations,proto3"`
+	xxx_hidden_GarminExercise   string                 `protobuf:"bytes,13,opt,name=garmin_exercise,json=garminExercise,proto3"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -401,6 +402,13 @@ func (x *Exercise) GetAnimations() []*ExerciseAnimation {
 	return nil
 }
 
+func (x *Exercise) GetGarminExercise() string {
+	if x != nil {
+		return x.xxx_hidden_GarminExercise
+	}
+	return ""
+}
+
 func (x *Exercise) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -447,6 +455,10 @@ func (x *Exercise) SetEquipmentNotes(v string) {
 
 func (x *Exercise) SetAnimations(v []*ExerciseAnimation) {
 	x.xxx_hidden_Animations = &v
+}
+
+func (x *Exercise) SetGarminExercise(v string) {
+	x.xxx_hidden_GarminExercise = v
 }
 
 func (x *Exercise) HasCreateTime() bool {
@@ -508,6 +520,12 @@ type Exercise_builder struct {
 	// the user as they do it: usually one of the movement, and maybe one of
 	// setting up. At most 3.
 	Animations []*ExerciseAnimation
+	// The exercise of Garmin's catalog this is, as "CATEGORY/NAME", e.g.
+	// "LUNGE/DUMBBELL_BULGARIAN_SPLIT_SQUAT", from SearchGarminExercises.
+	// Garmin watches show and count it as that exercise. Empty to match it by
+	// the exercise's name, if one of the catalog is named the same; an
+	// exercise without one is shown by its name, without counting reps.
+	GarminExercise string
 }
 
 func (b0 Exercise_builder) Build() *Exercise {
@@ -526,6 +544,7 @@ func (b0 Exercise_builder) Build() *Exercise {
 	x.xxx_hidden_UpdateTime = b.UpdateTime
 	x.xxx_hidden_EquipmentNotes = b.EquipmentNotes
 	x.xxx_hidden_Animations = &b.Animations
+	x.xxx_hidden_GarminExercise = b.GarminExercise
 	return m0
 }
 
@@ -2270,11 +2289,234 @@ func (b0 SetHomeEquipmentResponse_builder) Build() *SetHomeEquipmentResponse {
 	return m0
 }
 
+type SearchGarminExercisesRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Query    string                 `protobuf:"bytes,1,opt,name=query,proto3"`
+	xxx_hidden_PageSize int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SearchGarminExercisesRequest) Reset() {
+	*x = SearchGarminExercisesRequest{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchGarminExercisesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchGarminExercisesRequest) ProtoMessage() {}
+
+func (x *SearchGarminExercisesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SearchGarminExercisesRequest) GetQuery() string {
+	if x != nil {
+		return x.xxx_hidden_Query
+	}
+	return ""
+}
+
+func (x *SearchGarminExercisesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.xxx_hidden_PageSize
+	}
+	return 0
+}
+
+func (x *SearchGarminExercisesRequest) SetQuery(v string) {
+	x.xxx_hidden_Query = v
+}
+
+func (x *SearchGarminExercisesRequest) SetPageSize(v int32) {
+	x.xxx_hidden_PageSize = v
+}
+
+type SearchGarminExercisesRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The words to search for in the exercises' categories and names, e.g.
+	// "split squat". Required.
+	Query string
+	// The most exercises to return, 20 by default and at most 100.
+	PageSize int32
+}
+
+func (b0 SearchGarminExercisesRequest_builder) Build() *SearchGarminExercisesRequest {
+	m0 := &SearchGarminExercisesRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Query = b.Query
+	x.xxx_hidden_PageSize = b.PageSize
+	return m0
+}
+
+type SearchGarminExercisesResponse struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Exercises *[]*GarminExercise     `protobuf:"bytes,1,rep,name=exercises,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *SearchGarminExercisesResponse) Reset() {
+	*x = SearchGarminExercisesResponse{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchGarminExercisesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchGarminExercisesResponse) ProtoMessage() {}
+
+func (x *SearchGarminExercisesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SearchGarminExercisesResponse) GetExercises() []*GarminExercise {
+	if x != nil {
+		if x.xxx_hidden_Exercises != nil {
+			return *x.xxx_hidden_Exercises
+		}
+	}
+	return nil
+}
+
+func (x *SearchGarminExercisesResponse) SetExercises(v []*GarminExercise) {
+	x.xxx_hidden_Exercises = &v
+}
+
+type SearchGarminExercisesResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The matching exercises, the shortest names first.
+	Exercises []*GarminExercise
+}
+
+func (b0 SearchGarminExercisesResponse_builder) Build() *SearchGarminExercisesResponse {
+	m0 := &SearchGarminExercisesResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Exercises = &b.Exercises
+	return m0
+}
+
+// An exercise of Garmin's catalog.
+type GarminExercise struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id       string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Category string                 `protobuf:"bytes,2,opt,name=category,proto3"`
+	xxx_hidden_Name     string                 `protobuf:"bytes,3,opt,name=name,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *GarminExercise) Reset() {
+	*x = GarminExercise{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GarminExercise) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GarminExercise) ProtoMessage() {}
+
+func (x *GarminExercise) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GarminExercise) GetId() string {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return ""
+}
+
+func (x *GarminExercise) GetCategory() string {
+	if x != nil {
+		return x.xxx_hidden_Category
+	}
+	return ""
+}
+
+func (x *GarminExercise) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *GarminExercise) SetId(v string) {
+	x.xxx_hidden_Id = v
+}
+
+func (x *GarminExercise) SetCategory(v string) {
+	x.xxx_hidden_Category = v
+}
+
+func (x *GarminExercise) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+type GarminExercise_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The exercise as an exercise's garmin_exercise, "CATEGORY/NAME".
+	Id string
+	// The category, e.g. "LUNGE".
+	Category string
+	// The name, e.g. "DUMBBELL_BULGARIAN_SPLIT_SQUAT".
+	Name string
+}
+
+func (b0 GarminExercise_builder) Build() *GarminExercise {
+	m0 := &GarminExercise{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Category = b.Category
+	x.xxx_hidden_Name = b.Name
+	return m0
+}
+
 var File_plans_v1_exercises_proto protoreflect.FileDescriptor
 
 const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\n" +
-	"\x18plans/v1/exercises.proto\x12\bplans.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\x1a\x18plans/v1/equipment.proto\x1a\x14plans/v1/plans.proto\"\xa0\x04\n" +
+	"\x18plans/v1/exercises.proto\x12\bplans.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\x1a\x18plans/v1/equipment.proto\x1a\x14plans/v1/plans.proto\"\xc9\x04\n" +
 	"\bExercise\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\"\n" +
@@ -2292,7 +2534,8 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x0fequipment_notes\x18\v \x01(\tR\x0eequipmentNotes\x12;\n" +
 	"\n" +
 	"animations\x18\f \x03(\v2\x1b.plans.v1.ExerciseAnimationR\n" +
-	"animations\"\xef\x01\n" +
+	"animations\x12'\n" +
+	"\x0fgarmin_exercise\x18\r \x01(\tR\x0egarminExercise\"\xef\x01\n" +
 	"\x11ExerciseAnimation\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
 	"\x06anchor\x18\x02 \x01(\x0e2\x13.plans.v1.BodyPointR\x06anchor\x12-\n" +
@@ -2365,7 +2608,16 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x18SetHomeEquipmentResponse\x126\n" +
 	"\tequipment\x18\x01 \x03(\v2\x18.plans.v1.OwnedEquipmentR\tequipment\x12;\n" +
 	"\vupdate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"updateTime*\xb3\x03\n" +
+	"updateTime\"Q\n" +
+	"\x1cSearchGarminExercisesRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"W\n" +
+	"\x1dSearchGarminExercisesResponse\x126\n" +
+	"\texercises\x18\x01 \x03(\v2\x18.plans.v1.GarminExerciseR\texercises\"P\n" +
+	"\x0eGarminExercise\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name*\xb3\x03\n" +
 	"\x06Muscle\x12\x16\n" +
 	"\x12MUSCLE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vMUSCLE_NECK\x10\x01\x12\x15\n" +
@@ -2411,7 +2663,7 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x1cANIMATION_PROP_KIND_DUMBBELL\x10\x03\x12\"\n" +
 	"\x1eANIMATION_PROP_KIND_KETTLEBELL\x10\x04\x12\x1b\n" +
 	"\x17ANIMATION_PROP_KIND_MAT\x10\x05\x12\x1b\n" +
-	"\x17ANIMATION_PROP_KIND_BAR\x10\x062\xcb\x05\n" +
+	"\x17ANIMATION_PROP_KIND_BAR\x10\x062\xb5\x06\n" +
 	"\x0fExerciseService\x12V\n" +
 	"\x0fCreateExercises\x12 .plans.v1.CreateExercisesRequest\x1a!.plans.v1.CreateExercisesResponse\x12P\n" +
 	"\rListExercises\x12\x1e.plans.v1.ListExercisesRequest\x1a\x1f.plans.v1.ListExercisesResponse\x12J\n" +
@@ -2420,51 +2672,55 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x0eDeleteExercise\x12\x1f.plans.v1.DeleteExerciseRequest\x1a .plans.v1.DeleteExerciseResponse\x12b\n" +
 	"\x13ListExerciseHistory\x12$.plans.v1.ListExerciseHistoryRequest\x1a%.plans.v1.ListExerciseHistoryResponse\x12Y\n" +
 	"\x10GetHomeEquipment\x12!.plans.v1.GetHomeEquipmentRequest\x1a\".plans.v1.GetHomeEquipmentResponse\x12Y\n" +
-	"\x10SetHomeEquipment\x12!.plans.v1.SetHomeEquipmentRequest\x1a\".plans.v1.SetHomeEquipmentResponseB\xa5\x01\n" +
+	"\x10SetHomeEquipment\x12!.plans.v1.SetHomeEquipmentRequest\x1a\".plans.v1.SetHomeEquipmentResponse\x12h\n" +
+	"\x15SearchGarminExercises\x12&.plans.v1.SearchGarminExercisesRequest\x1a'.plans.v1.SearchGarminExercisesResponseB\xa5\x01\n" +
 	"\fcom.plans.v1B\x0eExercisesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_exercises_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_plans_v1_exercises_proto_goTypes = []any{
-	(Muscle)(0),                         // 0: plans.v1.Muscle
-	(BodyPoint)(0),                      // 1: plans.v1.BodyPoint
-	(AnimationPropKind)(0),              // 2: plans.v1.AnimationPropKind
-	(*Exercise)(nil),                    // 3: plans.v1.Exercise
-	(*ExerciseAnimation)(nil),           // 4: plans.v1.ExerciseAnimation
-	(*AnimationProp)(nil),               // 5: plans.v1.AnimationProp
-	(*AnimationKeyframe)(nil),           // 6: plans.v1.AnimationKeyframe
-	(*Pose)(nil),                        // 7: plans.v1.Pose
-	(*ExerciseHistoryEntry)(nil),        // 8: plans.v1.ExerciseHistoryEntry
-	(*CreateExercisesRequest)(nil),      // 9: plans.v1.CreateExercisesRequest
-	(*CreateExercisesResponse)(nil),     // 10: plans.v1.CreateExercisesResponse
-	(*ListExercisesRequest)(nil),        // 11: plans.v1.ListExercisesRequest
-	(*ListExercisesResponse)(nil),       // 12: plans.v1.ListExercisesResponse
-	(*GetExerciseRequest)(nil),          // 13: plans.v1.GetExerciseRequest
-	(*GetExerciseResponse)(nil),         // 14: plans.v1.GetExerciseResponse
-	(*UpdateExerciseRequest)(nil),       // 15: plans.v1.UpdateExerciseRequest
-	(*UpdateExerciseResponse)(nil),      // 16: plans.v1.UpdateExerciseResponse
-	(*DeleteExerciseRequest)(nil),       // 17: plans.v1.DeleteExerciseRequest
-	(*DeleteExerciseResponse)(nil),      // 18: plans.v1.DeleteExerciseResponse
-	(*ListExerciseHistoryRequest)(nil),  // 19: plans.v1.ListExerciseHistoryRequest
-	(*ListExerciseHistoryResponse)(nil), // 20: plans.v1.ListExerciseHistoryResponse
-	(*GetHomeEquipmentRequest)(nil),     // 21: plans.v1.GetHomeEquipmentRequest
-	(*GetHomeEquipmentResponse)(nil),    // 22: plans.v1.GetHomeEquipmentResponse
-	(*SetHomeEquipmentRequest)(nil),     // 23: plans.v1.SetHomeEquipmentRequest
-	(*SetHomeEquipmentResponse)(nil),    // 24: plans.v1.SetHomeEquipmentResponse
-	(Equipment)(0),                      // 25: plans.v1.Equipment
-	(*timestamppb.Timestamp)(nil),       // 26: google.protobuf.Timestamp
-	(*PlannedExercise)(nil),             // 27: plans.v1.PlannedExercise
-	(*LoggedExercise)(nil),              // 28: plans.v1.LoggedExercise
-	(SessionEffort)(0),                  // 29: plans.v1.SessionEffort
-	(*fieldmaskpb.FieldMask)(nil),       // 30: google.protobuf.FieldMask
-	(*OwnedEquipment)(nil),              // 31: plans.v1.OwnedEquipment
+	(Muscle)(0),                           // 0: plans.v1.Muscle
+	(BodyPoint)(0),                        // 1: plans.v1.BodyPoint
+	(AnimationPropKind)(0),                // 2: plans.v1.AnimationPropKind
+	(*Exercise)(nil),                      // 3: plans.v1.Exercise
+	(*ExerciseAnimation)(nil),             // 4: plans.v1.ExerciseAnimation
+	(*AnimationProp)(nil),                 // 5: plans.v1.AnimationProp
+	(*AnimationKeyframe)(nil),             // 6: plans.v1.AnimationKeyframe
+	(*Pose)(nil),                          // 7: plans.v1.Pose
+	(*ExerciseHistoryEntry)(nil),          // 8: plans.v1.ExerciseHistoryEntry
+	(*CreateExercisesRequest)(nil),        // 9: plans.v1.CreateExercisesRequest
+	(*CreateExercisesResponse)(nil),       // 10: plans.v1.CreateExercisesResponse
+	(*ListExercisesRequest)(nil),          // 11: plans.v1.ListExercisesRequest
+	(*ListExercisesResponse)(nil),         // 12: plans.v1.ListExercisesResponse
+	(*GetExerciseRequest)(nil),            // 13: plans.v1.GetExerciseRequest
+	(*GetExerciseResponse)(nil),           // 14: plans.v1.GetExerciseResponse
+	(*UpdateExerciseRequest)(nil),         // 15: plans.v1.UpdateExerciseRequest
+	(*UpdateExerciseResponse)(nil),        // 16: plans.v1.UpdateExerciseResponse
+	(*DeleteExerciseRequest)(nil),         // 17: plans.v1.DeleteExerciseRequest
+	(*DeleteExerciseResponse)(nil),        // 18: plans.v1.DeleteExerciseResponse
+	(*ListExerciseHistoryRequest)(nil),    // 19: plans.v1.ListExerciseHistoryRequest
+	(*ListExerciseHistoryResponse)(nil),   // 20: plans.v1.ListExerciseHistoryResponse
+	(*GetHomeEquipmentRequest)(nil),       // 21: plans.v1.GetHomeEquipmentRequest
+	(*GetHomeEquipmentResponse)(nil),      // 22: plans.v1.GetHomeEquipmentResponse
+	(*SetHomeEquipmentRequest)(nil),       // 23: plans.v1.SetHomeEquipmentRequest
+	(*SetHomeEquipmentResponse)(nil),      // 24: plans.v1.SetHomeEquipmentResponse
+	(*SearchGarminExercisesRequest)(nil),  // 25: plans.v1.SearchGarminExercisesRequest
+	(*SearchGarminExercisesResponse)(nil), // 26: plans.v1.SearchGarminExercisesResponse
+	(*GarminExercise)(nil),                // 27: plans.v1.GarminExercise
+	(Equipment)(0),                        // 28: plans.v1.Equipment
+	(*timestamppb.Timestamp)(nil),         // 29: google.protobuf.Timestamp
+	(*PlannedExercise)(nil),               // 30: plans.v1.PlannedExercise
+	(*LoggedExercise)(nil),                // 31: plans.v1.LoggedExercise
+	(SessionEffort)(0),                    // 32: plans.v1.SessionEffort
+	(*fieldmaskpb.FieldMask)(nil),         // 33: google.protobuf.FieldMask
+	(*OwnedEquipment)(nil),                // 34: plans.v1.OwnedEquipment
 }
 var file_plans_v1_exercises_proto_depIdxs = []int32{
 	0,  // 0: plans.v1.Exercise.primary_muscles:type_name -> plans.v1.Muscle
 	0,  // 1: plans.v1.Exercise.secondary_muscles:type_name -> plans.v1.Muscle
-	25, // 2: plans.v1.Exercise.equipment:type_name -> plans.v1.Equipment
-	26, // 3: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
-	26, // 4: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
+	28, // 2: plans.v1.Exercise.equipment:type_name -> plans.v1.Equipment
+	29, // 3: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
+	29, // 4: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
 	4,  // 5: plans.v1.Exercise.animations:type_name -> plans.v1.ExerciseAnimation
 	1,  // 6: plans.v1.ExerciseAnimation.anchor:type_name -> plans.v1.BodyPoint
 	1,  // 7: plans.v1.ExerciseAnimation.planted:type_name -> plans.v1.BodyPoint
@@ -2474,43 +2730,46 @@ var file_plans_v1_exercises_proto_depIdxs = []int32{
 	1,  // 11: plans.v1.AnimationProp.point:type_name -> plans.v1.BodyPoint
 	7,  // 12: plans.v1.AnimationKeyframe.pose:type_name -> plans.v1.Pose
 	1,  // 13: plans.v1.AnimationKeyframe.highlight:type_name -> plans.v1.BodyPoint
-	27, // 14: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
-	28, // 15: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
-	29, // 16: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
+	30, // 14: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
+	31, // 15: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
+	32, // 16: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
 	3,  // 17: plans.v1.CreateExercisesRequest.exercises:type_name -> plans.v1.Exercise
 	3,  // 18: plans.v1.CreateExercisesResponse.exercises:type_name -> plans.v1.Exercise
 	3,  // 19: plans.v1.ListExercisesResponse.exercises:type_name -> plans.v1.Exercise
 	3,  // 20: plans.v1.GetExerciseResponse.exercise:type_name -> plans.v1.Exercise
 	3,  // 21: plans.v1.UpdateExerciseRequest.exercise:type_name -> plans.v1.Exercise
-	30, // 22: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	33, // 22: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
 	3,  // 23: plans.v1.UpdateExerciseResponse.exercise:type_name -> plans.v1.Exercise
 	8,  // 24: plans.v1.ListExerciseHistoryResponse.entries:type_name -> plans.v1.ExerciseHistoryEntry
-	31, // 25: plans.v1.GetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
-	26, // 26: plans.v1.GetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
-	31, // 27: plans.v1.SetHomeEquipmentRequest.equipment:type_name -> plans.v1.OwnedEquipment
-	31, // 28: plans.v1.SetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
-	26, // 29: plans.v1.SetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
-	9,  // 30: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
-	11, // 31: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
-	13, // 32: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
-	15, // 33: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
-	17, // 34: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
-	19, // 35: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
-	21, // 36: plans.v1.ExerciseService.GetHomeEquipment:input_type -> plans.v1.GetHomeEquipmentRequest
-	23, // 37: plans.v1.ExerciseService.SetHomeEquipment:input_type -> plans.v1.SetHomeEquipmentRequest
-	10, // 38: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
-	12, // 39: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
-	14, // 40: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
-	16, // 41: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
-	18, // 42: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
-	20, // 43: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
-	22, // 44: plans.v1.ExerciseService.GetHomeEquipment:output_type -> plans.v1.GetHomeEquipmentResponse
-	24, // 45: plans.v1.ExerciseService.SetHomeEquipment:output_type -> plans.v1.SetHomeEquipmentResponse
-	38, // [38:46] is the sub-list for method output_type
-	30, // [30:38] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	34, // 25: plans.v1.GetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	29, // 26: plans.v1.GetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	34, // 27: plans.v1.SetHomeEquipmentRequest.equipment:type_name -> plans.v1.OwnedEquipment
+	34, // 28: plans.v1.SetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	29, // 29: plans.v1.SetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	27, // 30: plans.v1.SearchGarminExercisesResponse.exercises:type_name -> plans.v1.GarminExercise
+	9,  // 31: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
+	11, // 32: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
+	13, // 33: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
+	15, // 34: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
+	17, // 35: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
+	19, // 36: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
+	21, // 37: plans.v1.ExerciseService.GetHomeEquipment:input_type -> plans.v1.GetHomeEquipmentRequest
+	23, // 38: plans.v1.ExerciseService.SetHomeEquipment:input_type -> plans.v1.SetHomeEquipmentRequest
+	25, // 39: plans.v1.ExerciseService.SearchGarminExercises:input_type -> plans.v1.SearchGarminExercisesRequest
+	10, // 40: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
+	12, // 41: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
+	14, // 42: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
+	16, // 43: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
+	18, // 44: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
+	20, // 45: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
+	22, // 46: plans.v1.ExerciseService.GetHomeEquipment:output_type -> plans.v1.GetHomeEquipmentResponse
+	24, // 47: plans.v1.ExerciseService.SetHomeEquipment:output_type -> plans.v1.SetHomeEquipmentResponse
+	26, // 48: plans.v1.ExerciseService.SearchGarminExercises:output_type -> plans.v1.SearchGarminExercisesResponse
+	40, // [40:49] is the sub-list for method output_type
+	31, // [31:40] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_exercises_proto_init() }
@@ -2526,7 +2785,7 @@ func file_plans_v1_exercises_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_exercises_proto_rawDesc), len(file_plans_v1_exercises_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   22,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -68,3 +68,19 @@ create table garmin_workouts (
 );
 
 create index garmin_workouts_user_id on garmin_workouts (user_id);
+
+-- Garmin's notifications, queued to be handled after answering them:
+-- Garmin requires an answer before any processing, and sends a notification
+-- again if it isn't answered within 30 seconds. The body is gzipped.
+create table garmin_notifications (
+  id bigint generated always as identity primary key,
+  body bytea not null,
+  attempts integer not null default 0,
+  create_time timestamptz not null default current_timestamp
+);
+
+-- The exercise of Garmin's catalog an exercise of the library is, like
+-- "SQUAT/GOBLET_SQUAT", so the watch shows and counts it as that exercise.
+-- Garmin's Training API only takes exercises of its catalog. Empty if not
+-- set, when one is matched by the exercise's name, if any.
+alter table exercises add column garmin_exercise text not null default '';

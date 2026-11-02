@@ -59,10 +59,10 @@ resource "google_cloud_run_v2_service" "app" {
           },
           local.scheduled_sync ? {
             TRAIL_TOOLS_STRAVA_SYNC_MODE = "scheduled"
+            TRAIL_TOOLS_STRAVA_SYNC_JOB  = google_cloud_scheduler_job.strava_sync[0].id
           } : {},
           local.strava ? {
             TRAIL_TOOLS_STRAVA_CLIENT_ID = var.strava_client_id
-            TRAIL_TOOLS_STRAVA_SYNC_JOB  = google_cloud_scheduler_job.strava_sync[0].id
           } : {},
           local.garmin ? {
             TRAIL_TOOLS_GARMIN_CLIENT_ID = var.garmin_client_id
@@ -305,9 +305,11 @@ resource "google_project_iam_member" "import_tracing" {
   depends_on = [google_project_service.services]
 }
 
-# Lets the service run the Strava sync job when a user asks to sync.
+# Lets the service run the sync job when a user asks to sync Strava, and
+# when Garmin sends a notification, which is handled within the job's
+# request, as the service only runs during requests.
 resource "google_project_iam_member" "run_strava_sync" {
-  count   = local.strava ? 1 : 0
+  count   = local.scheduled_sync ? 1 : 0
   project = var.project
   role    = "roles/cloudscheduler.jobRunner"
   member  = google_service_account.run.member
