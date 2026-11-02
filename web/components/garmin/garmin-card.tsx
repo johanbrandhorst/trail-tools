@@ -121,8 +121,9 @@ const GarminCard: React.FC = () => {
           <p className="text-sm text-gray-700">
             Connect your Garmin account to get activities straight from your
             watch, with the sets of your strength workouts, and to put your
-            upcoming runs and strength workouts on your Garmin calendar. If you
-            use Strava too, activities on both are kept once.
+            upcoming runs and strength workouts on your Garmin calendar, with
+            their routes as courses to navigate. If you use Strava too,
+            activities on both are kept once.
           </p>
           <a
             href="/garmin/connect"
@@ -152,8 +153,14 @@ const GarminCard: React.FC = () => {
             allowed={connection.workoutsAllowed}
             label="Workouts on your Garmin calendar"
           />
+          <Permission
+            allowed={connection.coursesAllowed}
+            label="Routes of upcoming runs and races as courses"
+          />
         </ul>
-        {(!connection.activitiesAllowed || !connection.workoutsAllowed) && (
+        {(!connection.activitiesAllowed ||
+          !connection.workoutsAllowed ||
+          !connection.coursesAllowed) && (
           <p className="text-xs text-gray-600">
             Change what trailrunn.ing may do in Garmin Connect, under Connected
             apps, or connect again.
@@ -161,15 +168,15 @@ const GarminCard: React.FC = () => {
         )}
         <div className="grid grid-cols-2 gap-3">
           <Stat label="Workouts on Garmin" value={connection.workoutCount} />
+          <Stat label="Courses on Garmin" value={connection.courseCount} />
           <Stat
             label="Activity files waiting"
             value={connection.pendingFileCount}
           />
         </div>
-        {connection.workoutsAllowed && (
+        {(connection.workoutsAllowed || connection.coursesAllowed) && (
           <div className="text-xs text-gray-600">
-            Calendar last updated:{" "}
-            {formatTimestamp(connection.workoutsSyncTime)}
+            Last updated: {formatTimestamp(connection.workoutsSyncTime)}
           </div>
         )}
         {connection.syncMessage !== "" && (

@@ -33,6 +33,8 @@ type GarminConnection struct {
 	xxx_hidden_SyncMessage       string                 `protobuf:"bytes,6,opt,name=sync_message,json=syncMessage,proto3"`
 	xxx_hidden_WorkoutCount      int32                  `protobuf:"varint,7,opt,name=workout_count,json=workoutCount,proto3"`
 	xxx_hidden_PendingFileCount  int32                  `protobuf:"varint,8,opt,name=pending_file_count,json=pendingFileCount,proto3"`
+	xxx_hidden_CoursesAllowed    bool                   `protobuf:"varint,9,opt,name=courses_allowed,json=coursesAllowed,proto3"`
+	xxx_hidden_CourseCount       int32                  `protobuf:"varint,10,opt,name=course_count,json=courseCount,proto3"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -118,6 +120,20 @@ func (x *GarminConnection) GetPendingFileCount() int32 {
 	return 0
 }
 
+func (x *GarminConnection) GetCoursesAllowed() bool {
+	if x != nil {
+		return x.xxx_hidden_CoursesAllowed
+	}
+	return false
+}
+
+func (x *GarminConnection) GetCourseCount() int32 {
+	if x != nil {
+		return x.xxx_hidden_CourseCount
+	}
+	return 0
+}
+
 func (x *GarminConnection) SetConnected(v bool) {
 	x.xxx_hidden_Connected = v
 }
@@ -150,6 +166,14 @@ func (x *GarminConnection) SetPendingFileCount(v int32) {
 	x.xxx_hidden_PendingFileCount = v
 }
 
+func (x *GarminConnection) SetCoursesAllowed(v bool) {
+	x.xxx_hidden_CoursesAllowed = v
+}
+
+func (x *GarminConnection) SetCourseCount(v int32) {
+	x.xxx_hidden_CourseCount = v
+}
+
 func (x *GarminConnection) HasWorkoutsSyncTime() bool {
 	if x == nil {
 		return false
@@ -180,6 +204,11 @@ type GarminConnection_builder struct {
 	WorkoutCount int32
 	// How many activity files are waiting to be downloaded.
 	PendingFileCount int32
+	// Whether the user lets the app put the routes of their upcoming runs and
+	// races on their Garmin account as courses, for the watch to navigate.
+	CoursesAllowed bool
+	// How many courses are on the Garmin account.
+	CourseCount int32
 }
 
 func (b0 GarminConnection_builder) Build() *GarminConnection {
@@ -194,6 +223,8 @@ func (b0 GarminConnection_builder) Build() *GarminConnection {
 	x.xxx_hidden_SyncMessage = b.SyncMessage
 	x.xxx_hidden_WorkoutCount = b.WorkoutCount
 	x.xxx_hidden_PendingFileCount = b.PendingFileCount
+	x.xxx_hidden_CoursesAllowed = b.CoursesAllowed
+	x.xxx_hidden_CourseCount = b.CourseCount
 	return m0
 }
 
@@ -511,7 +542,7 @@ var File_garmin_v1_garmin_proto protoreflect.FileDescriptor
 
 const file_garmin_v1_garmin_proto_rawDesc = "" +
 	"\n" +
-	"\x16garmin/v1/garmin.proto\x12\tgarmin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xea\x02\n" +
+	"\x16garmin/v1/garmin.proto\x12\tgarmin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xb6\x03\n" +
 	"\x10GarminConnection\x12\x1c\n" +
 	"\tconnected\x18\x01 \x01(\bR\tconnected\x12\x1e\n" +
 	"\n" +
@@ -522,7 +553,10 @@ const file_garmin_v1_garmin_proto_rawDesc = "" +
 	"\x12workouts_sync_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x10workoutsSyncTime\x12!\n" +
 	"\fsync_message\x18\x06 \x01(\tR\vsyncMessage\x12#\n" +
 	"\rworkout_count\x18\a \x01(\x05R\fworkoutCount\x12,\n" +
-	"\x12pending_file_count\x18\b \x01(\x05R\x10pendingFileCount\"\x1c\n" +
+	"\x12pending_file_count\x18\b \x01(\x05R\x10pendingFileCount\x12'\n" +
+	"\x0fcourses_allowed\x18\t \x01(\bR\x0ecoursesAllowed\x12!\n" +
+	"\fcourse_count\x18\n" +
+	" \x01(\x05R\vcourseCount\"\x1c\n" +
 	"\x1aGetGarminConnectionRequest\"Z\n" +
 	"\x1bGetGarminConnectionResponse\x12;\n" +
 	"\n" +

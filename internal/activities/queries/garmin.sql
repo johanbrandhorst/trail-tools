@@ -210,12 +210,13 @@ delete from garmin_activity_files
 where expire_time <= now() or attempts >= sqlc.arg(max_attempts);
 
 -- name: CountGarminStatus :one
--- Counts the user's activity files waiting to download and workouts on
--- their Garmin calendar, in one round trip.
+-- Counts the user's activity files waiting to download, and workouts and
+-- courses on their Garmin account, in one round trip.
 select
   (select count(*) from garmin_activity_files f
     where f.user_id = sqlc.arg(user_id)::uuid and f.expire_time > now() and f.attempts < sqlc.arg(max_attempts))::bigint as pending_files,
-  (select count(*) from garmin_workouts w where w.user_id = sqlc.arg(user_id)::uuid)::bigint as workouts;
+  (select count(*) from garmin_workouts w where w.user_id = sqlc.arg(user_id)::uuid)::bigint as workouts,
+  (select count(*) from garmin_courses c where c.user_id = sqlc.arg(user_id)::uuid)::bigint as courses;
 
 -- name: InsertGarminNotification :exec
 insert into garmin_notifications (body) values ($1);

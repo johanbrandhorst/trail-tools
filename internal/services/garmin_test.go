@@ -19,7 +19,9 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	garminv1 "github.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	stravav1 "github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"github.com/johanbrandhorst/trail-tools/internal/strava"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -46,6 +48,8 @@ type fakeGarmin struct {
 	scheduled map[int64]time.Time
 	created   int
 	deleted   []int64
+	// The courses on the account, by ID.
+	courses map[int64]*garmin.Course
 	// Whether the app was deregistered, after which tokens are rejected.
 	deregistered bool
 }
@@ -57,6 +61,7 @@ func newFakeGarmin() *fakeGarmin {
 		files:       map[string][]byte{},
 		workouts:    map[int64]*garmin.Workout{},
 		scheduled:   map[int64]time.Time{},
+		courses:     map[int64]*garmin.Course{},
 		nextID:      100,
 	}
 }
@@ -167,6 +172,39 @@ func (f *fakeGarmin) ScheduleWorkout(_ context.Context, _ string, workoutID int6
 	}
 	f.scheduled[workoutID] = date
 	return workoutID + 1000, nil
+}
+
+func (f *fakeGarmin) CreateCourse(_ context.Context, _ string, c *garmin.Course) (int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.check(); err != nil {
+		return 0, err
+	}
+	f.nextID++
+	f.courses[f.nextID] = c
+	return f.nextID, nil
+}
+
+func (f *fakeGarmin) DeleteCourse(_ context.Context, _ string, id int64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.check(); err != nil {
+		return err
+	}
+	delete(f.courses, id)
+	return nil
+}
+
+// courseNames returns the names of the courses on the account, sorted.
+func (f *fakeGarmin) courseNames() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var names []string
+	for _, c := range f.courses {
+		names = append(names, c.CourseName)
+	}
+	slices.Sort(names)
+	return names
 }
 
 // addSummaries makes a ping's callback URL return the summaries.
@@ -727,5 +765,109 @@ func TestGarminExercises(t *testing.T) {
 	}
 	if got := created.GetExercises()[0].GetGarminExercise(); got != "LUNGE/DUMBBELL_BULGARIAN_SPLIT_SQUAT" {
 		t.Errorf("got Garmin exercise %q", got)
+	}
+}
+
+func TestGarminCourses(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// Two routes, one for a run this week and one for a race next month.
+	newRoute := func(name string, waypoints ...float64) string {
+		created, err := e.routes.CreateRoute(ctx, routesv1.CreateRouteRequest_builder{
+			Name:      name,
+			Waypoints: routesv1.Waypoints_builder{Waypoints: latLngs(waypoints...)}.Build(),
+		}.Build())
+		if err != nil {
+			t.Fatalf("CreateRoute: %v", err)
+		}
+		return created.GetRoute().GetId()
+	}
+	hill := newRoute("Hill loop", 0, 0, 0.01, 0, 0.02, 0)
+	race := newRoute("Race course", 0, 0, 0.03, 0)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	day := func(days int) string { return today.AddDate(0, 0, days).Format(time.DateOnly) }
+	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
+		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: day(0), EndDate: day(60)}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	run := baseRun()
+	run.SetRouteId(hill)
+	later := baseRun()
+	later.SetRouteId(race)
+	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId: plan.GetPlan().GetId(),
+		Workouts: []*plansv1.Workout{
+			plansv1.Workout_builder{Date: day(2), Title: "Hills", Run: run}.Build(),
+			plansv1.Workout_builder{Date: day(40), Title: "Course recce", Run: later}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateWorkouts: %v", err)
+	}
+
+	// Only the routes of the coming two weeks become courses, with points at
+	// most 100 m apart, once the user allows it.
+	e.connectGarmin(garmin.PermissionWorkoutImport)
+	if _, err := e.garminAPI.SyncGarmin(ctx, garminv1.SyncGarminRequest_builder{}.Build()); err != nil {
+		t.Fatalf("SyncGarmin: %v", err)
+	}
+	if got := e.garmin.courseNames(); len(got) != 0 {
+		t.Fatalf("put courses %v on Garmin without the permission", got)
+	}
+	e.connectGarmin(garmin.PermissionWorkoutImport, garmin.PermissionCourseImport)
+	resp, err := e.garminAPI.SyncGarmin(ctx, garminv1.SyncGarminRequest_builder{}.Build())
+	if err != nil {
+		t.Fatalf("SyncGarmin: %v", err)
+	}
+	if got := e.garmin.courseNames(); fmt.Sprint(got) != "[Hill loop]" {
+		t.Fatalf("got courses %v, want the hill loop", got)
+	}
+	if conn := resp.GetConnection(); !conn.GetCoursesAllowed() || conn.GetCourseCount() != 1 {
+		t.Errorf("unexpected connection %v", conn)
+	}
+	e.garmin.mu.Lock()
+	for _, c := range e.garmin.courses {
+		if len(c.GeoPoints) < 23 || c.ActivityType != garmin.CourseTrailRunning || !approx(c.DistanceMeters, 2224, 5) || c.CoordinateSystem != "WGS84" {
+			t.Errorf("unexpected course %+v", c)
+		}
+		for i := 1; i < len(c.GeoPoints); i++ {
+			a, b := c.GeoPoints[i-1], c.GeoPoints[i]
+			if d := geo.Distance(geo.Point{Lat: a.Latitude, Lng: a.Longitude}, geo.Point{Lat: b.Latitude, Lng: b.Longitude}); d > garmin.MaxCoursePointSpacingMeters+0.5 {
+				t.Errorf("points %d and %d are %.0f m apart", i-1, i, d)
+			}
+		}
+	}
+	e.garmin.mu.Unlock()
+
+	// Syncing again sends nothing; moving the race's workout closer sends
+	// its course, and moving the run away removes its course.
+	if _, err := e.garminAPI.SyncGarmin(ctx, garminv1.SyncGarminRequest_builder{}.Build()); err != nil {
+		t.Fatalf("SyncGarmin: %v", err)
+	}
+	if got := len(e.garmin.courses); got != 1 {
+		t.Errorf("got %d courses after syncing again, want 1", got)
+	}
+	mask := &fieldmaskpb.FieldMask{Paths: []string{"date"}}
+	for id, date := range map[string]string{created.GetWorkouts()[1].GetId(): day(3), created.GetWorkouts()[0].GetId(): day(30)} {
+		if _, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+			Workout: plansv1.Workout_builder{Id: id, Date: date}.Build(), UpdateMask: mask,
+		}.Build()); err != nil {
+			t.Fatalf("UpdateWorkout: %v", err)
+		}
+	}
+	if got := e.garmin.courseNames(); fmt.Sprint(got) != "[Race course]" {
+		t.Errorf("got courses %v after moving the workouts, want the race course", got)
+	}
+
+	// Disconnecting removes the courses.
+	if _, err := e.garminSession.DisconnectGarmin(ctx, garminv1.DisconnectGarminRequest_builder{}.Build()); err != nil {
+		t.Fatalf("DisconnectGarmin: %v", err)
+	}
+	if got := e.garmin.courseNames(); len(got) != 0 {
+		t.Errorf("got courses %v after disconnecting", got)
 	}
 }
