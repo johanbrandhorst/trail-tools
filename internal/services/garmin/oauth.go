@@ -33,7 +33,11 @@ const (
 	// developer portal.
 	CallbackPath    = "/garmin/callback"
 	stateCookieName = "garmin_oauth_state"
-	stateLifetime   = 10 * time.Minute
+	// stateLifetime is how long the user has to authorize the app on
+	// Garmin's site. Signing in to Garmin for the first time, with a code
+	// for two-factor authentication, and reading the consent screen can
+	// take more than 10 minutes.
+	stateLifetime = 30 * time.Minute
 	// connectSetupTimeout bounds setting up a new connection before
 	// redirecting back to the app: asking for the recent activities and
 	// putting the upcoming workouts on the calendar. Whatever doesn't finish
@@ -97,7 +101,7 @@ func (o *OAuth) handleCallback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	cookie, err := r.Cookie(stateCookieName)
 	if err != nil {
-		o.redirectSettings(w, r, "error", "The Garmin connection expired, please try again")
+		o.redirectSettings(w, r, "error", "Connecting Garmin took more than 30 minutes, or was finished in another browser; please try again")
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: stateCookieName, Path: CallbackPath, MaxAge: -1, Secure: true, HttpOnly: true})
