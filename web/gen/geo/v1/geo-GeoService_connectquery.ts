@@ -52,6 +52,18 @@ export const getElevation = GeoService.method.getElevation;
 export const getPersonalHeatmap = GeoService.method.getPersonalHeatmap;
 
 /**
+ * List the trails and roads the user has run in a bounding box, the most
+ * run first, by matching their GPS tracks to the mapped ways. Unlike the
+ * heatmap's cells, these are the ways routes are built on: use them to
+ * find the user's favorite trails, and to route along them with the
+ * HEATMAP or TRAIL profile. Only areas whose map data has been imported
+ * can be searched.
+ *
+ * @generated from rpc geo.v1.GeoService.ListFamiliarTrails
+ */
+export const listFamiliarTrails = GeoService.method.listFamiliarTrails;
+
+/**
  * List the parts of the user's GPS tracks inside a bounding box, simplified,
  * for drawing them as a heatmap.
  *

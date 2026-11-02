@@ -32,6 +32,13 @@ service GeoService {
   // cells inside a bounding box. Cells with a high count are places the user
   // runs often. Useful for finding familiar trails and areas.
   rpc GetPersonalHeatmap(GetPersonalHeatmapRequest) returns (GetPersonalHeatmapResponse);
+  // List the trails and roads the user has run in a bounding box, the most
+  // run first, by matching their GPS tracks to the mapped ways. Unlike the
+  // heatmap's cells, these are the ways routes are built on: use them to
+  // find the user's favorite trails, and to route along them with the
+  // HEATMAP or TRAIL profile. Only areas whose map data has been imported
+  // can be searched.
+  rpc ListFamiliarTrails(ListFamiliarTrailsRequest) returns (ListFamiliarTrailsResponse);
   // List the parts of the user's GPS tracks inside a bounding box, simplified,
   // for drawing them as a heatmap.
   rpc ListHeatmapTracks(ListHeatmapTracksRequest) returns (ListHeatmapTracksResponse) {
@@ -235,6 +242,39 @@ message HeatmapCell {
   LatLng center = 1;
   // The number of distinct activities that passed through the cell.
   int32 activity_count = 2;
+}
+
+message ListFamiliarTrailsRequest {
+  // The area to search, at most 30 km across.
+  BoundingBox bounds = 1;
+  // Only count activities that started on or after this date (YYYY-MM-DD).
+  string start_date = 2;
+  // Only count activities that started on or before this date (YYYY-MM-DD).
+  string end_date = 3;
+  // Maximum number of trails to return, the most run first. Defaults to 50,
+  // maximum 200.
+  int32 limit = 4;
+}
+
+// A trail or road the user has run.
+message FamiliarTrail {
+  // The way. Its length_meters is its length in the bounds, and its start
+  // and end are where the part the user ran starts and ends. Its
+  // nearest_point and distance_from_center_meters are unset.
+  Trail trail = 1;
+  // How many activities ran along the way's most run part.
+  int32 activity_count = 2;
+  // How much of the way the user has run, in meters.
+  double run_length_meters = 3;
+}
+
+message ListFamiliarTrailsResponse {
+  // The trails, the most run first, then the longest run.
+  repeated FamiliarTrail trails = 1;
+  // Whether some activities were left out, as there were too many. The
+  // 1,000 most recent activities in the area are counted; use dates or a
+  // smaller area to count others.
+  bool truncated = 2;
 }
 
 message ListHeatmapTracksRequest {

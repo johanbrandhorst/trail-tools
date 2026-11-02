@@ -40,6 +40,7 @@ type MapData interface {
 type Finder interface {
 	FindTrails(ctx context.Context, center geo.Point, radius float64, limit int) ([]routing.Trail, error)
 	FindFeatures(ctx context.Context, center geo.Point, radius float64, kinds []geo.FeatureKind) ([]routing.Feature, error)
+	FamiliarWays(ctx context.Context, bounds geo.Bounds, tracks [][]geo.Point, limit int) ([]routing.FamiliarWay, error)
 }
 
 type TrackRepository interface {
@@ -362,6 +363,86 @@ func (s *Service) ListHeatmapTracks(ctx context.Context, req *geov1.ListHeatmapT
 		}
 		points += len(part)
 		resp.Polylines = append(resp.Polylines, geo.EncodePolyline(part))
+	}
+	return resp.Build(), nil
+}
+
+// maxFamiliarAreaMeters is the widest area familiar trails are found in,
+// across either way. The search reads every mapped edge in the area, and
+// marks the tracks on a grid of it, which takes memory with the area.
+const maxFamiliarAreaMeters = 30_000
+
+// familiarTrackToleranceMeters is how far the tracks matched to trails may
+// stray from the recorded ones: well within the distance they're matched
+// within.
+const familiarTrackToleranceMeters = 10
+
+func (s *Service) ListFamiliarTrails(ctx context.Context, req *geov1.ListFamiliarTrailsRequest) (*geov1.ListFamiliarTrailsResponse, error) {
+	userID, ok := authn.GetUserID(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	}
+	pb := req.GetBounds()
+	bounds := geo.Bounds{MinLat: pb.GetSouth(), MinLng: pb.GetWest(), MaxLat: pb.GetNorth(), MaxLng: pb.GetEast()}
+	if !req.HasBounds() || bounds.MinLat >= bounds.MaxLat || bounds.MinLng >= bounds.MaxLng {
+		return nil, connect.NewError(connect.CodeInvalidArgument, "bounds with south < north and west < east are required")
+	}
+	midLat := (bounds.MinLat + bounds.MaxLat) / 2
+	width := geo.Distance(geo.Point{Lat: midLat, Lng: bounds.MinLng}, geo.Point{Lat: midLat, Lng: bounds.MaxLng})
+	height := geo.Distance(geo.Point{Lat: bounds.MinLat, Lng: bounds.MinLng}, geo.Point{Lat: bounds.MaxLat, Lng: bounds.MinLng})
+	if width > maxFamiliarAreaMeters || height > maxFamiliarAreaMeters {
+		return nil, connect.Errorf(connect.CodeInvalidArgument,
+			"the area is %.0f by %.0f km, but familiar trails are found in areas of at most %d km across; use a smaller area",
+			width/1000, height/1000, maxFamiliarAreaMeters/1000)
+	}
+	limit := clamp(int(req.GetLimit()), 50, 200)
+	var startDate, endDate time.Time
+	var err error
+	if req.GetStartDate() != "" {
+		if startDate, err = store.ParseDate(req.GetStartDate()); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+		}
+	}
+	if req.GetEndDate() != "" {
+		if endDate, err = store.ParseDate(req.GetEndDate()); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+		}
+	}
+	tracks, truncated, err := s.tracks.ListTracksInBounds(ctx, userID, bounds, startDate, endDate, familiarTrackToleranceMeters)
+	if err != nil {
+		return nil, s.internalError(ctx, err, "failed to list tracks")
+	}
+	points := make([][]geo.Point, len(tracks))
+	for i, track := range tracks {
+		points[i] = geo.Simplify(track.Points, familiarTrackToleranceMeters)
+	}
+	resp := geov1.ListFamiliarTrailsResponse_builder{Truncated: truncated}
+	if len(points) == 0 {
+		return resp.Build(), nil
+	}
+	ways, err := s.finder.FamiliarWays(ctx, bounds, points, limit)
+	if err != nil {
+		return nil, s.findError(ctx, err)
+	}
+	for _, way := range ways {
+		b := geov1.Trail_builder{
+			OsmId:        strconv.FormatInt(way.WayID, 10),
+			Name:         way.Name,
+			Highway:      way.Highway,
+			Surface:      way.Surface,
+			SacScale:     way.SacScale,
+			Terrain:      route.TerrainToProto(way.Terrain),
+			LengthMeters: math.Round(way.LengthMeters),
+		}
+		if n := len(way.Points); n > 0 {
+			b.Start = latLng(way.Points[0].Lat, way.Points[0].Lng)
+			b.End = latLng(way.Points[n-1].Lat, way.Points[n-1].Lng)
+		}
+		resp.Trails = append(resp.Trails, geov1.FamiliarTrail_builder{
+			Trail:           b.Build(),
+			ActivityCount:   int32(way.ActivityCount),
+			RunLengthMeters: math.Round(way.RunLengthMeters),
+		}.Build())
 	}
 	return resp.Build(), nil
 }

@@ -538,6 +538,17 @@ func (f *fakeMapData) FindTrails(_ context.Context, center geo.Point, radius flo
 	return []routing.Trail{trail}, nil
 }
 
+// FamiliarWays returns the ridge trail, run by every track. Areas south of
+// 60°S haven't been imported.
+func (f *fakeMapData) FamiliarWays(_ context.Context, bounds geo.Bounds, tracks [][]geo.Point, _ int) ([]routing.FamiliarWay, error) {
+	if bounds.MaxLat < -60 {
+		return nil, routing.ErrNoMapData
+	}
+	way := routing.FamiliarWay{ActivityCount: len(tracks), RunLengthMeters: 400, LengthMeters: 500}
+	way.Trail = routing.Trail{WayID: 42, Name: "Ridge Trail", Highway: "path", Terrain: geo.TerrainTrail, Points: []geo.Point{{Lat: bounds.MinLat}, {Lat: bounds.MaxLat}}}
+	return []routing.FamiliarWay{way}, nil
+}
+
 // FindFeatures returns a peak and a water source north of the center, of
 // any kind. Areas south of 60°S haven't been imported.
 func (f *fakeMapData) FindFeatures(_ context.Context, center geo.Point, radius float64, kinds []geo.FeatureKind) ([]routing.Feature, error) {

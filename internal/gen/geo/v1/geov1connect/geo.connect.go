@@ -36,6 +36,9 @@ const (
 	// GeoServiceGetPersonalHeatmapProcedure is the procedure name of the GeoService's
 	// GetPersonalHeatmap RPC.
 	GeoServiceGetPersonalHeatmapProcedure = "/geo.v1.GeoService/GetPersonalHeatmap"
+	// GeoServiceListFamiliarTrailsProcedure is the procedure name of the GeoService's
+	// ListFamiliarTrails RPC.
+	GeoServiceListFamiliarTrailsProcedure = "/geo.v1.GeoService/ListFamiliarTrails"
 	// GeoServiceListHeatmapTracksProcedure is the procedure name of the GeoService's ListHeatmapTracks
 	// RPC.
 	GeoServiceListHeatmapTracksProcedure = "/geo.v1.GeoService/ListHeatmapTracks"
@@ -77,6 +80,13 @@ var (
 			Procedure:  GeoServiceGetPersonalHeatmapProcedure,
 		}
 	})
+	geoServiceListFamiliarTrailsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_geo_v1_geo_proto.Services().ByName("GeoService").Methods().ByName("ListFamiliarTrails"),
+			Procedure:  GeoServiceListFamiliarTrailsProcedure,
+		}
+	})
 	geoServiceListHeatmapTracksSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -110,6 +120,13 @@ type GeoServiceClient interface {
 	// cells inside a bounding box. Cells with a high count are places the user
 	// runs often. Useful for finding familiar trails and areas.
 	GetPersonalHeatmap(context.Context, *v1.GetPersonalHeatmapRequest) (*v1.GetPersonalHeatmapResponse, error)
+	// List the trails and roads the user has run in a bounding box, the most
+	// run first, by matching their GPS tracks to the mapped ways. Unlike the
+	// heatmap's cells, these are the ways routes are built on: use them to
+	// find the user's favorite trails, and to route along them with the
+	// HEATMAP or TRAIL profile. Only areas whose map data has been imported
+	// can be searched.
+	ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error)
 	// List the parts of the user's GPS tracks inside a bounding box, simplified,
 	// for drawing them as a heatmap.
 	ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error)
@@ -145,6 +162,13 @@ type GeoServiceHandler interface {
 	// cells inside a bounding box. Cells with a high count are places the user
 	// runs often. Useful for finding familiar trails and areas.
 	GetPersonalHeatmap(context.Context, *v1.GetPersonalHeatmapRequest) (*v1.GetPersonalHeatmapResponse, error)
+	// List the trails and roads the user has run in a bounding box, the most
+	// run first, by matching their GPS tracks to the mapped ways. Unlike the
+	// heatmap's cells, these are the ways routes are built on: use them to
+	// find the user's favorite trails, and to route along them with the
+	// HEATMAP or TRAIL profile. Only areas whose map data has been imported
+	// can be searched.
+	ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error)
 	// List the parts of the user's GPS tracks inside a bounding box, simplified,
 	// for drawing them as a heatmap.
 	ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error)
@@ -159,6 +183,7 @@ func RegisterGeoServiceHandler(server *connect.Server, svc GeoServiceHandler) {
 		connect.Method{Spec: geoServiceFindPointsOfInterestSpec(), Handler: adapter.findPointsOfInterest},
 		connect.Method{Spec: geoServiceGetElevationSpec(), Handler: adapter.getElevation},
 		connect.Method{Spec: geoServiceGetPersonalHeatmapSpec(), Handler: adapter.getPersonalHeatmap},
+		connect.Method{Spec: geoServiceListFamiliarTrailsSpec(), Handler: adapter.listFamiliarTrails},
 		connect.Method{Spec: geoServiceListHeatmapTracksSpec(), Handler: adapter.listHeatmapTracks},
 	)
 }
@@ -184,6 +209,10 @@ func (UnimplementedGeoServiceHandler) GetElevation(context.Context, *v1.GetEleva
 
 func (UnimplementedGeoServiceHandler) GetPersonalHeatmap(context.Context, *v1.GetPersonalHeatmapRequest) (*v1.GetPersonalHeatmapResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "geo.v1.GeoService.GetPersonalHeatmap is not implemented")
+}
+
+func (UnimplementedGeoServiceHandler) ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "geo.v1.GeoService.ListFamiliarTrails is not implemented")
 }
 
 func (UnimplementedGeoServiceHandler) ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error) {
@@ -229,6 +258,14 @@ func (c *geoServiceClient) GetElevation(ctx context.Context, req *v1.GetElevatio
 func (c *geoServiceClient) GetPersonalHeatmap(ctx context.Context, req *v1.GetPersonalHeatmapRequest) (*v1.GetPersonalHeatmapResponse, error) {
 	var res v1.GetPersonalHeatmapResponse
 	if err := c.client.CallUnary(ctx, geoServiceGetPersonalHeatmapSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *geoServiceClient) ListFamiliarTrails(ctx context.Context, req *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error) {
+	var res v1.ListFamiliarTrailsResponse
+	if err := c.client.CallUnary(ctx, geoServiceListFamiliarTrailsSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -298,6 +335,18 @@ func (h geoServiceHandler) getPersonalHeatmap(ctx context.Context, _ connect.Spe
 		return err
 	}
 	res, err := h.svc.GetPersonalHeatmap(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h geoServiceHandler) listFamiliarTrails(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListFamiliarTrailsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListFamiliarTrails(ctx, &req)
 	if err != nil {
 		return err
 	}

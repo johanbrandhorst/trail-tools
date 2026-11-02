@@ -113,3 +113,38 @@ func TestFinder(t *testing.T) {
 		t.Errorf("FindFeatures: got %v, want ErrNoMapData", err)
 	}
 }
+
+func TestFamiliarWays(t *testing.T) {
+	t.Parallel()
+	db := storetest.New(t)
+	ctx := context.Background()
+	ways, nodes, bounds := testGraph()
+	edges := routing.BuildEdges(ways, nodes, make([]float64, len(nodes.IDs)), bounds)
+	if _, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil); err != nil {
+		t.Fatalf("SaveRegion: %v", err)
+	}
+	finder := routing.NewFinder(db)
+	// Two runs along the east trail, a few meters off it as GPS is, and
+	// one along the west trail.
+	east := []geo.Point{{Lat: 0, Lng: 0.0001}, {Lat: 0.005, Lng: 0.0041}, {Lat: 0.01, Lng: 0.0001}}
+	west := []geo.Point{{Lat: 0, Lng: 0}, {Lat: 0.005, Lng: -0.0045}, {Lat: 0.01, Lng: 0}}
+	got, err := finder.FamiliarWays(ctx, bounds, [][]geo.Point{east, west, east}, 10)
+	if err != nil {
+		t.Fatalf("FamiliarWays: %v", err)
+	}
+	if len(got) != 2 || got[0].WayID != 11 || got[0].ActivityCount != 2 || got[1].WayID != 12 || got[1].ActivityCount != 1 {
+		t.Fatalf("got %+v, want the east trail run twice, then the west trail once", got)
+	}
+	if got[0].Name != "East Trail" || got[0].RunLengthMeters < 1000 || math.Abs(got[0].RunLengthMeters-got[0].LengthMeters) > 1 {
+		t.Errorf("got east trail %+v, want all of it run", got[0])
+	}
+	// The road between them, and the spur, weren't run.
+	if got, err := finder.FamiliarWays(ctx, bounds, nil, 10); err != nil || len(got) != 0 {
+		t.Errorf("got %+v, %v without tracks, want none", got, err)
+	}
+	// Areas without map data are reported.
+	far := geo.Bounds{MinLat: 50, MinLng: 50, MaxLat: 50.01, MaxLng: 50.01}
+	if _, err := finder.FamiliarWays(ctx, far, [][]geo.Point{{{Lat: 50, Lng: 50}, {Lat: 50.01, Lng: 50.01}}}, 10); !errors.Is(err, routing.ErrNoMapData) {
+		t.Errorf("got %v outside the imported regions, want ErrNoMapData", err)
+	}
+}
