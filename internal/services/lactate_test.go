@@ -83,6 +83,18 @@ func TestLactateTests(t *testing.T) {
 		}
 	}
 
+	// The stages stop at 3.4 mmol/L, short of the anaerobic threshold's 4,
+	// but bend enough for Dmax.
+	if got := test.GetAnaerobicThresholdHeartRateBpm(); got != 0 {
+		t.Errorf("got an anaerobic threshold of %v bpm, want none", got)
+	}
+	if estimates := test.GetAnaerobicThresholdEstimates(); len(estimates) != 2 ||
+		estimates[0].GetDefinition() != lactatev1.ThresholdDefinition_THRESHOLD_DEFINITION_FIXED_4_MMOL ||
+		estimates[1].GetDefinition() != lactatev1.ThresholdDefinition_THRESHOLD_DEFINITION_DMAX ||
+		estimates[1].GetHeartRateBpm() < 130 || estimates[1].GetHeartRateBpm() > 155 {
+		t.Errorf("got anaerobic estimates %v, want 4 mmol/L and Dmax", estimates)
+	}
+
 	// Tests are listed with the latest first.
 	if _, err := e.lactate.CreateLactateTest(ctx, lactatev1.CreateLactateTestRequest_builder{
 		Test: lactatev1.LactateTest_builder{Date: "2026-07-01", Stages: stages([]int32{120, 130}, []float64{2.1, 2.6})}.Build(),

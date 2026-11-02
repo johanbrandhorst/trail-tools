@@ -64,6 +64,7 @@ const LactateChart: React.FC<LactateChartProps> = ({ test }) => {
     (_heartRate, index) => stages.length <= 10 || index % 2 === 0
   );
   const threshold = test.aerobicThresholdHeartRateBpm;
+  const anaerobic = test.anaerobicThresholdHeartRateBpm;
 
   return (
     <div ref={ref} className="w-full">
@@ -154,6 +155,25 @@ const LactateChart: React.FC<LactateChartProps> = ({ test }) => {
                 className="fill-ember text-[11px] font-semibold tabular-nums"
               >
                 {threshold} bpm
+              </text>
+            </g>
+          )}
+          {anaerobic > 0 && (
+            <g>
+              <line
+                x1={xOf(anaerobic)}
+                x2={xOf(anaerobic)}
+                y1={PADDING.top}
+                y2={HEIGHT - PADDING.bottom}
+                className="stroke-red-700"
+                strokeDasharray="2 2"
+              />
+              <text
+                x={xOf(anaerobic) + 4}
+                y={PADDING.top + 22}
+                className="fill-red-700 text-[11px] font-semibold tabular-nums"
+              >
+                AnT {anaerobic} bpm
               </text>
             </g>
           )}
