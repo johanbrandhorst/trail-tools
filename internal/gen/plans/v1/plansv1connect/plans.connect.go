@@ -210,7 +210,8 @@ type TrainingPlanServiceClient interface {
 	// it. Start dates are normalised to the first of the month for months and
 	// to Monday for weeks.
 	SetPlanPeriods(context.Context, *v1.SetPlanPeriodsRequest) (*v1.SetPlanPeriodsResponse, error)
-	// Delete month or week periods.
+	// Delete month or week periods: those with the given IDs, or all those of
+	// a granularity, a date range, or both, e.g. every week to replan them.
 	DeletePlanPeriods(context.Context, *v1.DeletePlanPeriodsRequest) (*v1.DeletePlanPeriodsResponse, error)
 	// List a plan's workouts, or those of all the user's plans, in date order,
 	// optionally within a date range.
@@ -270,7 +271,8 @@ type TrainingPlanServiceHandler interface {
 	// it. Start dates are normalised to the first of the month for months and
 	// to Monday for weeks.
 	SetPlanPeriods(context.Context, *v1.SetPlanPeriodsRequest) (*v1.SetPlanPeriodsResponse, error)
-	// Delete month or week periods.
+	// Delete month or week periods: those with the given IDs, or all those of
+	// a granularity, a date range, or both, e.g. every week to replan them.
 	DeletePlanPeriods(context.Context, *v1.DeletePlanPeriodsRequest) (*v1.DeletePlanPeriodsResponse, error)
 	// List a plan's workouts, or those of all the user's plans, in date order,
 	// optionally within a date range.

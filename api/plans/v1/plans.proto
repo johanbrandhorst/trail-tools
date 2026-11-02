@@ -43,7 +43,8 @@ service TrainingPlanService {
   // it. Start dates are normalised to the first of the month for months and
   // to Monday for weeks.
   rpc SetPlanPeriods(SetPlanPeriodsRequest) returns (SetPlanPeriodsResponse);
-  // Delete month or week periods.
+  // Delete month or week periods: those with the given IDs, or all those of
+  // a granularity, a date range, or both, e.g. every week to replan them.
   rpc DeletePlanPeriods(DeletePlanPeriodsRequest) returns (DeletePlanPeriodsResponse);
   // List a plan's workouts, or those of all the user's plans, in date order,
   // optionally within a date range.
@@ -480,11 +481,24 @@ message SetPlanPeriodsResponse {
 message DeletePlanPeriodsRequest {
   // The ID of the plan.
   string plan_id = 1;
-  // The IDs of the periods to delete.
+  // The IDs of the periods to delete. Leave empty to delete the periods
+  // matching granularity, start_date and end_date instead.
   repeated string ids = 2;
+  // Delete only the periods of this granularity, all if unspecified. Can't
+  // be combined with ids.
+  PeriodGranularity granularity = 3;
+  // Delete only the periods starting on or after this date (YYYY-MM-DD). Can't
+  // be combined with ids.
+  string start_date = 4;
+  // Delete only the periods starting on or before this date (YYYY-MM-DD).
+  // Can't be combined with ids.
+  string end_date = 5;
 }
 
-message DeletePlanPeriodsResponse {}
+message DeletePlanPeriodsResponse {
+  // How many periods were deleted.
+  int32 deleted_count = 1;
+}
 
 message ListWorkoutsRequest {
   // The ID of the plan. If empty, the workouts of all the user's plans are

@@ -26,11 +26,12 @@ insert into races (
   course_route_id,
   notes,
   on_calendar,
-  event_id
+  event_id,
+  date_unconfirmed
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 )
-returning id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id
+returning id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id, date_unconfirmed
 `
 
 type CreateRaceParams struct {
@@ -48,6 +49,7 @@ type CreateRaceParams struct {
 	Notes               string
 	OnCalendar          bool
 	EventID             pgtype.UUID
+	DateUnconfirmed     bool
 }
 
 func (q *Queries) CreateRace(ctx context.Context, arg *CreateRaceParams) (*Race, error) {
@@ -66,6 +68,7 @@ func (q *Queries) CreateRace(ctx context.Context, arg *CreateRaceParams) (*Race,
 		arg.Notes,
 		arg.OnCalendar,
 		arg.EventID,
+		arg.DateUnconfirmed,
 	)
 	var i Race
 	err := row.Scan(
@@ -86,6 +89,7 @@ func (q *Queries) CreateRace(ctx context.Context, arg *CreateRaceParams) (*Race,
 		&i.UpdateTime,
 		&i.OnCalendar,
 		&i.EventID,
+		&i.DateUnconfirmed,
 	)
 	return &i, err
 }
@@ -549,7 +553,7 @@ func (q *Queries) DeleteRacePlanSplits(ctx context.Context, planID pgtype.UUID) 
 }
 
 const getRace = `-- name: GetRace :one
-select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id from races
+select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id, date_unconfirmed from races
 where id = $1 and user_id = $2
 `
 
@@ -579,12 +583,13 @@ func (q *Queries) GetRace(ctx context.Context, arg *GetRaceParams) (*Race, error
 		&i.UpdateTime,
 		&i.OnCalendar,
 		&i.EventID,
+		&i.DateUnconfirmed,
 	)
 	return &i, err
 }
 
 const getRaceByID = `-- name: GetRaceByID :one
-select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id from races
+select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id, date_unconfirmed from races
 where id = $1
 `
 
@@ -609,6 +614,7 @@ func (q *Queries) GetRaceByID(ctx context.Context, id pgtype.UUID) (*Race, error
 		&i.UpdateTime,
 		&i.OnCalendar,
 		&i.EventID,
+		&i.DateUnconfirmed,
 	)
 	return &i, err
 }
@@ -1158,7 +1164,7 @@ func (q *Queries) ListRacePlans(ctx context.Context, userID pgtype.UUID) ([]*Rac
 }
 
 const listRaces = `-- name: ListRaces :many
-select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id from races
+select id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id, date_unconfirmed from races
 where user_id = $1
   and (not $2::boolean or on_calendar)
 order by date, name
@@ -1196,6 +1202,7 @@ func (q *Queries) ListRaces(ctx context.Context, arg *ListRacesParams) ([]*Race,
 			&i.UpdateTime,
 			&i.OnCalendar,
 			&i.EventID,
+			&i.DateUnconfirmed,
 		); err != nil {
 			return nil, err
 		}
@@ -1341,9 +1348,10 @@ update races set
   notes = $13,
   on_calendar = $14,
   event_id = $15,
+  date_unconfirmed = $16,
   update_time = now()
 where id = $1 and user_id = $2
-returning id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id
+returning id, user_id, name, date, start_time, location, website_url, distance_meters, elevation_gain_meters, cutoff_seconds, priority, course_route_id, notes, create_time, update_time, on_calendar, event_id, date_unconfirmed
 `
 
 type UpdateRaceParams struct {
@@ -1362,6 +1370,7 @@ type UpdateRaceParams struct {
 	Notes               string
 	OnCalendar          bool
 	EventID             pgtype.UUID
+	DateUnconfirmed     bool
 }
 
 func (q *Queries) UpdateRace(ctx context.Context, arg *UpdateRaceParams) (*Race, error) {
@@ -1381,6 +1390,7 @@ func (q *Queries) UpdateRace(ctx context.Context, arg *UpdateRaceParams) (*Race,
 		arg.Notes,
 		arg.OnCalendar,
 		arg.EventID,
+		arg.DateUnconfirmed,
 	)
 	var i Race
 	err := row.Scan(
@@ -1401,6 +1411,7 @@ func (q *Queries) UpdateRace(ctx context.Context, arg *UpdateRaceParams) (*Race,
 		&i.UpdateTime,
 		&i.OnCalendar,
 		&i.EventID,
+		&i.DateUnconfirmed,
 	)
 	return &i, err
 }

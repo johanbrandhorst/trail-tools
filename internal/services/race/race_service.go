@@ -186,6 +186,7 @@ func (s *Service) raceFromProto(ctx context.Context, userID pgtype.UUID, r *race
 		Priority:            priorityFromProto(r.GetPriority()),
 		Notes:               r.GetNotes(),
 		OnCalendar:          r.GetOnCalendar(),
+		DateUnconfirmed:     r.GetDateUnconfirmed(),
 	}
 	if r.GetCourseRouteId() != "" {
 		if race.CourseRouteID, err = store.StringToUUID(r.GetCourseRouteId()); err != nil {
@@ -255,6 +256,7 @@ func RaceToProto(r *races.Race) *racesv1.Race {
 		Notes:               r.Notes,
 		OnCalendar:          r.OnCalendar,
 		EventId:             store.UUIDToString(r.EventID),
+		DateUnconfirmed:     r.DateUnconfirmed,
 		CreateTime:          timestamppb.New(r.CreateTime),
 		UpdateTime:          timestamppb.New(r.UpdateTime),
 	}.Build()

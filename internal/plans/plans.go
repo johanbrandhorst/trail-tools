@@ -336,13 +336,14 @@ func (r *Repository) ListPeriods(ctx context.Context, planID pgtype.UUID) ([]*Pe
 	return result, nil
 }
 
-// DeletePeriods deletes periods of a plan. The caller must check the plan
-// belongs to the user.
-func (r *Repository) DeletePeriods(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error {
-	if _, err := r.q.DeletePlanPeriods(ctx, &gen.DeletePlanPeriodsParams{PlanID: planID, Ids: ids}); err != nil {
-		return fmt.Errorf("failed to delete periods: %w", err)
+// DeletePeriods deletes periods of a plan, and returns how many it deleted.
+// The caller must check the plan belongs to the user.
+func (r *Repository) DeletePeriods(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) (int, error) {
+	n, err := r.q.DeletePlanPeriods(ctx, &gen.DeletePlanPeriodsParams{PlanID: planID, Ids: ids})
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete periods: %w", err)
 	}
-	return nil
+	return int(n), nil
 }
 
 // CreateWorkouts creates workouts in a plan with their exercises, in a
