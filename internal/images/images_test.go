@@ -53,16 +53,24 @@ func TestDecodeRejectsNonImages(t *testing.T) {
 // draw.CatmullRom.Scale alone needs over 300 MB of buffer for.
 func TestScaleDownLargeImage(t *testing.T) {
 	// Not parallel, so that the measured allocations are only this test's.
-	const w, h = 8000, 5000
+	// The allocations aren't checked under the race detector, which also
+	// makes scaling about ten times slower, so a smaller image, still
+	// scaled in several bands, is enough there.
+	w, h := 8000, 5000
+	if raceEnabled {
+		w, h = 3200, 2000
+	}
 	img := image.NewYCbCr(image.Rect(0, 0, w, h), image.YCbCrSubsampleRatio420)
-	// The left half is red and the right half blue.
+	// The left half is red and the right half blue. Each color is converted
+	// once, as converting every pixel is slow under the race detector.
+	redY, redCb, redCr := color.RGBToYCbCr(255, 0, 0)
+	blueY, blueCb, blueCr := color.RGBToYCbCr(0, 0, 255)
 	for y := range h {
 		for x := range w {
-			c := color.RGBA{R: 255, A: 255}
+			yy, cb, cr := redY, redCb, redCr
 			if x >= w/2 {
-				c = color.RGBA{B: 255, A: 255}
+				yy, cb, cr = blueY, blueCb, blueCr
 			}
-			yy, cb, cr := color.RGBToYCbCr(c.R, c.G, c.B)
 			img.Y[img.YOffset(x, y)] = yy
 			img.Cb[img.COffset(x, y)] = cb
 			img.Cr[img.COffset(x, y)] = cr
