@@ -55,7 +55,7 @@ func (e *env) createActivityAt(stravaID int64, start time.Time, altitudes []floa
 	e.t.Helper()
 	ctx := context.Background()
 	points := []geo.Point{{Lat: 0, Lng: 0}, {Lat: 0.09, Lng: 0}}
-	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	id, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:            stravaID,
 		Name:                "Ridge run",
 		SportType:           "TrailRun",
@@ -438,7 +438,7 @@ func (e *env) createActivityFrom(stravaID int64, name string, bearingDegrees flo
 	const metersPerDegree = 6371008.8 * math.Pi / 180
 	bearing := bearingDegrees * math.Pi / 180
 	end := geo.Point{Lat: 2000 * math.Cos(bearing) / metersPerDegree, Lng: 2000 * math.Sin(bearing) / metersPerDegree}
-	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	id, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:           stravaID,
 		Name:               name,
 		SportType:          "TrailRun",

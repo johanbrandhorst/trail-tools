@@ -54,6 +54,26 @@ type Service struct {
 	routes     RouteSource
 	activities ActivitySource
 	weather    WeatherSource
+	// Called after the user's workouts changed, nil if nothing listens.
+	workoutsChanged WorkoutsChangedFunc
+}
+
+// WorkoutsChangedFunc is told about changes to the user's workouts, on the
+// given dates, or unknown dates if dates is empty, e.g. to put them on the
+// user's Garmin calendar. It runs before the response, and must bound and
+// handle its own work: a failure doesn't fail the change.
+type WorkoutsChangedFunc func(ctx context.Context, userID pgtype.UUID, dates []time.Time)
+
+// OnWorkoutsChanged sets the function told about changes to workouts.
+func (s *Service) OnWorkoutsChanged(fn WorkoutsChangedFunc) {
+	s.workoutsChanged = fn
+}
+
+// notifyWorkoutsChanged tells the listener, if any, about changed workouts.
+func (s *Service) notifyWorkoutsChanged(ctx context.Context, userID pgtype.UUID, dates ...time.Time) {
+	if s.workoutsChanged != nil {
+		s.workoutsChanged(ctx, userID, dates)
+	}
 }
 
 // NewService creates a new Service. The routes, activities and weather
@@ -159,6 +179,7 @@ func (s *Service) DeleteTrainingPlan(ctx context.Context, req *plansv1.DeleteTra
 	if err := s.plans.DeleteTrainingPlan(ctx, plan.UserID, plan.ID); err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to delete training plan")
 	}
+	s.notifyWorkoutsChanged(ctx, plan.UserID)
 	return plansv1.DeleteTrainingPlanResponse_builder{}.Build(), nil
 }
 
@@ -268,9 +289,12 @@ func (s *Service) CreateWorkouts(ctx context.Context, req *plansv1.CreateWorkout
 		return nil, s.toConnectError(ctx, err, "failed to create workouts")
 	}
 	protoWorkouts := make([]*plansv1.Workout, len(created))
+	dates := make([]time.Time, len(created))
 	for i, w := range created {
 		protoWorkouts[i] = workoutToProto(w)
+		dates[i] = w.Date
 	}
+	s.notifyWorkoutsChanged(ctx, plan.UserID, dates...)
 	return plansv1.CreateWorkoutsResponse_builder{Workouts: protoWorkouts}.Build(), nil
 }
 
@@ -323,6 +347,7 @@ func (s *Service) UpdateWorkout(ctx context.Context, req *plansv1.UpdateWorkoutR
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to update workout")
 	}
+	s.notifyWorkoutsChanged(ctx, userID, existing.Date, updated.Date)
 	return plansv1.UpdateWorkoutResponse_builder{Workout: workoutToProto(updated)}.Build(), nil
 }
 
@@ -338,6 +363,7 @@ func (s *Service) DeleteWorkouts(ctx context.Context, req *plansv1.DeleteWorkout
 	if err := s.plans.DeleteWorkouts(ctx, plan.ID, ids); err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to delete workouts")
 	}
+	s.notifyWorkoutsChanged(ctx, plan.UserID)
 	return plansv1.DeleteWorkoutsResponse_builder{}.Build(), nil
 }
 

@@ -1,0 +1,404 @@
+package garmin
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"math"
+	"strings"
+	"time"
+
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+)
+
+// sportTypes are the sport types activities are stored with, which are
+// Strava's, by Garmin's activity types, so activities from both are told
+// apart the same way, like runs and strength training.
+var sportTypes = map[string]string{
+	"RUNNING":                 "Run",
+	"STREET_RUNNING":          "Run",
+	"TRACK_RUNNING":           "Run",
+	"TREADMILL_RUNNING":       "VirtualRun",
+	"TRAIL_RUNNING":           "TrailRun",
+	"ULTRA_RUN":               "TrailRun",
+	"WALKING":                 "Walk",
+	"HIKING":                  "Hike",
+	"MOUNTAINEERING":          "Hike",
+	"CYCLING":                 "Ride",
+	"ROAD_BIKING":             "Ride",
+	"MOUNTAIN_BIKING":         "MountainBikeRide",
+	"GRAVEL_CYCLING":          "GravelRide",
+	"INDOOR_CYCLING":          "VirtualRide",
+	"LAP_SWIMMING":            "Swim",
+	"OPEN_WATER_SWIMMING":     "Swim",
+	"STRENGTH_TRAINING":       "WeightTraining",
+	"INDOOR_CARDIO":           "Workout",
+	"HIIT":                    "HighIntensityIntervalTraining",
+	"YOGA":                    "Yoga",
+	"PILATES":                 "Pilates",
+	"BACKCOUNTRY_SKIING":      "BackcountrySki",
+	"RESORT_SKIING":           "AlpineSki",
+	"CROSS_COUNTRY_SKIING":    "NordicSki",
+	"SKATE_SKIING":            "NordicSki",
+	"SNOWSHOEING":             "Snowshoe",
+	"ROCK_CLIMBING":           "RockClimbing",
+	"INDOOR_CLIMBING":         "RockClimbing",
+	"ELLIPTICAL":              "Elliptical",
+	"STAIR_CLIMBING":          "StairStepper",
+	"INDOOR_ROWING":           "Rowing",
+	"STAND_UP_PADDLEBOARDING": "StandUpPaddling",
+}
+
+// sportType returns the sport type of a Garmin activity type, "Workout" for
+// ones without a match.
+func sportType(activityType string) string {
+	if t, ok := sportTypes[strings.ToUpper(activityType)]; ok {
+		return t
+	}
+	return "Workout"
+}
+
+// isStrength reports whether an activity is strength training, whose file
+// has the sets.
+func isStrength(sport string) bool {
+	return sport == "WeightTraining"
+}
+
+// isFootSport reports whether cadence is counted in steps, which FIT files
+// record as strides.
+func isFootSport(sport string) bool {
+	switch sport {
+	case "Run", "TrailRun", "VirtualRun", "Walk", "Hike", "Snowshoe":
+		return true
+	default:
+		return false
+	}
+}
+
+// activityFromSummary converts an activity's summary from Garmin.
+func activityFromSummary(s *garmin.ActivitySummary) *activities.GarminActivity {
+	start := s.StartTime()
+	// Shifting by the offset gives a time whose UTC fields are the local
+	// ones.
+	local := start.Add(time.Duration(s.StartTimeOffsetInSeconds) * time.Second)
+	moving := s.MovingDurationInSeconds
+	if moving == 0 {
+		moving = s.DurationInSeconds
+	}
+	name := strings.TrimSpace(s.ActivityName)
+	sport := sportType(s.ActivityType)
+	if name == "" {
+		name = strings.ReplaceAll(sport, "Training", " training")
+	}
+	return &activities.GarminActivity{
+		GarminActivityID:    s.ActivityID,
+		Name:                name,
+		SportType:           sport,
+		StartTime:           start,
+		StartDateLocal:      time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC),
+		DistanceMeters:      s.DistanceInMeters,
+		MovingTimeSeconds:   moving,
+		ElapsedTimeSeconds:  s.DurationInSeconds,
+		ElevationGainMeters: s.TotalElevationGainInMeters,
+		AverageSpeedMps:     s.AverageSpeedInMetersPerSecond,
+		MaxSpeedMps:         s.MaxSpeedInMetersPerSecond,
+		AverageHeartrateBpm: s.AverageHeartRateInBeatsPerMinute,
+		MaxHeartrateBpm:     s.MaxHeartRateInBeatsPerMinute,
+		AverageCadenceSpm:   s.AverageRunCadenceInStepsPerMinute,
+		DeviceName:          s.DeviceName,
+		RawJSON:             s.RawJSON,
+	}
+}
+
+// streamsFromFIT returns an activity's samples from its FIT file, and the
+// bounds of its track, if it has one. Streams are as long as the records;
+// a value a record lacks is the previous record's, so streams stay aligned.
+func streamsFromFIT(a *fit.Activity, footSport bool) (*activitiesv1.ActivityStreams, *geo.Bounds) {
+	if len(a.Records) == 0 {
+		return nil, nil
+	}
+	var has struct{ position, altitude, heartRate, cadence, distance, speed bool }
+	for _, r := range a.Records {
+		has.position = has.position || r.HasPosition
+		has.altitude = has.altitude || r.HasAltitude
+		has.heartRate = has.heartRate || r.HasHeartRate
+		has.cadence = has.cadence || r.HasCadence
+		has.distance = has.distance || r.HasDistance
+		has.speed = has.speed || r.HasSpeed
+	}
+	start := a.Records[0].Time
+	n := len(a.Records)
+	msg := activitiesv1.ActivityStreams_builder{TimeSeconds: make([]int32, n)}
+	stream := func(on bool) []float64 {
+		if !on {
+			return nil
+		}
+		return make([]float64, n)
+	}
+	msg.DistanceMeters = stream(has.distance)
+	msg.AltitudeMeters = stream(has.altitude)
+	msg.HeartrateBpm = stream(has.heartRate)
+	msg.CadenceSpm = stream(has.cadence)
+	msg.VelocityMps = stream(has.speed)
+	msg.Lat, msg.Lng = stream(has.position), stream(has.position)
+	var points []geo.Point
+	var last fit.Record
+	for i, r := range a.Records {
+		msg.TimeSeconds[i] = int32(r.Time.Sub(start) / time.Second)
+		if r.HasPosition {
+			last.Lat, last.Lng = r.Lat, r.Lng
+			points = append(points, geo.Point{Lat: r.Lat, Lng: r.Lng})
+		}
+		if r.HasAltitude {
+			last.AltitudeMeters = r.AltitudeMeters
+		}
+		if r.HasHeartRate {
+			last.HeartRateBPM = r.HeartRateBPM
+		}
+		if r.HasCadence {
+			last.Cadence = r.Cadence
+			if footSport {
+				last.Cadence *= 2
+			}
+		}
+		if r.HasDistance {
+			last.DistanceMeters = r.DistanceMeters
+		}
+		if r.HasSpeed {
+			last.SpeedMPS = r.SpeedMPS
+		}
+		if has.position {
+			msg.Lat[i], msg.Lng[i] = last.Lat, last.Lng
+		}
+		if has.altitude {
+			msg.AltitudeMeters[i] = last.AltitudeMeters
+		}
+		if has.heartRate {
+			msg.HeartrateBpm[i] = last.HeartRateBPM
+		}
+		if has.cadence {
+			msg.CadenceSpm[i] = last.Cadence
+		}
+		if has.distance {
+			msg.DistanceMeters[i] = last.DistanceMeters
+		}
+		if has.speed {
+			msg.VelocityMps[i] = last.SpeedMPS
+		}
+	}
+	bounds, ok := geo.BoundsOf(points)
+	if !ok {
+		return msg.Build(), nil
+	}
+	return msg.Build(), &bounds
+}
+
+// strengthLogFromSets returns what the user did in a strength workout from
+// the sets their watch recorded. A set of a workout step belongs to that
+// step's exercise, when the watch followed the workout as it was sent or
+// downloaded. The other sets go, in order, to the planned exercises after
+// the last one matched, each exercise's run of sets to the next exercise.
+// It returns nil if the watch recorded no sets.
+func strengthLogFromSets(w *plans.Workout, a *fit.Activity) *plans.StrengthLog {
+	steps := plans.StrengthStepExercises(w.Exercises)
+	sets := make([][]plans.LoggedSet, len(w.Exercises))
+	next := 0
+	var lastKey [2]uint16
+	lastExercise := -1
+	recorded := 0
+	for _, s := range a.Sets {
+		if !s.Active {
+			continue
+		}
+		exercise := -1
+		if s.HasWorkoutStep && s.WorkoutStep < len(steps) {
+			exercise = steps[s.WorkoutStep]
+		}
+		key := [2]uint16{s.Category, s.Name}
+		if exercise < 0 {
+			// A new run of sets moves on to the next exercise.
+			if lastExercise >= 0 && key == lastKey {
+				exercise = lastExercise
+			} else if next < len(w.Exercises) {
+				exercise = next
+			}
+		}
+		if exercise < 0 {
+			continue
+		}
+		sets[exercise] = append(sets[exercise], loggedSet(w.Exercises[exercise], s))
+		lastKey, lastExercise = key, exercise
+		next = max(next, exercise+1)
+		recorded++
+	}
+	if recorded == 0 {
+		return nil
+	}
+	log := &plans.StrengthLog{Notes: "Sets recorded by the watch."}
+	for i, e := range w.Exercises {
+		if len(sets[i]) == 0 {
+			continue
+		}
+		log.Exercises = append(log.Exercises, &plans.LoggedExercise{ExerciseID: e.ExerciseID, Sets: sets[i]})
+	}
+	return log
+}
+
+// loggedSet converts a set from a watch, in the unit of the planned weight,
+// or as the watch showed it.
+func loggedSet(planned *plans.PlannedExercise, s fit.Set) plans.LoggedSet {
+	set := plans.LoggedSet{Reps: int32(s.Reps)}
+	if planned.HoldSeconds > 0 || s.Reps == 0 {
+		set.Reps = 0
+		set.HoldSeconds = int32(math.Round(s.Duration.Seconds()))
+	}
+	if s.WeightKilograms > 0 {
+		unit := plans.Kilograms
+		if planned.Weight.Value > 0 {
+			unit = planned.Weight.Unit
+		} else if s.Pounds {
+			unit = plans.Pounds
+		}
+		set.Weight = weightIn(s.WeightKilograms, unit)
+		// Watches store weights in sixteenths of a kilogram, so a planned
+		// weight that's that close is the one used.
+		if planned.Weight.Value > 0 && math.Abs(planned.Weight.Kilograms()-s.WeightKilograms) < 0.07 {
+			set.Weight = planned.Weight
+		}
+	}
+	return set
+}
+
+// weightIn returns a weight in kilograms in a unit, rounded to a tenth.
+func weightIn(kilograms float64, unit plans.WeightUnit) plans.Weight {
+	value := kilograms
+	if unit == plans.Pounds {
+		value = kilograms / 0.45359237
+	}
+	return plans.Weight{Value: math.Round(value*10) / 10, Unit: unit}
+}
+
+// trainingWorkout returns a planned workout as a Training API workout, and
+// whether it's one Garmin takes: runs and strength workouts with
+// exercises.
+func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
+	gw := &garmin.Workout{
+		WorkoutName:     w.Title,
+		Description:     truncate(w.Description, 512),
+		WorkoutProvider: "trailrunn.ing",
+		WorkoutSourceID: store.UUIDToString(w.ID),
+	}
+	switch w.Type {
+	case plans.WorkoutTypeBase, plans.WorkoutTypeIntensity:
+		gw.Sport = garmin.SportRunning
+		if gw.WorkoutName == "" {
+			gw.WorkoutName = "Run"
+		}
+		step := garmin.WorkoutStep{Type: "WorkoutStep", StepOrder: 1, Intensity: "ACTIVE", DurationType: "OPEN", TargetType: "OPEN"}
+		switch {
+		case w.TargetDistanceMeters > 0:
+			step.DurationType, step.DurationValue = "DISTANCE", w.TargetDistanceMeters
+		case w.TargetDurationSeconds > 0:
+			step.DurationType, step.DurationValue = "TIME", float64(w.TargetDurationSeconds)
+		}
+		gw.Steps = []garmin.WorkoutStep{step}
+		return gw, true
+	case plans.WorkoutTypeStrength:
+		if len(w.Exercises) == 0 {
+			return nil, false
+		}
+		gw.Sport = garmin.SportStrengthTraining
+		if gw.WorkoutName == "" {
+			gw.WorkoutName = "Strength"
+		}
+		order := 0
+		nextOrder := func() int {
+			order++
+			return order
+		}
+		for _, block := range plans.StrengthBlocks(w.Exercises) {
+			var steps []garmin.WorkoutStep
+			var repeat *garmin.WorkoutStep
+			if block.Rounds > 1 {
+				repeat = &garmin.WorkoutStep{Type: "WorkoutRepeatStep", StepOrder: nextOrder(), RepeatType: "REPEAT_UNTIL_STEPS_CMPLT", RepeatValue: block.Rounds}
+			}
+			for _, i := range block.Exercises {
+				steps = append(steps, exerciseSteps(w.Exercises[i], nextOrder)...)
+			}
+			if repeat != nil {
+				repeat.Steps = steps
+				gw.Steps = append(gw.Steps, *repeat)
+			} else {
+				gw.Steps = append(gw.Steps, steps...)
+			}
+		}
+		return gw, true
+	default:
+		return nil, false
+	}
+}
+
+// exerciseSteps returns an exercise's step and its rest.
+func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.WorkoutStep {
+	step := garmin.WorkoutStep{
+		Type:             "WorkoutStep",
+		StepOrder:        nextOrder(),
+		Intensity:        "ACTIVE",
+		Description:      truncate(e.Notes, 512),
+		TargetType:       "OPEN",
+		ExerciseCategory: "UNKNOWN",
+		ExerciseName:     e.ExerciseName,
+	}
+	switch {
+	case e.Reps > 0:
+		step.DurationType, step.DurationValue = "REPS", float64(e.Reps)
+	case e.HoldSeconds > 0:
+		step.DurationType, step.DurationValue = "TIME", float64(e.HoldSeconds)
+	default:
+		step.DurationType = "OPEN"
+	}
+	if e.Weight.Value > 0 {
+		step.WeightValue = math.Round(e.Weight.Kilograms()*100) / 100
+		step.WeightDisplayUnit = "KILOGRAM"
+		if e.Weight.Unit == plans.Pounds {
+			step.WeightDisplayUnit = "POUND"
+		}
+	}
+	steps := []garmin.WorkoutStep{step}
+	if e.RestSeconds > 0 {
+		steps = append(steps, garmin.WorkoutStep{
+			Type:          "WorkoutStep",
+			StepOrder:     nextOrder(),
+			Intensity:     "REST",
+			DurationType:  "TIME",
+			DurationValue: float64(e.RestSeconds),
+			TargetType:    "OPEN",
+		})
+	}
+	return steps
+}
+
+// contentHash returns a hash of a workout as sent and its date, to send it
+// again only when either changes.
+func contentHash(w *garmin.Workout, date time.Time) string {
+	data, _ := json.Marshal(struct {
+		Workout *garmin.Workout
+		Date    string
+	}{w, date.Format(time.DateOnly)})
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func truncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n])
+}

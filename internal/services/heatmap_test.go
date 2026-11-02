@@ -19,7 +19,7 @@ import (
 func (e *env) addTrackedActivity(stravaID int64, summary, track []geo.Point) pgtype.UUID {
 	e.t.Helper()
 	ctx := context.Background()
-	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	id, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:        stravaID,
 		Name:            "Run",
 		SportType:       "TrailRun",

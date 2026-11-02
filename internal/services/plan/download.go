@@ -74,13 +74,6 @@ func (s *Service) DownloadHandler(next http.Handler) http.Handler {
 	})
 }
 
-// isRoundGroup reports whether a group of exercises is done back to back for
-// rounds, rather than each exercise for its sets: a superset or circuit.
-func isRoundGroup(group string) bool {
-	group = strings.ToLower(group)
-	return strings.Contains(group, "superset") || strings.Contains(group, "circuit")
-}
-
 // strengthWorkoutFIT returns a strength workout as a FIT workout: each
 // exercise repeated for its sets, and supersets and circuits repeated
 // together for their rounds.
@@ -89,22 +82,12 @@ func strengthWorkoutFIT(w *plans.Workout) *fit.StrengthWorkout {
 	if workout.Name == "" {
 		workout.Name = "Strength"
 	}
-	for i := 0; i < len(w.Exercises); {
-		e := w.Exercises[i]
-		// A superset is the consecutive exercises of its group.
-		end := i + 1
-		if e.Group != "" && isRoundGroup(e.Group) {
-			for end < len(w.Exercises) && w.Exercises[end].Group == e.Group {
-				end++
-			}
+	for _, block := range plans.StrengthBlocks(w.Exercises) {
+		b := fit.StrengthBlock{Rounds: block.Rounds}
+		for _, i := range block.Exercises {
+			b.Exercises = append(b.Exercises, strengthExerciseFIT(w.Exercises[i]))
 		}
-		block := fit.StrengthBlock{}
-		for _, planned := range w.Exercises[i:end] {
-			block.Rounds = max(block.Rounds, int(planned.Sets))
-			block.Exercises = append(block.Exercises, strengthExerciseFIT(planned))
-		}
-		workout.Blocks = append(workout.Blocks, block)
-		i = end
+		workout.Blocks = append(workout.Blocks, b)
 	}
 	return workout
 }

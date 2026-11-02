@@ -32,8 +32,10 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/elevation"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	"github.com/johanbrandhorst/trail-tools/internal/fakestrava"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1/activitiesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1/garminv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1/geov1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
@@ -56,6 +58,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/routing"
 	"github.com/johanbrandhorst/trail-tools/internal/services/activity"
 	"github.com/johanbrandhorst/trail-tools/internal/services/auth"
+	garminsvc "github.com/johanbrandhorst/trail-tools/internal/services/garmin"
 	geosvc "github.com/johanbrandhorst/trail-tools/internal/services/geo"
 	lactatesvc "github.com/johanbrandhorst/trail-tools/internal/services/lactate"
 	mapdatasvc "github.com/johanbrandhorst/trail-tools/internal/services/mapdata"
@@ -90,6 +93,7 @@ const (
 const (
 	mapDataTimeout   = 60 * time.Second
 	stravaTimeout    = 60 * time.Second
+	garminTimeout    = 60 * time.Second
 	liveTrackTimeout = 20 * time.Second
 	geofabrikTimeout = 2 * time.Minute
 )
@@ -281,6 +285,24 @@ var (
 		"activity-data",
 		"The local directory to store activities' streams and Strava's responses in, if -activity-bucket is unset",
 	)
+	garminClientID = flag.String(
+		"garmin-client-id",
+		"",
+		"The client ID (consumer key) of the Garmin Connect Developer Program app. If unset, Garmin sync is disabled."+
+			" Register "+garminsvc.CallbackPath+" as the app's redirect URL",
+	)
+	garminClientSecret = flag.String(
+		"garmin-client-secret",
+		"",
+		"The client secret (consumer secret) of the Garmin app",
+	)
+	garminWebhookSecret = flag.String(
+		"garmin-webhook-secret",
+		"",
+		"A random secret of at least 24 characters, in the URL Garmin sends notifications to,"+
+			" <public-url>"+garminsvc.WebhookPath+"/<secret>, to configure for every notification in Garmin's developer portal."+
+			" Required with -garmin-client-id",
+	)
 	demBucket = flag.String(
 		"dem-bucket",
 		"",
@@ -344,6 +366,7 @@ func main() {
 		*activityBucket,
 		*activityDir,
 		*demBucket,
+		garminConfig{ClientID: *garminClientID, ClientSecret: *garminClientSecret, WebhookSecret: *garminWebhookSecret},
 		mapdata.Config{},
 	)
 	stop()
@@ -437,6 +460,7 @@ func run(
 	activityBucket string,
 	activityDir string,
 	demBucket string,
+	garminConf garminConfig,
 	mapConfig mapdata.Config,
 ) error {
 	switch {
@@ -456,6 +480,8 @@ func run(
 		return errors.New("strava-background-reserve must be at least 0 and less than 1")
 	case stravaSyncMode == "scheduled" && schedulerServiceAccount == "":
 		return errors.New("scheduler-service-account is required with -strava-sync-mode=scheduled")
+	case garminConf.ClientID != "" && (garminConf.ClientSecret == "" || garminConf.WebhookSecret == ""):
+		return errors.New("garmin-client-secret and garmin-webhook-secret are required when garmin-client-id is set")
 	case photoBucket == "" && photoDir == "":
 		return errors.New("photo-bucket or photo-dir is required")
 	case activityBucket == "" && activityDir == "":
@@ -606,6 +632,33 @@ func run(
 		log.InfoContext(ctx, "Strava sync disabled, set -strava-client-id and -strava-client-secret to enable it")
 	}
 
+	// Garmin is optional too, as it requires API credentials.
+	var garminSyncer *garminsvc.Syncer
+	var garminOAuth *garminsvc.OAuth
+	var garminWebhook *garminsvc.Webhook
+	if garminConf.ClientID != "" {
+		garminClient := garmin.NewClient(garmin.Config{
+			ClientID:     garminConf.ClientID,
+			ClientSecret: garminConf.ClientSecret,
+			RedirectURL:  baseURL + garminsvc.CallbackPath,
+			HTTPClient:   telemetry.NewClient(garminTimeout),
+		})
+		garminSyncer = garminsvc.NewSyncer(log, report, garminClient, activityRepo, planRepo)
+		garminOAuth = garminsvc.NewOAuth(log, report, garminClient, activityRepo, garminSyncer, []byte(garminConf.ClientSecret))
+		garminWebhook, err = garminsvc.NewWebhook(log, report, garminSyncer, baseURL+garminsvc.WebhookPath, garminConf.WebhookSecret)
+		if err != nil {
+			return err
+		}
+		log.InfoContext(ctx, "Garmin sync enabled", slog.String("redirect_url", baseURL+garminsvc.CallbackPath),
+			slog.String("webhook_url", baseURL+garminsvc.WebhookPath+"/<garmin-webhook-secret>"))
+		if stravaSyncMode == "background" {
+			// Without a scheduler, the server syncs Garmin itself.
+			go garminSyncer.RunBackground(ctx)
+		}
+	} else {
+		log.InfoContext(ctx, "Garmin sync disabled, set -garmin-client-id, -garmin-client-secret and -garmin-webhook-secret to enable it")
+	}
+
 	userService := user.NewService(log, report, users, users, users, photos)
 	authService, err := auth.NewService(log, report, users, baseURL, adminBootstrapToken)
 	if err != nil {
@@ -613,9 +666,15 @@ func run(
 	}
 	activityService := activity.NewService(log, report, activityRepo, stravaWebURL)
 	stravaService := stravasvc.NewService(log, report, activityRepo, stravaSyncer, stravaOAuth, stravaWebURL)
+	garminService := garminsvc.NewService(report, activityRepo, garminSyncer)
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
+	if garminSyncer != nil {
+		// Changed workouts of the coming days go on the Garmin calendar
+		// right away.
+		planService.OnWorkoutsChanged(garminSyncer.WorkoutsChanged)
+	}
 	exerciseService := plan.NewExerciseService(log, report, planRepo)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, livetrack.New("", telemetry.NewClient(liveTrackTimeout)), baseURL)
@@ -656,6 +715,7 @@ func run(
 	authv1connect.RegisterAuthServiceHandler(server, authService)
 	activitiesv1connect.RegisterActivityServiceHandler(server, activityService)
 	stravav1connect.RegisterStravaServiceHandler(server, stravaService)
+	garminv1connect.RegisterGarminServiceHandler(server, garminService)
 	routesv1connect.RegisterRouteServiceHandler(server, routeService)
 	geov1connect.RegisterGeoServiceHandler(server, geoService)
 	routingv1connect.RegisterMapDataServiceHandler(server, mapDataService)
@@ -700,6 +760,7 @@ func run(
 		mcp.Service{Name: usersv1connect.UserServiceName, Handler: userService},
 		mcp.Service{Name: activitiesv1connect.ActivityServiceName, Handler: activityService},
 		mcp.Service{Name: stravav1connect.StravaServiceName, Handler: stravaService},
+		mcp.Service{Name: garminv1connect.GarminServiceName, Handler: garminService},
 		mcp.Service{Name: routesv1connect.RouteServiceName, Handler: routeService},
 		mcp.Service{Name: geov1connect.GeoServiceName, Handler: geoService},
 		mcp.Service{Name: plansv1connect.TrainingPlanServiceName, Handler: planService},
@@ -732,10 +793,25 @@ func run(
 	if stravaWebhook != nil {
 		mux.Handle(stravaWebhook.Pattern(), stravaWebhook)
 	}
-	// Serve the scheduled sync endpoint, only for the scheduler
+	// Serve Garmin's OAuth handlers, and its notifications, which are
+	// authenticated by a secret path rather than a user
+	if garminOAuth != nil {
+		garminOAuth.RegisterHandlers(mux, authenticate)
+		mux.Handle(garminWebhook.Pattern(), garminWebhook)
+	}
+	// Serve the scheduled sync endpoint, only for the scheduler. It syncs
+	// Strava and Garmin.
+	var scheduledStrava *stravasvc.Syncer
 	if stravaSyncer != nil && !stravaSyncer.Background() {
+		scheduledStrava = stravaSyncer
+	}
+	var otherSyncs []stravasvc.ScheduledSync
+	if garminSyncer != nil && stravaSyncMode == "scheduled" {
+		otherSyncs = append(otherSyncs, garminSyncer.SyncDue)
+	}
+	if scheduledStrava != nil || len(otherSyncs) > 0 {
 		syncHandler, err := authn.RequireGoogleServiceAccount(googleCtx, log, schedulerAudience, schedulerServiceAccount,
-			stravasvc.SyncHandler(report, stravaSyncer))
+			stravasvc.SyncHandler(report, scheduledStrava, otherSyncs...))
 		if err != nil {
 			return fmt.Errorf("failed to create scheduled sync handler: %w", err)
 		}
@@ -839,8 +915,8 @@ func run(
 
 	srv := &http.Server{
 		Addr: address,
-		// The secret in the Strava webhook's path is left out of the traces.
-		Handler: timeouts.Handler(telemetry.Handler(srvHandler, stravasvc.WebhookPath+"/"), timeouts.Config{
+		// The secrets in the webhooks' paths are left out of the traces.
+		Handler: timeouts.Handler(telemetry.Handler(srvHandler, stravasvc.WebhookPath+"/", garminsvc.WebhookPath+"/"), timeouts.Config{
 			BodyRead: bodyReadTimeout,
 			Handler:  handlerTimeout,
 			// The reload middleware's websocket stays open while developing.
@@ -1018,4 +1094,12 @@ func servicePaths(server *connect.Server) []string {
 		}
 	}
 	return paths
+}
+
+// garminConfig configures the Garmin Connect sync, from the -garmin-*
+// flags. An empty ClientID disables it.
+type garminConfig struct {
+	ClientID, ClientSecret string
+	// The secret in the path of the notifications' URL.
+	WebhookSecret string
 }

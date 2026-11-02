@@ -87,7 +87,8 @@ func (s *Service) importPhotos(ctx context.Context, report *trips.Report, activi
 	// Photos may have been added on Strava since the activity was synced,
 	// and Strava's image URLs may have expired, so sync the activity first.
 	// Without Strava, the photos from the last sync are imported.
-	if s.syncer != nil {
+	// Activities only on Garmin have no photos.
+	if s.syncer != nil && activity.StravaID != 0 {
 		if err := s.syncer.SyncActivity(ctx, userID, activity.StravaID); err != nil && !errors.Is(err, store.ErrNotFound) {
 			s.report.Report(ctx, "Failed to sync the activity before importing its photos", err)
 		}

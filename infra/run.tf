@@ -57,10 +57,15 @@ resource "google_cloud_run_v2_service" "app" {
             TRAIL_TOOLS_SCHEDULER_SERVICE_ACCOUNT = google_service_account.scheduler.email
             TRAIL_TOOLS_SCHEDULER_AUDIENCE        = "trail-tools-scheduler"
           },
+          local.scheduled_sync ? {
+            TRAIL_TOOLS_STRAVA_SYNC_MODE = "scheduled"
+          } : {},
           local.strava ? {
             TRAIL_TOOLS_STRAVA_CLIENT_ID = var.strava_client_id
-            TRAIL_TOOLS_STRAVA_SYNC_MODE = "scheduled"
             TRAIL_TOOLS_STRAVA_SYNC_JOB  = google_cloud_scheduler_job.strava_sync[0].id
+          } : {},
+          local.garmin ? {
+            TRAIL_TOOLS_GARMIN_CLIENT_ID = var.garmin_client_id
           } : {},
         )
         content {
@@ -78,6 +83,10 @@ resource "google_cloud_run_v2_service" "app" {
           local.strava ? {
             TRAIL_TOOLS_STRAVA_CLIENT_SECRET        = "strava-client-secret"
             TRAIL_TOOLS_STRAVA_WEBHOOK_VERIFY_TOKEN = "strava-webhook-verify-token"
+          } : {},
+          local.garmin ? {
+            TRAIL_TOOLS_GARMIN_CLIENT_SECRET  = "garmin-client-secret"
+            TRAIL_TOOLS_GARMIN_WEBHOOK_SECRET = "garmin-webhook-secret"
           } : {},
         )
         content {
@@ -211,12 +220,14 @@ resource "google_cloud_run_domain_mapping" "domain" {
   }
 }
 
-# Syncs Strava activities hourly, as the service doesn't run between
-# requests. New activities usually arrive sooner, from Strava's webhook
-# events; this continues long syncs and catches anything the events missed.
-# The service also runs it when a user asks to sync.
+# Syncs Strava activities and Garmin activity files and calendars hourly, as
+# the service doesn't run between requests. New activities usually arrive
+# sooner, from Strava's webhook events and Garmin's notifications; this
+# continues long syncs and catches anything they missed. The service also
+# runs it when a user asks to sync Strava. One job runs both, as Cloud
+# Scheduler's free tier is three jobs.
 resource "google_cloud_scheduler_job" "strava_sync" {
-  count            = var.service_enabled && local.strava ? 1 : 0
+  count            = var.service_enabled && local.scheduled_sync ? 1 : 0
   name             = "strava-sync"
   region           = var.region
   schedule         = "17 * * * *"

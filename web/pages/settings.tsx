@@ -1,3 +1,4 @@
+import GarminCard from "@components/garmin/garmin-card";
 import Loading from "@components/loading";
 import AvatarCard from "@components/settings/avatar-card";
 import Connections from "@components/settings/connections";
@@ -258,6 +259,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => (
         <Passkeys />
         <Invitations admin={user.admin} />
         <StravaCard showDisconnect />
+        <GarminCard />
       </div>
       <div className="flex flex-col gap-4">
         <PublicProfileCard />

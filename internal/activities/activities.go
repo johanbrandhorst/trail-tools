@@ -41,8 +41,13 @@ func NewRepository(report *errreport.Reporter, db *store.DB, blobs blob.Store) (
 
 // Activity is a recorded activity.
 type Activity struct {
-	ID                  pgtype.UUID
-	StravaID            int64
+	ID pgtype.UUID
+	// Zero if the activity isn't on Strava.
+	StravaID int64
+	// Zero if the activity isn't on Garmin Connect.
+	GarminActivityID int64
+	// Where the activity's stats and samples come from.
+	DataSource          DataSource
 	Name                string
 	Description         string
 	SportType           string
@@ -61,14 +66,37 @@ type Activity struct {
 	SummaryPolyline     string
 	DeviceName          string
 	RelativeEffort      int32
-	StreamsSynced       bool
+	// Whether Strava's details were synced, with its streams unless the
+	// activity has Garmin's.
+	StreamsSynced bool
+	// Whether the activity has Garmin's samples, from the watch's file.
+	GarminSamples bool
 	// The number of photos on Strava.
 	PhotoCount int32
 }
 
+// HasStreams returns whether the activity's streams are stored, from
+// Strava or Garmin. Activities without samples, like manual entries, may
+// still have none.
+func (a *Activity) HasStreams() bool {
+	return a.StreamsSynced || a.GarminSamples
+}
+
+// DataSource is where an activity's stats and samples come from.
+type DataSource string
+
+// Data sources.
+const (
+	DataSourceStrava DataSource = "strava"
+	DataSourceGarmin DataSource = "garmin"
+)
+
 // ActivitySummary is an activity as listed by Strava, used when syncing.
 type ActivitySummary struct {
-	StravaID            int64
+	StravaID int64
+	// Strava's ID of the upload, like "garmin_ping_123" for an activity
+	// from Garmin. Empty if unknown.
+	ExternalID          string
 	Name                string
 	SportType           string
 	StartTime           time.Time
@@ -92,25 +120,40 @@ type ActivitySummary struct {
 
 // UpsertActivity creates or updates an activity from Strava, and links
 // strength workouts to it.
-func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (pgtype.UUID, error) {
+func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (id pgtype.UUID, hasGarminSamples bool, err error) {
 	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a})); err != nil {
-		return pgtype.UUID{}, fmt.Errorf("failed to store activity summary: %w", err)
+		return pgtype.UUID{}, false, fmt.Errorf("failed to store activity summary: %w", err)
 	}
 	// Strength workouts are linked to the activity in the same round trip.
-	var id pgtype.UUID
+	var row *gen.UpsertActivityRow
 	var batch store.Batch
+	q := gen.New(&batch)
+	if err := q.AttachStravaToGarminActivity(ctx, attachParams(userID, a)); err != nil {
+		return pgtype.UUID{}, false, err
+	}
 	batch.Read(func(db store.Querier) error {
 		var err error
-		id, err = gen.New(db).UpsertActivity(ctx, upsertActivityParams(userID, a))
+		row, err = gen.New(db).UpsertActivity(ctx, upsertActivityParams(userID, a))
 		return err
 	})
-	if err := queueLinkStrengthWorkouts(ctx, gen.New(&batch), userID); err != nil {
-		return pgtype.UUID{}, err
+	if err := queueLinkStrengthWorkouts(ctx, q, userID); err != nil {
+		return pgtype.UUID{}, false, err
 	}
 	if err := batch.Send(ctx, r.db); err != nil {
-		return pgtype.UUID{}, fmt.Errorf("failed to upsert activity: %w", err)
+		return pgtype.UUID{}, false, fmt.Errorf("failed to upsert activity: %w", err)
 	}
-	return id, nil
+	return row.ID, row.HasGarminSamples, nil
+}
+
+// attachParams returns the parameters to attach a Strava activity to the
+// same activity from Garmin, before upserting it.
+func attachParams(userID pgtype.UUID, a *ActivitySummary) *gen.AttachStravaToGarminActivityParams {
+	return &gen.AttachStravaToGarminActivityParams{
+		StravaID:   a.StravaID,
+		UserID:     userID,
+		ExternalID: a.ExternalID,
+		StartTime:  pgtype.Timestamptz{Time: a.StartTime, Valid: true},
+	}
 }
 
 // StrengthSportTypes are the Strava sport types of strength training, whose
@@ -144,6 +187,9 @@ func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UU
 	var batch store.Batch
 	q := gen.New(&batch)
 	for _, a := range page {
+		if err := q.AttachStravaToGarminActivity(ctx, attachParams(userID, a)); err != nil {
+			return err
+		}
 		if _, err := q.UpsertActivity(ctx, upsertActivityParams(userID, a)); err != nil {
 			return err
 		}
@@ -179,7 +225,7 @@ func summaryObjects(userID pgtype.UUID, summaries []*ActivitySummary) []object {
 func upsertActivityParams(userID pgtype.UUID, a *ActivitySummary) *gen.UpsertActivityParams {
 	params := &gen.UpsertActivityParams{
 		UserID:              userID,
-		StravaID:            a.StravaID,
+		StravaID:            pgtype.Int8{Int64: a.StravaID, Valid: true},
 		Name:                a.Name,
 		SportType:           a.SportType,
 		StartTime:           pgtype.Timestamptz{Time: a.StartTime, Valid: true},
@@ -197,6 +243,7 @@ func upsertActivityParams(userID pgtype.UUID, a *ActivitySummary) *gen.UpsertAct
 		SummaryPolyline:     a.SummaryPolyline,
 		RelativeEffort:      a.RelativeEffort,
 		PhotoCount:          a.PhotoCount,
+		StravaExternalID:    a.ExternalID,
 	}
 	if a.SummaryPolyline != "" {
 		if points, err := geo.DecodePolyline(a.SummaryPolyline); err == nil {
@@ -240,6 +287,9 @@ func (r *Repository) LatestStartPoint(ctx context.Context, userID pgtype.UUID) (
 type PendingStreams struct {
 	ID       pgtype.UUID
 	StravaID int64
+	// Whether the activity has Garmin's samples, from the watch's own
+	// file, so it syncs only its details from Strava.
+	HasGarminSamples bool
 }
 
 // MaxActivitySyncFailures is how many times syncing an activity's details
@@ -265,7 +315,7 @@ func (r *Repository) ListActivitiesWithoutStreams(ctx context.Context, userID pg
 	}
 	pending := make([]PendingStreams, len(rows))
 	for i, row := range rows {
-		pending[i] = PendingStreams{ID: row.ID, StravaID: row.StravaID}
+		pending[i] = PendingStreams{ID: row.ID, StravaID: row.StravaID, HasGarminSamples: row.HasGarminSamples}
 	}
 	return pending, nil
 }
@@ -422,6 +472,9 @@ func (r *Repository) StoreActivityDetail(ctx context.Context, userID, activityID
 		if err := q.UpsertActivityStreams(ctx, &gen.UpsertActivityStreamsParams{ActivityID: activityID, TrackPolyline: track}); err != nil {
 			return err
 		}
+		if err := q.SetStravaSamples(ctx, activityID); err != nil {
+			return err
+		}
 	}
 	if err := batch.Send(ctx, r.db); err != nil {
 		return fmt.Errorf("failed to store activity detail: %w", err)
@@ -548,6 +601,8 @@ func (r *Repository) ListActivityTotals(ctx context.Context, userID pgtype.UUID,
 type activityRow struct {
 	ID                  pgtype.UUID
 	StravaID            int64
+	GarminActivityID    int64
+	DataSource          string
 	Name                string
 	Description         string
 	SportType           string
@@ -567,6 +622,7 @@ type activityRow struct {
 	DeviceName          string
 	RelativeEffort      int32
 	StreamsSynced       bool
+	GarminSamples       bool
 	PhotoCount          int32
 }
 
@@ -574,6 +630,8 @@ func (row *activityRow) toActivity() *Activity {
 	return &Activity{
 		ID:                  row.ID,
 		StravaID:            row.StravaID,
+		GarminActivityID:    row.GarminActivityID,
+		DataSource:          DataSource(row.DataSource),
 		Name:                row.Name,
 		Description:         row.Description,
 		SportType:           row.SportType,
@@ -593,6 +651,7 @@ func (row *activityRow) toActivity() *Activity {
 		DeviceName:          row.DeviceName,
 		RelativeEffort:      row.RelativeEffort,
 		StreamsSynced:       row.StreamsSynced,
+		GarminSamples:       row.GarminSamples,
 		PhotoCount:          row.PhotoCount,
 	}
 }

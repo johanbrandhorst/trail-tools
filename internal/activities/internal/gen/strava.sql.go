@@ -11,9 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteActivityByStravaID = `-- name: DeleteActivityByStravaID :exec
-delete from strava_activities
-where user_id = $1 and strava_id = $2
+const deleteActivityByStravaID = `-- name: DeleteActivityByStravaID :one
+with detached as (
+  update strava_activities set
+    strava_id = null,
+    update_time = now()
+  where user_id = $1::uuid and strava_id = $2::bigint and garmin_activity_id is not null
+  returning id
+), deleted as (
+  delete from strava_activities
+  where user_id = $1::uuid and strava_id = $2::bigint and garmin_activity_id is null
+  returning id
+)
+select (select count(*) from deleted) > 0 as deleted
 `
 
 type DeleteActivityByStravaIDParams struct {
@@ -21,9 +31,13 @@ type DeleteActivityByStravaIDParams struct {
 	StravaID int64
 }
 
-func (q *Queries) DeleteActivityByStravaID(ctx context.Context, arg *DeleteActivityByStravaIDParams) error {
-	_, err := q.db.Exec(ctx, deleteActivityByStravaID, arg.UserID, arg.StravaID)
-	return err
+// Deletes an activity deleted on Strava, unless it's on Garmin too: then
+// it only loses its Strava ID. Returns whether the activity was deleted.
+func (q *Queries) DeleteActivityByStravaID(ctx context.Context, arg *DeleteActivityByStravaIDParams) (bool, error) {
+	row := q.db.QueryRow(ctx, deleteActivityByStravaID, arg.UserID, arg.StravaID)
+	var deleted bool
+	err := row.Scan(&deleted)
+	return deleted, err
 }
 
 const deleteStravaConnection = `-- name: DeleteStravaConnection :execrows
@@ -89,8 +103,8 @@ func (q *Queries) FinishStravaSync(ctx context.Context, arg *FinishStravaSyncPar
 }
 
 const getActivityIDByStravaID = `-- name: GetActivityIDByStravaID :one
-select id from strava_activities
-where user_id = $1 and strava_id = $2
+select id, garmin_activity_id, garmin_samples from strava_activities
+where user_id = $1 and strava_id = $2::bigint
 `
 
 type GetActivityIDByStravaIDParams struct {
@@ -98,11 +112,17 @@ type GetActivityIDByStravaIDParams struct {
 	StravaID int64
 }
 
-func (q *Queries) GetActivityIDByStravaID(ctx context.Context, arg *GetActivityIDByStravaIDParams) (pgtype.UUID, error) {
+type GetActivityIDByStravaIDRow struct {
+	ID               pgtype.UUID
+	GarminActivityID pgtype.Int8
+	GarminSamples    bool
+}
+
+func (q *Queries) GetActivityIDByStravaID(ctx context.Context, arg *GetActivityIDByStravaIDParams) (*GetActivityIDByStravaIDRow, error) {
 	row := q.db.QueryRow(ctx, getActivityIDByStravaID, arg.UserID, arg.StravaID)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i GetActivityIDByStravaIDRow
+	err := row.Scan(&i.ID, &i.GarminActivityID, &i.GarminSamples)
+	return &i, err
 }
 
 const getStravaConnection = `-- name: GetStravaConnection :one

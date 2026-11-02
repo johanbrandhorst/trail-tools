@@ -415,7 +415,7 @@ func TestHeatmapRouting(t *testing.T) {
 
 	// The user has run a path between two points.
 	from, to := geo.Point{Lat: 0, Lng: 0}, geo.Point{Lat: 0.01, Lng: 0}
-	if _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	if _, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:        1,
 		Name:            "Usual loop",
 		SportType:       "TrailRun",

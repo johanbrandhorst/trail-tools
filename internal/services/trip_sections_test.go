@@ -228,7 +228,7 @@ func TestTripPhotosInTripOrder(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	// An out-and-back of an hour: 5 km north and back, every 36 seconds.
-	id, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	id, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID: 77, Name: "Out and back", SportType: "TrailRun", StartTime: tripStart,
 		StartDateLocal: time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC), Timezone: "Europe/Zurich",
 	})

@@ -28,7 +28,7 @@ type SyncRepository interface {
 	StartStravaSync(ctx context.Context, userID pgtype.UUID, message string) error
 	FinishStravaSync(ctx context.Context, userID pgtype.UUID, message string, lastSyncTime time.Time) error
 	FailStravaSync(ctx context.Context, userID pgtype.UUID, message string, failures int32, retryTime time.Time) error
-	UpsertActivity(ctx context.Context, userID pgtype.UUID, a *activities.ActivitySummary) (pgtype.UUID, error)
+	UpsertActivity(ctx context.Context, userID pgtype.UUID, a *activities.ActivitySummary) (pgtype.UUID, bool, error)
 	StoreListedActivities(ctx context.Context, userID pgtype.UUID, page []*activities.ActivitySummary, listBefore time.Time) error
 	LatestActivityStartTime(ctx context.Context, userID pgtype.UUID) (time.Time, error)
 	ListActivitiesWithoutStreams(ctx context.Context, userID pgtype.UUID, window time.Duration, limit int32) ([]activities.PendingStreams, error)
@@ -656,7 +656,13 @@ func (s *Syncer) syncDetails(ctx context.Context, conn *activities.StravaConnect
 			return err
 		})
 	})
-	streams, streamsErr := s.fetchStreams(ctx, conn, p.StravaID)
+	// An activity with Garmin's samples, from the watch's own file, only
+	// syncs its details from Strava, which saves a request.
+	var streams *strava.Streams
+	var streamsErr error
+	if !p.HasGarminSamples {
+		streams, streamsErr = s.fetchStreams(ctx, conn, p.StravaID)
+	}
 	wg.Wait()
 	switch {
 	case errors.Is(detailErr, strava.ErrNotFound):
@@ -775,7 +781,7 @@ func (s *Syncer) SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID 
 	case err != nil:
 		return err
 	}
-	id, err := s.repo.UpsertActivity(ctx, userID, summaryFromStrava(detail))
+	id, hasGarminSamples, err := s.repo.UpsertActivity(ctx, userID, summaryFromStrava(detail))
 	if err != nil {
 		return err
 	}
@@ -788,12 +794,16 @@ func (s *Syncer) SyncActivity(ctx context.Context, userID pgtype.UUID, stravaID 
 	wg.Go(func() {
 		photos, photosErr = s.fetchPhotos(ctx, conn, detail)
 	})
-	streams, streamsErr := s.fetchStreams(ctx, conn, stravaID)
+	var streams *strava.Streams
+	var streamsErr error
+	if !hasGarminSamples {
+		streams, streamsErr = s.fetchStreams(ctx, conn, stravaID)
+	}
 	wg.Wait()
 	if err := errors.Join(photosErr, streamsErr); err != nil {
 		return err
 	}
-	return s.store(ctx, userID, activities.PendingStreams{ID: id, StravaID: stravaID}, detail, photos, streams)
+	return s.store(ctx, userID, activities.PendingStreams{ID: id, StravaID: stravaID, HasGarminSamples: hasGarminSamples}, detail, photos, streams)
 }
 
 // SyncPending syncs the details, photos and streams of one of the user's
@@ -813,8 +823,12 @@ func (s *Syncer) SyncPending(ctx context.Context, userID, activityID pgtype.UUID
 	if err != nil {
 		return false, time.Time{}, err
 	}
-	if a.StreamsSynced {
+	if a.HasStreams() {
 		return true, time.Time{}, nil
+	}
+	if a.StravaID == 0 {
+		// Only on Garmin, which syncs it.
+		return false, time.Time{}, nil
 	}
 	_, err = s.syncPending(ctx, conn, activities.PendingStreams{ID: a.ID, StravaID: a.StravaID})
 	var rateErr *strava.RateLimitError
@@ -974,6 +988,7 @@ func summaryFromStrava(a *strava.Activity) *activities.ActivitySummary {
 	}
 	return &activities.ActivitySummary{
 		StravaID:            a.ID,
+		ExternalID:          a.ExternalID,
 		Name:                a.Name,
 		SportType:           a.SportType,
 		StartTime:           a.StartDate,

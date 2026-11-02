@@ -1,0 +1,615 @@
+// Package garmin syncs users' Garmin Connect accounts: their activities,
+// with the samples and strength sets from the watch's files, alongside
+// Strava's, and their upcoming workouts onto their Garmin calendar.
+package garmin
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"slices"
+	"sync"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"gitlab.com/greyxor/slogor"
+)
+
+// Client is Garmin's API.
+type Client interface {
+	AuthCodeURL(state, verifier string) string
+	Exchange(ctx context.Context, code, verifier string) (*garmin.Token, error)
+	Refresh(ctx context.Context, refreshToken string) (*garmin.Token, error)
+	UserID(ctx context.Context, accessToken string) (string, error)
+	Permissions(ctx context.Context, accessToken string) ([]string, error)
+	Deregister(ctx context.Context, accessToken string) error
+	BackfillActivities(ctx context.Context, accessToken string, start, end time.Time) error
+	FetchActivities(ctx context.Context, accessToken, callbackURL string) ([]*garmin.ActivitySummary, error)
+	DownloadFile(ctx context.Context, accessToken, callbackURL string) ([]byte, error)
+	CreateWorkout(ctx context.Context, accessToken string, w *garmin.Workout) (int64, error)
+	DeleteWorkout(ctx context.Context, accessToken string, id int64) error
+	ScheduleWorkout(ctx context.Context, accessToken string, workoutID int64, date time.Time) (int64, error)
+}
+
+// ActivityRepository stores Garmin connections and activities.
+type ActivityRepository interface {
+	UpsertGarminConnection(ctx context.Context, c *activities.GarminConnection) (*activities.GarminConnection, error)
+	GetGarminConnection(ctx context.Context, userID pgtype.UUID) (*activities.GarminConnection, error)
+	GetGarminConnectionByGarminUser(ctx context.Context, garminUserID string) (*activities.GarminConnection, error)
+	ListGarminConnections(ctx context.Context) ([]*activities.GarminConnection, error)
+	RefreshGarminTokens(ctx context.Context, userID pgtype.UUID, refresh func(stored *activities.GarminConnection) (*activities.GarminTokens, error)) (*activities.GarminConnection, error)
+	UpdateGarminPermissions(ctx context.Context, userID pgtype.UUID, permissions []string) error
+	FinishGarminWorkoutsSync(ctx context.Context, userID pgtype.UUID, at time.Time, message string) error
+	SetGarminSyncMessage(ctx context.Context, userID pgtype.UUID, message string) error
+	DeleteGarminConnection(ctx context.Context, userID pgtype.UUID) error
+	UpsertGarminActivity(ctx context.Context, userID pgtype.UUID, a *activities.GarminActivity) (*activities.StoredGarminActivity, error)
+	GetGarminActivity(ctx context.Context, userID pgtype.UUID, garminID int64) (*activities.StoredGarminActivity, error)
+	StoreGarminActivityFile(ctx context.Context, userID, activityID pgtype.UUID, garminID int64, file []byte, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error
+	DeleteGarminActivity(ctx context.Context, userID pgtype.UUID, garminID int64) error
+	AddGarminActivityFile(ctx context.Context, f *activities.GarminActivityFile) error
+	ListGarminActivityFiles(ctx context.Context, userID pgtype.UUID, limit int32) ([]*activities.GarminActivityFile, error)
+	FinishGarminActivityFile(ctx context.Context, userID pgtype.UUID, garminID int64) error
+	RecordGarminActivityFileFailure(ctx context.Context, userID pgtype.UUID, garminID int64) error
+	DeleteExpiredGarminActivityFiles(ctx context.Context) error
+}
+
+// PlanRepository stores the workouts put on Garmin calendars.
+type PlanRepository interface {
+	ListUserWorkouts(ctx context.Context, userID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
+	ListGarminWorkouts(ctx context.Context, userID pgtype.UUID) ([]*plans.GarminWorkout, error)
+	AddGarminWorkout(ctx context.Context, userID pgtype.UUID, w *plans.GarminWorkout) error
+	RemoveGarminWorkout(ctx context.Context, userID, id pgtype.UUID) error
+	RemoveGarminWorkouts(ctx context.Context, userID pgtype.UUID) error
+	GetWorkoutByActivity(ctx context.Context, userID, activityID pgtype.UUID) (*plans.Workout, error)
+	SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *plans.Workout, log *plans.StrengthLog) error
+}
+
+const (
+	// calendarDays is how many days ahead workouts are put on the Garmin
+	// calendar. Watches only take the coming week or so, and a short
+	// window keeps the requests and replanning cheap.
+	calendarDays = 14
+	// backfillDays is how far back activities are asked for when a user
+	// connects. Garmin sends them through the notifications, and older ones
+	// most likely came from Strava already.
+	backfillDays = 30
+	// filesPerSync is how many activity files a sync downloads at most, to
+	// bound the memory and time a sync takes.
+	filesPerSync = 20
+	// tokenRefreshMargin is how long before expiry tokens are refreshed.
+	tokenRefreshMargin = 5 * time.Minute
+)
+
+// Syncer syncs users' Garmin accounts.
+type Syncer struct {
+	log        *slog.Logger
+	report     *errreport.Reporter
+	client     Client
+	activities ActivityRepository
+	plans      PlanRepository
+	nowFn      func() time.Time
+	// A *sync.Mutex per user, held while putting their workouts on the
+	// calendar, so a change and the scheduled sync don't both send a
+	// workout. The server runs as one instance, so a local lock is enough.
+	workoutLocks sync.Map
+}
+
+// NewSyncer creates a Syncer.
+func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository) *Syncer {
+	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, nowFn: time.Now}
+}
+
+// token returns a fresh access token of a connection, refreshing it if it
+// expires soon.
+func (s *Syncer) token(ctx context.Context, conn *activities.GarminConnection) (string, error) {
+	if conn.Expiry.After(s.nowFn().Add(tokenRefreshMargin)) {
+		return conn.AccessToken, nil
+	}
+	refreshed, err := s.activities.RefreshGarminTokens(ctx, conn.UserID, func(stored *activities.GarminConnection) (*activities.GarminTokens, error) {
+		// Another request may have refreshed them meanwhile.
+		if stored.Expiry.After(s.nowFn().Add(tokenRefreshMargin)) {
+			return nil, nil
+		}
+		t, err := s.client.Refresh(ctx, stored.RefreshToken)
+		if err != nil {
+			return nil, err
+		}
+		return &activities.GarminTokens{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, Expiry: t.Expiry}, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	*conn = *refreshed
+	return conn.AccessToken, nil
+}
+
+// Connected sets up a newly connected account: it asks Garmin for the
+// recent activities, which arrive through the notifications, and puts the
+// upcoming workouts on the calendar.
+func (s *Syncer) Connected(ctx context.Context, conn *activities.GarminConnection) {
+	log := s.log.With(slog.String("user_id", store.UUIDToString(conn.UserID)))
+	token, err := s.token(ctx, conn)
+	if err != nil {
+		s.report.Report(ctx, "Failed to set up a Garmin connection", err)
+		return
+	}
+	if slices.Contains(conn.Permissions, garmin.PermissionActivityExport) {
+		now := s.nowFn()
+		if err := s.client.BackfillActivities(ctx, token, now.AddDate(0, 0, -backfillDays), now); err != nil {
+			s.report.Report(ctx, "Failed to ask Garmin for recent activities, leaving them out", err)
+		}
+	}
+	if err := s.SyncUser(ctx, conn.UserID); err != nil {
+		log.WarnContext(ctx, "Failed to sync a new Garmin connection", slogor.Err(err))
+	}
+}
+
+// HandleActivities stores the summaries of a user's activities, fetched
+// from a notification's callback URL, or sent in a push notification.
+func (s *Syncer) HandleActivities(ctx context.Context, garminUserID, callbackURL string, pushed []*garmin.ActivitySummary) error {
+	conn, err := s.activities.GetGarminConnectionByGarminUser(ctx, garminUserID)
+	if errors.Is(err, store.ErrNotFound) {
+		// The user disconnected.
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	summaries := pushed
+	if callbackURL != "" {
+		token, err := s.token(ctx, conn)
+		if err != nil {
+			return err
+		}
+		if summaries, err = s.client.FetchActivities(ctx, token, callbackURL); err != nil {
+			return err
+		}
+	}
+	for _, summary := range summaries {
+		if summary.ActivityID == 0 {
+			continue
+		}
+		if _, err := s.activities.UpsertGarminActivity(ctx, conn.UserID, activityFromSummary(summary)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// HandleDeletedActivities removes activities deleted on Garmin.
+func (s *Syncer) HandleDeletedActivities(ctx context.Context, garminUserID string, activityIDs []int64) error {
+	conn, err := s.activities.GetGarminConnectionByGarminUser(ctx, garminUserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, id := range activityIDs {
+		if err := s.activities.DeleteGarminActivity(ctx, conn.UserID, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// fileLinkLifetime is how long Garmin's links to activity files work.
+const fileLinkLifetime = 24 * time.Hour
+
+// HandleActivityFile records an activity file Garmin offered, and downloads
+// it if it's needed, within ctx. It only returns an error if the file
+// couldn't be recorded: a failed download is retried by the next sync.
+func (s *Syncer) HandleActivityFile(ctx context.Context, garminUserID string, garminActivityID int64, callbackURL string) error {
+	conn, err := s.activities.GetGarminConnectionByGarminUser(ctx, garminUserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	f := &activities.GarminActivityFile{
+		UserID:           conn.UserID,
+		GarminActivityID: garminActivityID,
+		CallbackURL:      callbackURL,
+		ExpireTime:       s.nowFn().Add(fileLinkLifetime),
+	}
+	// Recorded first, so a file that isn't downloaded now is by the next
+	// sync.
+	if err := s.activities.AddGarminActivityFile(ctx, f); err != nil {
+		return err
+	}
+	if err := s.processFile(ctx, conn, f); err != nil {
+		// Recorded, so it's not lost: Garmin needn't send it again.
+		s.log.WarnContext(ctx, "Failed to download a Garmin activity file, downloading it with the next sync",
+			slog.Int64("garmin_activity_id", garminActivityID), slogor.Err(err))
+	}
+	return nil
+}
+
+// processFile downloads an activity's file if the activity needs it: if it
+// has no samples yet, or it's strength training, whose sets are only in
+// the file. Otherwise the file isn't downloaded, to save the data: the
+// activity's samples came from Strava. A file of an activity whose summary
+// hasn't arrived yet waits for it.
+func (s *Syncer) processFile(ctx context.Context, conn *activities.GarminConnection, f *activities.GarminActivityFile) error {
+	stored, err := s.activities.GetGarminActivity(ctx, conn.UserID, f.GarminActivityID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	strength := isStrength(stored.SportType)
+	if stored.HasSamples && !strength {
+		return s.activities.FinishGarminActivityFile(ctx, conn.UserID, f.GarminActivityID)
+	}
+	token, err := s.token(ctx, conn)
+	if err != nil {
+		return err
+	}
+	file, err := s.client.DownloadFile(ctx, token, f.CallbackURL)
+	if errors.Is(err, garmin.ErrNotFound) {
+		// The link expired.
+		return s.activities.FinishGarminActivityFile(ctx, conn.UserID, f.GarminActivityID)
+	}
+	if err != nil {
+		if recordErr := s.activities.RecordGarminActivityFileFailure(ctx, conn.UserID, f.GarminActivityID); recordErr != nil {
+			return errors.Join(err, recordErr)
+		}
+		return err
+	}
+	decoded, err := fit.DecodeActivity(file)
+	if err != nil {
+		// A file that doesn't decode won't later either.
+		s.report.Report(ctx, "Failed to decode a Garmin activity file, leaving the activity without its samples", err,
+			slog.Int64("garmin_activity_id", f.GarminActivityID))
+		return s.activities.FinishGarminActivityFile(ctx, conn.UserID, f.GarminActivityID)
+	}
+	var streams *activitiesv1.ActivityStreams
+	var bounds *geo.Bounds
+	if !stored.HasSamples {
+		streams, bounds = streamsFromFIT(decoded, isFootSport(stored.SportType))
+	}
+	if err := s.activities.StoreGarminActivityFile(ctx, conn.UserID, stored.ID, f.GarminActivityID, file, streams, bounds); err != nil {
+		return err
+	}
+	if strength {
+		if err := s.logStrengthSets(ctx, conn.UserID, stored.ID, decoded); err != nil {
+			s.report.Report(ctx, "Failed to log a strength workout from the watch's sets, leaving it to the user", err)
+		}
+	}
+	return s.activities.FinishGarminActivityFile(ctx, conn.UserID, f.GarminActivityID)
+}
+
+// logStrengthSets logs the strength workout the activity completed with
+// the sets the watch recorded, unless the user logged it already: their
+// log, with how it felt, comes first.
+func (s *Syncer) logStrengthSets(ctx context.Context, userID, activityID pgtype.UUID, a *fit.Activity) error {
+	w, err := s.plans.GetWorkoutByActivity(ctx, userID, activityID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if w.Type != plans.WorkoutTypeStrength || w.Log != nil || len(w.Exercises) == 0 {
+		return nil
+	}
+	log := strengthLogFromSets(w, a)
+	if log == nil {
+		return nil
+	}
+	return s.plans.SetStrengthLog(ctx, userID, w, log)
+}
+
+// SyncUser downloads the user's waiting activity files and puts their
+// upcoming workouts on their Garmin calendar.
+func (s *Syncer) SyncUser(ctx context.Context, userID pgtype.UUID) error {
+	conn, err := s.activities.GetGarminConnection(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return s.sync(ctx, conn)
+}
+
+func (s *Syncer) sync(ctx context.Context, conn *activities.GarminConnection) error {
+	files, err := s.activities.ListGarminActivityFiles(ctx, conn.UserID, filesPerSync)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, f := range files {
+		if err := s.processFile(ctx, conn, f); err != nil {
+			errs = append(errs, err)
+			if errors.Is(err, garmin.ErrUnauthorized) || errors.Is(err, garmin.ErrRateLimited) {
+				break
+			}
+		}
+	}
+	if slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) {
+		message, err := s.syncWorkouts(ctx, conn)
+		if err != nil {
+			errs = append(errs, err)
+			message = "Putting workouts on the Garmin calendar failed; it's retried within the hour."
+			if errors.Is(err, garmin.ErrUnauthorized) {
+				message = "Garmin rejected the connection; reconnect Garmin."
+			}
+		}
+		if recordErr := s.activities.FinishGarminWorkoutsSync(ctx, conn.UserID, s.nowFn(), message); recordErr != nil {
+			errs = append(errs, recordErr)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// syncWorkouts puts the user's runs and strength workouts of the coming
+// days on their Garmin calendar, replacing those that changed and removing
+// those deleted or moved away, and returns what it did. Workouts that
+// didn't change aren't sent again.
+func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnection) (string, error) {
+	lock, _ := s.workoutLocks.LoadOrStore(conn.UserID, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+	defer lock.(*sync.Mutex).Unlock()
+	today := s.nowFn().UTC().Truncate(24 * time.Hour)
+	workouts, err := s.plans.ListUserWorkouts(ctx, conn.UserID, today, today.AddDate(0, 0, calendarDays))
+	if err != nil {
+		return "", err
+	}
+	onGarmin, err := s.plans.ListGarminWorkouts(ctx, conn.UserID)
+	if err != nil {
+		return "", err
+	}
+	byWorkout := map[pgtype.UUID]*plans.GarminWorkout{}
+	var stale []*plans.GarminWorkout
+	for _, g := range onGarmin {
+		switch {
+		case !g.WorkoutID.Valid:
+			// The workout was deleted.
+			stale = append(stale, g)
+		case g.WorkoutDate.Before(today) || g.WorkoutDate.After(today.AddDate(0, 0, calendarDays)):
+			// Past workouts stay on the calendar, as done; ones moved
+			// further ahead are removed until they're near again.
+			if g.WorkoutDate.After(today) {
+				stale = append(stale, g)
+			}
+		default:
+			byWorkout[g.WorkoutID] = g
+		}
+	}
+	token, err := s.token(ctx, conn)
+	if err != nil {
+		return "", err
+	}
+	added, removed := 0, 0
+	keep := map[pgtype.UUID]bool{}
+	for _, w := range workouts {
+		gw, ok := trainingWorkout(w)
+		if !ok || w.Log != nil || w.CompletedActivityID.Valid {
+			continue
+		}
+		hash := contentHash(gw, w.Date)
+		existing := byWorkout[w.ID]
+		if existing != nil && existing.ContentHash == hash {
+			keep[existing.ID] = true
+			continue
+		}
+		if existing != nil {
+			if err := s.removeWorkout(ctx, conn.UserID, token, existing); err != nil {
+				return "", err
+			}
+		}
+		id, err := s.client.CreateWorkout(ctx, token, gw)
+		if err != nil {
+			return "", err
+		}
+		scheduleID, err := s.client.ScheduleWorkout(ctx, token, id, w.Date)
+		if err != nil {
+			// Not left unscheduled on Garmin, nor forgotten here.
+			_ = s.client.DeleteWorkout(ctx, token, id)
+			return "", err
+		}
+		if err := s.plans.AddGarminWorkout(ctx, conn.UserID, &plans.GarminWorkout{
+			WorkoutID: w.ID, GarminWorkoutID: id, GarminScheduleID: scheduleID, ContentHash: hash,
+		}); err != nil {
+			return "", err
+		}
+		added++
+	}
+	// Workouts no longer planned, or done, are removed from the calendar.
+	for id, g := range byWorkout {
+		if !keep[id] {
+			stillPlanned := slices.ContainsFunc(workouts, func(w *plans.Workout) bool {
+				_, ok := trainingWorkout(w)
+				return w.ID == id && ok && w.Log == nil && !w.CompletedActivityID.Valid
+			})
+			if !stillPlanned {
+				stale = append(stale, g)
+			}
+		}
+	}
+	for _, g := range stale {
+		if err := s.removeWorkout(ctx, conn.UserID, token, g); err != nil {
+			return "", err
+		}
+		removed++
+	}
+	switch {
+	case added == 0 && removed == 0:
+		return "The Garmin calendar is up to date.", nil
+	default:
+		return fmt.Sprintf("Put %d workouts on the Garmin calendar and removed %d.", added, removed), nil
+	}
+}
+
+func (s *Syncer) removeWorkout(ctx context.Context, userID pgtype.UUID, token string, g *plans.GarminWorkout) error {
+	// The user may have deleted it on Garmin already.
+	if err := s.client.DeleteWorkout(ctx, token, g.GarminWorkoutID); err != nil && !errors.Is(err, garmin.ErrNotFound) {
+		return err
+	}
+	return s.plans.RemoveGarminWorkout(ctx, userID, g.ID)
+}
+
+// SyncDue syncs every connection: the files waiting to download, and the
+// workouts of the coming days, for running from a scheduler.
+func (s *Syncer) SyncDue(ctx context.Context) error {
+	if err := s.activities.DeleteExpiredGarminActivityFiles(ctx); err != nil {
+		return err
+	}
+	conns, err := s.activities.ListGarminConnections(ctx)
+	if err != nil {
+		return err
+	}
+	for _, conn := range conns {
+		if ctx.Err() != nil {
+			return nil
+		}
+		if err := s.sync(ctx, conn); err != nil {
+			s.report.Report(ctx, "Scheduled Garmin sync failed, retrying within the hour", err,
+				slog.String("user_id", store.UUIDToString(conn.UserID)))
+		}
+	}
+	return nil
+}
+
+// Disconnect removes the workouts put on the user's Garmin calendar,
+// deregisters the app from their account, and deletes the connection. The
+// connection is deleted even if Garmin fails, so users can always
+// disconnect; what failed on Garmin is reported.
+func (s *Syncer) Disconnect(ctx context.Context, userID pgtype.UUID) error {
+	conn, err := s.activities.GetGarminConnection(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := s.cleanUpGarmin(ctx, conn); err != nil && !errors.Is(err, garmin.ErrUnauthorized) {
+		// Unauthorized means the user disconnected on Garmin already.
+		s.report.Report(ctx, "Failed to remove workouts from Garmin while disconnecting, leaving them there", err)
+	}
+	return s.forget(ctx, userID)
+}
+
+// cleanUpGarmin removes the upcoming workouts put on the user's Garmin
+// calendar, keeping past ones as the record of what was done, and
+// deregisters the app.
+func (s *Syncer) cleanUpGarmin(ctx context.Context, conn *activities.GarminConnection) error {
+	token, err := s.token(ctx, conn)
+	if err != nil {
+		return err
+	}
+	onGarmin, err := s.plans.ListGarminWorkouts(ctx, conn.UserID)
+	if err != nil {
+		return err
+	}
+	today := s.nowFn().UTC().Truncate(24 * time.Hour)
+	for _, g := range onGarmin {
+		if g.WorkoutDate.IsZero() || !g.WorkoutDate.Before(today) {
+			if err := s.client.DeleteWorkout(ctx, token, g.GarminWorkoutID); err != nil && !errors.Is(err, garmin.ErrNotFound) {
+				return err
+			}
+		}
+	}
+	return s.client.Deregister(ctx, token)
+}
+
+// forget deletes a connection and the record of its workouts.
+func (s *Syncer) forget(ctx context.Context, userID pgtype.UUID) error {
+	if err := s.plans.RemoveGarminWorkouts(ctx, userID); err != nil {
+		return err
+	}
+	return s.activities.DeleteGarminConnection(ctx, userID)
+}
+
+// HandleDeregistration forgets a user who disconnected the app on Garmin.
+func (s *Syncer) HandleDeregistration(ctx context.Context, garminUserID string) error {
+	conn, err := s.activities.GetGarminConnectionByGarminUser(ctx, garminUserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return s.forget(ctx, conn.UserID)
+}
+
+// HandlePermissions records the permissions a user changed on Garmin.
+func (s *Syncer) HandlePermissions(ctx context.Context, garminUserID string, permissions []string) error {
+	conn, err := s.activities.GetGarminConnectionByGarminUser(ctx, garminUserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	slices.Sort(permissions)
+	return s.activities.UpdateGarminPermissions(ctx, conn.UserID, permissions)
+}
+
+// backgroundSyncInterval is how often a server without a scheduler syncs
+// Garmin, as often as the scheduled sync runs.
+const backgroundSyncInterval = time.Hour
+
+// RunBackground syncs every connection every backgroundSyncInterval until
+// ctx is done, for servers that run between requests, unlike Cloud Run.
+func (s *Syncer) RunBackground(ctx context.Context) {
+	ticker := time.NewTicker(backgroundSyncInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := s.SyncDue(ctx); err != nil && ctx.Err() == nil {
+				s.report.Report(ctx, "Background Garmin sync failed, retrying within the hour", err)
+			}
+		}
+	}
+}
+
+// workoutsChangedTimeout bounds putting changed workouts on the Garmin
+// calendar before responding to the change. Whatever doesn't finish is done
+// by the next scheduled sync.
+const workoutsChangedTimeout = 10 * time.Second
+
+// WorkoutsChanged puts the user's changed workouts on their Garmin calendar
+// right away, if any of the dates are within the calendar's window, or
+// unknown, so a workout planned for today reaches the watch. It's a
+// plan.WorkoutsChangedFunc.
+func (s *Syncer) WorkoutsChanged(ctx context.Context, userID pgtype.UUID, dates []time.Time) {
+	today := s.nowFn().UTC().Truncate(24 * time.Hour)
+	inWindow := len(dates) == 0 || slices.ContainsFunc(dates, func(d time.Time) bool {
+		return !d.Before(today) && !d.After(today.AddDate(0, 0, calendarDays))
+	})
+	if !inWindow {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), workoutsChangedTimeout)
+	defer cancel()
+	conn, err := s.activities.GetGarminConnection(ctx, userID)
+	if errors.Is(err, store.ErrNotFound) {
+		return
+	}
+	if err != nil {
+		s.report.Report(ctx, "Failed to get a Garmin connection, putting changed workouts on the calendar with the next sync", err)
+		return
+	}
+	if !slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) {
+		return
+	}
+	message, err := s.syncWorkouts(ctx, conn)
+	if err != nil {
+		s.log.WarnContext(ctx, "Failed to put changed workouts on the Garmin calendar, retrying with the next sync",
+			slog.String("user_id", store.UUIDToString(userID)), slogor.Err(err))
+		return
+	}
+	if err := s.activities.FinishGarminWorkoutsSync(ctx, userID, s.nowFn(), message); err != nil {
+		s.report.Report(ctx, "Failed to record a Garmin workouts sync", err)
+	}
+}

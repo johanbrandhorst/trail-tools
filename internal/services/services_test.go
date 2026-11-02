@@ -27,6 +27,7 @@ import (
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1/activitiesv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1/garminv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1/geov1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
@@ -49,6 +50,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/routing"
 	"github.com/johanbrandhorst/trail-tools/internal/services/activity"
 	"github.com/johanbrandhorst/trail-tools/internal/services/auth"
+	garminsvc "github.com/johanbrandhorst/trail-tools/internal/services/garmin"
 	geosvc "github.com/johanbrandhorst/trail-tools/internal/services/geo"
 	lactatesvc "github.com/johanbrandhorst/trail-tools/internal/services/lactate"
 	mapdatasvc "github.com/johanbrandhorst/trail-tools/internal/services/mapdata"
@@ -90,20 +92,27 @@ type env struct {
 	syncer        *stravasvc.Syncer
 	strava        *fakeStrava
 	liveTrack     *fakeLiveTrack
+	garmin        *fakeGarmin
+	garminSyncer  *garminsvc.Syncer
+	// The URL Garmin sends notifications to.
+	garminWebhookURL string
 
 	// The user's settings, and OAuth connections below, are signed in with
 	// the session; the other clients with the API token.
-	users      usersv1connect.UserServiceClient
-	activity   activitiesv1connect.ActivityServiceClient
-	stravaAPI  stravav1connect.StravaServiceClient
-	routes     routesv1connect.RouteServiceClient
-	geo        geov1connect.GeoServiceClient
-	mapDataAPI routingv1connect.MapDataServiceClient
-	imports    *fakeImportRunner
-	plans      plansv1connect.TrainingPlanServiceClient
-	exercises  plansv1connect.ExerciseServiceClient
-	races      racesv1connect.RaceServiceClient
-	racePlans  racesv1connect.RacePlanServiceClient
+	users     usersv1connect.UserServiceClient
+	activity  activitiesv1connect.ActivityServiceClient
+	stravaAPI stravav1connect.StravaServiceClient
+	garminAPI garminv1connect.GarminServiceClient
+	// The Garmin service signed in with the session, to disconnect.
+	garminSession garminv1connect.GarminServiceClient
+	routes        routesv1connect.RouteServiceClient
+	geo           geov1connect.GeoServiceClient
+	mapDataAPI    routingv1connect.MapDataServiceClient
+	imports       *fakeImportRunner
+	plans         plansv1connect.TrainingPlanServiceClient
+	exercises     plansv1connect.ExerciseServiceClient
+	races         racesv1connect.RaceServiceClient
+	racePlans     racesv1connect.RacePlanServiceClient
 	// Race reports of the user, anyone and another user.
 	raceReports      racesv1connect.RaceReportServiceClient
 	anonRaceReports  racesv1connect.RaceReportServiceClient
@@ -193,6 +202,10 @@ func newEnv(t *testing.T) *env {
 	routeService := route.NewService(log, report, routeRepo, activityRepo, e.router, e.mapData)
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
+	e.garmin = newFakeGarmin()
+	e.garminSyncer = garminsvc.NewSyncer(log, report, e.garmin, activityRepo, planRepo)
+	planService.OnWorkoutsChanged(e.garminSyncer.WorkoutsChanged)
+	garminService := garminsvc.NewService(report, activityRepo, e.garminSyncer)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	e.liveTrack = &fakeLiveTrack{}
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, e.liveTrack, "https://trail.example")
@@ -224,6 +237,7 @@ func newEnv(t *testing.T) *env {
 	authv1connect.RegisterAuthServiceHandler(srv2, authService)
 	activitiesv1connect.RegisterActivityServiceHandler(srv2, activityService)
 	stravav1connect.RegisterStravaServiceHandler(srv2, stravaService)
+	garminv1connect.RegisterGarminServiceHandler(srv2, garminService)
 	routesv1connect.RegisterRouteServiceHandler(srv2, routeService)
 	geov1connect.RegisterGeoServiceHandler(srv2, geoService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(srv2, planService)
@@ -271,6 +285,11 @@ func newEnv(t *testing.T) *env {
 	root.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
 	root.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	root.Handle("/", handler)
+	garminWebhook, err := garminsvc.NewWebhook(log, report, e.garminSyncer, "http://"+e.srv.Listener.Addr().String()+garminsvc.WebhookPath, garminWebhookSecret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root.Handle(garminWebhook.Pattern(), garminWebhook)
 	e.srv.Config.Handler = root
 	e.srv.Start()
 
@@ -283,6 +302,9 @@ func newEnv(t *testing.T) *env {
 	e.users = usersv1connect.NewUserServiceClient(signedIn)
 	e.activity = activitiesv1connect.NewActivityServiceClient(authed)
 	e.stravaAPI = stravav1connect.NewStravaServiceClient(authed)
+	e.garminAPI = garminv1connect.NewGarminServiceClient(authed)
+	e.garminSession = garminv1connect.NewGarminServiceClient(signedIn)
+	e.garminWebhookURL = garminWebhook.CallbackURL()
 	e.routes = routesv1connect.NewRouteServiceClient(authed)
 	e.geo = geov1connect.NewGeoServiceClient(authed)
 	e.mapDataAPI = routingv1connect.NewMapDataServiceClient(authed)
@@ -308,6 +330,9 @@ func newEnv(t *testing.T) *env {
 	e.otherLactate = lactatev1connect.NewLactateTestServiceClient(other)
 	return e
 }
+
+// garminWebhookSecret is the secret in the Garmin webhook's path in tests.
+const garminWebhookSecret = "garmin-webhook-secret-for-tests"
 
 // bootstrapToken is the admin bootstrap token in tests.
 const bootstrapToken = "bootstrap-secret"

@@ -22,7 +22,8 @@ service ActivityService {
 message Activity {
   // The ID of the activity.
   string id = 1;
-  // The Strava activity ID.
+  // The Strava activity ID, empty if the activity is only on Garmin
+  // Connect.
   string strava_id = 2;
   // The name of the activity.
   string name = 3;
@@ -66,8 +67,27 @@ message Activity {
   // videos. Until the activity's details are synced, it's the count from
   // Strava's list of activities, which may include videos or miss photos.
   int32 photo_count = 22;
-  // The page of the activity on Strava.
+  // The page of the activity on Strava, empty if it isn't on Strava.
   string strava_url = 23;
+  // The Garmin Connect activity ID, empty if the activity didn't come from
+  // Garmin.
+  string garmin_activity_id = 24;
+  // The page of the activity on Garmin Connect, empty if it didn't come
+  // from Garmin.
+  string garmin_url = 25;
+  // Where the activity's stats and streams come from. An activity on both
+  // Strava and Garmin keeps those of the first to have its samples, and
+  // Strava's name and description.
+  ActivitySource data_source = 26;
+}
+
+// Where an activity's data comes from.
+enum ActivitySource {
+  ACTIVITY_SOURCE_UNSPECIFIED = 0;
+  // Strava's API.
+  ACTIVITY_SOURCE_STRAVA = 1;
+  // Garmin Connect, from the watch's activity file.
+  ACTIVITY_SOURCE_GARMIN = 2;
 }
 
 // A photo added to an activity on Strava. The images are hosted by Strava.
