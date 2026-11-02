@@ -427,3 +427,36 @@ func splitSquatAnimation() *plansv1.ExerciseAnimation {
 		},
 	}.Build()
 }
+
+func TestStockPoses(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	listed, err := e.exercises.ListStockPoses(ctx, &plansv1.ListStockPosesRequest{})
+	if err != nil {
+		t.Fatalf("ListStockPoses: %v", err)
+	}
+	if len(listed.GetPoses()) < 10 {
+		t.Fatalf("got %d stock poses, want a library of them", len(listed.GetPoses()))
+	}
+	// Each pose, with its anchor, planted points and props, is an animation
+	// an exercise can have.
+	var exercises []*plansv1.Exercise
+	for _, p := range listed.GetPoses() {
+		exercises = append(exercises, plansv1.Exercise_builder{
+			Name: "Hold " + p.GetName(),
+			Animations: []*plansv1.ExerciseAnimation{plansv1.ExerciseAnimation_builder{
+				Title:   p.GetDescription()[:min(len(p.GetDescription()), 40)],
+				Anchor:  p.GetAnchor(),
+				Planted: p.GetPlanted(),
+				Props:   p.GetProps(),
+				Keyframes: []*plansv1.AnimationKeyframe{
+					plansv1.AnimationKeyframe_builder{Pose: p.GetPose(), HoldMilliseconds: 1000}.Build(),
+					plansv1.AnimationKeyframe_builder{Pose: p.GetPose(), MoveMilliseconds: 1000}.Build(),
+				},
+			}.Build()},
+		}.Build())
+	}
+	if _, err := e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{Exercises: exercises}.Build()); err != nil {
+		t.Fatalf("CreateExercises with the stock poses: %v", err)
+	}
+}
