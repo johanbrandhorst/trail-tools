@@ -1073,6 +1073,46 @@ type Exercise struct {
 	Animations       json.RawMessage
 	CreateTime       pgtype.Timestamptz
 	UpdateTime       pgtype.Timestamptz
+	GarminExercise   string
+}
+
+type GarminActivityFile struct {
+	UserID           pgtype.UUID
+	GarminActivityID int64
+	CallbackURL      string
+	ExpireTime       pgtype.Timestamptz
+	Attempts         int32
+	CreateTime       pgtype.Timestamptz
+}
+
+type GarminConnection struct {
+	UserID           pgtype.UUID
+	GarminUserID     string
+	AccessToken      string
+	RefreshToken     string
+	Expiry           pgtype.Timestamptz
+	Permissions      []string
+	WorkoutsSyncTime pgtype.Timestamptz
+	SyncMessage      string
+	CreateTime       pgtype.Timestamptz
+	UpdateTime       pgtype.Timestamptz
+}
+
+type GarminNotification struct {
+	ID         int64
+	Body       []byte
+	Attempts   int32
+	CreateTime pgtype.Timestamptz
+}
+
+type GarminWorkout struct {
+	ID               pgtype.UUID
+	UserID           pgtype.UUID
+	WorkoutID        pgtype.UUID
+	GarminWorkoutID  int64
+	GarminScheduleID pgtype.Int8
+	ContentHash      string
+	CreateTime       pgtype.Timestamptz
 }
 
 type HomeEquipment struct {
@@ -1484,7 +1524,7 @@ type Session struct {
 type StravaActivity struct {
 	ID                  pgtype.UUID
 	UserID              pgtype.UUID
-	StravaID            int64
+	StravaID            pgtype.Int8
 	Name                string
 	Description         string
 	SportType           string
@@ -1514,6 +1554,10 @@ type StravaActivity struct {
 	SyncRequested       bool
 	SyncFailures        int32
 	SyncedPhotoCount    pgtype.Int4
+	GarminActivityID    pgtype.Int8
+	StravaExternalID    string
+	DataSource          string
+	GarminSamples       bool
 }
 
 type StravaActivityPhoto struct {

@@ -244,7 +244,7 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 		}
 		return "", s.toConnectError(ctx, err, "failed to get activity")
 	}
-	if !a.StreamsSynced {
+	if !a.HasStreams() {
 		a = s.syncPending(ctx, report.UserID, a)
 	}
 	report.ActivityID = a.ID
@@ -263,7 +263,7 @@ func (s *Service) fillFromActivity(ctx context.Context, report *trips.Report, ac
 	report.ElevationGainMeters = a.ElevationGainMeters
 
 	var t *activitiesv1.ActivityStreams
-	if a.StreamsSynced {
+	if a.HasStreams() {
 		streams, err := s.activities.GetActivityStreams(ctx, report.UserID, activityID)
 		switch {
 		case err == nil:

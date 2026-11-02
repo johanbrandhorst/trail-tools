@@ -68,3 +68,13 @@ export const getHomeEquipment = ExerciseService.method.getHomeEquipment;
  * @generated from rpc plans.v1.ExerciseService.SetHomeEquipment
  */
 export const setHomeEquipment = ExerciseService.method.setHomeEquipment;
+
+/**
+ * Search Garmin's catalog of strength exercises, for an exercise's
+ * garmin_exercise, e.g. "bulgarian split squat" or "dumbbell row". Garmin
+ * watches show and count the exercises of the catalog when the workout is
+ * on the user's Garmin calendar.
+ *
+ * @generated from rpc plans.v1.ExerciseService.SearchGarminExercises
+ */
+export const searchGarminExercises = ExerciseService.method.searchGarminExercises;

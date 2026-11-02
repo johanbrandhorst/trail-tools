@@ -100,9 +100,21 @@ select * from strava_connections
 where athlete_id = $1;
 
 -- name: GetActivityIDByStravaID :one
-select id from strava_activities
-where user_id = $1 and strava_id = $2;
+select id, garmin_activity_id, garmin_samples from strava_activities
+where user_id = sqlc.arg(user_id) and strava_id = sqlc.arg(strava_id)::bigint;
 
--- name: DeleteActivityByStravaID :exec
-delete from strava_activities
-where user_id = $1 and strava_id = $2;
+-- name: DeleteActivityByStravaID :one
+-- Deletes an activity deleted on Strava, unless it's on Garmin too: then
+-- it only loses its Strava ID. Returns whether the activity was deleted.
+with detached as (
+  update strava_activities set
+    strava_id = null,
+    update_time = now()
+  where user_id = sqlc.arg(user_id)::uuid and strava_id = sqlc.arg(strava_id)::bigint and garmin_activity_id is not null
+  returning id
+), deleted as (
+  delete from strava_activities
+  where user_id = sqlc.arg(user_id)::uuid and strava_id = sqlc.arg(strava_id)::bigint and garmin_activity_id is null
+  returning id
+)
+select (select count(*) from deleted) > 0 as deleted;

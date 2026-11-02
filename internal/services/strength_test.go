@@ -222,7 +222,7 @@ func TestStrengthWorkouts(t *testing.T) {
 
 	// The strength activity of the day syncs, and completes the first
 	// workout, but not the run of the next day.
-	activityID, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	activityID, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:       9001,
 		Name:           "Evening weight training",
 		SportType:      "WeightTraining",
@@ -296,7 +296,7 @@ func TestStrengthWorkouts(t *testing.T) {
 
 	// The second workout is done on a day whose strength activity synced
 	// before the log was saved, and saving the log links it.
-	earlier, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
+	earlier, _, err := e.activities.UpsertActivity(ctx, e.userID, &activities.ActivitySummary{
 		StravaID:       9002,
 		Name:           "Gym",
 		SportType:      "Workout",

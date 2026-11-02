@@ -136,8 +136,11 @@ type Exercise struct {
 	// The animations as a JSON array of plans.v1.ExerciseAnimation
 	// messages, which the service validates.
 	Animations json.RawMessage
-	CreateTime time.Time
-	UpdateTime time.Time
+	// The exercise of Garmin's catalog it is, like "SQUAT/GOBLET_SQUAT",
+	// which the service validates. Empty if not set.
+	GarminExercise string
+	CreateTime     time.Time
+	UpdateTime     time.Time
 }
 
 // PlannedExercise is an exercise of a strength workout, with what to do.
@@ -149,6 +152,8 @@ type PlannedExercise struct {
 	ExerciseEquipment []Equipment
 	// Whether the exercise is done on each side, set when reading.
 	ExerciseEachSide bool
+	// The exercise's Garmin exercise, set when reading. Empty if not set.
+	ExerciseGarmin string
 	// The part of the workout, e.g. "Warm-up". Empty if none.
 	Group string
 	Sets  int32
@@ -254,6 +259,7 @@ func (r *Repository) CreateExercises(ctx context.Context, userID pgtype.UUID, ex
 					EquipmentNotes:   e.EquipmentNotes,
 					EachSide:         e.EachSide,
 					Animations:       nonNilJSON(e.Animations),
+					GarminExercise:   e.GarminExercise,
 				})
 				return err
 			})
@@ -327,6 +333,7 @@ func (r *Repository) UpdateExercise(ctx context.Context, e *Exercise) (*Exercise
 		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
 		Animations:       nonNilJSON(e.Animations),
+		GarminExercise:   e.GarminExercise,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, store.ErrNotFound
@@ -614,6 +621,7 @@ func (wr *workoutReader) workouts() []*Workout {
 			ExerciseName:      row.ExerciseName,
 			ExerciseEquipment: equipmentFromDB(row.ExerciseEquipment),
 			ExerciseEachSide:  row.ExerciseEachSide,
+			ExerciseGarmin:    row.ExerciseGarminExercise,
 			Group:             row.GroupName,
 			Sets:              row.Sets,
 			Reps:              row.Reps,
@@ -764,6 +772,7 @@ func exerciseFromDB(e *gen.Exercise) *Exercise {
 		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
 		Animations:       e.Animations,
+		GarminExercise:   e.GarminExercise,
 		CreateTime:       e.CreateTime.Time,
 		UpdateTime:       e.UpdateTime.Time,
 	}

@@ -192,7 +192,10 @@ const ActivitiesPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Activities" subtitle="Synced from Strava." />
+      <PageHeader
+        title="Activities"
+        subtitle="Synced from Strava and Garmin."
+      />
       <form
         className="mb-4 flex flex-wrap items-end gap-3"
         onSubmit={(event) => {

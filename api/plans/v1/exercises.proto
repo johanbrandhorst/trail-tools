@@ -46,6 +46,11 @@ service ExerciseService {
   // does this in the web app's settings; only change it when they say what
   // they have.
   rpc SetHomeEquipment(SetHomeEquipmentRequest) returns (SetHomeEquipmentResponse);
+  // Search Garmin's catalog of strength exercises, for an exercise's
+  // garmin_exercise, e.g. "bulgarian split squat" or "dumbbell row". Garmin
+  // watches show and count the exercises of the catalog when the workout is
+  // on the user's Garmin calendar.
+  rpc SearchGarminExercises(SearchGarminExercisesRequest) returns (SearchGarminExercisesResponse);
 }
 
 // Muscle is a muscle or muscle group an exercise works.
@@ -122,6 +127,12 @@ message Exercise {
   // the user as they do it: usually one of the movement, and maybe one of
   // setting up. At most 3.
   repeated ExerciseAnimation animations = 12;
+  // The exercise of Garmin's catalog this is, as "CATEGORY/NAME", e.g.
+  // "LUNGE/DUMBBELL_BULGARIAN_SPLIT_SQUAT", from SearchGarminExercises.
+  // Garmin watches show and count it as that exercise. Empty to match it by
+  // the exercise's name, if one of the catalog is named the same; an
+  // exercise without one is shown by its name, without counting reps.
+  string garmin_exercise = 13;
 }
 
 // A short looping animation of a stick figure doing an exercise, seen from
@@ -339,4 +350,27 @@ message SetHomeEquipmentResponse {
   repeated OwnedEquipment equipment = 1;
   // When the list was set.
   google.protobuf.Timestamp update_time = 2;
+}
+
+message SearchGarminExercisesRequest {
+  // The words to search for in the exercises' categories and names, e.g.
+  // "split squat". Required.
+  string query = 1;
+  // The most exercises to return, 20 by default and at most 100.
+  int32 page_size = 2;
+}
+
+message SearchGarminExercisesResponse {
+  // The matching exercises, the shortest names first.
+  repeated GarminExercise exercises = 1;
+}
+
+// An exercise of Garmin's catalog.
+message GarminExercise {
+  // The exercise as an exercise's garmin_exercise, "CATEGORY/NAME".
+  string id = 1;
+  // The category, e.g. "LUNGE".
+  string category = 2;
+  // The name, e.g. "DUMBBELL_BULGARIAN_SPLIT_SQUAT".
+  string name = 3;
 }

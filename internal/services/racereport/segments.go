@@ -107,7 +107,7 @@ func (s *Service) SuggestRaceReportSegments(ctx context.Context, req *racesv1.Su
 // the positions of its streams, downsampled, or else its summary polyline,
 // encoded. It returns nil if the activity has neither.
 func (s *Service) activityTrack(ctx context.Context, userID pgtype.UUID, activity *activities.Activity) ([]byte, error) {
-	if !activity.StreamsSynced {
+	if !activity.HasStreams() {
 		s.syncPending(ctx, userID, activity.ID)
 	}
 	var t *activitiesv1.ActivityStreams

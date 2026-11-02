@@ -23,16 +23,17 @@ insert into exercises (
   equipment,
   equipment_notes,
   each_side,
-  animations
+  animations,
+  garmin_exercise
 ) values (
   $1, $2, $3, $4,
   -- Enum arrays are sent as text, as they can't be encoded.
-  $8::text[]::muscle[],
   $9::text[]::muscle[],
-  $10::text[]::equipment[],
-  $5, $6, $7
+  $10::text[]::muscle[],
+  $11::text[]::equipment[],
+  $5, $6, $7, $8
 )
-returning id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time
+returning id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time, garmin_exercise
 `
 
 type CreateExerciseParams struct {
@@ -43,6 +44,7 @@ type CreateExerciseParams struct {
 	EquipmentNotes   string
 	EachSide         bool
 	Animations       json.RawMessage
+	GarminExercise   string
 	PrimaryMuscles   []string
 	SecondaryMuscles []string
 	Equipment        []string
@@ -57,6 +59,7 @@ func (q *Queries) CreateExercise(ctx context.Context, arg *CreateExerciseParams)
 		arg.EquipmentNotes,
 		arg.EachSide,
 		arg.Animations,
+		arg.GarminExercise,
 		arg.PrimaryMuscles,
 		arg.SecondaryMuscles,
 		arg.Equipment,
@@ -76,6 +79,7 @@ func (q *Queries) CreateExercise(ctx context.Context, arg *CreateExerciseParams)
 		&i.Animations,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.GarminExercise,
 	)
 	return &i, err
 }
@@ -137,7 +141,7 @@ func (q *Queries) DeleteWorkoutExercises(ctx context.Context, workoutIds []pgtyp
 }
 
 const findExercises = `-- name: FindExercises :many
-select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time from exercises
+select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time, garmin_exercise from exercises
 where user_id = $1 and id = any($2::uuid[])
 `
 
@@ -170,6 +174,7 @@ func (q *Queries) FindExercises(ctx context.Context, arg *FindExercisesParams) (
 			&i.Animations,
 			&i.CreateTime,
 			&i.UpdateTime,
+			&i.GarminExercise,
 		); err != nil {
 			return nil, err
 		}
@@ -182,7 +187,7 @@ func (q *Queries) FindExercises(ctx context.Context, arg *FindExercisesParams) (
 }
 
 const getExercise = `-- name: GetExercise :one
-select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time from exercises
+select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time, garmin_exercise from exercises
 where id = $1 and user_id = $2
 `
 
@@ -208,6 +213,7 @@ func (q *Queries) GetExercise(ctx context.Context, arg *GetExerciseParams) (*Exe
 		&i.Animations,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.GarminExercise,
 	)
 	return &i, err
 }
@@ -618,7 +624,7 @@ func (q *Queries) ListExerciseHistorySets(ctx context.Context, arg *ListExercise
 }
 
 const listExercises = `-- name: ListExercises :many
-select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time from exercises
+select id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time, garmin_exercise from exercises
 where user_id = $1
 order by lower(name), create_time
 `
@@ -646,6 +652,7 @@ func (q *Queries) ListExercises(ctx context.Context, userID pgtype.UUID) ([]*Exe
 			&i.Animations,
 			&i.CreateTime,
 			&i.UpdateTime,
+			&i.GarminExercise,
 		); err != nil {
 			return nil, err
 		}
@@ -859,7 +866,8 @@ func (q *Queries) ListStrengthLogs(ctx context.Context, arg *ListStrengthLogsPar
 }
 
 const listWorkoutExercises = `-- name: ListWorkoutExercises :many
-select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side
+select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
+  e.garmin_exercise as exercise_garmin_exercise
 from workout_exercises we
 join workouts w on w.id = we.workout_id
 join training_plans p on p.id = w.plan_id
@@ -881,22 +889,23 @@ type ListWorkoutExercisesParams struct {
 }
 
 type ListWorkoutExercisesRow struct {
-	WorkoutID         pgtype.UUID
-	Position          int32
-	ExerciseID        pgtype.UUID
-	GroupName         string
-	Sets              int32
-	Reps              int32
-	HoldSeconds       int32
-	WeightValue       float64
-	WeightUnit        NullWeightUnit
-	RestSeconds       int32
-	Tempo             string
-	TargetEffort      int32
-	Notes             string
-	ExerciseName      string
-	ExerciseEquipment []string
-	ExerciseEachSide  bool
+	WorkoutID              pgtype.UUID
+	Position               int32
+	ExerciseID             pgtype.UUID
+	GroupName              string
+	Sets                   int32
+	Reps                   int32
+	HoldSeconds            int32
+	WeightValue            float64
+	WeightUnit             NullWeightUnit
+	RestSeconds            int32
+	Tempo                  string
+	TargetEffort           int32
+	Notes                  string
+	ExerciseName           string
+	ExerciseEquipment      []string
+	ExerciseEachSide       bool
+	ExerciseGarminExercise string
 }
 
 // Lists the exercises of the user's workouts, optionally of a plan, of
@@ -933,6 +942,7 @@ func (q *Queries) ListWorkoutExercises(ctx context.Context, arg *ListWorkoutExer
 			&i.ExerciseName,
 			&i.ExerciseEquipment,
 			&i.ExerciseEachSide,
+			&i.ExerciseGarminExercise,
 		); err != nil {
 			return nil, err
 		}
@@ -970,15 +980,16 @@ update exercises set
   name = $3,
   instructions = $4,
   feel = $5,
-  primary_muscles = $9::text[]::muscle[],
-  secondary_muscles = $10::text[]::muscle[],
-  equipment = $11::text[]::equipment[],
+  primary_muscles = $10::text[]::muscle[],
+  secondary_muscles = $11::text[]::muscle[],
+  equipment = $12::text[]::equipment[],
   equipment_notes = $6,
   each_side = $7,
   animations = $8,
+  garmin_exercise = $9,
   update_time = now()
 where id = $1 and user_id = $2
-returning id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time
+returning id, user_id, name, instructions, feel, primary_muscles, secondary_muscles, equipment, equipment_notes, each_side, animations, create_time, update_time, garmin_exercise
 `
 
 type UpdateExerciseParams struct {
@@ -990,6 +1001,7 @@ type UpdateExerciseParams struct {
 	EquipmentNotes   string
 	EachSide         bool
 	Animations       json.RawMessage
+	GarminExercise   string
 	PrimaryMuscles   []string
 	SecondaryMuscles []string
 	Equipment        []string
@@ -1005,6 +1017,7 @@ func (q *Queries) UpdateExercise(ctx context.Context, arg *UpdateExerciseParams)
 		arg.EquipmentNotes,
 		arg.EachSide,
 		arg.Animations,
+		arg.GarminExercise,
 		arg.PrimaryMuscles,
 		arg.SecondaryMuscles,
 		arg.Equipment,
@@ -1024,6 +1037,7 @@ func (q *Queries) UpdateExercise(ctx context.Context, arg *UpdateExerciseParams)
 		&i.Animations,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.GarminExercise,
 	)
 	return &i, err
 }

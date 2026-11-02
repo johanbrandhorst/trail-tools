@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package garmin.v1;
+
+import "google/protobuf/timestamp.proto";
+import "mcp/v1/options.proto";
+
+// GarminService manages the connection to the user's Garmin Connect account.
+// Once connected, the user's activities come straight from Garmin, with the
+// sets of strength workouts, alongside any from Strava: an activity on both
+// is one activity. Upcoming runs and strength workouts are put on the user's
+// Garmin Connect calendar, which syncs them to their watch. The account is
+// connected in the browser by visiting /garmin/connect.
+service GarminService {
+  // Get the status of the Garmin connection.
+  rpc GetGarminConnection(GetGarminConnectionRequest) returns (GetGarminConnectionResponse);
+  // Put the upcoming workouts on the user's Garmin calendar now, and
+  // download the activities Garmin sent that are waiting. This also
+  // happens on its own after workouts change and every hour.
+  rpc SyncGarmin(SyncGarminRequest) returns (SyncGarminResponse);
+  // Disconnect the Garmin account, removing the workouts put on its
+  // calendar. Synced activities are kept.
+  rpc DisconnectGarmin(DisconnectGarminRequest) returns (DisconnectGarminResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+}
+
+// The status of the Garmin connection.
+message GarminConnection {
+  // Whether a Garmin account is connected.
+  bool connected = 1;
+  // Whether the server is configured with Garmin API credentials.
+  bool configured = 2;
+  // Whether the user lets the app read their activities.
+  bool activities_allowed = 3;
+  // Whether the user lets the app put workouts on their calendar.
+  bool workouts_allowed = 4;
+  // When workouts were last put on the calendar. Unset if never.
+  google.protobuf.Timestamp workouts_sync_time = 5;
+  // What the last sync did, or why it failed.
+  string sync_message = 6;
+  // How many workouts are on the Garmin calendar.
+  int32 workout_count = 7;
+  // How many activity files are waiting to be downloaded.
+  int32 pending_file_count = 8;
+}
+
+message GetGarminConnectionRequest {}
+
+message GetGarminConnectionResponse {
+  // The connection status.
+  GarminConnection connection = 1;
+}
+
+message SyncGarminRequest {}
+
+message SyncGarminResponse {
+  // The connection status after the sync.
+  GarminConnection connection = 1;
+}
+
+message DisconnectGarminRequest {}
+
+message DisconnectGarminResponse {}

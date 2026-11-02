@@ -133,7 +133,7 @@ func (s *Service) GetActivity(ctx context.Context, req *activitiesv1.GetActivity
 		return nil, s.internalError(ctx, "failed to get activity", err)
 	}
 	resp := activitiesv1.GetActivityResponse_builder{Activity: s.activityToProto(activity)}
-	if req.GetIncludeStreams() && activity.StreamsSynced {
+	if req.GetIncludeStreams() && activity.HasStreams() {
 		streams, err := s.activities.GetActivityStreams(ctx, userID, activityID)
 		switch {
 		case err == nil:
@@ -270,12 +270,30 @@ func photoToProto(p activities.Photo) *activitiesv1.ActivityPhoto {
 	return b.Build()
 }
 
+// garminWebURL is Garmin Connect's website, for links to activities.
+const garminWebURL = "https://connect.garmin.com"
+
 func (s *Service) activityToProto(a *activities.Activity) *activitiesv1.Activity {
-	stravaID := strconv.FormatInt(a.StravaID, 10)
+	var stravaID, stravaURL, garminID, garminURL string
+	if a.StravaID != 0 {
+		stravaID = strconv.FormatInt(a.StravaID, 10)
+		stravaURL = s.stravaWebURL + "/activities/" + stravaID
+	}
+	if a.GarminActivityID != 0 {
+		garminID = strconv.FormatInt(a.GarminActivityID, 10)
+		garminURL = garminWebURL + "/modern/activity/" + garminID
+	}
+	source := activitiesv1.ActivitySource_ACTIVITY_SOURCE_STRAVA
+	if a.DataSource == activities.DataSourceGarmin {
+		source = activitiesv1.ActivitySource_ACTIVITY_SOURCE_GARMIN
+	}
 	return activitiesv1.Activity_builder{
 		Id:                  store.UUIDToString(a.ID),
 		StravaId:            stravaID,
-		StravaUrl:           s.stravaWebURL + "/activities/" + stravaID,
+		StravaUrl:           stravaURL,
+		GarminActivityId:    garminID,
+		GarminUrl:           garminURL,
+		DataSource:          source,
 		Name:                a.Name,
 		Description:         a.Description,
 		SportType:           a.SportType,
@@ -292,7 +310,7 @@ func (s *Service) activityToProto(a *activities.Activity) *activitiesv1.Activity
 		MaxHeartrateBpm:     a.MaxHeartrateBpm,
 		AverageCadenceSpm:   a.AverageCadenceSpm,
 		SummaryPolyline:     a.SummaryPolyline,
-		HasStreams:          a.StreamsSynced,
+		HasStreams:          a.HasStreams(),
 		DeviceName:          a.DeviceName,
 		RelativeEffort:      a.RelativeEffort,
 		PhotoCount:          a.PhotoCount,

@@ -22,27 +22,31 @@ insert into strava_activities (
   min_lng,
   max_lat,
   max_lng,
-  photo_count
+  photo_count,
+  strava_external_id
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
 )
 on conflict (user_id, strava_id) do update set
+  -- Strava's name and sport, which users edit there, win; the stats of an
+  -- activity from Garmin are the watch's own, and kept.
   name = excluded.name,
   sport_type = excluded.sport_type,
   start_time = excluded.start_time,
   start_date_local = excluded.start_date_local,
   timezone = excluded.timezone,
-  distance_meters = excluded.distance_meters,
-  moving_time_seconds = excluded.moving_time_seconds,
-  elapsed_time_seconds = excluded.elapsed_time_seconds,
-  elevation_gain_meters = excluded.elevation_gain_meters,
-  average_speed_mps = excluded.average_speed_mps,
-  max_speed_mps = excluded.max_speed_mps,
-  average_heartrate_bpm = excluded.average_heartrate_bpm,
-  max_heartrate_bpm = excluded.max_heartrate_bpm,
-  average_cadence_spm = excluded.average_cadence_spm,
-  summary_polyline = excluded.summary_polyline,
+  distance_meters = case when strava_activities.data_source = 'garmin' then strava_activities.distance_meters else excluded.distance_meters end,
+  moving_time_seconds = case when strava_activities.data_source = 'garmin' then strava_activities.moving_time_seconds else excluded.moving_time_seconds end,
+  elapsed_time_seconds = case when strava_activities.data_source = 'garmin' then strava_activities.elapsed_time_seconds else excluded.elapsed_time_seconds end,
+  elevation_gain_meters = case when strava_activities.data_source = 'garmin' then strava_activities.elevation_gain_meters else excluded.elevation_gain_meters end,
+  average_speed_mps = case when strava_activities.data_source = 'garmin' then strava_activities.average_speed_mps else excluded.average_speed_mps end,
+  max_speed_mps = case when strava_activities.data_source = 'garmin' then strava_activities.max_speed_mps else excluded.max_speed_mps end,
+  average_heartrate_bpm = case when strava_activities.data_source = 'garmin' then strava_activities.average_heartrate_bpm else excluded.average_heartrate_bpm end,
+  max_heartrate_bpm = case when strava_activities.data_source = 'garmin' then strava_activities.max_heartrate_bpm else excluded.max_heartrate_bpm end,
+  average_cadence_spm = case when strava_activities.data_source = 'garmin' then strava_activities.average_cadence_spm else excluded.average_cadence_spm end,
+  summary_polyline = case when strava_activities.data_source = 'garmin' and strava_activities.summary_polyline <> '' then strava_activities.summary_polyline else excluded.summary_polyline end,
   relative_effort = excluded.relative_effort,
+  strava_external_id = excluded.strava_external_id,
   min_lat = coalesce(strava_activities.min_lat, excluded.min_lat),
   min_lng = coalesce(strava_activities.min_lng, excluded.min_lng),
   max_lat = coalesce(strava_activities.max_lat, excluded.max_lat),
@@ -57,7 +61,7 @@ on conflict (user_id, strava_id) do update set
     else 0
   end,
   update_time = now()
-returning id;
+returning id, (data_source = 'garmin' and garmin_samples)::boolean as has_garmin_samples;
 
 -- name: GetLatestActivityPolyline :one
 select summary_polyline from strava_activities
@@ -73,8 +77,8 @@ where user_id = $1;
 -- Activities that started more than recent_window before the latest one are
 -- only listed when they're requested, and those that failed to sync
 -- max_failures times are left out.
-select a.id, a.strava_id from strava_activities a
-where a.user_id = sqlc.arg(user_id) and not a.streams_synced and a.sync_failures < sqlc.arg(max_failures)
+select a.id, a.strava_id::bigint as strava_id, (a.data_source = 'garmin' and a.garmin_samples)::boolean as has_garmin_samples from strava_activities a
+where a.user_id = sqlc.arg(user_id) and a.strava_id is not null and not a.streams_synced and a.sync_failures < sqlc.arg(max_failures)
   and (a.sync_requested or a.start_time >= (
     select max(latest.start_time) from strava_activities latest where latest.user_id = sqlc.arg(user_id)
   ) - sqlc.arg(recent_window)::interval)
@@ -112,6 +116,13 @@ update strava_activities set
   update_time = now()
 where id = $1;
 
+-- name: SetStravaSamples :exec
+-- Marks an activity's samples as Strava's, once they're stored.
+update strava_activities set
+  data_source = 'strava',
+  garmin_samples = false
+where id = $1;
+
 -- name: MarkActivityStreamsSynced :exec
 update strava_activities set
   streams_synced = true,
@@ -139,10 +150,10 @@ on conflict (activity_id) do update set
 
 -- name: ListActivities :many
 select
-  id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
+  id, coalesce(strava_id, 0)::bigint as strava_id, coalesce(garmin_activity_id, 0)::bigint as garmin_activity_id, data_source, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, garmin_samples,
   coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where user_id = $1
@@ -158,10 +169,10 @@ limit $2 offset $3;
 
 -- name: GetActivity :one
 select
-  id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
+  id, coalesce(strava_id, 0)::bigint as strava_id, coalesce(garmin_activity_id, 0)::bigint as garmin_activity_id, data_source, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, garmin_samples,
   coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where id = $1 and user_id = $2;
@@ -221,3 +232,30 @@ from (
   order by sw.id, a.start_time
 ) m
 where w.id = m.workout_id;
+
+-- name: AttachStravaToGarminActivity :exec
+-- Gives an activity from Garmin its Strava ID when Strava's copy of it
+-- arrives, so it's one activity: the one Strava says it got from Garmin,
+-- or else the one that started within two minutes of it. Its details sync
+-- from Strava again, for its description and photos, keeping Garmin's
+-- samples.
+update strava_activities set
+  strava_id = sqlc.arg(strava_id)::bigint,
+  streams_synced = false,
+  update_time = now()
+where id = (
+  select c.id from strava_activities c
+  where c.user_id = sqlc.arg(user_id)::uuid and c.strava_id is null and c.garmin_activity_id is not null
+    and (
+      c.garmin_activity_id::text = substring(sqlc.arg(external_id)::text from '^garmin_(?:ping|push)_([0-9]+)')
+      or abs(extract(epoch from c.start_time - sqlc.arg(start_time)::timestamptz)) < 120
+    )
+  order by
+    c.garmin_activity_id::text = coalesce(substring(sqlc.arg(external_id)::text from '^garmin_(?:ping|push)_([0-9]+)'), '') desc,
+    abs(extract(epoch from c.start_time - sqlc.arg(start_time)::timestamptz))
+  limit 1
+)
+and not exists (
+  select 1 from strava_activities s
+  where s.user_id = sqlc.arg(user_id)::uuid and s.strava_id = sqlc.arg(strava_id)::bigint
+);

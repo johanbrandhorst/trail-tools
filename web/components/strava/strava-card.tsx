@@ -137,7 +137,7 @@ const SyncProgress: React.FC<{ connection: StravaConnection }> = ({
  */
 const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
   const queryClient = useQueryClient();
-  const connectResult = useConnectResult();
+  const connectResult = useConnectResult("strava");
   const { isPending, isError, data, error, refetch } = useQuery(
     getStravaConnection,
     {},
@@ -208,7 +208,11 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
     return (
       <Card title="Strava">
         <div className="flex flex-col items-start gap-3">
-          <ConnectResultNotice result={connectResult} />
+          <ConnectResultNotice
+            result={connectResult}
+            service="Strava"
+            connectedText="Your activities are syncing."
+          />
           <p className="text-sm text-gray-700">
             Connect your Strava account to sync your activities. Your training
             history powers the weekly volume, plan tracking and your personal
@@ -240,7 +244,11 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
       }
     >
       <div className="flex flex-col gap-4">
-        <ConnectResultNotice result={connectResult} />
+        <ConnectResultNotice
+          result={connectResult}
+          service="Strava"
+          connectedText="Your activities are syncing."
+        />
         <p className="text-sm text-gray-700">
           Connected as{" "}
           <a

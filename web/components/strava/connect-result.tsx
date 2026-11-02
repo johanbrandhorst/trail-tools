@@ -7,15 +7,15 @@ export interface ConnectResult {
 }
 
 /**
- * UseConnectResult returns the result of connecting Strava, which the OAuth
- * callback passes to the settings page in the "strava" and "message" query
- * parameters. It removes them from the URL, so reloading the page doesn't
- * show the result again.
+ * UseConnectResult returns the result of connecting a service, which its
+ * OAuth callback passes to the settings page in the service's query
+ * parameter, "strava" or "garmin", and "message". It removes them from the
+ * URL, so reloading the page doesn't show the result again.
  */
-export const useConnectResult = (): ConnectResult | null => {
+export const useConnectResult = (param: string): ConnectResult | null => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [result] = useState<ConnectResult | null>(() => {
-    const status = searchParams.get("strava");
+    const status = searchParams.get(param);
     if (status === null) {
       return null;
     }
@@ -25,27 +25,33 @@ export const useConnectResult = (): ConnectResult | null => {
     };
   });
   useEffect(() => {
-    if (searchParams.has("strava")) {
+    if (searchParams.has(param)) {
       setSearchParams(
         (params) => {
-          params.delete("strava");
+          params.delete(param);
           params.delete("message");
           return params;
         },
         { replace: true }
       );
     }
-  }, [searchParams, setSearchParams]);
+  }, [param, searchParams, setSearchParams]);
   return result;
 };
 
 interface ConnectResultNoticeProps {
   result: ConnectResult | null;
+  // The service's name, like "Strava".
+  service: string;
+  // What happens once connected.
+  connectedText: string;
 }
 
-// ConnectResultNotice shows whether connecting Strava worked.
+// ConnectResultNotice shows whether connecting a service worked.
 export const ConnectResultNotice: React.FC<ConnectResultNoticeProps> = ({
   result,
+  service,
+  connectedText,
 }) => {
   if (result === null) {
     return null;
@@ -53,13 +59,13 @@ export const ConnectResultNotice: React.FC<ConnectResultNoticeProps> = ({
   if (result.connected) {
     return (
       <p className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-900">
-        Strava is connected. Your activities are syncing.
+        {service} is connected. {connectedText}
       </p>
     );
   }
   return (
     <p className="rounded-md bg-red-50 p-2 text-sm text-red-800">
-      {result.message === "" ? "Failed to connect Strava." : result.message}
+      {result.message === "" ? `Failed to connect ${service}.` : result.message}
     </p>
   );
 };

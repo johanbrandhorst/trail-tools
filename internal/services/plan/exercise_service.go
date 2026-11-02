@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1/plansv1connect"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
@@ -273,6 +274,14 @@ func musclesFromProto(field string, ms []plansv1.Muscle) ([]plans.Muscle, error)
 }
 
 func exerciseFromProto(e *plansv1.Exercise) (*plans.Exercise, error) {
+	var garminExercise string
+	if id := strings.TrimSpace(e.GetGarminExercise()); id != "" {
+		catalog, ok := garmin.LookupExercise(id)
+		if !ok {
+			return nil, invalidArgument("garmin_exercise %q isn't in Garmin's catalog; find one with SearchGarminExercises, or leave it empty", id)
+		}
+		garminExercise = catalog.String()
+	}
 	name := strings.TrimSpace(e.GetName())
 	if name == "" {
 		return nil, invalidArgument("name is required")
@@ -317,6 +326,7 @@ func exerciseFromProto(e *plansv1.Exercise) (*plans.Exercise, error) {
 		EquipmentNotes:   strings.TrimSpace(e.GetEquipmentNotes()),
 		EachSide:         e.GetEachSide(),
 		Animations:       animations,
+		GarminExercise:   garminExercise,
 	}, nil
 }
 
@@ -353,6 +363,7 @@ func exerciseToProto(e *plans.Exercise, animations []*plansv1.ExerciseAnimation)
 		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
 		Animations:       animations,
+		GarminExercise:   e.GarminExercise,
 		CreateTime:       timestamppb.New(e.CreateTime),
 		UpdateTime:       timestamppb.New(e.UpdateTime),
 	}.Build()
@@ -371,4 +382,27 @@ func (s *ExerciseService) toConnectError(ctx context.Context, err error, msg str
 		s.report.Report(ctx, msg, err)
 		return connect.NewError(connect.CodeInternal, msg).WithCause(err)
 	}
+}
+
+// maxGarminExercises is the most exercises SearchGarminExercises returns.
+const maxGarminExercises = 100
+
+func (s *ExerciseService) SearchGarminExercises(ctx context.Context, req *plansv1.SearchGarminExercisesRequest) (*plansv1.SearchGarminExercisesResponse, error) {
+	if _, ok := authn.GetUserID(ctx); !ok {
+		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	}
+	query := strings.TrimSpace(req.GetQuery())
+	if query == "" {
+		return nil, invalidArgument("query is required")
+	}
+	limit := int(req.GetPageSize())
+	if limit <= 0 {
+		limit = 20
+	}
+	found := garmin.SearchExercises(query, min(limit, maxGarminExercises))
+	exercises := make([]*plansv1.GarminExercise, len(found))
+	for i, e := range found {
+		exercises[i] = plansv1.GarminExercise_builder{Id: e.String(), Category: e.Category, Name: e.Name}.Build()
+	}
+	return plansv1.SearchGarminExercisesResponse_builder{Exercises: exercises}.Build(), nil
 }
