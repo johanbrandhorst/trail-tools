@@ -18,6 +18,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	stravav1 "github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
@@ -205,6 +206,7 @@ func (f *fakeStrava) GetStreams(ctx context.Context, _ string, id int64) (*strav
 		streams.LatLng = append(streams.LatLng, [2]float64{float64(i) * 0.0009, 0})
 		streams.Altitude = append(streams.Altitude, float64(i)*5)
 		streams.Cadence = append(streams.Cadence, 85)
+		streams.Heartrate = append(streams.Heartrate, float64(120+i))
 	}
 	return streams, nil
 }
@@ -398,6 +400,55 @@ func TestStravaSyncAndActivities(t *testing.T) {
 	if weeks[0].GetLongestDistanceMeters() != 11000 || weeks[0].GetElevationGainMeters() != 1000 {
 		t.Errorf("unexpected first week %v", weeks[0])
 	}
+
+	// Heart rate zones are counted from the streams, around the user's
+	// thresholds. Without a lactate test, the aerobic threshold must be
+	// given.
+	zonesRequest := activitiesv1.SummarizeActivitiesRequest_builder{
+		StartDate: "2026-09-07", EndDate: "2026-09-20", IncludeHeartRateZones: true,
+	}
+	_, err = e.activity.SummarizeActivities(ctx, zonesRequest.Build())
+	wantCode(t, err, connect.CodeFailedPrecondition)
+	zonesRequest.AerobicThresholdHeartRateBpm = 150
+	zonesRequest.AnaerobicThresholdHeartRateBpm = 180
+	zoned, err := e.activity.SummarizeActivities(ctx, zonesRequest.Build())
+	if err != nil {
+		t.Fatalf("SummarizeActivities with zones: %v", err)
+	}
+	// Each run's heart rate rises from 121 to 220 bpm, a sample every 36
+	// seconds: 29 samples below 150 bpm, 30 up to 180, and 41 above.
+	if zones := zoned.GetSummaries()[0].GetHeartRateZones(); zones.GetBelowAerobicThresholdSeconds() != 2*29*36 ||
+		zones.GetBetweenThresholdsSeconds() != 2*30*36 || zones.GetAboveAnaerobicThresholdSeconds() != 2*41*36 {
+		t.Errorf("got first week's zones %v, want two runs' worth", zones)
+	}
+	if zoned.GetAerobicThresholdHeartRateBpm() != 150 || zoned.GetAnaerobicThresholdHeartRateBpm() != 180 {
+		t.Errorf("got thresholds %d and %d, want those given", zoned.GetAerobicThresholdHeartRateBpm(), zoned.GetAnaerobicThresholdHeartRateBpm())
+	}
+	// The manual entry in the second week has no heart rate.
+	if zones := zoned.GetSummaries()[1].GetHeartRateZones(); zones.GetNoHeartRateSeconds() != 3600 {
+		t.Errorf("got second week's zones %v, want the manual entry's hour without heart rate", zones)
+	}
+	// The thresholds default to the latest lactate test's.
+	stages := []*lactatev1.LactateStage{}
+	for i, mmol := range []float64{1, 1.2, 1.6, 2, 3, 4} {
+		stages = append(stages, lactatev1.LactateStage_builder{HeartRateBpm: int32(130 + 10*i), LactateMmolPerLiter: mmol}.Build())
+	}
+	if _, err := e.lactate.CreateLactateTest(ctx, lactatev1.CreateLactateTestRequest_builder{
+		Test: lactatev1.LactateTest_builder{Date: "2026-09-01", Stages: stages}.Build(),
+	}.Build()); err != nil {
+		t.Fatal(err)
+	}
+	zonesRequest.AerobicThresholdHeartRateBpm, zonesRequest.AnaerobicThresholdHeartRateBpm = 0, 0
+	zoned, err = e.activity.SummarizeActivities(ctx, zonesRequest.Build())
+	if err != nil {
+		t.Fatalf("SummarizeActivities with the tested thresholds: %v", err)
+	}
+	if zoned.GetAerobicThresholdHeartRateBpm() != 160 || zoned.GetAnaerobicThresholdHeartRateBpm() != 180 {
+		t.Errorf("got thresholds %d and %d, want the lactate test's 160 and 180", zoned.GetAerobicThresholdHeartRateBpm(), zoned.GetAnaerobicThresholdHeartRateBpm())
+	}
+	zonesRequest.EndDate = "2027-06-01"
+	_, err = e.activity.SummarizeActivities(ctx, zonesRequest.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
 
 	// The heatmap counts each activity once per cell.
 	heatmap, err := e.geo.GetPersonalHeatmap(ctx, geov1.GetPersonalHeatmapRequest_builder{
