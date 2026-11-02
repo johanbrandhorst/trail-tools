@@ -7,7 +7,7 @@ import { Link } from "react-router";
  * The address people write to about their data. Update the policy's
  * effective date whenever its content changes.
  */
-const CONTACT_EMAIL = "privacy@trailrunn.ing";
+const CONTACT_EMAIL = "johan.brandhorst@gmail.com";
 const EFFECTIVE_DATE = "November 2, 2026";
 
 interface SectionProps {
