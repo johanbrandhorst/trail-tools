@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -394,18 +395,16 @@ func garminExercise(e *plans.PlannedExercise) (garmin.Exercise, bool) {
 // name, as Garmin only takes exercises of its catalog.
 func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.WorkoutStep {
 	step := garmin.WorkoutStep{
-		Type:        "WorkoutStep",
-		StepOrder:   nextOrder(),
-		Intensity:   "ACTIVE",
-		Description: truncate(e.Notes, 512),
-		TargetType:  "OPEN",
+		Type:       "WorkoutStep",
+		StepOrder:  nextOrder(),
+		Intensity:  "ACTIVE",
+		TargetType: "OPEN",
 	}
-	if catalog, ok := garminExercise(e); ok {
+	catalog, inCatalog := garminExercise(e)
+	if inCatalog {
 		step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name
-	} else {
-		step.Description = truncate(strings.TrimSpace(e.ExerciseName+". "+e.Notes), 512)
-		step.Description = strings.TrimSuffix(step.Description, ".")
 	}
+	step.Description = stepDescription(e, !inCatalog)
 	switch {
 	case e.Reps > 0:
 		step.DurationType, step.DurationValue = "REPS", float64(e.Reps)
@@ -433,6 +432,29 @@ func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.Work
 		})
 	}
 	return steps
+}
+
+// stepDescription describes an exercise's step: its name, if withName, and
+// its tempo, target effort and notes, which Garmin's steps have no fields
+// for, so the watch shows them with the step.
+func stepDescription(e *plans.PlannedExercise, withName bool) string {
+	var parts []string
+	add := func(part string) {
+		if part = strings.TrimSuffix(strings.TrimSpace(part), "."); part != "" {
+			parts = append(parts, part)
+		}
+	}
+	if withName {
+		add(e.ExerciseName)
+	}
+	if e.Tempo != "" {
+		add("Tempo: " + e.Tempo)
+	}
+	if e.TargetEffort > 0 {
+		add(fmt.Sprintf("Effort %d/10", e.TargetEffort))
+	}
+	add(e.Notes)
+	return truncate(strings.Join(parts, ". "), 512)
 }
 
 // contentHash returns a hash of a workout as sent and its date, to send it
