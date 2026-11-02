@@ -23,6 +23,14 @@ export const groupWorkoutsByDate = (
   return groups;
 };
 
+// StartSeconds returns when an activity started, in seconds since the epoch.
+const startSeconds = (activity: Activity): number =>
+  Number(activity.startTime?.seconds ?? 0n);
+
+/**
+ * GroupActivitiesByDate groups activities by their local date, each day's in
+ * the order they were done. The API lists the most recent first.
+ */
 export const groupActivitiesByDate = (
   activities: Activity[]
 ): Map<string, Activity[]> => {
@@ -34,6 +42,10 @@ export const groupActivitiesByDate = (
     } else {
       group.push(activity);
     }
+  }
+  // The groups are this function's own, so they're sorted in place.
+  for (const group of groups.values()) {
+    group.sort((first, second) => startSeconds(first) - startSeconds(second));
   }
   return groups;
 };
