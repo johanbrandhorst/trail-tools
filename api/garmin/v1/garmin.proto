@@ -9,12 +9,14 @@ import "mcp/v1/options.proto";
 // Once connected, the user's activities come straight from Garmin, with the
 // sets of strength workouts, alongside any from Strava: an activity on both
 // is one activity. Upcoming runs and strength workouts are put on the user's
-// Garmin Connect calendar, which syncs them to their watch. The account is
+// Garmin Connect calendar, and the routes of upcoming runs and races are put
+// on it as courses, which Garmin syncs to their watch. The account is
 // connected in the browser by visiting /garmin/connect.
 service GarminService {
   // Get the status of the Garmin connection.
   rpc GetGarminConnection(GetGarminConnectionRequest) returns (GetGarminConnectionResponse);
-  // Put the upcoming workouts on the user's Garmin calendar now, and
+  // Put the upcoming workouts and their routes' courses on the user's Garmin
+  // account now, and
   // download the activities Garmin sent that are waiting. This also
   // happens on its own after workouts change and every hour.
   rpc SyncGarmin(SyncGarminRequest) returns (SyncGarminResponse);
@@ -43,6 +45,11 @@ message GarminConnection {
   int32 workout_count = 7;
   // How many activity files are waiting to be downloaded.
   int32 pending_file_count = 8;
+  // Whether the user lets the app put the routes of their upcoming runs and
+  // races on their Garmin account as courses, for the watch to navigate.
+  bool courses_allowed = 9;
+  // How many courses are on the Garmin account.
+  int32 course_count = 10;
 }
 
 message GetGarminConnectionRequest {}

@@ -62,7 +62,8 @@ var (
 type GarminServiceClient interface {
 	// Get the status of the Garmin connection.
 	GetGarminConnection(context.Context, *v1.GetGarminConnectionRequest) (*v1.GetGarminConnectionResponse, error)
-	// Put the upcoming workouts on the user's Garmin calendar now, and
+	// Put the upcoming workouts and their routes' courses on the user's Garmin
+	// account now, and
 	// download the activities Garmin sent that are waiting. This also
 	// happens on its own after workouts change and every hour.
 	SyncGarmin(context.Context, *v1.SyncGarminRequest) (*v1.SyncGarminResponse, error)
@@ -81,7 +82,8 @@ func NewGarminServiceClient(client *connect.Client) GarminServiceClient {
 type GarminServiceHandler interface {
 	// Get the status of the Garmin connection.
 	GetGarminConnection(context.Context, *v1.GetGarminConnectionRequest) (*v1.GetGarminConnectionResponse, error)
-	// Put the upcoming workouts on the user's Garmin calendar now, and
+	// Put the upcoming workouts and their routes' courses on the user's Garmin
+	// account now, and
 	// download the activities Garmin sent that are waiting. This also
 	// happens on its own after workouts change and every hour.
 	SyncGarmin(context.Context, *v1.SyncGarminRequest) (*v1.SyncGarminResponse, error)

@@ -461,14 +461,22 @@ func (r *Repository) ListGarminActivityFiles(ctx context.Context, userID pgtype.
 	return result, nil
 }
 
+// GarminCounts counts what's waiting for or on a user's Garmin account.
+type GarminCounts struct {
+	// Activity files waiting to download.
+	PendingFiles int64
+	// Workouts on the Garmin calendar, and courses on the account.
+	Workouts, Courses int64
+}
+
 // CountGarminStatus counts the user's activity files waiting to download,
-// and the workouts on their Garmin calendar.
-func (r *Repository) CountGarminStatus(ctx context.Context, userID pgtype.UUID) (pendingFiles, workouts int64, err error) {
+// and the workouts and courses on their Garmin account.
+func (r *Repository) CountGarminStatus(ctx context.Context, userID pgtype.UUID) (*GarminCounts, error) {
 	row, err := r.q.CountGarminStatus(ctx, &gen.CountGarminStatusParams{UserID: userID, MaxAttempts: MaxGarminFileAttempts})
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to count Garmin files and workouts: %w", err)
+		return nil, fmt.Errorf("failed to count Garmin files, workouts and courses: %w", err)
 	}
-	return row.PendingFiles, row.Workouts, nil
+	return &GarminCounts{PendingFiles: row.PendingFiles, Workouts: row.Workouts, Courses: row.Courses}, nil
 }
 
 // FinishGarminActivityFile removes a file that was downloaded, or isn't

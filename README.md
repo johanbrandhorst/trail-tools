@@ -133,6 +133,12 @@ syncs with Garmin Connect, alongside Strava or instead of it:
   exercise of the library names its own (`garmin_exercise`, which agents find
   with `SearchGarminExercises`), or is matched by its name; others are steps
   described by their name.
+- **Courses**: the routes of runs and races of the coming two weeks go on the
+  Garmin account as courses, which the watch navigates, with points at most
+  100 m apart as Garmin asks. A route used by several workouts is one course,
+  it's only sent again when it changes, and it's removed once no workout of
+  the coming two weeks uses it, so the watch only holds the courses about to
+  be run.
 
 Garmin requires notifications to be answered before they're processed, so
 they're queued in the database, and the hourly sync's Cloud Scheduler job is
@@ -148,7 +154,8 @@ connection also gets the last 30 days of activities.
 Set `-garmin-client-id`, `-garmin-client-secret` and
 `-garmin-webhook-secret`, a random secret of at least 24 characters. In
 Garmin's developer portal, set the app's redirect URL to
-`<public-url>/garmin/callback`. In Garmin's [endpoint
+`<public-url>/garmin/callback`, and enable the Activity API, Training API
+and Courses API for the app. In Garmin's [endpoint
 configuration](https://apis.garmin.com/tools/endpoints), enable activities,
 manually updated activities, activity files, deregistrations and user
 permission changes, all at

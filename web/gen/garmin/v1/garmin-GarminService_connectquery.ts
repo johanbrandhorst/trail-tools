@@ -12,7 +12,8 @@ import { GarminService } from "./garmin_pb";
 export const getGarminConnection = GarminService.method.getGarminConnection;
 
 /**
- * Put the upcoming workouts on the user's Garmin calendar now, and
+ * Put the upcoming workouts and their routes' courses on the user's Garmin
+ * account now, and
  * download the activities Garmin sent that are waiting. This also
  * happens on its own after workouts change and every hour.
  *

@@ -23,7 +23,7 @@ var _ garminv1connect.GarminServiceHandler = (*Service)(nil)
 // StatusRepository reads the status of users' Garmin connections.
 type StatusRepository interface {
 	GetGarminConnection(ctx context.Context, userID pgtype.UUID) (*activities.GarminConnection, error)
-	CountGarminStatus(ctx context.Context, userID pgtype.UUID) (pendingFiles, workouts int64, err error)
+	CountGarminStatus(ctx context.Context, userID pgtype.UUID) (*activities.GarminCounts, error)
 }
 
 // syncTimeout bounds a sync the user asked for, which puts at most two
@@ -118,7 +118,7 @@ func (s *Service) connection(ctx context.Context, userID pgtype.UUID) (*garminv1
 		s.report.Report(ctx, "Failed to get Garmin connection", err)
 		return nil, connect.NewError(connect.CodeInternal, "failed to get the Garmin connection").WithCause(err)
 	}
-	pendingFiles, workouts, err := s.repo.CountGarminStatus(ctx, userID)
+	counts, err := s.repo.CountGarminStatus(ctx, userID)
 	if err != nil {
 		s.report.Report(ctx, "Failed to count Garmin files and workouts", err)
 		return nil, connect.NewError(connect.CodeInternal, "failed to get the Garmin connection").WithCause(err)
@@ -129,8 +129,10 @@ func (s *Service) connection(ctx context.Context, userID pgtype.UUID) (*garminv1
 		ActivitiesAllowed: slices.Contains(conn.Permissions, garmin.PermissionActivityExport),
 		WorkoutsAllowed:   slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport),
 		SyncMessage:       conn.SyncMessage,
-		WorkoutCount:      int32(workouts),
-		PendingFileCount:  int32(pendingFiles),
+		CoursesAllowed:    slices.Contains(conn.Permissions, garmin.PermissionCourseImport),
+		WorkoutCount:      int32(counts.Workouts),
+		PendingFileCount:  int32(counts.PendingFiles),
+		CourseCount:       int32(counts.Courses),
 	}
 	if !conn.WorkoutsSyncTime.IsZero() {
 		b.WorkoutsSyncTime = timestamppb.New(conn.WorkoutsSyncTime)

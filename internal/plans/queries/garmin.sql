@@ -32,3 +32,26 @@ join training_plans p on p.id = w.plan_id
 where p.user_id = $1 and w.completed_activity_id = $2
 order by w.date
 limit 1;
+
+-- name: ListGarminCourses :many
+-- Lists the courses on the user's Garmin account.
+select * from garmin_courses
+where user_id = $1;
+
+-- name: InsertGarminCourse :exec
+insert into garmin_courses (
+  user_id,
+  route_id,
+  garmin_course_id,
+  content_hash
+) values (
+  $1, $2, $3, $4
+);
+
+-- name: DeleteGarminCourse :exec
+delete from garmin_courses
+where id = $1 and user_id = $2;
+
+-- name: DeleteGarminCourses :exec
+delete from garmin_courses
+where user_id = $1;

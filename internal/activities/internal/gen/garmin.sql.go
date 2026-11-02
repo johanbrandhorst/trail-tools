@@ -66,7 +66,8 @@ const countGarminStatus = `-- name: CountGarminStatus :one
 select
   (select count(*) from garmin_activity_files f
     where f.user_id = $1::uuid and f.expire_time > now() and f.attempts < $2)::bigint as pending_files,
-  (select count(*) from garmin_workouts w where w.user_id = $1::uuid)::bigint as workouts
+  (select count(*) from garmin_workouts w where w.user_id = $1::uuid)::bigint as workouts,
+  (select count(*) from garmin_courses c where c.user_id = $1::uuid)::bigint as courses
 `
 
 type CountGarminStatusParams struct {
@@ -77,14 +78,15 @@ type CountGarminStatusParams struct {
 type CountGarminStatusRow struct {
 	PendingFiles int64
 	Workouts     int64
+	Courses      int64
 }
 
-// Counts the user's activity files waiting to download and workouts on
-// their Garmin calendar, in one round trip.
+// Counts the user's activity files waiting to download, and workouts and
+// courses on their Garmin account, in one round trip.
 func (q *Queries) CountGarminStatus(ctx context.Context, arg *CountGarminStatusParams) (*CountGarminStatusRow, error) {
 	row := q.db.QueryRow(ctx, countGarminStatus, arg.UserID, arg.MaxAttempts)
 	var i CountGarminStatusRow
-	err := row.Scan(&i.PendingFiles, &i.Workouts)
+	err := row.Scan(&i.PendingFiles, &i.Workouts, &i.Courses)
 	return &i, err
 }
 
