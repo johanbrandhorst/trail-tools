@@ -229,6 +229,35 @@ message SummarizeActivitiesRequest {
   SummaryInterval interval = 3;
   // Only include these sport types, e.g. ["Run", "TrailRun"]. Defaults to all.
   repeated string sport_types = 4;
+  // Include the time in heart rate zones around the user's thresholds, from
+  // the activities' recorded heart rate. It reads every activity's streams,
+  // so the date range is limited to 26 weeks. Use it to check how much easy
+  // running stays below the aerobic threshold, and how much drifts above it.
+  bool include_heart_rate_zones = 5;
+  // The aerobic threshold the zones are around, in beats per minute.
+  // Defaults to the user's latest lactate test that found one. Required for
+  // heart rate zones if the user has no such test.
+  int32 aerobic_threshold_heart_rate_bpm = 6;
+  // The anaerobic threshold the zones are around, in beats per minute.
+  // Defaults to the user's latest lactate test that found one. Without one,
+  // time above the aerobic threshold isn't split.
+  int32 anaerobic_threshold_heart_rate_bpm = 7;
+}
+
+// Time in heart rate zones around the user's aerobic threshold (AeT) and
+// anaerobic threshold (AnT).
+message HeartRateZones {
+  // Time below the aerobic threshold, in seconds: easy, zone 1 and 2.
+  int32 below_aerobic_threshold_seconds = 1;
+  // Time between the aerobic and anaerobic thresholds, in seconds: zone 3,
+  // or all time above the aerobic threshold without an anaerobic threshold.
+  int32 between_thresholds_seconds = 2;
+  // Time above the anaerobic threshold, in seconds: zone 4 and up. 0 without
+  // an anaerobic threshold.
+  int32 above_anaerobic_threshold_seconds = 3;
+  // The moving time of activities without recorded heart rate, in seconds,
+  // so the zones can be read against the total.
+  int32 no_heart_rate_seconds = 4;
 }
 
 // Activity totals for a period.
@@ -247,9 +276,17 @@ message ActivitySummary {
   double elevation_gain_meters = 6;
   // The longest single activity distance in meters.
   double longest_distance_meters = 7;
+  // The time in heart rate zones, if requested.
+  HeartRateZones heart_rate_zones = 8;
 }
 
 message SummarizeActivitiesResponse {
   // One summary per period, in chronological order.
   repeated ActivitySummary summaries = 1;
+  // The aerobic threshold the heart rate zones are around, in beats per
+  // minute, if requested.
+  int32 aerobic_threshold_heart_rate_bpm = 2;
+  // The anaerobic threshold the heart rate zones are around, in beats per
+  // minute, 0 if none.
+  int32 anaerobic_threshold_heart_rate_bpm = 3;
 }

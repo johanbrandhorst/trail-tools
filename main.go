@@ -673,7 +673,7 @@ func run(
 	if err != nil {
 		return fmt.Errorf("failed to create auth service: %w", err)
 	}
-	activityService := activity.NewService(log, report, activityRepo, stravaWebURL)
+	activityService := activity.NewService(log, report, activityRepo, lactateRepo, stravaWebURL)
 	stravaService := stravasvc.NewService(log, report, activityRepo, stravaSyncer, stravaOAuth, stravaWebURL)
 	garminService := garminsvc.NewService(report, activityRepo, garminSyncer)
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)

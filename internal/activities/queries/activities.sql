@@ -178,7 +178,8 @@ from strava_activities
 where id = $1 and user_id = $2;
 
 -- name: ListActivityTotals :many
-select start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters
+select id, start_date_local, distance_meters, moving_time_seconds, elevation_gain_meters,
+  (streams_synced or garmin_samples)::boolean as has_streams
 from strava_activities
 where user_id = $1
   and start_date_local >= sqlc.arg(start_date)::date

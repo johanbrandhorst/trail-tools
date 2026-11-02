@@ -563,10 +563,13 @@ func (r *Repository) GetActivityStreams(ctx context.Context, userID, activityID 
 
 // ActivityTotals are the totals of a single activity, used for summaries.
 type ActivityTotals struct {
+	ID                  pgtype.UUID
 	StartDateLocal      time.Time
 	DistanceMeters      float64
 	MovingTimeSeconds   int32
 	ElevationGainMeters float64
+	// Whether the activity's streams are stored, see GetActivityStreams.
+	HasStreams bool
 }
 
 // ListActivityTotals lists the totals of each activity in an inclusive date
@@ -587,10 +590,12 @@ func (r *Repository) ListActivityTotals(ctx context.Context, userID pgtype.UUID,
 	totals := make([]ActivityTotals, len(rows))
 	for i, row := range rows {
 		totals[i] = ActivityTotals{
+			ID:                  row.ID,
 			StartDateLocal:      store.DateFromPG(row.StartDateLocal),
 			DistanceMeters:      row.DistanceMeters,
 			MovingTimeSeconds:   row.MovingTimeSeconds,
 			ElevationGainMeters: row.ElevationGainMeters,
+			HasStreams:          row.HasStreams,
 		}
 	}
 	return totals, nil
