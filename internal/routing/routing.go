@@ -54,6 +54,9 @@ const (
 	// preferMeters is how close an edge must be to a preferred path to count
 	// as on it.
 	preferMeters = 25
+	// preferredPieceMeters is about how long the pieces are that preferred
+	// paths are split into, see splitPath.
+	preferredPieceMeters = 1000
 	// preferCostFactor scales the cost of edges on preferred paths.
 	preferCostFactor = 0.5
 	// metersPerDegreeLat is the approximate length of a degree of latitude.
@@ -77,22 +80,32 @@ const trailCost = `length_meters * (case highway
 	when 'demanding_alpine_hiking' then 3.0 when 'difficult_alpine_hiking' then 5.0 else 1.0 end)`
 
 // costs returns the SQL expressions for the cost of traveling edges forward
-// and backward with a profile.
-func costs(profile Profile, prefer bool) (cost, reverseCost string) {
+// and backward with a profile. preferTolerance is how close in degrees an
+// edge must be to the preferred paths saved by savePreferred to count as on
+// them, or 0 without preferred paths.
+func costs(profile Profile, preferTolerance float64) (cost, reverseCost string) {
 	if profile == ProfileShortest {
 		cost, reverseCost = "length_meters", "length_meters"
 	} else {
 		cost = "(" + trailCost + " + 8 * climb_meters + 2 * descent_meters)"
 		reverseCost = "(" + trailCost + " + 8 * descent_meters + 2 * climb_meters)"
 	}
-	if prefer {
+	if preferTolerance > 0 {
 		// An edge is on a preferred path if its middle and quarter points are
-		// near one.
-		factor := fmt.Sprintf(`(case when exists (select 1 from preferred_paths p
-			where ST_DWithin(ST_LineInterpolatePoint(routing_edges.geom, 0.25), p.geom, p.tolerance)
-			and ST_DWithin(ST_LineInterpolatePoint(routing_edges.geom, 0.5), p.geom, p.tolerance)
-			and ST_DWithin(ST_LineInterpolatePoint(routing_edges.geom, 0.75), p.geom, p.tolerance)
-		) then %g else 1 end)`, preferCostFactor)
+		// near the paths. The tolerance is formatted into the query, as the
+		// database only uses the spatial index of the paths with a constant:
+		// with a column of the paths, it measured the distance from every
+		// edge in the search area to every point of every path, and a search
+		// near a few hundred activities took longer than the statement
+		// timeout.
+		// The points may be near different pieces of a path, which are
+		// short; the middle is checked first, as most edges aren't near any.
+		near := func(fraction float64) string {
+			return fmt.Sprintf(`exists (select 1 from preferred_paths p
+				where ST_DWithin(ST_LineInterpolatePoint(routing_edges.geom, %g), p.geom, %g))`, fraction, preferTolerance)
+		}
+		factor := fmt.Sprintf(`(case when %s and %s and %s then %g else 1 end)`,
+			near(0.5), near(0.25), near(0.75), preferCostFactor)
 		cost, reverseCost = cost+" * "+factor, reverseCost+" * "+factor
 	}
 	return cost, reverseCost
@@ -216,13 +229,13 @@ func (r *Router) route(ctx context.Context, req Request) (*Path, error) {
 		return nil, fmt.Errorf("failed to begin routing: %w", err)
 	}
 	defer tx.Rollback(context.WithoutCancel(ctx))
-	prefer := len(req.Prefer) > 0
-	if prefer {
-		if err := savePreferred(ctx, tx, req.Prefer); err != nil {
+	var preferTolerance float64
+	if len(req.Prefer) > 0 {
+		if preferTolerance, err = savePreferred(ctx, tx, req.Prefer); err != nil {
 			return nil, err
 		}
 	}
-	cost, reverseCost := costs(req.Profile, prefer)
+	cost, reverseCost := costs(req.Profile, preferTolerance)
 	ends, err := snap(ctx, tx, []geo.Point{req.From, req.To}, cost, reverseCost)
 	if err != nil {
 		return nil, err
@@ -326,30 +339,57 @@ func project(e *edge, p geo.Point) float64 {
 }
 
 // savePreferred stores the preferred paths in a temporary table for the
-// transaction.
-func savePreferred(ctx context.Context, tx pgx.Tx, paths [][]geo.Point) error {
-	if _, err := tx.Exec(ctx, `create temporary table preferred_paths (
-		geom geometry(LineString, 4326), tolerance double precision
-	) on commit drop`); err != nil {
-		return fmt.Errorf("failed to create the preferred paths table: %w", err)
-	}
-	batch := &pgx.Batch{}
+// transaction, split into pieces of about preferredPieceMeters, and returns
+// how close in degrees an edge must be to them to count as on them.
+func savePreferred(ctx context.Context, tx pgx.Tx, paths [][]geo.Point) (float64, error) {
+	var lines []string
+	// The tolerance is in degrees, measured along a parallel, which is the
+	// shorter direction, so it is at least preferMeters in any direction. It
+	// is measured at the latitude furthest from the equator, where a degree
+	// of longitude is shortest; the paths of a leg are near each other.
+	minCos := 1.0
 	for _, path := range paths {
 		if len(path) < 2 {
 			continue
 		}
-		// The tolerance in degrees, measured along a parallel, which is the
-		// shorter direction, so it is at least preferMeters in any direction.
-		tolerance := preferMeters / (metersPerDegreeLat * math.Max(0.01, math.Cos(path[0].Lat*math.Pi/180)))
-		batch.Queue(`insert into preferred_paths values (ST_GeomFromText($1, 4326), $2)`, lineWKT(path), tolerance)
+		for _, p := range path {
+			minCos = math.Min(minCos, math.Cos(p.Lat*math.Pi/180))
+		}
+		for _, piece := range splitPath(path, preferredPieceMeters) {
+			lines = append(lines, lineWKT(piece))
+		}
 	}
-	if err := tx.SendBatch(ctx, batch).Close(); err != nil {
-		return fmt.Errorf("failed to save the preferred paths: %w", err)
+	// One statement saves them all, as there can be thousands.
+	if _, err := tx.Exec(ctx, `create temporary table preferred_paths on commit drop as
+		select ST_GeomFromText(line, 4326) as geom from unnest($1::text[]) as line`, lines); err != nil {
+		return 0, fmt.Errorf("failed to save the preferred paths: %w", err)
 	}
 	if _, err := tx.Exec(ctx, `create index on preferred_paths using gist (geom)`); err != nil {
-		return fmt.Errorf("failed to index the preferred paths: %w", err)
+		return 0, fmt.Errorf("failed to index the preferred paths: %w", err)
 	}
-	return nil
+	return preferMeters / (metersPerDegreeLat * math.Max(0.01, minCos)), nil
+}
+
+// splitPath splits a path into consecutive pieces of at least pieceMeters,
+// other than the last, each sharing its last point with the next piece.
+//
+// The spatial index finds the paths whose bounding boxes are near an edge,
+// and a whole activity's bounding box covers much of a search area, so
+// without splitting, the database measures the distance from most edges to
+// most activities, point by point. Shorter pieces mean more lookups for the
+// edges on them, and pieces of about a kilometer were fastest with a few
+// hundred activities in the area.
+func splitPath(path []geo.Point, pieceMeters float64) [][]geo.Point {
+	var pieces [][]geo.Point
+	start, length := 0, 0.0
+	for i := 1; i < len(path); i++ {
+		length += geo.Distance(path[i-1], path[i])
+		if length >= pieceMeters || i == len(path)-1 {
+			pieces = append(pieces, path[start:i+1])
+			start, length = i, 0
+		}
+	}
+	return pieces
 }
 
 // candidate is a way to start or end a path at a vertex, with the cost of
