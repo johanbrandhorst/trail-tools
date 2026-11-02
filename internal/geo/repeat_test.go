@@ -82,8 +82,8 @@ func TestRepeatedDistanceBoundsSamples(t *testing.T) {
 	for i := range 50 {
 		hops = append(hops, Point{Lng: float64(i%2) * 180})
 	}
-	if n := len(resample(hops, repeatSpacing)); n != len(hops) {
-		t.Errorf("got %d samples of a track around the world, want one per point", n)
+	if samples, _ := resample(hops, repeatSpacing); len(samples) != len(hops) {
+		t.Errorf("got %d samples of a track around the world, want one per point", len(samples))
 	}
 	if got := RepeatedDistance(hops); got != 0 {
 		t.Errorf("RepeatedDistance of a track around the world = %.0f m, want 0", got)
@@ -96,10 +96,34 @@ func TestRepeatedDistanceBoundsSamples(t *testing.T) {
 		long = append(long, Point{Lng: float64(i) * 4000 / metersPerDegreeLat})
 	}
 	spacing := math.Max(repeatSpacing, sampledDistance(long)/maxRepeatSamples)
-	if n := len(resample(long, spacing)); n > maxRepeatSamples+1 {
-		t.Errorf("got %d samples of a 10,000 km track, want at most %d", n, maxRepeatSamples+1)
+	if samples, _ := resample(long, spacing); len(samples) > maxRepeatSamples+1 {
+		t.Errorf("got %d samples of a 10,000 km track, want at most %d", len(samples), maxRepeatSamples+1)
 	}
 	if got := RepeatedDistance(long); got != 0 {
 		t.Errorf("RepeatedDistance of a 10,000 km straight track = %.0f m, want 0", got)
+	}
+}
+
+func TestRepeatedSections(t *testing.T) {
+	t.Parallel()
+	// A 1 km stem to a 4 km loop and back: the way back down the stem, from
+	// 5 to 6 km, retraces the way up, from 1 km to the start.
+	lollipop := track([2]float64{0, 0}, [2]float64{0, 1000}, [2]float64{1000, 1000}, [2]float64{1000, 2000},
+		[2]float64{0, 2000}, [2]float64{0, 1000}, [2]float64{0, 0})
+	sections := RepeatedSections(lollipop)
+	if len(sections) != 1 {
+		t.Fatalf("got sections %+v, want one", sections)
+	}
+	s := sections[0]
+	near := func(got, want float64) bool { return math.Abs(got-want) <= 100 }
+	if !near(s.StartMeters, 5000) || !near(s.EndMeters, 6000) || !near(s.EarlierStartMeters, 1000) || !near(s.EarlierEndMeters, 0) {
+		t.Errorf("got section %+v, want 5-6 km retracing 1-0 km", s)
+	}
+	// A loop repeats nothing.
+	if got := RepeatedSections(track([2]float64{0, 0}, [2]float64{1000, 0}, [2]float64{1000, 1000}, [2]float64{0, 1000}, [2]float64{0, 0})); len(got) != 0 {
+		t.Errorf("got sections %+v of a loop, want none", got)
+	}
+	if got := RepeatedSections(nil); got != nil {
+		t.Errorf("got sections %+v of no track", got)
 	}
 }

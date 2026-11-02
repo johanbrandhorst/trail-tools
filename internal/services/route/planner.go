@@ -221,7 +221,10 @@ func legFromPath(from, to routes.LatLng, profile routes.Profile, path *routing.P
 	terrains[len(terrains)-1] = geo.TerrainUnknown
 	terrains = append(terrains, geo.TerrainUnknown)
 	points, terrains = dedupe(points, terrains)
-	return routes.NewLeg(from, to, profile, points, terrains)
+	leg := routes.NewLeg(from, to, profile, points, terrains)
+	leg.FromOffMapMeters = geo.Distance(geo.Point{Lat: from.Lat, Lng: from.Lng}, path.Points[0])
+	leg.ToOffMapMeters = geo.Distance(geo.Point{Lat: to.Lat, Lng: to.Lng}, path.Points[len(path.Points)-1])
+	return leg
 }
 
 // dedupe removes consecutive duplicate points, keeping the terrain of the

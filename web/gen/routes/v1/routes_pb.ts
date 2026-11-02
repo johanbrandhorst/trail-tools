@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file routes/v1/routes.proto.
  */
 export const file_routes_v1_routes: GenFile = /*@__PURE__*/
-  fileDesc("ChZyb3V0ZXMvdjEvcm91dGVzLnByb3RvEglyb3V0ZXMudjEiWQoKUm91dGVQb2ludBILCgNsYXQYASABKAESCwoDbG5nGAIgASgBEhgKEGVsZXZhdGlvbl9tZXRlcnMYAyABKAESFwoPZGlzdGFuY2VfbWV0ZXJzGAQgASgBIlsKDFRlcnJhaW5TaGFyZRIgCgd0ZXJyYWluGAEgASgOMg8uZ2VvLnYxLlRlcnJhaW4SFwoPZGlzdGFuY2VfbWV0ZXJzGAIgASgBEhAKCGZyYWN0aW9uGAMgASgBItECCgpSb3V0ZVN0YXRzEhcKD2Rpc3RhbmNlX21ldGVycxgBIAEoARIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYAiABKAESHQoVZWxldmF0aW9uX2xvc3NfbWV0ZXJzGAMgASgBEhwKFG1pbl9lbGV2YXRpb25fbWV0ZXJzGAQgASgBEhwKFG1heF9lbGV2YXRpb25fbWV0ZXJzGAUgASgBEh8KF21heF9jbGltYl9ncmFkZV9wZXJjZW50GAYgASgBEiEKGW1heF9kZXNjZW50X2dyYWRlX3BlcmNlbnQYByABKAESKAoHdGVycmFpbhgIIAMoCzIXLnJvdXRlcy52MS5UZXJyYWluU2hhcmUSJQoYcmVwZWF0ZWRfZGlzdGFuY2VfbWV0ZXJzGAkgASgBSACIAQFCGwoZX3JlcGVhdGVkX2Rpc3RhbmNlX21ldGVycyLFAwoFUm91dGUSEgoCaWQYASABKAlCBqqfGQIIARIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEioKB3Byb2ZpbGUYBCABKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGUSIQoJd2F5cG9pbnRzGAUgAygLMg4uZ2VvLnYxLkxhdExuZxI3CgxsZWdfcHJvZmlsZXMYCyADKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGVCBqqfGQIIARItCgZwb2ludHMYBiADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludEIGqp8ZAggBEiwKBXN0YXRzGAcgASgLMhUucm91dGVzLnYxLlJvdXRlU3RhdHNCBqqfGQIIARIuCgZzb3VyY2UYCCABKA4yFi5yb3V0ZXMudjEuUm91dGVTb3VyY2VCBqqfGQIIARI3CgtjcmVhdGVfdGltZRgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARI3Cgt1cGRhdGVfdGltZRgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIASK/AQoTUHJldmlld1JvdXRlUmVxdWVzdBIhCgl3YXlwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nEioKB3Byb2ZpbGUYAiABKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGUSFgoOaW5jbHVkZV9wb2ludHMYAyABKAgSLwoMbGVnX3Byb2ZpbGVzGAQgAygOMhkucm91dGVzLnYxLlJvdXRpbmdQcm9maWxlEhAKCHJvdXRlX2lkGAUgASgJIjcKFFByZXZpZXdSb3V0ZVJlc3BvbnNlEh8KBXJvdXRlGAEgASgLMhAucm91dGVzLnYxLlJvdXRlIosBCglXYXlwb2ludHMSIQoJd2F5cG9pbnRzGAEgAygLMg4uZ2VvLnYxLkxhdExuZxIqCgdwcm9maWxlGAIgASgOMhkucm91dGVzLnYxLlJvdXRpbmdQcm9maWxlEi8KDGxlZ19wcm9maWxlcxgDIAMoDjIZLnJvdXRlcy52MS5Sb3V0aW5nUHJvZmlsZSLuAQoSQ3JlYXRlUm91dGVSZXF1ZXN0EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSKQoJd2F5cG9pbnRzGAMgASgLMhQucm91dGVzLnYxLldheXBvaW50c0gAEg0KA2dweBgEIAEoCUgAEhUKC2FjdGl2aXR5X2lkGAUgASgJSAASEgoIcm91dGVfaWQYCCABKAlIABIWCg5pbmNsdWRlX3BvaW50cxgGIAEoCBIuCgpjb252ZXJzaW9uGAcgASgOMhoucm91dGVzLnYxLlRyYWNrQ29udmVyc2lvbkIICgZzb3VyY2UiTwoTQ3JlYXRlUm91dGVSZXNwb25zZRIfCgVyb3V0ZRgBIAEoCzIQLnJvdXRlcy52MS5Sb3V0ZRIXCgd3YXJuaW5nGAIgASgJQgaqnxkCCAEiNQoPR2V0Um91dGVSZXF1ZXN0EgoKAmlkGAEgASgJEhYKDmluY2x1ZGVfcG9pbnRzGAIgASgIIjMKEEdldFJvdXRlUmVzcG9uc2USHwoFcm91dGUYASABKAsyEC5yb3V0ZXMudjEuUm91dGUiEwoRTGlzdFJvdXRlc1JlcXVlc3QiNgoSTGlzdFJvdXRlc1Jlc3BvbnNlEiAKBnJvdXRlcxgBIAMoCzIQLnJvdXRlcy52MS5Sb3V0ZSKnAQoSVXBkYXRlUm91dGVSZXF1ZXN0EgoKAmlkGAEgASgJEhEKBG5hbWUYAiABKAlIAIgBARIYCgtkZXNjcmlwdGlvbhgDIAEoCUgBiAEBEicKCXdheXBvaW50cxgEIAEoCzIULnJvdXRlcy52MS5XYXlwb2ludHMSFgoOaW5jbHVkZV9wb2ludHMYBSABKAhCBwoFX25hbWVCDgoMX2Rlc2NyaXB0aW9uIjYKE1VwZGF0ZVJvdXRlUmVzcG9uc2USHwoFcm91dGUYASABKAsyEC5yb3V0ZXMudjEuUm91dGUiIAoSRGVsZXRlUm91dGVSZXF1ZXN0EgoKAmlkGAEgASgJIhUKE0RlbGV0ZVJvdXRlUmVzcG9uc2UiXwoZQ2hlY2tUcmFja0NvdmVyYWdlUmVxdWVzdBINCgNncHgYASABKAlIABIVCgthY3Rpdml0eV9pZBgCIAEoCUgAEhIKCHJvdXRlX2lkGAMgASgJSABCCAoGc291cmNlIjYKGkNoZWNrVHJhY2tDb3ZlcmFnZVJlc3BvbnNlEhgKEGNvdmVyZWRfZnJhY3Rpb24YASABKAEi4wEKF0dldFJvdXRlRm9yZWNhc3RSZXF1ZXN0EhIKCHJvdXRlX2lkGAEgASgJSAASDQoDZ3B4GAIgASgJSAASHwoEcGF0aBgDIAEoCzIPLnJvdXRlcy52MS5QYXRoSAASLgoKc3RhcnRfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc3BlZWRfa21oGAUgASgBEh0KFWNsaW1iX21ldGVyc19wZXJfaG91chgGIAEoARIYChBpbnRlcnZhbF9taW51dGVzGAcgASgFQggKBnNvdXJjZSImCgRQYXRoEh4KBnBvaW50cxgBIAMoCzIOLmdlby52MS5MYXRMbmciuAQKDUZvcmVjYXN0UG9pbnQSKgoEa2luZBgBIAEoDjIcLnJvdXRlcy52MS5Gb3JlY2FzdFBvaW50S2luZBIoCgR0aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIXCg9kaXN0YW5jZV9tZXRlcnMYAyABKAESIAoIbG9jYXRpb24YBCABKAsyDi5nZW8udjEuTGF0TG5nEhgKEGVsZXZhdGlvbl9tZXRlcnMYBSABKAESGwoTdGVtcGVyYXR1cmVfY2Vsc2l1cxgGIAEoARIkChxhcHBhcmVudF90ZW1wZXJhdHVyZV9jZWxzaXVzGAcgASgBEikKIXByZWNpcGl0YXRpb25fcHJvYmFiaWxpdHlfcGVyY2VudBgIIAEoBRIYChBwcmVjaXBpdGF0aW9uX21tGAkgASgBEhMKC3Nub3dmYWxsX2NtGAogASgBEhYKDndpbmRfc3BlZWRfa21oGAsgASgBEhYKDndpbmRfZ3VzdHNfa21oGAwgASgBEh4KFndpbmRfZGlyZWN0aW9uX2RlZ3JlZXMYDSABKAUSGwoTY2xvdWRfY292ZXJfcGVyY2VudBgOIAEoBRIdChVmcmVlemluZ19sZXZlbF9tZXRlcnMYDyABKAESEAoIdXZfaW5kZXgYECABKAESDgoGaXNfZGF5GBEgASgIEhQKDHdlYXRoZXJfY29kZRgSIAEoBRIbChN3ZWF0aGVyX2Rlc2NyaXB0aW9uGBMgASgJIv4BChhHZXRSb3V0ZUZvcmVjYXN0UmVzcG9uc2USKAoGcG9pbnRzGAEgAygLMhgucm91dGVzLnYxLkZvcmVjYXN0UG9pbnQSLwoLZmluaXNoX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEGR1cmF0aW9uX3NlY29uZHMYAyABKAUSFwoPZGlzdGFuY2VfbWV0ZXJzGAQgASgBEh0KFWVsZXZhdGlvbl9nYWluX21ldGVycxgFIAEoARIQCgh3YXJuaW5ncxgGIAMoCRIjCgRwYXRoGAcgAygLMhUucm91dGVzLnYxLlJvdXRlUG9pbnQqpQEKDlJvdXRpbmdQcm9maWxlEh8KG1JPVVRJTkdfUFJPRklMRV9VTlNQRUNJRklFRBAAEhkKFVJPVVRJTkdfUFJPRklMRV9UUkFJTBABEhwKGFJPVVRJTkdfUFJPRklMRV9TSE9SVEVTVBACEhwKGFJPVVRJTkdfUFJPRklMRV9TVFJBSUdIVBADEhsKF1JPVVRJTkdfUFJPRklMRV9IRUFUTUFQEAQqagoPVHJhY2tDb252ZXJzaW9uEiAKHFRSQUNLX0NPTlZFUlNJT05fVU5TUEVDSUZJRUQQABIaChZUUkFDS19DT05WRVJTSU9OX0VYQUNUEAESGQoVVFJBQ0tfQ09OVkVSU0lPTl9TTkFQEAIqeAoLUm91dGVTb3VyY2USHAoYUk9VVEVfU09VUkNFX1VOU1BFQ0lGSUVEEAASGgoWUk9VVEVfU09VUkNFX1dBWVBPSU5UUxABEhQKEFJPVVRFX1NPVVJDRV9HUFgQAhIZChVST1VURV9TT1VSQ0VfQUNUSVZJVFkQAyq9AQoRRm9yZWNhc3RQb2ludEtpbmQSIwofRk9SRUNBU1RfUE9JTlRfS0lORF9VTlNQRUNJRklFRBAAEh0KGUZPUkVDQVNUX1BPSU5UX0tJTkRfU1RBUlQQARIgChxGT1JFQ0FTVF9QT0lOVF9LSU5EX0lOVEVSVkFMEAISIgoeRk9SRUNBU1RfUE9JTlRfS0lORF9ISUdIX1BPSU5UEAMSHgoaRk9SRUNBU1RfUE9JTlRfS0lORF9GSU5JU0gQBDKeBQoMUm91dGVTZXJ2aWNlEk8KDFByZXZpZXdSb3V0ZRIeLnJvdXRlcy52MS5QcmV2aWV3Um91dGVSZXF1ZXN0Gh8ucm91dGVzLnYxLlByZXZpZXdSb3V0ZVJlc3BvbnNlEkwKC0NyZWF0ZVJvdXRlEh0ucm91dGVzLnYxLkNyZWF0ZVJvdXRlUmVxdWVzdBoeLnJvdXRlcy52MS5DcmVhdGVSb3V0ZVJlc3BvbnNlEkMKCEdldFJvdXRlEhoucm91dGVzLnYxLkdldFJvdXRlUmVxdWVzdBobLnJvdXRlcy52MS5HZXRSb3V0ZVJlc3BvbnNlEkkKCkxpc3RSb3V0ZXMSHC5yb3V0ZXMudjEuTGlzdFJvdXRlc1JlcXVlc3QaHS5yb3V0ZXMudjEuTGlzdFJvdXRlc1Jlc3BvbnNlEkwKC1VwZGF0ZVJvdXRlEh0ucm91dGVzLnYxLlVwZGF0ZVJvdXRlUmVxdWVzdBoeLnJvdXRlcy52MS5VcGRhdGVSb3V0ZVJlc3BvbnNlEkwKC0RlbGV0ZVJvdXRlEh0ucm91dGVzLnYxLkRlbGV0ZVJvdXRlUmVxdWVzdBoeLnJvdXRlcy52MS5EZWxldGVSb3V0ZVJlc3BvbnNlEmYKEkNoZWNrVHJhY2tDb3ZlcmFnZRIkLnJvdXRlcy52MS5DaGVja1RyYWNrQ292ZXJhZ2VSZXF1ZXN0GiUucm91dGVzLnYxLkNoZWNrVHJhY2tDb3ZlcmFnZVJlc3BvbnNlIgOQAgESWwoQR2V0Um91dGVGb3JlY2FzdBIiLnJvdXRlcy52MS5HZXRSb3V0ZUZvcmVjYXN0UmVxdWVzdBojLnJvdXRlcy52MS5HZXRSb3V0ZUZvcmVjYXN0UmVzcG9uc2VCqQEKDWNvbS5yb3V0ZXMudjFCC1JvdXRlc1Byb3RvUAFaRmdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9yb3V0ZXMvdjE7cm91dGVzdjGiAgNSWFiqAglSb3V0ZXMuVjHKAglSb3V0ZXNcVjHiAhVSb3V0ZXNcVjFcR1BCTWV0YWRhdGHqAgpSb3V0ZXM6OlYxYgZwcm90bzM", [file_geo_v1_geo, file_google_protobuf_timestamp, file_mcp_v1_options]);
+  fileDesc("ChZyb3V0ZXMvdjEvcm91dGVzLnByb3RvEglyb3V0ZXMudjEiWQoKUm91dGVQb2ludBILCgNsYXQYASABKAESCwoDbG5nGAIgASgBEhgKEGVsZXZhdGlvbl9tZXRlcnMYAyABKAESFwoPZGlzdGFuY2VfbWV0ZXJzGAQgASgBIlsKDFRlcnJhaW5TaGFyZRIgCgd0ZXJyYWluGAEgASgOMg8uZ2VvLnYxLlRlcnJhaW4SFwoPZGlzdGFuY2VfbWV0ZXJzGAIgASgBEhAKCGZyYWN0aW9uGAMgASgBItECCgpSb3V0ZVN0YXRzEhcKD2Rpc3RhbmNlX21ldGVycxgBIAEoARIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYAiABKAESHQoVZWxldmF0aW9uX2xvc3NfbWV0ZXJzGAMgASgBEhwKFG1pbl9lbGV2YXRpb25fbWV0ZXJzGAQgASgBEhwKFG1heF9lbGV2YXRpb25fbWV0ZXJzGAUgASgBEh8KF21heF9jbGltYl9ncmFkZV9wZXJjZW50GAYgASgBEiEKGW1heF9kZXNjZW50X2dyYWRlX3BlcmNlbnQYByABKAESKAoHdGVycmFpbhgIIAMoCzIXLnJvdXRlcy52MS5UZXJyYWluU2hhcmUSJQoYcmVwZWF0ZWRfZGlzdGFuY2VfbWV0ZXJzGAkgASgBSACIAQFCGwoZX3JlcGVhdGVkX2Rpc3RhbmNlX21ldGVycyL4AwoFUm91dGUSEgoCaWQYASABKAlCBqqfGQIIARIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEioKB3Byb2ZpbGUYBCABKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGUSIQoJd2F5cG9pbnRzGAUgAygLMg4uZ2VvLnYxLkxhdExuZxI3CgxsZWdfcHJvZmlsZXMYCyADKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGVCBqqfGQIIARItCgZwb2ludHMYBiADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludEIGqp8ZAggBEiwKBXN0YXRzGAcgASgLMhUucm91dGVzLnYxLlJvdXRlU3RhdHNCBqqfGQIIARIuCgZzb3VyY2UYCCABKA4yFi5yb3V0ZXMudjEuUm91dGVTb3VyY2VCBqqfGQIIARI3CgtjcmVhdGVfdGltZRgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARI3Cgt1cGRhdGVfdGltZRgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBqqfGQIIARIxCgh3YXJuaW5ncxgMIAMoCzIXLnJvdXRlcy52MS5Sb3V0ZVdhcm5pbmdCBqqfGQIIASLOAgoMUm91dGVXYXJuaW5nEikKBGtpbmQYASABKA4yGy5yb3V0ZXMudjEuUm91dGVXYXJuaW5nS2luZBIPCgdtZXNzYWdlGAIgASgJEh0KFXN0YXJ0X2Rpc3RhbmNlX21ldGVycxgDIAEoARIbChNlbmRfZGlzdGFuY2VfbWV0ZXJzGAQgASgBEhsKDndheXBvaW50X2luZGV4GAUgASgFSACIAQESKgodZWFybGllcl9zdGFydF9kaXN0YW5jZV9tZXRlcnMYBiABKAFIAYgBARIoChtlYXJsaWVyX2VuZF9kaXN0YW5jZV9tZXRlcnMYByABKAFIAogBAUIRCg9fd2F5cG9pbnRfaW5kZXhCIAoeX2VhcmxpZXJfc3RhcnRfZGlzdGFuY2VfbWV0ZXJzQh4KHF9lYXJsaWVyX2VuZF9kaXN0YW5jZV9tZXRlcnMivwEKE1ByZXZpZXdSb3V0ZVJlcXVlc3QSIQoJd2F5cG9pbnRzGAEgAygLMg4uZ2VvLnYxLkxhdExuZxIqCgdwcm9maWxlGAIgASgOMhkucm91dGVzLnYxLlJvdXRpbmdQcm9maWxlEhYKDmluY2x1ZGVfcG9pbnRzGAMgASgIEi8KDGxlZ19wcm9maWxlcxgEIAMoDjIZLnJvdXRlcy52MS5Sb3V0aW5nUHJvZmlsZRIQCghyb3V0ZV9pZBgFIAEoCSI3ChRQcmV2aWV3Um91dGVSZXNwb25zZRIfCgVyb3V0ZRgBIAEoCzIQLnJvdXRlcy52MS5Sb3V0ZSKLAQoJV2F5cG9pbnRzEiEKCXdheXBvaW50cxgBIAMoCzIOLmdlby52MS5MYXRMbmcSKgoHcHJvZmlsZRgCIAEoDjIZLnJvdXRlcy52MS5Sb3V0aW5nUHJvZmlsZRIvCgxsZWdfcHJvZmlsZXMYAyADKA4yGS5yb3V0ZXMudjEuUm91dGluZ1Byb2ZpbGUi7gEKEkNyZWF0ZVJvdXRlUmVxdWVzdBIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEikKCXdheXBvaW50cxgDIAEoCzIULnJvdXRlcy52MS5XYXlwb2ludHNIABINCgNncHgYBCABKAlIABIVCgthY3Rpdml0eV9pZBgFIAEoCUgAEhIKCHJvdXRlX2lkGAggASgJSAASFgoOaW5jbHVkZV9wb2ludHMYBiABKAgSLgoKY29udmVyc2lvbhgHIAEoDjIaLnJvdXRlcy52MS5UcmFja0NvbnZlcnNpb25CCAoGc291cmNlIk8KE0NyZWF0ZVJvdXRlUmVzcG9uc2USHwoFcm91dGUYASABKAsyEC5yb3V0ZXMudjEuUm91dGUSFwoHd2FybmluZxgCIAEoCUIGqp8ZAggBIjUKD0dldFJvdXRlUmVxdWVzdBIKCgJpZBgBIAEoCRIWCg5pbmNsdWRlX3BvaW50cxgCIAEoCCIzChBHZXRSb3V0ZVJlc3BvbnNlEh8KBXJvdXRlGAEgASgLMhAucm91dGVzLnYxLlJvdXRlIhMKEUxpc3RSb3V0ZXNSZXF1ZXN0IjYKEkxpc3RSb3V0ZXNSZXNwb25zZRIgCgZyb3V0ZXMYASADKAsyEC5yb3V0ZXMudjEuUm91dGUipwEKElVwZGF0ZVJvdXRlUmVxdWVzdBIKCgJpZBgBIAEoCRIRCgRuYW1lGAIgASgJSACIAQESGAoLZGVzY3JpcHRpb24YAyABKAlIAYgBARInCgl3YXlwb2ludHMYBCABKAsyFC5yb3V0ZXMudjEuV2F5cG9pbnRzEhYKDmluY2x1ZGVfcG9pbnRzGAUgASgIQgcKBV9uYW1lQg4KDF9kZXNjcmlwdGlvbiI2ChNVcGRhdGVSb3V0ZVJlc3BvbnNlEh8KBXJvdXRlGAEgASgLMhAucm91dGVzLnYxLlJvdXRlIiAKEkRlbGV0ZVJvdXRlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVSb3V0ZVJlc3BvbnNlIl8KGUNoZWNrVHJhY2tDb3ZlcmFnZVJlcXVlc3QSDQoDZ3B4GAEgASgJSAASFQoLYWN0aXZpdHlfaWQYAiABKAlIABISCghyb3V0ZV9pZBgDIAEoCUgAQggKBnNvdXJjZSI2ChpDaGVja1RyYWNrQ292ZXJhZ2VSZXNwb25zZRIYChBjb3ZlcmVkX2ZyYWN0aW9uGAEgASgBIuMBChdHZXRSb3V0ZUZvcmVjYXN0UmVxdWVzdBISCghyb3V0ZV9pZBgBIAEoCUgAEg0KA2dweBgCIAEoCUgAEh8KBHBhdGgYAyABKAsyDy5yb3V0ZXMudjEuUGF0aEgAEi4KCnN0YXJ0X3RpbWUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCXNwZWVkX2ttaBgFIAEoARIdChVjbGltYl9tZXRlcnNfcGVyX2hvdXIYBiABKAESGAoQaW50ZXJ2YWxfbWludXRlcxgHIAEoBUIICgZzb3VyY2UiJgoEUGF0aBIeCgZwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nIrgECg1Gb3JlY2FzdFBvaW50EioKBGtpbmQYASABKA4yHC5yb3V0ZXMudjEuRm9yZWNhc3RQb2ludEtpbmQSKAoEdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFwoPZGlzdGFuY2VfbWV0ZXJzGAMgASgBEiAKCGxvY2F0aW9uGAQgASgLMg4uZ2VvLnYxLkxhdExuZxIYChBlbGV2YXRpb25fbWV0ZXJzGAUgASgBEhsKE3RlbXBlcmF0dXJlX2NlbHNpdXMYBiABKAESJAocYXBwYXJlbnRfdGVtcGVyYXR1cmVfY2Vsc2l1cxgHIAEoARIpCiFwcmVjaXBpdGF0aW9uX3Byb2JhYmlsaXR5X3BlcmNlbnQYCCABKAUSGAoQcHJlY2lwaXRhdGlvbl9tbRgJIAEoARITCgtzbm93ZmFsbF9jbRgKIAEoARIWCg53aW5kX3NwZWVkX2ttaBgLIAEoARIWCg53aW5kX2d1c3RzX2ttaBgMIAEoARIeChZ3aW5kX2RpcmVjdGlvbl9kZWdyZWVzGA0gASgFEhsKE2Nsb3VkX2NvdmVyX3BlcmNlbnQYDiABKAUSHQoVZnJlZXppbmdfbGV2ZWxfbWV0ZXJzGA8gASgBEhAKCHV2X2luZGV4GBAgASgBEg4KBmlzX2RheRgRIAEoCBIUCgx3ZWF0aGVyX2NvZGUYEiABKAUSGwoTd2VhdGhlcl9kZXNjcmlwdGlvbhgTIAEoCSL+AQoYR2V0Um91dGVGb3JlY2FzdFJlc3BvbnNlEigKBnBvaW50cxgBIAMoCzIYLnJvdXRlcy52MS5Gb3JlY2FzdFBvaW50Ei8KC2ZpbmlzaF90aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkdXJhdGlvbl9zZWNvbmRzGAMgASgFEhcKD2Rpc3RhbmNlX21ldGVycxgEIAEoARIdChVlbGV2YXRpb25fZ2Fpbl9tZXRlcnMYBSABKAESEAoId2FybmluZ3MYBiADKAkSIwoEcGF0aBgHIAMoCzIVLnJvdXRlcy52MS5Sb3V0ZVBvaW50KqUBCg5Sb3V0aW5nUHJvZmlsZRIfChtST1VUSU5HX1BST0ZJTEVfVU5TUEVDSUZJRUQQABIZChVST1VUSU5HX1BST0ZJTEVfVFJBSUwQARIcChhST1VUSU5HX1BST0ZJTEVfU0hPUlRFU1QQAhIcChhST1VUSU5HX1BST0ZJTEVfU1RSQUlHSFQQAxIbChdST1VUSU5HX1BST0ZJTEVfSEVBVE1BUBAEKmoKD1RyYWNrQ29udmVyc2lvbhIgChxUUkFDS19DT05WRVJTSU9OX1VOU1BFQ0lGSUVEEAASGgoWVFJBQ0tfQ09OVkVSU0lPTl9FWEFDVBABEhkKFVRSQUNLX0NPTlZFUlNJT05fU05BUBACKngKC1JvdXRlU291cmNlEhwKGFJPVVRFX1NPVVJDRV9VTlNQRUNJRklFRBAAEhoKFlJPVVRFX1NPVVJDRV9XQVlQT0lOVFMQARIUChBST1VURV9TT1VSQ0VfR1BYEAISGQoVUk9VVEVfU09VUkNFX0FDVElWSVRZEAMqiAEKEFJvdXRlV2FybmluZ0tpbmQSIgoeUk9VVEVfV0FSTklOR19LSU5EX1VOU1BFQ0lGSUVEEAASJwojUk9VVEVfV0FSTklOR19LSU5EX1JFUEVBVEVEX1NFQ1RJT04QARInCiNST1VURV9XQVJOSU5HX0tJTkRfT0ZGX01BUF9XQVlQT0lOVBACKr0BChFGb3JlY2FzdFBvaW50S2luZBIjCh9GT1JFQ0FTVF9QT0lOVF9LSU5EX1VOU1BFQ0lGSUVEEAASHQoZRk9SRUNBU1RfUE9JTlRfS0lORF9TVEFSVBABEiAKHEZPUkVDQVNUX1BPSU5UX0tJTkRfSU5URVJWQUwQAhIiCh5GT1JFQ0FTVF9QT0lOVF9LSU5EX0hJR0hfUE9JTlQQAxIeChpGT1JFQ0FTVF9QT0lOVF9LSU5EX0ZJTklTSBAEMp4FCgxSb3V0ZVNlcnZpY2USTwoMUHJldmlld1JvdXRlEh4ucm91dGVzLnYxLlByZXZpZXdSb3V0ZVJlcXVlc3QaHy5yb3V0ZXMudjEuUHJldmlld1JvdXRlUmVzcG9uc2USTAoLQ3JlYXRlUm91dGUSHS5yb3V0ZXMudjEuQ3JlYXRlUm91dGVSZXF1ZXN0Gh4ucm91dGVzLnYxLkNyZWF0ZVJvdXRlUmVzcG9uc2USQwoIR2V0Um91dGUSGi5yb3V0ZXMudjEuR2V0Um91dGVSZXF1ZXN0Ghsucm91dGVzLnYxLkdldFJvdXRlUmVzcG9uc2USSQoKTGlzdFJvdXRlcxIcLnJvdXRlcy52MS5MaXN0Um91dGVzUmVxdWVzdBodLnJvdXRlcy52MS5MaXN0Um91dGVzUmVzcG9uc2USTAoLVXBkYXRlUm91dGUSHS5yb3V0ZXMudjEuVXBkYXRlUm91dGVSZXF1ZXN0Gh4ucm91dGVzLnYxLlVwZGF0ZVJvdXRlUmVzcG9uc2USTAoLRGVsZXRlUm91dGUSHS5yb3V0ZXMudjEuRGVsZXRlUm91dGVSZXF1ZXN0Gh4ucm91dGVzLnYxLkRlbGV0ZVJvdXRlUmVzcG9uc2USZgoSQ2hlY2tUcmFja0NvdmVyYWdlEiQucm91dGVzLnYxLkNoZWNrVHJhY2tDb3ZlcmFnZVJlcXVlc3QaJS5yb3V0ZXMudjEuQ2hlY2tUcmFja0NvdmVyYWdlUmVzcG9uc2UiA5ACARJbChBHZXRSb3V0ZUZvcmVjYXN0EiIucm91dGVzLnYxLkdldFJvdXRlRm9yZWNhc3RSZXF1ZXN0GiMucm91dGVzLnYxLkdldFJvdXRlRm9yZWNhc3RSZXNwb25zZUKpAQoNY29tLnJvdXRlcy52MUILUm91dGVzUHJvdG9QAVpGZ2l0aHViLmNvbS9qb2hhbmJyYW5kaG9yc3QvdHJhaWwtdG9vbHMvaW50ZXJuYWwvZ2VuL3JvdXRlcy92MTtyb3V0ZXN2MaICA1JYWKoCCVJvdXRlcy5WMcoCCVJvdXRlc1xWMeICFVJvdXRlc1xWMVxHUEJNZXRhZGF0YeoCClJvdXRlczo6VjFiBnByb3RvMw", [file_geo_v1_geo, file_google_protobuf_timestamp, file_mcp_v1_options]);
 
 /**
  * A point along a route path.
@@ -264,6 +264,16 @@ export type Route = Message<"routes.v1.Route"> & {
    * @generated from field: google.protobuf.Timestamp update_time = 10;
    */
   updateTime?: Timestamp | undefined;
+
+  /**
+   * What to check about the route: sections that retrace ground it already
+   * covered, and waypoints off any mapped path, which the route reaches in
+   * a straight line. They may be intended, like an out-and-back, but often
+   * mean a waypoint is in the wrong place. Not set by ListRoutes.
+   *
+   * @generated from field: repeated routes.v1.RouteWarning warnings = 12;
+   */
+  warnings: RouteWarning[];
 };
 
 /**
@@ -272,6 +282,70 @@ export type Route = Message<"routes.v1.Route"> & {
  */
 export const RouteSchema: GenMessage<Route> = /*@__PURE__*/
   messageDesc(file_routes_v1_routes, 3);
+
+/**
+ * Something to check about a route.
+ *
+ * @generated from message routes.v1.RouteWarning
+ */
+export type RouteWarning = Message<"routes.v1.RouteWarning"> & {
+  /**
+   * What the warning is about.
+   *
+   * @generated from field: routes.v1.RouteWarningKind kind = 1;
+   */
+  kind: RouteWarningKind;
+
+  /**
+   * The warning, for the user, e.g. "Km 5.0-6.0 goes back over km
+   * 0.0-1.0."
+   *
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * Where along the route the warning applies, in meters from the start.
+   * A waypoint's warning starts and ends at the waypoint.
+   *
+   * @generated from field: double start_distance_meters = 3;
+   */
+  startDistanceMeters: number;
+
+  /**
+   * @generated from field: double end_distance_meters = 4;
+   */
+  endDistanceMeters: number;
+
+  /**
+   * The index in waypoints of the waypoint an OFF_MAP_WAYPOINT warning is
+   * about.
+   *
+   * @generated from field: optional int32 waypoint_index = 5;
+   */
+  waypointIndex?: number | undefined;
+
+  /**
+   * For REPEATED_SECTION, where the ground the section retraces was first
+   * covered, in meters from the start. The start is after the end when the
+   * section goes back over it in the opposite direction.
+   *
+   * @generated from field: optional double earlier_start_distance_meters = 6;
+   */
+  earlierStartDistanceMeters?: number | undefined;
+
+  /**
+   * @generated from field: optional double earlier_end_distance_meters = 7;
+   */
+  earlierEndDistanceMeters?: number | undefined;
+};
+
+/**
+ * Describes the message routes.v1.RouteWarning.
+ * Use `create(RouteWarningSchema)` to create a new message.
+ */
+export const RouteWarningSchema: GenMessage<RouteWarning> = /*@__PURE__*/
+  messageDesc(file_routes_v1_routes, 4);
 
 /**
  * @generated from message routes.v1.PreviewRouteRequest
@@ -328,7 +402,7 @@ export type PreviewRouteRequest = Message<"routes.v1.PreviewRouteRequest"> & {
  * Use `create(PreviewRouteRequestSchema)` to create a new message.
  */
 export const PreviewRouteRequestSchema: GenMessage<PreviewRouteRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 4);
+  messageDesc(file_routes_v1_routes, 5);
 
 /**
  * @generated from message routes.v1.PreviewRouteResponse
@@ -347,7 +421,7 @@ export type PreviewRouteResponse = Message<"routes.v1.PreviewRouteResponse"> & {
  * Use `create(PreviewRouteResponseSchema)` to create a new message.
  */
 export const PreviewRouteResponseSchema: GenMessage<PreviewRouteResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 5);
+  messageDesc(file_routes_v1_routes, 6);
 
 /**
  * Waypoints to route between.
@@ -390,7 +464,7 @@ export type Waypoints = Message<"routes.v1.Waypoints"> & {
  * Use `create(WaypointsSchema)` to create a new message.
  */
 export const WaypointsSchema: GenMessage<Waypoints> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 6);
+  messageDesc(file_routes_v1_routes, 7);
 
 /**
  * @generated from message routes.v1.CreateRouteRequest
@@ -474,7 +548,7 @@ export type CreateRouteRequest = Message<"routes.v1.CreateRouteRequest"> & {
  * Use `create(CreateRouteRequestSchema)` to create a new message.
  */
 export const CreateRouteRequestSchema: GenMessage<CreateRouteRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 7);
+  messageDesc(file_routes_v1_routes, 8);
 
 /**
  * @generated from message routes.v1.CreateRouteResponse
@@ -502,7 +576,7 @@ export type CreateRouteResponse = Message<"routes.v1.CreateRouteResponse"> & {
  * Use `create(CreateRouteResponseSchema)` to create a new message.
  */
 export const CreateRouteResponseSchema: GenMessage<CreateRouteResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 8);
+  messageDesc(file_routes_v1_routes, 9);
 
 /**
  * @generated from message routes.v1.GetRouteRequest
@@ -529,7 +603,7 @@ export type GetRouteRequest = Message<"routes.v1.GetRouteRequest"> & {
  * Use `create(GetRouteRequestSchema)` to create a new message.
  */
 export const GetRouteRequestSchema: GenMessage<GetRouteRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 9);
+  messageDesc(file_routes_v1_routes, 10);
 
 /**
  * @generated from message routes.v1.GetRouteResponse
@@ -548,7 +622,7 @@ export type GetRouteResponse = Message<"routes.v1.GetRouteResponse"> & {
  * Use `create(GetRouteResponseSchema)` to create a new message.
  */
 export const GetRouteResponseSchema: GenMessage<GetRouteResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 10);
+  messageDesc(file_routes_v1_routes, 11);
 
 /**
  * @generated from message routes.v1.ListRoutesRequest
@@ -561,7 +635,7 @@ export type ListRoutesRequest = Message<"routes.v1.ListRoutesRequest"> & {
  * Use `create(ListRoutesRequestSchema)` to create a new message.
  */
 export const ListRoutesRequestSchema: GenMessage<ListRoutesRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 11);
+  messageDesc(file_routes_v1_routes, 12);
 
 /**
  * @generated from message routes.v1.ListRoutesResponse
@@ -580,7 +654,7 @@ export type ListRoutesResponse = Message<"routes.v1.ListRoutesResponse"> & {
  * Use `create(ListRoutesResponseSchema)` to create a new message.
  */
 export const ListRoutesResponseSchema: GenMessage<ListRoutesResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 12);
+  messageDesc(file_routes_v1_routes, 13);
 
 /**
  * @generated from message routes.v1.UpdateRouteRequest
@@ -628,7 +702,7 @@ export type UpdateRouteRequest = Message<"routes.v1.UpdateRouteRequest"> & {
  * Use `create(UpdateRouteRequestSchema)` to create a new message.
  */
 export const UpdateRouteRequestSchema: GenMessage<UpdateRouteRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 13);
+  messageDesc(file_routes_v1_routes, 14);
 
 /**
  * @generated from message routes.v1.UpdateRouteResponse
@@ -647,7 +721,7 @@ export type UpdateRouteResponse = Message<"routes.v1.UpdateRouteResponse"> & {
  * Use `create(UpdateRouteResponseSchema)` to create a new message.
  */
 export const UpdateRouteResponseSchema: GenMessage<UpdateRouteResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 14);
+  messageDesc(file_routes_v1_routes, 15);
 
 /**
  * @generated from message routes.v1.DeleteRouteRequest
@@ -666,7 +740,7 @@ export type DeleteRouteRequest = Message<"routes.v1.DeleteRouteRequest"> & {
  * Use `create(DeleteRouteRequestSchema)` to create a new message.
  */
 export const DeleteRouteRequestSchema: GenMessage<DeleteRouteRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 15);
+  messageDesc(file_routes_v1_routes, 16);
 
 /**
  * @generated from message routes.v1.DeleteRouteResponse
@@ -679,7 +753,7 @@ export type DeleteRouteResponse = Message<"routes.v1.DeleteRouteResponse"> & {
  * Use `create(DeleteRouteResponseSchema)` to create a new message.
  */
 export const DeleteRouteResponseSchema: GenMessage<DeleteRouteResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 16);
+  messageDesc(file_routes_v1_routes, 17);
 
 /**
  * @generated from message routes.v1.CheckTrackCoverageRequest
@@ -723,7 +797,7 @@ export type CheckTrackCoverageRequest = Message<"routes.v1.CheckTrackCoverageReq
  * Use `create(CheckTrackCoverageRequestSchema)` to create a new message.
  */
 export const CheckTrackCoverageRequestSchema: GenMessage<CheckTrackCoverageRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 17);
+  messageDesc(file_routes_v1_routes, 18);
 
 /**
  * @generated from message routes.v1.CheckTrackCoverageResponse
@@ -743,7 +817,7 @@ export type CheckTrackCoverageResponse = Message<"routes.v1.CheckTrackCoverageRe
  * Use `create(CheckTrackCoverageResponseSchema)` to create a new message.
  */
 export const CheckTrackCoverageResponseSchema: GenMessage<CheckTrackCoverageResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 18);
+  messageDesc(file_routes_v1_routes, 19);
 
 /**
  * @generated from message routes.v1.GetRouteForecastRequest
@@ -820,7 +894,7 @@ export type GetRouteForecastRequest = Message<"routes.v1.GetRouteForecastRequest
  * Use `create(GetRouteForecastRequestSchema)` to create a new message.
  */
 export const GetRouteForecastRequestSchema: GenMessage<GetRouteForecastRequest> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 19);
+  messageDesc(file_routes_v1_routes, 20);
 
 /**
  * A path as a list of coordinates.
@@ -841,7 +915,7 @@ export type Path = Message<"routes.v1.Path"> & {
  * Use `create(PathSchema)` to create a new message.
  */
 export const PathSchema: GenMessage<Path> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 20);
+  messageDesc(file_routes_v1_routes, 21);
 
 /**
  * The weather forecast at a point along the route at the time the runner is
@@ -990,7 +1064,7 @@ export type ForecastPoint = Message<"routes.v1.ForecastPoint"> & {
  * Use `create(ForecastPointSchema)` to create a new message.
  */
 export const ForecastPointSchema: GenMessage<ForecastPoint> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 21);
+  messageDesc(file_routes_v1_routes, 22);
 
 /**
  * @generated from message routes.v1.GetRouteForecastResponse
@@ -1052,7 +1126,7 @@ export type GetRouteForecastResponse = Message<"routes.v1.GetRouteForecastRespon
  * Use `create(GetRouteForecastResponseSchema)` to create a new message.
  */
 export const GetRouteForecastResponseSchema: GenMessage<GetRouteForecastResponse> = /*@__PURE__*/
-  messageDesc(file_routes_v1_routes, 22);
+  messageDesc(file_routes_v1_routes, 23);
 
 /**
  * RoutingProfile controls how a leg between two waypoints is computed.
@@ -1196,6 +1270,41 @@ export const RouteSourceSchema: GenEnum<RouteSource> = /*@__PURE__*/
   enumDesc(file_routes_v1_routes, 2);
 
 /**
+ * The kinds of route warnings.
+ *
+ * @generated from enum routes.v1.RouteWarningKind
+ */
+export enum RouteWarningKind {
+  /**
+   * @generated from enum value: ROUTE_WARNING_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * A section of at least 100 m retraces ground the route already covered,
+   * in either direction.
+   *
+   * @generated from enum value: ROUTE_WARNING_KIND_REPEATED_SECTION = 1;
+   */
+  REPEATED_SECTION = 1,
+
+  /**
+   * A waypoint of a routed leg is more than 25 m from any mapped path, so
+   * the route goes straight to it off the trail. Move it onto the trail, or
+   * make its legs STRAIGHT if that's intended.
+   *
+   * @generated from enum value: ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT = 2;
+   */
+  OFF_MAP_WAYPOINT = 2,
+}
+
+/**
+ * Describes the enum routes.v1.RouteWarningKind.
+ */
+export const RouteWarningKindSchema: GenEnum<RouteWarningKind> = /*@__PURE__*/
+  enumDesc(file_routes_v1_routes, 3);
+
+/**
  * The kind of a forecast point.
  *
  * @generated from enum routes.v1.ForecastPointKind
@@ -1239,7 +1348,7 @@ export enum ForecastPointKind {
  * Describes the enum routes.v1.ForecastPointKind.
  */
 export const ForecastPointKindSchema: GenEnum<ForecastPointKind> = /*@__PURE__*/
-  enumDesc(file_routes_v1_routes, 3);
+  enumDesc(file_routes_v1_routes, 4);
 
 /**
  * RouteService creates and edits running routes. A route is defined by an

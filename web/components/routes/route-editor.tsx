@@ -58,6 +58,7 @@ import {
   waypointPathIndexes,
 } from "./route-geometry";
 import { RouteStatsPanel } from "./route-stats";
+import RouteWarnings from "./route-warnings";
 
 export interface RouteDraft {
   name: string;
@@ -434,6 +435,12 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                     {previewError}
                   </p>
                 )}
+                {hasRoute &&
+                  previewError === "" &&
+                  shownPreview !== undefined &&
+                  shownPreview.warnings.length > 0 && (
+                    <RouteWarnings warnings={shownPreview.warnings} />
+                  )}
               </div>
             )}
             {geometryEditable && (

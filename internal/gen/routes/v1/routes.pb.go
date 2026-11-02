@@ -198,6 +198,56 @@ func (x RouteSource) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// The kinds of route warnings.
+type RouteWarningKind int32
+
+const (
+	RouteWarningKind_ROUTE_WARNING_KIND_UNSPECIFIED RouteWarningKind = 0
+	// A section of at least 100 m retraces ground the route already covered,
+	// in either direction.
+	RouteWarningKind_ROUTE_WARNING_KIND_REPEATED_SECTION RouteWarningKind = 1
+	// A waypoint of a routed leg is more than 25 m from any mapped path, so
+	// the route goes straight to it off the trail. Move it onto the trail, or
+	// make its legs STRAIGHT if that's intended.
+	RouteWarningKind_ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT RouteWarningKind = 2
+)
+
+// Enum value maps for RouteWarningKind.
+var (
+	RouteWarningKind_name = map[int32]string{
+		0: "ROUTE_WARNING_KIND_UNSPECIFIED",
+		1: "ROUTE_WARNING_KIND_REPEATED_SECTION",
+		2: "ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT",
+	}
+	RouteWarningKind_value = map[string]int32{
+		"ROUTE_WARNING_KIND_UNSPECIFIED":      0,
+		"ROUTE_WARNING_KIND_REPEATED_SECTION": 1,
+		"ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT": 2,
+	}
+)
+
+func (x RouteWarningKind) Enum() *RouteWarningKind {
+	p := new(RouteWarningKind)
+	*p = x
+	return p
+}
+
+func (x RouteWarningKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RouteWarningKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_routes_v1_routes_proto_enumTypes[3].Descriptor()
+}
+
+func (RouteWarningKind) Type() protoreflect.EnumType {
+	return &file_routes_v1_routes_proto_enumTypes[3]
+}
+
+func (x RouteWarningKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // The kind of a forecast point.
 type ForecastPointKind int32
 
@@ -242,11 +292,11 @@ func (x ForecastPointKind) String() string {
 }
 
 func (ForecastPointKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_routes_v1_routes_proto_enumTypes[3].Descriptor()
+	return file_routes_v1_routes_proto_enumTypes[4].Descriptor()
 }
 
 func (ForecastPointKind) Type() protoreflect.EnumType {
-	return &file_routes_v1_routes_proto_enumTypes[3]
+	return &file_routes_v1_routes_proto_enumTypes[4]
 }
 
 func (x ForecastPointKind) Number() protoreflect.EnumNumber {
@@ -665,6 +715,7 @@ type Route struct {
 	xxx_hidden_Source      RouteSource            `protobuf:"varint,8,opt,name=source,proto3,enum=routes.v1.RouteSource"`
 	xxx_hidden_CreateTime  *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3"`
 	xxx_hidden_UpdateTime  *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
+	xxx_hidden_Warnings    *[]*RouteWarning       `protobuf:"bytes,12,rep,name=warnings,proto3"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -775,6 +826,15 @@ func (x *Route) GetUpdateTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Route) GetWarnings() []*RouteWarning {
+	if x != nil {
+		if x.xxx_hidden_Warnings != nil {
+			return *x.xxx_hidden_Warnings
+		}
+	}
+	return nil
+}
+
 func (x *Route) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -817,6 +877,10 @@ func (x *Route) SetCreateTime(v *timestamppb.Timestamp) {
 
 func (x *Route) SetUpdateTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_UpdateTime = v
+}
+
+func (x *Route) SetWarnings(v []*RouteWarning) {
+	x.xxx_hidden_Warnings = &v
 }
 
 func (x *Route) HasStats() bool {
@@ -882,6 +946,11 @@ type Route_builder struct {
 	CreateTime *timestamppb.Timestamp
 	// When the route was last updated.
 	UpdateTime *timestamppb.Timestamp
+	// What to check about the route: sections that retrace ground it already
+	// covered, and waypoints off any mapped path, which the route reaches in
+	// a straight line. They may be intended, like an out-and-back, but often
+	// mean a waypoint is in the wrong place. Not set by ListRoutes.
+	Warnings []*RouteWarning
 }
 
 func (b0 Route_builder) Build() *Route {
@@ -899,6 +968,209 @@ func (b0 Route_builder) Build() *Route {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_CreateTime = b.CreateTime
 	x.xxx_hidden_UpdateTime = b.UpdateTime
+	x.xxx_hidden_Warnings = &b.Warnings
+	return m0
+}
+
+// Something to check about a route.
+type RouteWarning struct {
+	state                                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind                       RouteWarningKind       `protobuf:"varint,1,opt,name=kind,proto3,enum=routes.v1.RouteWarningKind"`
+	xxx_hidden_Message                    string                 `protobuf:"bytes,2,opt,name=message,proto3"`
+	xxx_hidden_StartDistanceMeters        float64                `protobuf:"fixed64,3,opt,name=start_distance_meters,json=startDistanceMeters,proto3"`
+	xxx_hidden_EndDistanceMeters          float64                `protobuf:"fixed64,4,opt,name=end_distance_meters,json=endDistanceMeters,proto3"`
+	xxx_hidden_WaypointIndex              int32                  `protobuf:"varint,5,opt,name=waypoint_index,json=waypointIndex,proto3,oneof"`
+	xxx_hidden_EarlierStartDistanceMeters float64                `protobuf:"fixed64,6,opt,name=earlier_start_distance_meters,json=earlierStartDistanceMeters,proto3,oneof"`
+	xxx_hidden_EarlierEndDistanceMeters   float64                `protobuf:"fixed64,7,opt,name=earlier_end_distance_meters,json=earlierEndDistanceMeters,proto3,oneof"`
+	XXX_raceDetectHookData                protoimpl.RaceDetectHookData
+	XXX_presence                          [1]uint32
+	unknownFields                         protoimpl.UnknownFields
+	sizeCache                             protoimpl.SizeCache
+}
+
+func (x *RouteWarning) Reset() {
+	*x = RouteWarning{}
+	mi := &file_routes_v1_routes_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RouteWarning) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RouteWarning) ProtoMessage() {}
+
+func (x *RouteWarning) ProtoReflect() protoreflect.Message {
+	mi := &file_routes_v1_routes_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RouteWarning) GetKind() RouteWarningKind {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return RouteWarningKind_ROUTE_WARNING_KIND_UNSPECIFIED
+}
+
+func (x *RouteWarning) GetMessage() string {
+	if x != nil {
+		return x.xxx_hidden_Message
+	}
+	return ""
+}
+
+func (x *RouteWarning) GetStartDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_StartDistanceMeters
+	}
+	return 0
+}
+
+func (x *RouteWarning) GetEndDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_EndDistanceMeters
+	}
+	return 0
+}
+
+func (x *RouteWarning) GetWaypointIndex() int32 {
+	if x != nil {
+		return x.xxx_hidden_WaypointIndex
+	}
+	return 0
+}
+
+func (x *RouteWarning) GetEarlierStartDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_EarlierStartDistanceMeters
+	}
+	return 0
+}
+
+func (x *RouteWarning) GetEarlierEndDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_EarlierEndDistanceMeters
+	}
+	return 0
+}
+
+func (x *RouteWarning) SetKind(v RouteWarningKind) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *RouteWarning) SetMessage(v string) {
+	x.xxx_hidden_Message = v
+}
+
+func (x *RouteWarning) SetStartDistanceMeters(v float64) {
+	x.xxx_hidden_StartDistanceMeters = v
+}
+
+func (x *RouteWarning) SetEndDistanceMeters(v float64) {
+	x.xxx_hidden_EndDistanceMeters = v
+}
+
+func (x *RouteWarning) SetWaypointIndex(v int32) {
+	x.xxx_hidden_WaypointIndex = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+}
+
+func (x *RouteWarning) SetEarlierStartDistanceMeters(v float64) {
+	x.xxx_hidden_EarlierStartDistanceMeters = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *RouteWarning) SetEarlierEndDistanceMeters(v float64) {
+	x.xxx_hidden_EarlierEndDistanceMeters = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+}
+
+func (x *RouteWarning) HasWaypointIndex() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *RouteWarning) HasEarlierStartDistanceMeters() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *RouteWarning) HasEarlierEndDistanceMeters() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *RouteWarning) ClearWaypointIndex() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_WaypointIndex = 0
+}
+
+func (x *RouteWarning) ClearEarlierStartDistanceMeters() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_EarlierStartDistanceMeters = 0
+}
+
+func (x *RouteWarning) ClearEarlierEndDistanceMeters() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_EarlierEndDistanceMeters = 0
+}
+
+type RouteWarning_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the warning is about.
+	Kind RouteWarningKind
+	// The warning, for the user, e.g. "Km 5.0-6.0 goes back over km
+	// 0.0-1.0."
+	Message string
+	// Where along the route the warning applies, in meters from the start.
+	// A waypoint's warning starts and ends at the waypoint.
+	StartDistanceMeters float64
+	EndDistanceMeters   float64
+	// The index in waypoints of the waypoint an OFF_MAP_WAYPOINT warning is
+	// about.
+	WaypointIndex *int32
+	// For REPEATED_SECTION, where the ground the section retraces was first
+	// covered, in meters from the start. The start is after the end when the
+	// section goes back over it in the opposite direction.
+	EarlierStartDistanceMeters *float64
+	EarlierEndDistanceMeters   *float64
+}
+
+func (b0 RouteWarning_builder) Build() *RouteWarning {
+	m0 := &RouteWarning{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Message = b.Message
+	x.xxx_hidden_StartDistanceMeters = b.StartDistanceMeters
+	x.xxx_hidden_EndDistanceMeters = b.EndDistanceMeters
+	if b.WaypointIndex != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_WaypointIndex = *b.WaypointIndex
+	}
+	if b.EarlierStartDistanceMeters != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_EarlierStartDistanceMeters = *b.EarlierStartDistanceMeters
+	}
+	if b.EarlierEndDistanceMeters != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_EarlierEndDistanceMeters = *b.EarlierEndDistanceMeters
+	}
 	return m0
 }
 
@@ -915,7 +1187,7 @@ type PreviewRouteRequest struct {
 
 func (x *PreviewRouteRequest) Reset() {
 	*x = PreviewRouteRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[4]
+	mi := &file_routes_v1_routes_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +1199,7 @@ func (x *PreviewRouteRequest) String() string {
 func (*PreviewRouteRequest) ProtoMessage() {}
 
 func (x *PreviewRouteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[4]
+	mi := &file_routes_v1_routes_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +1313,7 @@ type PreviewRouteResponse struct {
 
 func (x *PreviewRouteResponse) Reset() {
 	*x = PreviewRouteResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[5]
+	mi := &file_routes_v1_routes_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1053,7 +1325,7 @@ func (x *PreviewRouteResponse) String() string {
 func (*PreviewRouteResponse) ProtoMessage() {}
 
 func (x *PreviewRouteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[5]
+	mi := &file_routes_v1_routes_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1113,7 +1385,7 @@ type Waypoints struct {
 
 func (x *Waypoints) Reset() {
 	*x = Waypoints{}
-	mi := &file_routes_v1_routes_proto_msgTypes[6]
+	mi := &file_routes_v1_routes_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1125,7 +1397,7 @@ func (x *Waypoints) String() string {
 func (*Waypoints) ProtoMessage() {}
 
 func (x *Waypoints) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[6]
+	mi := &file_routes_v1_routes_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1213,7 +1485,7 @@ type CreateRouteRequest struct {
 
 func (x *CreateRouteRequest) Reset() {
 	*x = CreateRouteRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[7]
+	mi := &file_routes_v1_routes_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1225,7 +1497,7 @@ func (x *CreateRouteRequest) String() string {
 func (*CreateRouteRequest) ProtoMessage() {}
 
 func (x *CreateRouteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[7]
+	mi := &file_routes_v1_routes_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1483,7 +1755,7 @@ func (b0 CreateRouteRequest_builder) Build() *CreateRouteRequest {
 type case_CreateRouteRequest_Source protoreflect.FieldNumber
 
 func (x case_CreateRouteRequest_Source) String() string {
-	md := file_routes_v1_routes_proto_msgTypes[7].Descriptor()
+	md := file_routes_v1_routes_proto_msgTypes[8].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -1536,7 +1808,7 @@ type CreateRouteResponse struct {
 
 func (x *CreateRouteResponse) Reset() {
 	*x = CreateRouteResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[8]
+	mi := &file_routes_v1_routes_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1820,7 @@ func (x *CreateRouteResponse) String() string {
 func (*CreateRouteResponse) ProtoMessage() {}
 
 func (x *CreateRouteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[8]
+	mi := &file_routes_v1_routes_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1622,7 +1894,7 @@ type GetRouteRequest struct {
 
 func (x *GetRouteRequest) Reset() {
 	*x = GetRouteRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[9]
+	mi := &file_routes_v1_routes_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1634,7 +1906,7 @@ func (x *GetRouteRequest) String() string {
 func (*GetRouteRequest) ProtoMessage() {}
 
 func (x *GetRouteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[9]
+	mi := &file_routes_v1_routes_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1695,7 +1967,7 @@ type GetRouteResponse struct {
 
 func (x *GetRouteResponse) Reset() {
 	*x = GetRouteResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[10]
+	mi := &file_routes_v1_routes_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1707,7 +1979,7 @@ func (x *GetRouteResponse) String() string {
 func (*GetRouteResponse) ProtoMessage() {}
 
 func (x *GetRouteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[10]
+	mi := &file_routes_v1_routes_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1763,7 +2035,7 @@ type ListRoutesRequest struct {
 
 func (x *ListRoutesRequest) Reset() {
 	*x = ListRoutesRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[11]
+	mi := &file_routes_v1_routes_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1775,7 +2047,7 @@ func (x *ListRoutesRequest) String() string {
 func (*ListRoutesRequest) ProtoMessage() {}
 
 func (x *ListRoutesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[11]
+	mi := &file_routes_v1_routes_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1807,7 +2079,7 @@ type ListRoutesResponse struct {
 
 func (x *ListRoutesResponse) Reset() {
 	*x = ListRoutesResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[12]
+	mi := &file_routes_v1_routes_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1819,7 +2091,7 @@ func (x *ListRoutesResponse) String() string {
 func (*ListRoutesResponse) ProtoMessage() {}
 
 func (x *ListRoutesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[12]
+	mi := &file_routes_v1_routes_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1873,7 +2145,7 @@ type UpdateRouteRequest struct {
 
 func (x *UpdateRouteRequest) Reset() {
 	*x = UpdateRouteRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[13]
+	mi := &file_routes_v1_routes_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1885,7 +2157,7 @@ func (x *UpdateRouteRequest) String() string {
 func (*UpdateRouteRequest) ProtoMessage() {}
 
 func (x *UpdateRouteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[13]
+	mi := &file_routes_v1_routes_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2037,7 +2309,7 @@ type UpdateRouteResponse struct {
 
 func (x *UpdateRouteResponse) Reset() {
 	*x = UpdateRouteResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[14]
+	mi := &file_routes_v1_routes_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2049,7 +2321,7 @@ func (x *UpdateRouteResponse) String() string {
 func (*UpdateRouteResponse) ProtoMessage() {}
 
 func (x *UpdateRouteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[14]
+	mi := &file_routes_v1_routes_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2106,7 +2378,7 @@ type DeleteRouteRequest struct {
 
 func (x *DeleteRouteRequest) Reset() {
 	*x = DeleteRouteRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[15]
+	mi := &file_routes_v1_routes_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2118,7 +2390,7 @@ func (x *DeleteRouteRequest) String() string {
 func (*DeleteRouteRequest) ProtoMessage() {}
 
 func (x *DeleteRouteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[15]
+	mi := &file_routes_v1_routes_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2163,7 +2435,7 @@ type DeleteRouteResponse struct {
 
 func (x *DeleteRouteResponse) Reset() {
 	*x = DeleteRouteResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[16]
+	mi := &file_routes_v1_routes_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2175,7 +2447,7 @@ func (x *DeleteRouteResponse) String() string {
 func (*DeleteRouteResponse) ProtoMessage() {}
 
 func (x *DeleteRouteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[16]
+	mi := &file_routes_v1_routes_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2207,7 +2479,7 @@ type CheckTrackCoverageRequest struct {
 
 func (x *CheckTrackCoverageRequest) Reset() {
 	*x = CheckTrackCoverageRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[17]
+	mi := &file_routes_v1_routes_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2219,7 +2491,7 @@ func (x *CheckTrackCoverageRequest) String() string {
 func (*CheckTrackCoverageRequest) ProtoMessage() {}
 
 func (x *CheckTrackCoverageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[17]
+	mi := &file_routes_v1_routes_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2378,7 +2650,7 @@ func (b0 CheckTrackCoverageRequest_builder) Build() *CheckTrackCoverageRequest {
 type case_CheckTrackCoverageRequest_Source protoreflect.FieldNumber
 
 func (x case_CheckTrackCoverageRequest_Source) String() string {
-	md := file_routes_v1_routes_proto_msgTypes[17].Descriptor()
+	md := file_routes_v1_routes_proto_msgTypes[18].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -2420,7 +2692,7 @@ type CheckTrackCoverageResponse struct {
 
 func (x *CheckTrackCoverageResponse) Reset() {
 	*x = CheckTrackCoverageResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[18]
+	mi := &file_routes_v1_routes_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2432,7 +2704,7 @@ func (x *CheckTrackCoverageResponse) String() string {
 func (*CheckTrackCoverageResponse) ProtoMessage() {}
 
 func (x *CheckTrackCoverageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[18]
+	mi := &file_routes_v1_routes_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2483,7 +2755,7 @@ type GetRouteForecastRequest struct {
 
 func (x *GetRouteForecastRequest) Reset() {
 	*x = GetRouteForecastRequest{}
-	mi := &file_routes_v1_routes_proto_msgTypes[19]
+	mi := &file_routes_v1_routes_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2495,7 +2767,7 @@ func (x *GetRouteForecastRequest) String() string {
 func (*GetRouteForecastRequest) ProtoMessage() {}
 
 func (x *GetRouteForecastRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[19]
+	mi := &file_routes_v1_routes_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2730,7 +3002,7 @@ func (b0 GetRouteForecastRequest_builder) Build() *GetRouteForecastRequest {
 type case_GetRouteForecastRequest_Source protoreflect.FieldNumber
 
 func (x case_GetRouteForecastRequest_Source) String() string {
-	md := file_routes_v1_routes_proto_msgTypes[19].Descriptor()
+	md := file_routes_v1_routes_proto_msgTypes[20].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -2774,7 +3046,7 @@ type Path struct {
 
 func (x *Path) Reset() {
 	*x = Path{}
-	mi := &file_routes_v1_routes_proto_msgTypes[20]
+	mi := &file_routes_v1_routes_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2786,7 +3058,7 @@ func (x *Path) String() string {
 func (*Path) ProtoMessage() {}
 
 func (x *Path) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[20]
+	mi := &file_routes_v1_routes_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2854,7 +3126,7 @@ type ForecastPoint struct {
 
 func (x *ForecastPoint) Reset() {
 	*x = ForecastPoint{}
-	mi := &file_routes_v1_routes_proto_msgTypes[21]
+	mi := &file_routes_v1_routes_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2866,7 +3138,7 @@ func (x *ForecastPoint) String() string {
 func (*ForecastPoint) ProtoMessage() {}
 
 func (x *ForecastPoint) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[21]
+	mi := &file_routes_v1_routes_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3193,7 +3465,7 @@ type GetRouteForecastResponse struct {
 
 func (x *GetRouteForecastResponse) Reset() {
 	*x = GetRouteForecastResponse{}
-	mi := &file_routes_v1_routes_proto_msgTypes[22]
+	mi := &file_routes_v1_routes_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3205,7 +3477,7 @@ func (x *GetRouteForecastResponse) String() string {
 func (*GetRouteForecastResponse) ProtoMessage() {}
 
 func (x *GetRouteForecastResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_routes_v1_routes_proto_msgTypes[22]
+	mi := &file_routes_v1_routes_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3368,7 +3640,7 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\x19max_descent_grade_percent\x18\a \x01(\x01R\x16maxDescentGradePercent\x121\n" +
 	"\aterrain\x18\b \x03(\v2\x17.routes.v1.TerrainShareR\aterrain\x12=\n" +
 	"\x18repeated_distance_meters\x18\t \x01(\x01H\x00R\x16repeatedDistanceMeters\x88\x01\x01B\x1b\n" +
-	"\x19_repeated_distance_meters\"\xac\x04\n" +
+	"\x19_repeated_distance_meters\"\xe9\x04\n" +
 	"\x05Route\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -3383,7 +3655,19 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"createTime\x12C\n" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
-	"updateTime\"\xf8\x01\n" +
+	"updateTime\x12;\n" +
+	"\bwarnings\x18\f \x03(\v2\x17.routes.v1.RouteWarningB\x06\xaa\x9f\x19\x02\b\x01R\bwarnings\"\xca\x03\n" +
+	"\fRouteWarning\x12/\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1b.routes.v1.RouteWarningKindR\x04kind\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x122\n" +
+	"\x15start_distance_meters\x18\x03 \x01(\x01R\x13startDistanceMeters\x12.\n" +
+	"\x13end_distance_meters\x18\x04 \x01(\x01R\x11endDistanceMeters\x12*\n" +
+	"\x0ewaypoint_index\x18\x05 \x01(\x05H\x00R\rwaypointIndex\x88\x01\x01\x12F\n" +
+	"\x1dearlier_start_distance_meters\x18\x06 \x01(\x01H\x01R\x1aearlierStartDistanceMeters\x88\x01\x01\x12B\n" +
+	"\x1bearlier_end_distance_meters\x18\a \x01(\x01H\x02R\x18earlierEndDistanceMeters\x88\x01\x01B\x11\n" +
+	"\x0f_waypoint_indexB \n" +
+	"\x1e_earlier_start_distance_metersB\x1e\n" +
+	"\x1c_earlier_end_distance_meters\"\xf8\x01\n" +
 	"\x13PreviewRouteRequest\x12,\n" +
 	"\twaypoints\x18\x01 \x03(\v2\x0e.geo.v1.LatLngR\twaypoints\x123\n" +
 	"\aprofile\x18\x02 \x01(\x0e2\x19.routes.v1.RoutingProfileR\aprofile\x12%\n" +
@@ -3498,7 +3782,11 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\x18ROUTE_SOURCE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ROUTE_SOURCE_WAYPOINTS\x10\x01\x12\x14\n" +
 	"\x10ROUTE_SOURCE_GPX\x10\x02\x12\x19\n" +
-	"\x15ROUTE_SOURCE_ACTIVITY\x10\x03*\xbd\x01\n" +
+	"\x15ROUTE_SOURCE_ACTIVITY\x10\x03*\x88\x01\n" +
+	"\x10RouteWarningKind\x12\"\n" +
+	"\x1eROUTE_WARNING_KIND_UNSPECIFIED\x10\x00\x12'\n" +
+	"#ROUTE_WARNING_KIND_REPEATED_SECTION\x10\x01\x12'\n" +
+	"#ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT\x10\x02*\xbd\x01\n" +
 	"\x11ForecastPointKind\x12#\n" +
 	"\x1fFORECAST_POINT_KIND_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19FORECAST_POINT_KIND_START\x10\x01\x12 \n" +
@@ -3518,95 +3806,99 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\rcom.routes.v1B\vRoutesProtoP\x01ZFgithub.com/johanbrandhorst/trail-tools/internal/gen/routes/v1;routesv1\xa2\x02\x03RXX\xaa\x02\tRoutes.V1\xca\x02\tRoutes\\V1\xe2\x02\x15Routes\\V1\\GPBMetadata\xea\x02\n" +
 	"Routes::V1b\x06proto3"
 
-var file_routes_v1_routes_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_routes_v1_routes_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_routes_v1_routes_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_routes_v1_routes_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_routes_v1_routes_proto_goTypes = []any{
 	(RoutingProfile)(0),                // 0: routes.v1.RoutingProfile
 	(TrackConversion)(0),               // 1: routes.v1.TrackConversion
 	(RouteSource)(0),                   // 2: routes.v1.RouteSource
-	(ForecastPointKind)(0),             // 3: routes.v1.ForecastPointKind
-	(*RoutePoint)(nil),                 // 4: routes.v1.RoutePoint
-	(*TerrainShare)(nil),               // 5: routes.v1.TerrainShare
-	(*RouteStats)(nil),                 // 6: routes.v1.RouteStats
-	(*Route)(nil),                      // 7: routes.v1.Route
-	(*PreviewRouteRequest)(nil),        // 8: routes.v1.PreviewRouteRequest
-	(*PreviewRouteResponse)(nil),       // 9: routes.v1.PreviewRouteResponse
-	(*Waypoints)(nil),                  // 10: routes.v1.Waypoints
-	(*CreateRouteRequest)(nil),         // 11: routes.v1.CreateRouteRequest
-	(*CreateRouteResponse)(nil),        // 12: routes.v1.CreateRouteResponse
-	(*GetRouteRequest)(nil),            // 13: routes.v1.GetRouteRequest
-	(*GetRouteResponse)(nil),           // 14: routes.v1.GetRouteResponse
-	(*ListRoutesRequest)(nil),          // 15: routes.v1.ListRoutesRequest
-	(*ListRoutesResponse)(nil),         // 16: routes.v1.ListRoutesResponse
-	(*UpdateRouteRequest)(nil),         // 17: routes.v1.UpdateRouteRequest
-	(*UpdateRouteResponse)(nil),        // 18: routes.v1.UpdateRouteResponse
-	(*DeleteRouteRequest)(nil),         // 19: routes.v1.DeleteRouteRequest
-	(*DeleteRouteResponse)(nil),        // 20: routes.v1.DeleteRouteResponse
-	(*CheckTrackCoverageRequest)(nil),  // 21: routes.v1.CheckTrackCoverageRequest
-	(*CheckTrackCoverageResponse)(nil), // 22: routes.v1.CheckTrackCoverageResponse
-	(*GetRouteForecastRequest)(nil),    // 23: routes.v1.GetRouteForecastRequest
-	(*Path)(nil),                       // 24: routes.v1.Path
-	(*ForecastPoint)(nil),              // 25: routes.v1.ForecastPoint
-	(*GetRouteForecastResponse)(nil),   // 26: routes.v1.GetRouteForecastResponse
-	(v1.Terrain)(0),                    // 27: geo.v1.Terrain
-	(*v1.LatLng)(nil),                  // 28: geo.v1.LatLng
-	(*timestamppb.Timestamp)(nil),      // 29: google.protobuf.Timestamp
+	(RouteWarningKind)(0),              // 3: routes.v1.RouteWarningKind
+	(ForecastPointKind)(0),             // 4: routes.v1.ForecastPointKind
+	(*RoutePoint)(nil),                 // 5: routes.v1.RoutePoint
+	(*TerrainShare)(nil),               // 6: routes.v1.TerrainShare
+	(*RouteStats)(nil),                 // 7: routes.v1.RouteStats
+	(*Route)(nil),                      // 8: routes.v1.Route
+	(*RouteWarning)(nil),               // 9: routes.v1.RouteWarning
+	(*PreviewRouteRequest)(nil),        // 10: routes.v1.PreviewRouteRequest
+	(*PreviewRouteResponse)(nil),       // 11: routes.v1.PreviewRouteResponse
+	(*Waypoints)(nil),                  // 12: routes.v1.Waypoints
+	(*CreateRouteRequest)(nil),         // 13: routes.v1.CreateRouteRequest
+	(*CreateRouteResponse)(nil),        // 14: routes.v1.CreateRouteResponse
+	(*GetRouteRequest)(nil),            // 15: routes.v1.GetRouteRequest
+	(*GetRouteResponse)(nil),           // 16: routes.v1.GetRouteResponse
+	(*ListRoutesRequest)(nil),          // 17: routes.v1.ListRoutesRequest
+	(*ListRoutesResponse)(nil),         // 18: routes.v1.ListRoutesResponse
+	(*UpdateRouteRequest)(nil),         // 19: routes.v1.UpdateRouteRequest
+	(*UpdateRouteResponse)(nil),        // 20: routes.v1.UpdateRouteResponse
+	(*DeleteRouteRequest)(nil),         // 21: routes.v1.DeleteRouteRequest
+	(*DeleteRouteResponse)(nil),        // 22: routes.v1.DeleteRouteResponse
+	(*CheckTrackCoverageRequest)(nil),  // 23: routes.v1.CheckTrackCoverageRequest
+	(*CheckTrackCoverageResponse)(nil), // 24: routes.v1.CheckTrackCoverageResponse
+	(*GetRouteForecastRequest)(nil),    // 25: routes.v1.GetRouteForecastRequest
+	(*Path)(nil),                       // 26: routes.v1.Path
+	(*ForecastPoint)(nil),              // 27: routes.v1.ForecastPoint
+	(*GetRouteForecastResponse)(nil),   // 28: routes.v1.GetRouteForecastResponse
+	(v1.Terrain)(0),                    // 29: geo.v1.Terrain
+	(*v1.LatLng)(nil),                  // 30: geo.v1.LatLng
+	(*timestamppb.Timestamp)(nil),      // 31: google.protobuf.Timestamp
 }
 var file_routes_v1_routes_proto_depIdxs = []int32{
-	27, // 0: routes.v1.TerrainShare.terrain:type_name -> geo.v1.Terrain
-	5,  // 1: routes.v1.RouteStats.terrain:type_name -> routes.v1.TerrainShare
+	29, // 0: routes.v1.TerrainShare.terrain:type_name -> geo.v1.Terrain
+	6,  // 1: routes.v1.RouteStats.terrain:type_name -> routes.v1.TerrainShare
 	0,  // 2: routes.v1.Route.profile:type_name -> routes.v1.RoutingProfile
-	28, // 3: routes.v1.Route.waypoints:type_name -> geo.v1.LatLng
+	30, // 3: routes.v1.Route.waypoints:type_name -> geo.v1.LatLng
 	0,  // 4: routes.v1.Route.leg_profiles:type_name -> routes.v1.RoutingProfile
-	4,  // 5: routes.v1.Route.points:type_name -> routes.v1.RoutePoint
-	6,  // 6: routes.v1.Route.stats:type_name -> routes.v1.RouteStats
+	5,  // 5: routes.v1.Route.points:type_name -> routes.v1.RoutePoint
+	7,  // 6: routes.v1.Route.stats:type_name -> routes.v1.RouteStats
 	2,  // 7: routes.v1.Route.source:type_name -> routes.v1.RouteSource
-	29, // 8: routes.v1.Route.create_time:type_name -> google.protobuf.Timestamp
-	29, // 9: routes.v1.Route.update_time:type_name -> google.protobuf.Timestamp
-	28, // 10: routes.v1.PreviewRouteRequest.waypoints:type_name -> geo.v1.LatLng
-	0,  // 11: routes.v1.PreviewRouteRequest.profile:type_name -> routes.v1.RoutingProfile
-	0,  // 12: routes.v1.PreviewRouteRequest.leg_profiles:type_name -> routes.v1.RoutingProfile
-	7,  // 13: routes.v1.PreviewRouteResponse.route:type_name -> routes.v1.Route
-	28, // 14: routes.v1.Waypoints.waypoints:type_name -> geo.v1.LatLng
-	0,  // 15: routes.v1.Waypoints.profile:type_name -> routes.v1.RoutingProfile
-	0,  // 16: routes.v1.Waypoints.leg_profiles:type_name -> routes.v1.RoutingProfile
-	10, // 17: routes.v1.CreateRouteRequest.waypoints:type_name -> routes.v1.Waypoints
-	1,  // 18: routes.v1.CreateRouteRequest.conversion:type_name -> routes.v1.TrackConversion
-	7,  // 19: routes.v1.CreateRouteResponse.route:type_name -> routes.v1.Route
-	7,  // 20: routes.v1.GetRouteResponse.route:type_name -> routes.v1.Route
-	7,  // 21: routes.v1.ListRoutesResponse.routes:type_name -> routes.v1.Route
-	10, // 22: routes.v1.UpdateRouteRequest.waypoints:type_name -> routes.v1.Waypoints
-	7,  // 23: routes.v1.UpdateRouteResponse.route:type_name -> routes.v1.Route
-	24, // 24: routes.v1.GetRouteForecastRequest.path:type_name -> routes.v1.Path
-	29, // 25: routes.v1.GetRouteForecastRequest.start_time:type_name -> google.protobuf.Timestamp
-	28, // 26: routes.v1.Path.points:type_name -> geo.v1.LatLng
-	3,  // 27: routes.v1.ForecastPoint.kind:type_name -> routes.v1.ForecastPointKind
-	29, // 28: routes.v1.ForecastPoint.time:type_name -> google.protobuf.Timestamp
-	28, // 29: routes.v1.ForecastPoint.location:type_name -> geo.v1.LatLng
-	25, // 30: routes.v1.GetRouteForecastResponse.points:type_name -> routes.v1.ForecastPoint
-	29, // 31: routes.v1.GetRouteForecastResponse.finish_time:type_name -> google.protobuf.Timestamp
-	4,  // 32: routes.v1.GetRouteForecastResponse.path:type_name -> routes.v1.RoutePoint
-	8,  // 33: routes.v1.RouteService.PreviewRoute:input_type -> routes.v1.PreviewRouteRequest
-	11, // 34: routes.v1.RouteService.CreateRoute:input_type -> routes.v1.CreateRouteRequest
-	13, // 35: routes.v1.RouteService.GetRoute:input_type -> routes.v1.GetRouteRequest
-	15, // 36: routes.v1.RouteService.ListRoutes:input_type -> routes.v1.ListRoutesRequest
-	17, // 37: routes.v1.RouteService.UpdateRoute:input_type -> routes.v1.UpdateRouteRequest
-	19, // 38: routes.v1.RouteService.DeleteRoute:input_type -> routes.v1.DeleteRouteRequest
-	21, // 39: routes.v1.RouteService.CheckTrackCoverage:input_type -> routes.v1.CheckTrackCoverageRequest
-	23, // 40: routes.v1.RouteService.GetRouteForecast:input_type -> routes.v1.GetRouteForecastRequest
-	9,  // 41: routes.v1.RouteService.PreviewRoute:output_type -> routes.v1.PreviewRouteResponse
-	12, // 42: routes.v1.RouteService.CreateRoute:output_type -> routes.v1.CreateRouteResponse
-	14, // 43: routes.v1.RouteService.GetRoute:output_type -> routes.v1.GetRouteResponse
-	16, // 44: routes.v1.RouteService.ListRoutes:output_type -> routes.v1.ListRoutesResponse
-	18, // 45: routes.v1.RouteService.UpdateRoute:output_type -> routes.v1.UpdateRouteResponse
-	20, // 46: routes.v1.RouteService.DeleteRoute:output_type -> routes.v1.DeleteRouteResponse
-	22, // 47: routes.v1.RouteService.CheckTrackCoverage:output_type -> routes.v1.CheckTrackCoverageResponse
-	26, // 48: routes.v1.RouteService.GetRouteForecast:output_type -> routes.v1.GetRouteForecastResponse
-	41, // [41:49] is the sub-list for method output_type
-	33, // [33:41] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	31, // 8: routes.v1.Route.create_time:type_name -> google.protobuf.Timestamp
+	31, // 9: routes.v1.Route.update_time:type_name -> google.protobuf.Timestamp
+	9,  // 10: routes.v1.Route.warnings:type_name -> routes.v1.RouteWarning
+	3,  // 11: routes.v1.RouteWarning.kind:type_name -> routes.v1.RouteWarningKind
+	30, // 12: routes.v1.PreviewRouteRequest.waypoints:type_name -> geo.v1.LatLng
+	0,  // 13: routes.v1.PreviewRouteRequest.profile:type_name -> routes.v1.RoutingProfile
+	0,  // 14: routes.v1.PreviewRouteRequest.leg_profiles:type_name -> routes.v1.RoutingProfile
+	8,  // 15: routes.v1.PreviewRouteResponse.route:type_name -> routes.v1.Route
+	30, // 16: routes.v1.Waypoints.waypoints:type_name -> geo.v1.LatLng
+	0,  // 17: routes.v1.Waypoints.profile:type_name -> routes.v1.RoutingProfile
+	0,  // 18: routes.v1.Waypoints.leg_profiles:type_name -> routes.v1.RoutingProfile
+	12, // 19: routes.v1.CreateRouteRequest.waypoints:type_name -> routes.v1.Waypoints
+	1,  // 20: routes.v1.CreateRouteRequest.conversion:type_name -> routes.v1.TrackConversion
+	8,  // 21: routes.v1.CreateRouteResponse.route:type_name -> routes.v1.Route
+	8,  // 22: routes.v1.GetRouteResponse.route:type_name -> routes.v1.Route
+	8,  // 23: routes.v1.ListRoutesResponse.routes:type_name -> routes.v1.Route
+	12, // 24: routes.v1.UpdateRouteRequest.waypoints:type_name -> routes.v1.Waypoints
+	8,  // 25: routes.v1.UpdateRouteResponse.route:type_name -> routes.v1.Route
+	26, // 26: routes.v1.GetRouteForecastRequest.path:type_name -> routes.v1.Path
+	31, // 27: routes.v1.GetRouteForecastRequest.start_time:type_name -> google.protobuf.Timestamp
+	30, // 28: routes.v1.Path.points:type_name -> geo.v1.LatLng
+	4,  // 29: routes.v1.ForecastPoint.kind:type_name -> routes.v1.ForecastPointKind
+	31, // 30: routes.v1.ForecastPoint.time:type_name -> google.protobuf.Timestamp
+	30, // 31: routes.v1.ForecastPoint.location:type_name -> geo.v1.LatLng
+	27, // 32: routes.v1.GetRouteForecastResponse.points:type_name -> routes.v1.ForecastPoint
+	31, // 33: routes.v1.GetRouteForecastResponse.finish_time:type_name -> google.protobuf.Timestamp
+	5,  // 34: routes.v1.GetRouteForecastResponse.path:type_name -> routes.v1.RoutePoint
+	10, // 35: routes.v1.RouteService.PreviewRoute:input_type -> routes.v1.PreviewRouteRequest
+	13, // 36: routes.v1.RouteService.CreateRoute:input_type -> routes.v1.CreateRouteRequest
+	15, // 37: routes.v1.RouteService.GetRoute:input_type -> routes.v1.GetRouteRequest
+	17, // 38: routes.v1.RouteService.ListRoutes:input_type -> routes.v1.ListRoutesRequest
+	19, // 39: routes.v1.RouteService.UpdateRoute:input_type -> routes.v1.UpdateRouteRequest
+	21, // 40: routes.v1.RouteService.DeleteRoute:input_type -> routes.v1.DeleteRouteRequest
+	23, // 41: routes.v1.RouteService.CheckTrackCoverage:input_type -> routes.v1.CheckTrackCoverageRequest
+	25, // 42: routes.v1.RouteService.GetRouteForecast:input_type -> routes.v1.GetRouteForecastRequest
+	11, // 43: routes.v1.RouteService.PreviewRoute:output_type -> routes.v1.PreviewRouteResponse
+	14, // 44: routes.v1.RouteService.CreateRoute:output_type -> routes.v1.CreateRouteResponse
+	16, // 45: routes.v1.RouteService.GetRoute:output_type -> routes.v1.GetRouteResponse
+	18, // 46: routes.v1.RouteService.ListRoutes:output_type -> routes.v1.ListRoutesResponse
+	20, // 47: routes.v1.RouteService.UpdateRoute:output_type -> routes.v1.UpdateRouteResponse
+	22, // 48: routes.v1.RouteService.DeleteRoute:output_type -> routes.v1.DeleteRouteResponse
+	24, // 49: routes.v1.RouteService.CheckTrackCoverage:output_type -> routes.v1.CheckTrackCoverageResponse
+	28, // 50: routes.v1.RouteService.GetRouteForecast:output_type -> routes.v1.GetRouteForecastResponse
+	43, // [43:51] is the sub-list for method output_type
+	35, // [35:43] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_routes_v1_routes_proto_init() }
@@ -3615,19 +3907,20 @@ func file_routes_v1_routes_proto_init() {
 		return
 	}
 	file_routes_v1_routes_proto_msgTypes[2].OneofWrappers = []any{}
-	file_routes_v1_routes_proto_msgTypes[7].OneofWrappers = []any{
+	file_routes_v1_routes_proto_msgTypes[4].OneofWrappers = []any{}
+	file_routes_v1_routes_proto_msgTypes[8].OneofWrappers = []any{
 		(*createRouteRequest_Waypoints)(nil),
 		(*createRouteRequest_Gpx)(nil),
 		(*createRouteRequest_ActivityId)(nil),
 		(*createRouteRequest_RouteId)(nil),
 	}
-	file_routes_v1_routes_proto_msgTypes[13].OneofWrappers = []any{}
-	file_routes_v1_routes_proto_msgTypes[17].OneofWrappers = []any{
+	file_routes_v1_routes_proto_msgTypes[14].OneofWrappers = []any{}
+	file_routes_v1_routes_proto_msgTypes[18].OneofWrappers = []any{
 		(*checkTrackCoverageRequest_Gpx)(nil),
 		(*checkTrackCoverageRequest_ActivityId)(nil),
 		(*checkTrackCoverageRequest_RouteId)(nil),
 	}
-	file_routes_v1_routes_proto_msgTypes[19].OneofWrappers = []any{
+	file_routes_v1_routes_proto_msgTypes[20].OneofWrappers = []any{
 		(*getRouteForecastRequest_RouteId)(nil),
 		(*getRouteForecastRequest_Gpx)(nil),
 		(*getRouteForecastRequest_Path)(nil),
@@ -3637,8 +3930,8 @@ func file_routes_v1_routes_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_routes_v1_routes_proto_rawDesc), len(file_routes_v1_routes_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   23,
+			NumEnums:      5,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
