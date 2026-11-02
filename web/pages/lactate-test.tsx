@@ -26,48 +26,88 @@ import {
   getLactateTest,
 } from "gen/lactate/v1/lactate-LactateTestService_connectquery";
 import type { LactateTest } from "gen/lactate/v1/lactate_pb";
-import { LactateTestService } from "gen/lactate/v1/lactate_pb";
+import {
+  LactateTestService,
+  ThresholdDefinition,
+} from "gen/lactate/v1/lactate_pb";
 import { formatDate } from "helpers/format";
 import { invalidateServices } from "helpers/query";
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 /**
- * Results shows a test's aerobic threshold by each definition, and its
- * baseline.
+ * AnaerobicResults shows a test's anaerobic threshold by each definition,
+ * if the test went hard enough to find one.
+ */
+const AnaerobicResults: React.FC<{ test: LactateTest }> = ({ test }) => {
+  if (!test.anaerobicThresholdEstimates.some((est) => est.heartRateBpm > 0)) {
+    return null;
+  }
+  return (
+    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {test.anaerobicThresholdEstimates.map((estimate, index) => (
+        <Stat
+          key={estimate.definition}
+          label={
+            index === 0
+              ? "Anaerobic threshold"
+              : definitionLabel(estimate.definition)
+          }
+          value={
+            estimate.heartRateBpm > 0 ? `${estimate.heartRateBpm} bpm` : "–"
+          }
+          sub={
+            estimate.definition === ThresholdDefinition.DMAX
+              ? `Fitted curve, ${formatMmol(estimate.lactateMmolPerLiter)}`
+              : `At ${formatMmol(estimate.lactateMmolPerLiter)}`
+          }
+        />
+      ))}
+    </dl>
+  );
+};
+
+/**
+ * Results shows a test's aerobic threshold by each definition, its
+ * baseline, and its anaerobic threshold if it found one.
  */
 const Results: React.FC<{ test: LactateTest }> = ({ test }) => (
-  <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-    {test.thresholdEstimates.map((estimate, index) => (
+  <div className="flex flex-col gap-4">
+    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {test.thresholdEstimates.map((estimate, index) => (
+        <Stat
+          key={estimate.definition}
+          label={
+            index === 0
+              ? "Aerobic threshold"
+              : definitionLabel(estimate.definition)
+          }
+          value={
+            estimate.heartRateBpm > 0 ? `${estimate.heartRateBpm} bpm` : "–"
+          }
+          sub={
+            index === 0
+              ? "At 2 mmol/L"
+              : `At ${formatMmol(estimate.lactateMmolPerLiter)}`
+          }
+        />
+      ))}
       <Stat
-        key={estimate.definition}
-        label={
-          index === 0
-            ? "Aerobic threshold"
-            : definitionLabel(estimate.definition)
+        label="Lowest reading"
+        value={
+          test.lowestLactateMmolPerLiter > 0
+            ? formatMmol(test.lowestLactateMmolPerLiter)
+            : "–"
         }
-        value={estimate.heartRateBpm > 0 ? `${estimate.heartRateBpm} bpm` : "–"}
         sub={
-          index === 0
-            ? "At 2 mmol/L"
-            : `At ${formatMmol(estimate.lactateMmolPerLiter)}`
+          test.restingLactateMmolPerLiter > 0
+            ? `${formatMmol(test.restingLactateMmolPerLiter)} at rest`
+            : "Not measured at rest"
         }
       />
-    ))}
-    <Stat
-      label="Lowest reading"
-      value={
-        test.lowestLactateMmolPerLiter > 0
-          ? formatMmol(test.lowestLactateMmolPerLiter)
-          : "–"
-      }
-      sub={
-        test.restingLactateMmolPerLiter > 0
-          ? `${formatMmol(test.restingLactateMmolPerLiter)} at rest`
-          : "Not measured at rest"
-      }
-    />
-  </dl>
+    </dl>
+    <AnaerobicResults test={test} />
+  </div>
 );
 
 // LactateTestPage shows a lactate test's curve and aerobic threshold.
