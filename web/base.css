@@ -221,3 +221,152 @@
     display: none;
   }
 }
+
+/*
+  The splash screen in index.html (internal/html/html.go), shown until the
+  app has loaded the signed in user: the mark on the sign in page's ink
+  ground, its ridge drawing itself and the summit dot hopping onto the top.
+  It's plain CSS rather than Tailwind classes, because Tailwind doesn't scan
+  the Go template, and uses colors rather than theme variables, which
+  Tailwind leaves out when no class uses them.
+*/
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #111111;
+  color: #fafafa;
+  font-family: "Lexend", ui-sans-serif, system-ui, sans-serif;
+  transition: opacity 300ms ease-out;
+}
+
+.splash-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/*
+  The content fades in after a moment, so fast loads show only the ground
+  and not a flash of the mark.
+*/
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 4rem;
+  animation: splash-in 400ms ease-out 150ms both;
+}
+
+.splash-mark {
+  width: 120px;
+  height: 78px;
+  overflow: visible;
+}
+
+.splash-ridge {
+  stroke-dasharray: 1;
+  animation: splash-ridge 2.4s ease-in-out infinite;
+}
+
+.splash-summit {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: splash-summit 2.4s ease-in-out infinite;
+}
+
+.splash-wordmark {
+  font-family: "Lexend Giga", ui-sans-serif, system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.splash-wordmark span {
+  color: #d2601a;
+}
+
+.splash-status {
+  font-size: 0.875rem;
+  color: #a3a3a3;
+  animation: splash-pulse 2.4s ease-in-out infinite;
+}
+
+.splash-ridges {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+  height: 120px;
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes splash-ridge {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  45%,
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* The dot drops onto the summit, squashes, and hops once for joy. */
+@keyframes splash-summit {
+  0%,
+  40% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) scale(1.25, 0.75);
+  }
+  58% {
+    transform: translateY(-5px) scale(0.9, 1.1);
+  }
+  66% {
+    transform: translateY(0) scale(1.1, 0.9);
+  }
+  72%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes splash-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash,
+  .splash-content,
+  .splash-ridge,
+  .splash-summit,
+  .splash-status {
+    animation: none;
+    transition: none;
+  }
+}

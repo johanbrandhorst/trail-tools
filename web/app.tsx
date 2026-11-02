@@ -1,9 +1,9 @@
 import Header from "@components/header/header";
-import Loading from "@components/loading";
 import { Code } from "@connectrpc/connect";
 import { useQuery } from "@connectrpc/connect-query";
 import { getCurrentUser } from "gen/users/v1/users-UserService_connectquery";
 import type { User } from "gen/users/v1/users_pb";
+import { hideSplash } from "helpers/splash";
 import ActivitiesPage from "pages/activities";
 import ActivityPage from "pages/activity";
 import CalendarPage from "pages/calendar";
@@ -75,8 +75,18 @@ const App: React.FC = () => {
     }
   );
 
+  /**
+   * The splash screen in index.html covers the page until the app has the
+   * user and something to show.
+   */
+  React.useEffect(() => {
+    if (!isPending) {
+      hideSplash();
+    }
+  }, [isPending]);
+
   if (isPending) {
-    return <Loading />;
+    return null;
   }
 
   // We got a response, let's check if it's an error

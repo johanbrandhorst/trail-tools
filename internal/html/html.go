@@ -24,6 +24,13 @@ const defaultDescription = "Training plans, race day plans and trip reports for 
 // their own: the app's mark and name.
 const defaultImagePath = "/img/og.png"
 
+// indexTemplate is the page every route serves. Besides the root the app
+// renders into, it has a splash screen with the app's mark, styled by
+// .splash in web/base.css, which covers the page while the bundle downloads
+// and the app loads the signed in user. Being in the HTML, it shows as soon
+// as the stylesheet has loaded, rather than after the much larger script,
+// and the app fades it out once it has something to show (see
+// web/helpers/splash.ts).
 var indexTemplate = template.Must(template.New(templateName).Parse(
 	fmt.Sprintf(
 		`<!doctype html>
@@ -66,6 +73,21 @@ var indexTemplate = template.Must(template.New(templateName).Parse(
   </head>
   <body class="h-full">
     <div id="root" class="h-full"></div>
+    <div id="splash" class="splash" role="status" aria-label="Loading trailrunn.ing">
+      <div class="splash-content">
+        <svg class="splash-mark" aria-hidden="true" viewBox="0 0 40 26" fill="none">
+          <path class="splash-ridge" pathLength="1" d="M2 22 L9 15 L13 18 L21 6 L26 12 L30 9 L38 20" stroke="#d2601a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+          <circle class="splash-summit" cx="21" cy="6" r="2.6" fill="#ffffff" />
+          <path d="M2 24.5 L38 24.5" stroke="#404040" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <div class="splash-wordmark">trailrunn<span>.ing</span></div>
+        <p class="splash-status">Lacing up…</p>
+      </div>
+      <svg class="splash-ridges" aria-hidden="true" viewBox="0 0 600 120" preserveAspectRatio="none">
+        <path d="M0 100 L60 80 L100 90 L170 50 L210 65 L280 20 L330 55 L370 40 L430 75 L480 60 L540 90 L600 80" fill="none" stroke="#d2601a" stroke-width="2" stroke-opacity="0.55" stroke-linejoin="round" />
+        <path d="M0 112 L80 98 L140 104 L220 82 L300 92 L380 74 L460 96 L540 88 L600 100" fill="none" stroke="#404040" stroke-width="1.5" stroke-linejoin="round" />
+      </svg>
+    </div>
   </body>
   {{- if .Watch }}
   %s
