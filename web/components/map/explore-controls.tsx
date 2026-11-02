@@ -3,7 +3,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { searchPlaces } from "gen/geo/v1/geo-GeoService_connectquery";
 import type { Place } from "gen/geo/v1/geo_pb";
 import { readStorageFlag, writeStorageFlag } from "helpers/storage";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 import { useViewport } from "./layers";
 import type { Viewport } from "./layers";
@@ -45,10 +45,18 @@ const Toggle: React.FC<ToggleProps> = ({ label, checked, onChange, note }) => (
   </label>
 );
 
+/**
+ * PlaceSearch searches for places and flies the map to the one picked. Its
+ * results show only while the search field has focus, and close once a place
+ * is picked, so they don't cover the map's other controls. On phones there's
+ * no Escape key, so tapping anywhere else closes them too.
+ */
 export const PlaceSearch: React.FC = () => {
   const map = useMap();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<Place[]>([]);
+  const [open, setOpen] = useState(false);
   const search = useMutation(searchPlaces, {
     onSuccess: (response) => {
       setPlaces(response.places);
@@ -56,7 +64,9 @@ export const PlaceSearch: React.FC = () => {
   });
 
   const goTo = (place: Place) => {
-    setPlaces([]);
+    setOpen(false);
+    // Blurring closes the keyboard on phones, uncovering the map.
+    inputRef.current?.blur();
     if (
       place.bounds !== undefined &&
       place.bounds.north !== place.bounds.south
@@ -77,23 +87,46 @@ export const PlaceSearch: React.FC = () => {
   };
 
   return (
-    <div className="pointer-events-auto relative w-64 max-w-full">
+    <div
+      className="pointer-events-auto relative w-64 max-w-full"
+      onBlur={(event) => {
+        // Focus moving to a result keeps the results open.
+        if (
+          !(event.relatedTarget instanceof Node) ||
+          !event.currentTarget.contains(event.relatedTarget)
+        ) {
+          setOpen(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+        }
+      }}
+    >
       <form
         className="flex rounded-md bg-white shadow ring-1 ring-black/10"
         onSubmit={(event) => {
           event.preventDefault();
           if (query.trim() !== "") {
+            setOpen(true);
             search.mutate({ limit: 8, query: query.trim() });
           }
         }}
       >
         <input
+          ref={inputRef}
           type="search"
           value={query}
           placeholder="Search places"
           className="min-w-0 grow rounded-l-md px-2 py-1.5 text-sm focus:outline-none"
           onChange={(event) => {
             setQuery(event.target.value);
+            // Results for an earlier query would be stale.
+            setOpen(false);
+          }}
+          onFocus={() => {
+            setOpen(true);
           }}
         />
         <button
@@ -105,18 +138,27 @@ export const PlaceSearch: React.FC = () => {
           <MagnifyingGlassIcon className="size-4" />
         </button>
       </form>
-      {search.error !== null && (
+      {open && search.error !== null && (
         <p className="mt-1 rounded bg-white px-2 py-1 text-xs text-red-700 shadow">
           {search.error.rawMessage}
         </p>
       )}
-      {search.isSuccess && places.length === 0 && query !== "" && (
+      {open && search.isSuccess && places.length === 0 && (
         <p className="mt-1 rounded bg-white px-2 py-1 text-xs text-gray-600 shadow">
           No places found
         </p>
       )}
-      {places.length > 0 && (
-        <ul className="absolute mt-1 max-h-72 w-full overflow-y-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/10">
+      {open && search.isSuccess && places.length > 0 && (
+        <ul
+          className="absolute mt-1 max-h-72 w-full overflow-y-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/10"
+          onMouseDown={(event) => {
+            /**
+             * Keep the focus in the search field, as buttons don't take it
+             * in every browser, and the results would close before the click.
+             */
+            event.preventDefault();
+          }}
+        >
           {places.map((place) => (
             <li
               key={`${place.name}-${place.location?.lat}-${place.location?.lng}`}
