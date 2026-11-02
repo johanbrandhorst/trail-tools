@@ -1073,6 +1073,7 @@ type Exercise struct {
 	Animations       json.RawMessage
 	CreateTime       pgtype.Timestamptz
 	UpdateTime       pgtype.Timestamptz
+	GarminExercise   string
 }
 
 type GarminActivityFile struct {

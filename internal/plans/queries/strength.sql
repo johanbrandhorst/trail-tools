@@ -9,14 +9,15 @@ insert into exercises (
   equipment,
   equipment_notes,
   each_side,
-  animations
+  animations,
+  garmin_exercise
 ) values (
   $1, $2, $3, $4,
   -- Enum arrays are sent as text, as they can't be encoded.
   sqlc.arg(primary_muscles)::text[]::muscle[],
   sqlc.arg(secondary_muscles)::text[]::muscle[],
   sqlc.arg(equipment)::text[]::equipment[],
-  $5, $6, $7
+  $5, $6, $7, $8
 )
 returning *;
 
@@ -45,6 +46,7 @@ update exercises set
   equipment_notes = $6,
   each_side = $7,
   animations = $8,
+  garmin_exercise = $9,
   update_time = now()
 where id = $1 and user_id = $2
 returning *;
@@ -56,7 +58,8 @@ where id = $1 and user_id = $2;
 -- name: ListWorkoutExercises :many
 -- Lists the exercises of the user's workouts, optionally of a plan, of
 -- some workouts or within dates, by workout and position.
-select we.*, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side
+select we.*, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
+  e.garmin_exercise as exercise_garmin_exercise
 from workout_exercises we
 join workouts w on w.id = we.workout_id
 join training_plans p on p.id = w.plan_id
