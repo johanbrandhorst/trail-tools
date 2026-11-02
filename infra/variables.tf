@@ -58,6 +58,12 @@ variable "trace_sample_rate" {
   default     = 1
 }
 
+variable "garmin_client_id" {
+  description = "The Garmin Connect Developer Program app's client ID (consumer key). Empty to disable Garmin. The client secret is read from the garmin-client-secret secret, and the secret in the notifications' URL from garmin-webhook-secret."
+  type        = string
+  default     = ""
+}
+
 variable "strava_client_id" {
   description = "The Strava API application's client ID. Empty to disable Strava. The client secret is read from the strava-client-secret secret."
   type        = string

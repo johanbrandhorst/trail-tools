@@ -12,6 +12,9 @@ locals {
     : length(data.google_cloud_run_v2_service.current) > 0 ? data.google_cloud_run_v2_service.current[0].template[0].containers[0].image
   : "${local.image_repo}:latest")
   strava = var.strava_client_id != ""
+  garmin = var.garmin_client_id != ""
+  # The scheduled sync syncs Strava and Garmin.
+  scheduled_sync = local.strava || local.garmin
 }
 
 resource "google_project_service" "services" {
@@ -80,13 +83,13 @@ resource "google_service_account" "import" {
 
 resource "google_service_account" "scheduler" {
   account_id   = "trail-tools-scheduler"
-  display_name = "Triggers Trail Tools Strava syncs"
+  display_name = "Triggers Trail Tools Strava and Garmin syncs"
 }
 
 # Secrets are created here, but their values are added by hand so they
 # aren't stored in the Terraform state. See the README.
 resource "google_secret_manager_secret" "secrets" {
-  for_each  = toset(["database-url", "admin-bootstrap-token", "strava-client-secret", "strava-webhook-verify-token"])
+  for_each  = toset(["database-url", "admin-bootstrap-token", "strava-client-secret", "strava-webhook-verify-token", "garmin-client-secret", "garmin-webhook-secret"])
   secret_id = each.value
   replication {
     auto {}

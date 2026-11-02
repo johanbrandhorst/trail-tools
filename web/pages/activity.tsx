@@ -226,6 +226,17 @@ const ActivityPage: React.FC = () => {
               View on Strava
             </a>
           )}
+          {activity.garminUrl !== "" && (
+            <a
+              href={activity.garminUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={secondaryButton}
+            >
+              <ArrowTopRightOnSquareIcon className="size-4" />
+              View on Garmin
+            </a>
+          )}
           {track.positions.length > 1 && (
             <button
               type="button"

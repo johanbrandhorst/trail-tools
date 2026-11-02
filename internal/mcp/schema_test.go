@@ -10,6 +10,7 @@ import (
 	// Register the types of the services the tests don't otherwise use, so
 	// every API method's schema can be validated.
 	_ "github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1"
 	_ "github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1"
 	_ "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 	_ "github.com/johanbrandhorst/trail-tools/internal/gen/routing/v1"

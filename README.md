@@ -114,6 +114,47 @@ a subscription to another server. Strava can't reach a local server, so leave
 it unset locally: new activities arrive with the periodic sync, or when you
 sync from Settings.
 
+### Garmin Connect
+
+With an app in the [Garmin Connect Developer
+Program](https://developer.garmin.com/gc-developer-program/), the server also
+syncs with Garmin Connect, alongside Strava or instead of it:
+
+- **Activities** come straight from the watch, through Garmin's push
+  notifications, with the sets of strength workouts, which log the strength
+  workout they complete. An activity that reaches both Strava and Garmin is
+  one activity, found by Strava's upload ID or the start time. Whichever has
+  the samples first keeps them, and Strava's name and description win.
+  Garmin doesn't notify the app of deleted activities, so an activity
+  deleted on Garmin stays until it's deleted here.
+- **Workouts** of the coming two weeks, runs and strength workouts, go on the
+  Garmin calendar, which syncs them to the watch: right away when they change,
+  and with the hourly sync. Garmin only takes exercises of its catalog, so an
+  exercise of the library names its own (`garmin_exercise`, which agents find
+  with `SearchGarminExercises`), or is matched by its name; others are steps
+  described by their name.
+
+Garmin requires notifications to be answered before they're processed, so
+they're queued in the database, and the hourly sync's Cloud Scheduler job is
+run right away to handle them, as Cloud Run only runs the server during
+requests.
+
+To use as little data as possible, an activity file is only downloaded when
+the activity has no samples yet, or it's strength training, whose sets are
+only in the file, and a workout is only sent again when it changes. Files are
+stored with the activities' streams, gzipped. With Enterprise access, a new
+connection also gets the last 30 days of activities.
+
+Set `-garmin-client-id`, `-garmin-client-secret` and
+`-garmin-webhook-secret`, a random secret of at least 24 characters. In
+Garmin's developer portal, set the app's redirect URL to
+`<public-url>/garmin/callback`. In Garmin's [endpoint
+configuration](https://apis.garmin.com/tools/endpoints), enable activities,
+manually updated activities, activity files, deregistrations and user
+permission changes, all at
+`<public-url>/garmin/webhook/<garmin-webhook-secret>`. Garmin can't reach a
+local server, so new activities only arrive on a public one.
+
 ### Trip reports
 
 Write a trip report from an activity's page. Before publishing, choose a
@@ -459,6 +500,18 @@ aren't stored in the Terraform state:
 
   ```sh
   $ openssl rand -hex 24 | gcloud secrets versions add strava-webhook-verify-token --data-file=- --project trail-tools-444904
+  ```
+
+- `garmin-client-secret` and `garmin-webhook-secret`: the Garmin app's
+  client secret, and the secret in the URL Garmin sends notifications to.
+  Also set `garmin_client_id` in [`terraform.tfvars`](infra/terraform.tfvars),
+  which enables Garmin and adds it to the hourly sync. Configure the URLs in
+  Garmin's developer portal as in [Garmin Connect](#garmin-connect):
+
+  ```sh
+  $ printf %s '<client secret>' | gcloud secrets versions add garmin-client-secret --data-file=- --project trail-tools-444904
+  $ openssl rand -hex 24 | gcloud secrets versions add garmin-webhook-secret --data-file=- --project trail-tools-444904
+  $ gcloud secrets versions access latest --secret garmin-webhook-secret --project trail-tools-444904
   ```
 
 ### Photos

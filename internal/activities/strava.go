@@ -239,25 +239,30 @@ func (r *Repository) DeleteStravaConnection(ctx context.Context, userID pgtype.U
 }
 
 // DeleteActivityByStravaID deletes one of the user's activities by its
-// Strava ID, with its streams and Strava's responses about it. The objects
-// are deleted first, so that if that fails the activity is still there to
-// delete them again.
+// Strava ID, with its streams and Strava's responses about it. An activity
+// that's on Garmin Connect too is kept, without its Strava ID, and with its
+// samples if they're Garmin's. The objects are deleted first, so that if
+// that fails the activity is still there to delete them again.
 func (r *Repository) DeleteActivityByStravaID(ctx context.Context, userID pgtype.UUID, stravaID int64) error {
 	keys := make([]string, 0, len(responseNames)+1)
 	for _, name := range responseNames {
 		keys = append(keys, responseKey(userID, stravaID, name))
 	}
-	id, err := r.q.GetActivityIDByStravaID(ctx, &gen.GetActivityIDByStravaIDParams{UserID: userID, StravaID: stravaID})
+	row, err := r.q.GetActivityIDByStravaID(ctx, &gen.GetActivityIDByStravaIDParams{UserID: userID, StravaID: stravaID})
 	switch {
 	case err == nil:
-		keys = append(keys, streamsKey(userID, id))
+		// Garmin's samples stay with the activity.
+		if row.GarminActivityID.Valid && row.GarminSamples {
+			break
+		}
+		keys = append(keys, streamsKey(userID, row.ID))
 	case !errors.Is(err, pgx.ErrNoRows):
 		return fmt.Errorf("failed to get activity: %w", err)
 	}
 	if err := r.deleteObjects(ctx, keys); err != nil {
 		return fmt.Errorf("failed to delete activity data: %w", err)
 	}
-	if err := r.q.DeleteActivityByStravaID(ctx, &gen.DeleteActivityByStravaIDParams{UserID: userID, StravaID: stravaID}); err != nil {
+	if _, err := r.q.DeleteActivityByStravaID(ctx, &gen.DeleteActivityByStravaIDParams{UserID: userID, StravaID: stravaID}); err != nil {
 		return fmt.Errorf("failed to delete activity: %w", err)
 	}
 	return nil

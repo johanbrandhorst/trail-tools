@@ -21,6 +21,53 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Where an activity's data comes from.
+type ActivitySource int32
+
+const (
+	ActivitySource_ACTIVITY_SOURCE_UNSPECIFIED ActivitySource = 0
+	// Strava's API.
+	ActivitySource_ACTIVITY_SOURCE_STRAVA ActivitySource = 1
+	// Garmin Connect, from the watch's activity file.
+	ActivitySource_ACTIVITY_SOURCE_GARMIN ActivitySource = 2
+)
+
+// Enum value maps for ActivitySource.
+var (
+	ActivitySource_name = map[int32]string{
+		0: "ACTIVITY_SOURCE_UNSPECIFIED",
+		1: "ACTIVITY_SOURCE_STRAVA",
+		2: "ACTIVITY_SOURCE_GARMIN",
+	}
+	ActivitySource_value = map[string]int32{
+		"ACTIVITY_SOURCE_UNSPECIFIED": 0,
+		"ACTIVITY_SOURCE_STRAVA":      1,
+		"ACTIVITY_SOURCE_GARMIN":      2,
+	}
+)
+
+func (x ActivitySource) Enum() *ActivitySource {
+	p := new(ActivitySource)
+	*p = x
+	return p
+}
+
+func (x ActivitySource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActivitySource) Descriptor() protoreflect.EnumDescriptor {
+	return file_activities_v1_activities_proto_enumTypes[0].Descriptor()
+}
+
+func (ActivitySource) Type() protoreflect.EnumType {
+	return &file_activities_v1_activities_proto_enumTypes[0]
+}
+
+func (x ActivitySource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // ActivitySort is the order to list activities in.
 type ActivitySort int32
 
@@ -62,11 +109,11 @@ func (x ActivitySort) String() string {
 }
 
 func (ActivitySort) Descriptor() protoreflect.EnumDescriptor {
-	return file_activities_v1_activities_proto_enumTypes[0].Descriptor()
+	return file_activities_v1_activities_proto_enumTypes[1].Descriptor()
 }
 
 func (ActivitySort) Type() protoreflect.EnumType {
-	return &file_activities_v1_activities_proto_enumTypes[0]
+	return &file_activities_v1_activities_proto_enumTypes[1]
 }
 
 func (x ActivitySort) Number() protoreflect.EnumNumber {
@@ -109,11 +156,11 @@ func (x SummaryInterval) String() string {
 }
 
 func (SummaryInterval) Descriptor() protoreflect.EnumDescriptor {
-	return file_activities_v1_activities_proto_enumTypes[1].Descriptor()
+	return file_activities_v1_activities_proto_enumTypes[2].Descriptor()
 }
 
 func (SummaryInterval) Type() protoreflect.EnumType {
-	return &file_activities_v1_activities_proto_enumTypes[1]
+	return &file_activities_v1_activities_proto_enumTypes[2]
 }
 
 func (x SummaryInterval) Number() protoreflect.EnumNumber {
@@ -146,6 +193,9 @@ type Activity struct {
 	xxx_hidden_RelativeEffort      int32                  `protobuf:"varint,21,opt,name=relative_effort,json=relativeEffort,proto3"`
 	xxx_hidden_PhotoCount          int32                  `protobuf:"varint,22,opt,name=photo_count,json=photoCount,proto3"`
 	xxx_hidden_StravaUrl           string                 `protobuf:"bytes,23,opt,name=strava_url,json=stravaUrl,proto3"`
+	xxx_hidden_GarminActivityId    string                 `protobuf:"bytes,24,opt,name=garmin_activity_id,json=garminActivityId,proto3"`
+	xxx_hidden_GarminUrl           string                 `protobuf:"bytes,25,opt,name=garmin_url,json=garminUrl,proto3"`
+	xxx_hidden_DataSource          ActivitySource         `protobuf:"varint,26,opt,name=data_source,json=dataSource,proto3,enum=activities.v1.ActivitySource"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -336,6 +386,27 @@ func (x *Activity) GetStravaUrl() string {
 	return ""
 }
 
+func (x *Activity) GetGarminActivityId() string {
+	if x != nil {
+		return x.xxx_hidden_GarminActivityId
+	}
+	return ""
+}
+
+func (x *Activity) GetGarminUrl() string {
+	if x != nil {
+		return x.xxx_hidden_GarminUrl
+	}
+	return ""
+}
+
+func (x *Activity) GetDataSource() ActivitySource {
+	if x != nil {
+		return x.xxx_hidden_DataSource
+	}
+	return ActivitySource_ACTIVITY_SOURCE_UNSPECIFIED
+}
+
 func (x *Activity) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -428,6 +499,18 @@ func (x *Activity) SetStravaUrl(v string) {
 	x.xxx_hidden_StravaUrl = v
 }
 
+func (x *Activity) SetGarminActivityId(v string) {
+	x.xxx_hidden_GarminActivityId = v
+}
+
+func (x *Activity) SetGarminUrl(v string) {
+	x.xxx_hidden_GarminUrl = v
+}
+
+func (x *Activity) SetDataSource(v ActivitySource) {
+	x.xxx_hidden_DataSource = v
+}
+
 func (x *Activity) HasStartTime() bool {
 	if x == nil {
 		return false
@@ -444,7 +527,8 @@ type Activity_builder struct {
 
 	// The ID of the activity.
 	Id string
-	// The Strava activity ID.
+	// The Strava activity ID, empty if the activity is only on Garmin
+	// Connect.
 	StravaId string
 	// The name of the activity.
 	Name string
@@ -488,8 +572,18 @@ type Activity_builder struct {
 	// videos. Until the activity's details are synced, it's the count from
 	// Strava's list of activities, which may include videos or miss photos.
 	PhotoCount int32
-	// The page of the activity on Strava.
+	// The page of the activity on Strava, empty if it isn't on Strava.
 	StravaUrl string
+	// The Garmin Connect activity ID, empty if the activity didn't come from
+	// Garmin.
+	GarminActivityId string
+	// The page of the activity on Garmin Connect, empty if it didn't come
+	// from Garmin.
+	GarminUrl string
+	// Where the activity's stats and streams come from. An activity on both
+	// Strava and Garmin keeps those of the first to have its samples, and
+	// Strava's name and description.
+	DataSource ActivitySource
 }
 
 func (b0 Activity_builder) Build() *Activity {
@@ -519,6 +613,9 @@ func (b0 Activity_builder) Build() *Activity {
 	x.xxx_hidden_RelativeEffort = b.RelativeEffort
 	x.xxx_hidden_PhotoCount = b.PhotoCount
 	x.xxx_hidden_StravaUrl = b.StravaUrl
+	x.xxx_hidden_GarminActivityId = b.GarminActivityId
+	x.xxx_hidden_GarminUrl = b.GarminUrl
+	x.xxx_hidden_DataSource = b.DataSource
 	return m0
 }
 
@@ -1678,7 +1775,7 @@ var File_activities_v1_activities_proto protoreflect.FileDescriptor
 
 const file_activities_v1_activities_proto_rawDesc = "" +
 	"\n" +
-	"\x1eactivities/v1/activities.proto\x12\ractivities.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x82\a\n" +
+	"\x1eactivities/v1/activities.proto\x12\ractivities.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8f\b\n" +
 	"\bActivity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tstrava_id\x18\x02 \x01(\tR\bstravaId\x12\x12\n" +
@@ -1709,7 +1806,12 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\vphoto_count\x18\x16 \x01(\x05R\n" +
 	"photoCount\x12\x1d\n" +
 	"\n" +
-	"strava_url\x18\x17 \x01(\tR\tstravaUrl\"\xe7\x01\n" +
+	"strava_url\x18\x17 \x01(\tR\tstravaUrl\x12,\n" +
+	"\x12garmin_activity_id\x18\x18 \x01(\tR\x10garminActivityId\x12\x1d\n" +
+	"\n" +
+	"garmin_url\x18\x19 \x01(\tR\tgarminUrl\x12>\n" +
+	"\vdata_source\x18\x1a \x01(\x0e2\x1d.activities.v1.ActivitySourceR\n" +
+	"dataSource\"\xe7\x01\n" +
 	"\rActivityPhoto\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\acaption\x18\x02 \x01(\tR\acaption\x121\n" +
@@ -1773,7 +1875,11 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x15elevation_gain_meters\x18\x06 \x01(\x01R\x13elevationGainMeters\x126\n" +
 	"\x17longest_distance_meters\x18\a \x01(\x01R\x15longestDistanceMeters\"[\n" +
 	"\x1bSummarizeActivitiesResponse\x12<\n" +
-	"\tsummaries\x18\x01 \x03(\v2\x1e.activities.v1.ActivitySummaryR\tsummaries*\x8a\x01\n" +
+	"\tsummaries\x18\x01 \x03(\v2\x1e.activities.v1.ActivitySummaryR\tsummaries*i\n" +
+	"\x0eActivitySource\x12\x1f\n" +
+	"\x1bACTIVITY_SOURCE_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16ACTIVITY_SOURCE_STRAVA\x10\x01\x12\x1a\n" +
+	"\x16ACTIVITY_SOURCE_GARMIN\x10\x02*\x8a\x01\n" +
 	"\fActivitySort\x12\x1d\n" +
 	"\x19ACTIVITY_SORT_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ACTIVITY_SORT_DISTANCE\x10\x01\x12 \n" +
@@ -1789,46 +1895,48 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x13SummarizeActivities\x12).activities.v1.SummarizeActivitiesRequest\x1a*.activities.v1.SummarizeActivitiesResponseB\xc9\x01\n" +
 	"\x11com.activities.v1B\x0fActivitiesProtoP\x01ZNgithub.com/johanbrandhorst/trail-tools/internal/gen/activities/v1;activitiesv1\xa2\x02\x03AXX\xaa\x02\rActivities.V1\xca\x02\rActivities\\V1\xe2\x02\x19Activities\\V1\\GPBMetadata\xea\x02\x0eActivities::V1b\x06proto3"
 
-var file_activities_v1_activities_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_activities_v1_activities_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_activities_v1_activities_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_activities_v1_activities_proto_goTypes = []any{
-	(ActivitySort)(0),                   // 0: activities.v1.ActivitySort
-	(SummaryInterval)(0),                // 1: activities.v1.SummaryInterval
-	(*Activity)(nil),                    // 2: activities.v1.Activity
-	(*ActivityPhoto)(nil),               // 3: activities.v1.ActivityPhoto
-	(*LatLng)(nil),                      // 4: activities.v1.LatLng
-	(*ActivityStreams)(nil),             // 5: activities.v1.ActivityStreams
-	(*ListActivitiesRequest)(nil),       // 6: activities.v1.ListActivitiesRequest
-	(*ListActivitiesResponse)(nil),      // 7: activities.v1.ListActivitiesResponse
-	(*GetActivityRequest)(nil),          // 8: activities.v1.GetActivityRequest
-	(*GetActivityResponse)(nil),         // 9: activities.v1.GetActivityResponse
-	(*SummarizeActivitiesRequest)(nil),  // 10: activities.v1.SummarizeActivitiesRequest
-	(*ActivitySummary)(nil),             // 11: activities.v1.ActivitySummary
-	(*SummarizeActivitiesResponse)(nil), // 12: activities.v1.SummarizeActivitiesResponse
-	(*timestamppb.Timestamp)(nil),       // 13: google.protobuf.Timestamp
+	(ActivitySource)(0),                 // 0: activities.v1.ActivitySource
+	(ActivitySort)(0),                   // 1: activities.v1.ActivitySort
+	(SummaryInterval)(0),                // 2: activities.v1.SummaryInterval
+	(*Activity)(nil),                    // 3: activities.v1.Activity
+	(*ActivityPhoto)(nil),               // 4: activities.v1.ActivityPhoto
+	(*LatLng)(nil),                      // 5: activities.v1.LatLng
+	(*ActivityStreams)(nil),             // 6: activities.v1.ActivityStreams
+	(*ListActivitiesRequest)(nil),       // 7: activities.v1.ListActivitiesRequest
+	(*ListActivitiesResponse)(nil),      // 8: activities.v1.ListActivitiesResponse
+	(*GetActivityRequest)(nil),          // 9: activities.v1.GetActivityRequest
+	(*GetActivityResponse)(nil),         // 10: activities.v1.GetActivityResponse
+	(*SummarizeActivitiesRequest)(nil),  // 11: activities.v1.SummarizeActivitiesRequest
+	(*ActivitySummary)(nil),             // 12: activities.v1.ActivitySummary
+	(*SummarizeActivitiesResponse)(nil), // 13: activities.v1.SummarizeActivitiesResponse
+	(*timestamppb.Timestamp)(nil),       // 14: google.protobuf.Timestamp
 }
 var file_activities_v1_activities_proto_depIdxs = []int32{
-	13, // 0: activities.v1.Activity.start_time:type_name -> google.protobuf.Timestamp
-	4,  // 1: activities.v1.ActivityPhoto.location:type_name -> activities.v1.LatLng
-	13, // 2: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
-	0,  // 3: activities.v1.ListActivitiesRequest.sort:type_name -> activities.v1.ActivitySort
-	2,  // 4: activities.v1.ListActivitiesResponse.activities:type_name -> activities.v1.Activity
-	2,  // 5: activities.v1.GetActivityResponse.activity:type_name -> activities.v1.Activity
-	5,  // 6: activities.v1.GetActivityResponse.streams:type_name -> activities.v1.ActivityStreams
-	3,  // 7: activities.v1.GetActivityResponse.photos:type_name -> activities.v1.ActivityPhoto
-	1,  // 8: activities.v1.SummarizeActivitiesRequest.interval:type_name -> activities.v1.SummaryInterval
-	11, // 9: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
-	6,  // 10: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
-	8,  // 11: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
-	10, // 12: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
-	7,  // 13: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
-	9,  // 14: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
-	12, // 15: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
-	13, // [13:16] is the sub-list for method output_type
-	10, // [10:13] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	14, // 0: activities.v1.Activity.start_time:type_name -> google.protobuf.Timestamp
+	0,  // 1: activities.v1.Activity.data_source:type_name -> activities.v1.ActivitySource
+	5,  // 2: activities.v1.ActivityPhoto.location:type_name -> activities.v1.LatLng
+	14, // 3: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
+	1,  // 4: activities.v1.ListActivitiesRequest.sort:type_name -> activities.v1.ActivitySort
+	3,  // 5: activities.v1.ListActivitiesResponse.activities:type_name -> activities.v1.Activity
+	3,  // 6: activities.v1.GetActivityResponse.activity:type_name -> activities.v1.Activity
+	6,  // 7: activities.v1.GetActivityResponse.streams:type_name -> activities.v1.ActivityStreams
+	4,  // 8: activities.v1.GetActivityResponse.photos:type_name -> activities.v1.ActivityPhoto
+	2,  // 9: activities.v1.SummarizeActivitiesRequest.interval:type_name -> activities.v1.SummaryInterval
+	12, // 10: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
+	7,  // 11: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
+	9,  // 12: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
+	11, // 13: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
+	8,  // 14: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
+	10, // 15: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
+	13, // 16: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
+	14, // [14:17] is the sub-list for method output_type
+	11, // [11:14] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_activities_v1_activities_proto_init() }
@@ -1841,7 +1949,7 @@ func file_activities_v1_activities_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_activities_v1_activities_proto_rawDesc), len(file_activities_v1_activities_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,

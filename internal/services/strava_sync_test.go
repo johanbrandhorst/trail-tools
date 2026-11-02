@@ -43,7 +43,7 @@ func (e *env) upsertSummaries() map[int64]pgtype.UUID {
 // marks it waiting for details again if it changed.
 func (e *env) upsertSummary(a *strava.Activity, photoCount int32) pgtype.UUID {
 	e.t.Helper()
-	id, err := e.activities.UpsertActivity(context.Background(), e.userID, &activities.ActivitySummary{
+	id, _, err := e.activities.UpsertActivity(context.Background(), e.userID, &activities.ActivitySummary{
 		StravaID:       a.ID,
 		Name:           a.Name,
 		SportType:      a.SportType,

@@ -13,7 +13,10 @@ import (
 // Activity is an activity returned by the Strava API. Detailed fields are
 // only set when getting a single activity.
 type Activity struct {
-	ID                 int64     `json:"id"`
+	ID int64 `json:"id"`
+	// The ID of the upload the activity came from, like "garmin_ping_123"
+	// for an activity Garmin Connect uploaded.
+	ExternalID         string    `json:"external_id"`
 	Name               string    `json:"name"`
 	SportType          string    `json:"sport_type"`
 	StartDate          time.Time `json:"start_date"`

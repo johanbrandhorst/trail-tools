@@ -11,6 +11,51 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const attachStravaToGarminActivity = `-- name: AttachStravaToGarminActivity :exec
+update strava_activities set
+  strava_id = $1::bigint,
+  streams_synced = false,
+  update_time = now()
+where id = (
+  select c.id from strava_activities c
+  where c.user_id = $2::uuid and c.strava_id is null and c.garmin_activity_id is not null
+    and (
+      c.garmin_activity_id::text = substring($3::text from '^garmin_(?:ping|push)_([0-9]+)')
+      or abs(extract(epoch from c.start_time - $4::timestamptz)) < 120
+    )
+  order by
+    c.garmin_activity_id::text = coalesce(substring($3::text from '^garmin_(?:ping|push)_([0-9]+)'), '') desc,
+    abs(extract(epoch from c.start_time - $4::timestamptz))
+  limit 1
+)
+and not exists (
+  select 1 from strava_activities s
+  where s.user_id = $2::uuid and s.strava_id = $1::bigint
+)
+`
+
+type AttachStravaToGarminActivityParams struct {
+	StravaID   int64
+	UserID     pgtype.UUID
+	ExternalID string
+	StartTime  pgtype.Timestamptz
+}
+
+// Gives an activity from Garmin its Strava ID when Strava's copy of it
+// arrives, so it's one activity: the one Strava says it got from Garmin,
+// or else the one that started within two minutes of it. Its details sync
+// from Strava again, for its description and photos, keeping Garmin's
+// samples.
+func (q *Queries) AttachStravaToGarminActivity(ctx context.Context, arg *AttachStravaToGarminActivityParams) error {
+	_, err := q.db.Exec(ctx, attachStravaToGarminActivity,
+		arg.StravaID,
+		arg.UserID,
+		arg.ExternalID,
+		arg.StartTime,
+	)
+	return err
+}
+
 const countActivities = `-- name: CountActivities :one
 select
   count(*) as total,
@@ -45,10 +90,10 @@ func (q *Queries) CountActivities(ctx context.Context, arg *CountActivitiesParam
 
 const getActivity = `-- name: GetActivity :one
 select
-  id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
+  id, coalesce(strava_id, 0)::bigint as strava_id, coalesce(garmin_activity_id, 0)::bigint as garmin_activity_id, data_source, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, garmin_samples,
   coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where id = $1 and user_id = $2
@@ -62,6 +107,8 @@ type GetActivityParams struct {
 type GetActivityRow struct {
 	ID                  pgtype.UUID
 	StravaID            int64
+	GarminActivityID    int64
+	DataSource          string
 	Name                string
 	Description         string
 	SportType           string
@@ -81,6 +128,7 @@ type GetActivityRow struct {
 	DeviceName          string
 	RelativeEffort      int32
 	StreamsSynced       bool
+	GarminSamples       bool
 	PhotoCount          int32
 }
 
@@ -90,6 +138,8 @@ func (q *Queries) GetActivity(ctx context.Context, arg *GetActivityParams) (*Get
 	err := row.Scan(
 		&i.ID,
 		&i.StravaID,
+		&i.GarminActivityID,
+		&i.DataSource,
 		&i.Name,
 		&i.Description,
 		&i.SportType,
@@ -109,6 +159,7 @@ func (q *Queries) GetActivity(ctx context.Context, arg *GetActivityParams) (*Get
 		&i.DeviceName,
 		&i.RelativeEffort,
 		&i.StreamsSynced,
+		&i.GarminSamples,
 		&i.PhotoCount,
 	)
 	return &i, err
@@ -173,10 +224,10 @@ func (q *Queries) LinkStrengthWorkouts(ctx context.Context, arg *LinkStrengthWor
 
 const listActivities = `-- name: ListActivities :many
 select
-  id, strava_id, name, description, sport_type, start_time, start_date_local, timezone,
+  id, coalesce(strava_id, 0)::bigint as strava_id, coalesce(garmin_activity_id, 0)::bigint as garmin_activity_id, data_source, name, description, sport_type, start_time, start_date_local, timezone,
   distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters,
   average_speed_mps, max_speed_mps, average_heartrate_bpm, max_heartrate_bpm,
-  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced,
+  average_cadence_spm, summary_polyline, device_name, relative_effort, streams_synced, garmin_samples,
   coalesce(synced_photo_count, photo_count)::integer as photo_count
 from strava_activities
 where user_id = $1
@@ -204,6 +255,8 @@ type ListActivitiesParams struct {
 type ListActivitiesRow struct {
 	ID                  pgtype.UUID
 	StravaID            int64
+	GarminActivityID    int64
+	DataSource          string
 	Name                string
 	Description         string
 	SportType           string
@@ -223,6 +276,7 @@ type ListActivitiesRow struct {
 	DeviceName          string
 	RelativeEffort      int32
 	StreamsSynced       bool
+	GarminSamples       bool
 	PhotoCount          int32
 }
 
@@ -246,6 +300,8 @@ func (q *Queries) ListActivities(ctx context.Context, arg *ListActivitiesParams)
 		if err := rows.Scan(
 			&i.ID,
 			&i.StravaID,
+			&i.GarminActivityID,
+			&i.DataSource,
 			&i.Name,
 			&i.Description,
 			&i.SportType,
@@ -265,6 +321,7 @@ func (q *Queries) ListActivities(ctx context.Context, arg *ListActivitiesParams)
 			&i.DeviceName,
 			&i.RelativeEffort,
 			&i.StreamsSynced,
+			&i.GarminSamples,
 			&i.PhotoCount,
 		); err != nil {
 			return nil, err
@@ -278,8 +335,8 @@ func (q *Queries) ListActivities(ctx context.Context, arg *ListActivitiesParams)
 }
 
 const listActivitiesWithoutStreams = `-- name: ListActivitiesWithoutStreams :many
-select a.id, a.strava_id from strava_activities a
-where a.user_id = $1 and not a.streams_synced and a.sync_failures < $2
+select a.id, a.strava_id::bigint as strava_id, (a.data_source = 'garmin' and a.garmin_samples)::boolean as has_garmin_samples from strava_activities a
+where a.user_id = $1 and a.strava_id is not null and not a.streams_synced and a.sync_failures < $2
   and (a.sync_requested or a.start_time >= (
     select max(latest.start_time) from strava_activities latest where latest.user_id = $1
   ) - $3::interval)
@@ -295,8 +352,9 @@ type ListActivitiesWithoutStreamsParams struct {
 }
 
 type ListActivitiesWithoutStreamsRow struct {
-	ID       pgtype.UUID
-	StravaID int64
+	ID               pgtype.UUID
+	StravaID         int64
+	HasGarminSamples bool
 }
 
 // Activities that started more than recent_window before the latest one are
@@ -316,7 +374,7 @@ func (q *Queries) ListActivitiesWithoutStreams(ctx context.Context, arg *ListAct
 	var items []*ListActivitiesWithoutStreamsRow
 	for rows.Next() {
 		var i ListActivitiesWithoutStreamsRow
-		if err := rows.Scan(&i.ID, &i.StravaID); err != nil {
+		if err := rows.Scan(&i.ID, &i.StravaID, &i.HasGarminSamples); err != nil {
 			return nil, err
 		}
 		items = append(items, &i)
@@ -592,6 +650,19 @@ func (q *Queries) SetActivityDetail(ctx context.Context, arg *SetActivityDetailP
 	return err
 }
 
+const setStravaSamples = `-- name: SetStravaSamples :exec
+update strava_activities set
+  data_source = 'strava',
+  garmin_samples = false
+where id = $1
+`
+
+// Marks an activity's samples as Strava's, once they're stored.
+func (q *Queries) SetStravaSamples(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, setStravaSamples, id)
+	return err
+}
+
 const upsertActivity = `-- name: UpsertActivity :one
 insert into strava_activities (
   user_id,
@@ -616,27 +687,31 @@ insert into strava_activities (
   min_lng,
   max_lat,
   max_lng,
-  photo_count
+  photo_count,
+  strava_external_id
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
 )
 on conflict (user_id, strava_id) do update set
+  -- Strava's name and sport, which users edit there, win; the stats of an
+  -- activity from Garmin are the watch's own, and kept.
   name = excluded.name,
   sport_type = excluded.sport_type,
   start_time = excluded.start_time,
   start_date_local = excluded.start_date_local,
   timezone = excluded.timezone,
-  distance_meters = excluded.distance_meters,
-  moving_time_seconds = excluded.moving_time_seconds,
-  elapsed_time_seconds = excluded.elapsed_time_seconds,
-  elevation_gain_meters = excluded.elevation_gain_meters,
-  average_speed_mps = excluded.average_speed_mps,
-  max_speed_mps = excluded.max_speed_mps,
-  average_heartrate_bpm = excluded.average_heartrate_bpm,
-  max_heartrate_bpm = excluded.max_heartrate_bpm,
-  average_cadence_spm = excluded.average_cadence_spm,
-  summary_polyline = excluded.summary_polyline,
+  distance_meters = case when strava_activities.data_source = 'garmin' then strava_activities.distance_meters else excluded.distance_meters end,
+  moving_time_seconds = case when strava_activities.data_source = 'garmin' then strava_activities.moving_time_seconds else excluded.moving_time_seconds end,
+  elapsed_time_seconds = case when strava_activities.data_source = 'garmin' then strava_activities.elapsed_time_seconds else excluded.elapsed_time_seconds end,
+  elevation_gain_meters = case when strava_activities.data_source = 'garmin' then strava_activities.elevation_gain_meters else excluded.elevation_gain_meters end,
+  average_speed_mps = case when strava_activities.data_source = 'garmin' then strava_activities.average_speed_mps else excluded.average_speed_mps end,
+  max_speed_mps = case when strava_activities.data_source = 'garmin' then strava_activities.max_speed_mps else excluded.max_speed_mps end,
+  average_heartrate_bpm = case when strava_activities.data_source = 'garmin' then strava_activities.average_heartrate_bpm else excluded.average_heartrate_bpm end,
+  max_heartrate_bpm = case when strava_activities.data_source = 'garmin' then strava_activities.max_heartrate_bpm else excluded.max_heartrate_bpm end,
+  average_cadence_spm = case when strava_activities.data_source = 'garmin' then strava_activities.average_cadence_spm else excluded.average_cadence_spm end,
+  summary_polyline = case when strava_activities.data_source = 'garmin' and strava_activities.summary_polyline <> '' then strava_activities.summary_polyline else excluded.summary_polyline end,
   relative_effort = excluded.relative_effort,
+  strava_external_id = excluded.strava_external_id,
   min_lat = coalesce(strava_activities.min_lat, excluded.min_lat),
   min_lng = coalesce(strava_activities.min_lng, excluded.min_lng),
   max_lat = coalesce(strava_activities.max_lat, excluded.max_lat),
@@ -651,12 +726,12 @@ on conflict (user_id, strava_id) do update set
     else 0
   end,
   update_time = now()
-returning id
+returning id, (data_source = 'garmin' and garmin_samples)::boolean as has_garmin_samples
 `
 
 type UpsertActivityParams struct {
 	UserID              pgtype.UUID
-	StravaID            int64
+	StravaID            pgtype.Int8
 	Name                string
 	SportType           string
 	StartTime           pgtype.Timestamptz
@@ -678,9 +753,15 @@ type UpsertActivityParams struct {
 	MaxLat              pgtype.Float8
 	MaxLng              pgtype.Float8
 	PhotoCount          int32
+	StravaExternalID    string
 }
 
-func (q *Queries) UpsertActivity(ctx context.Context, arg *UpsertActivityParams) (pgtype.UUID, error) {
+type UpsertActivityRow struct {
+	ID               pgtype.UUID
+	HasGarminSamples bool
+}
+
+func (q *Queries) UpsertActivity(ctx context.Context, arg *UpsertActivityParams) (*UpsertActivityRow, error) {
 	row := q.db.QueryRow(ctx, upsertActivity,
 		arg.UserID,
 		arg.StravaID,
@@ -705,10 +786,11 @@ func (q *Queries) UpsertActivity(ctx context.Context, arg *UpsertActivityParams)
 		arg.MaxLat,
 		arg.MaxLng,
 		arg.PhotoCount,
+		arg.StravaExternalID,
 	)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i UpsertActivityRow
+	err := row.Scan(&i.ID, &i.HasGarminSamples)
+	return &i, err
 }
 
 const upsertActivityStreams = `-- name: UpsertActivityStreams :exec

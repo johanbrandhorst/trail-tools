@@ -48,6 +48,9 @@ const (
 	// ExerciseServiceSetHomeEquipmentProcedure is the procedure name of the ExerciseService's
 	// SetHomeEquipment RPC.
 	ExerciseServiceSetHomeEquipmentProcedure = "/plans.v1.ExerciseService/SetHomeEquipment"
+	// ExerciseServiceSearchGarminExercisesProcedure is the procedure name of the ExerciseService's
+	// SearchGarminExercises RPC.
+	ExerciseServiceSearchGarminExercisesProcedure = "/plans.v1.ExerciseService/SearchGarminExercises"
 )
 
 var (
@@ -107,6 +110,13 @@ var (
 			Procedure:  ExerciseServiceSetHomeEquipmentProcedure,
 		}
 	})
+	exerciseServiceSearchGarminExercisesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_exercises_proto.Services().ByName("ExerciseService").Methods().ByName("SearchGarminExercises"),
+			Procedure:  ExerciseServiceSearchGarminExercisesProcedure,
+		}
+	})
 )
 
 // ExerciseServiceClient is a client for the plans.v1.ExerciseService service.
@@ -136,6 +146,11 @@ type ExerciseServiceClient interface {
 	// does this in the web app's settings; only change it when they say what
 	// they have.
 	SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error)
+	// Search Garmin's catalog of strength exercises, for an exercise's
+	// garmin_exercise, e.g. "bulgarian split squat" or "dumbbell row". Garmin
+	// watches show and count the exercises of the catalog when the workout is
+	// on the user's Garmin calendar.
+	SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error)
 }
 
 // NewExerciseServiceClient constructs a client for the plans.v1.ExerciseService service. Multiple
@@ -171,6 +186,11 @@ type ExerciseServiceHandler interface {
 	// does this in the web app's settings; only change it when they say what
 	// they have.
 	SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error)
+	// Search Garmin's catalog of strength exercises, for an exercise's
+	// garmin_exercise, e.g. "bulgarian split squat" or "dumbbell row". Garmin
+	// watches show and count the exercises of the catalog when the workout is
+	// on the user's Garmin calendar.
+	SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error)
 }
 
 // RegisterExerciseServiceHandler registers svc as the plans.v1.ExerciseService implementation on
@@ -186,6 +206,7 @@ func RegisterExerciseServiceHandler(server *connect.Server, svc ExerciseServiceH
 		connect.Method{Spec: exerciseServiceListExerciseHistorySpec(), Handler: adapter.listExerciseHistory},
 		connect.Method{Spec: exerciseServiceGetHomeEquipmentSpec(), Handler: adapter.getHomeEquipment},
 		connect.Method{Spec: exerciseServiceSetHomeEquipmentSpec(), Handler: adapter.setHomeEquipment},
+		connect.Method{Spec: exerciseServiceSearchGarminExercisesSpec(), Handler: adapter.searchGarminExercises},
 	)
 }
 
@@ -222,6 +243,10 @@ func (UnimplementedExerciseServiceHandler) GetHomeEquipment(context.Context, *v1
 
 func (UnimplementedExerciseServiceHandler) SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.SetHomeEquipment is not implemented")
+}
+
+func (UnimplementedExerciseServiceHandler) SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.SearchGarminExercises is not implemented")
 }
 
 type exerciseServiceClient struct {
@@ -287,6 +312,14 @@ func (c *exerciseServiceClient) GetHomeEquipment(ctx context.Context, req *v1.Ge
 func (c *exerciseServiceClient) SetHomeEquipment(ctx context.Context, req *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error) {
 	var res v1.SetHomeEquipmentResponse
 	if err := c.client.CallUnary(ctx, exerciseServiceSetHomeEquipmentSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *exerciseServiceClient) SearchGarminExercises(ctx context.Context, req *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error) {
+	var res v1.SearchGarminExercisesResponse
+	if err := c.client.CallUnary(ctx, exerciseServiceSearchGarminExercisesSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -384,6 +417,18 @@ func (h exerciseServiceHandler) setHomeEquipment(ctx context.Context, _ connect.
 		return err
 	}
 	res, err := h.svc.SetHomeEquipment(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h exerciseServiceHandler) searchGarminExercises(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SearchGarminExercisesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SearchGarminExercises(ctx, &req)
 	if err != nil {
 		return err
 	}
