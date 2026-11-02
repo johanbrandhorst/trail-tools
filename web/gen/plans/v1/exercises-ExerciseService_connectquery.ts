@@ -78,3 +78,15 @@ export const setHomeEquipment = ExerciseService.method.setHomeEquipment;
  * @generated from rpc plans.v1.ExerciseService.SearchGarminExercises
  */
 export const searchGarminExercises = ExerciseService.method.searchGarminExercises;
+
+/**
+ * List stock poses of the stick figure of exercise animations, like
+ * standing, the bottom of a squat or a push-up, and a glute bridge, each
+ * with the anchor, planted points and props that usually go with it.
+ * Start an animation's keyframes from these and adjust them, rather than
+ * working out every angle: they put hands, feet and shoulders on the
+ * floor where they should be.
+ *
+ * @generated from rpc plans.v1.ExerciseService.ListStockPoses
+ */
+export const listStockPoses = ExerciseService.method.listStockPoses;
