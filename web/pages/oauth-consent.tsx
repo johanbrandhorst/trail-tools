@@ -61,7 +61,9 @@ const OAuthConsentPage: React.FC = () => {
         <p className="text-sm text-gray-700">
           <span className="font-semibold">{data.clientName}</span> will be able
           to see and change your routes, training plans, races, race plans and
-          activities on your behalf, until you disconnect it in Settings.
+          activities on your behalf, including activities from Garmin and
+          Strava, until you disconnect it in Settings. Connecting it is your
+          consent to that; disconnecting withdraws it.
         </p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md bg-gray-50 p-3 text-sm">
           <dt className="text-gray-500">App</dt>
