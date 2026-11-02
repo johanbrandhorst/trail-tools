@@ -20,6 +20,7 @@ import MapDataPage from "pages/map-data";
 import OAuthConsentPage from "pages/oauth-consent";
 import PlanPage from "pages/plan";
 import PlansPage from "pages/plans";
+import PrivacyPage from "pages/privacy";
 import PublicProfilePage from "pages/public-profile";
 import PublicRaceReportPage from "pages/public-race-report";
 import PublicTripReportPage from "pages/public-trip-report";
@@ -128,6 +129,7 @@ const App: React.FC = () => {
         <Route path="/u/:handle" element={<PublicProfilePage />} />
         <Route path="/u/:handle/:slug" element={<PublicTripReportPage />} />
         <Route path="/invite" element={<InvitePage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/record/lactate-test"
           element={<RecordLactateTestPage />}
