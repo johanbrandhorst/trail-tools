@@ -12,3 +12,6 @@ func ReadElements(bounds geo.Bounds, elements []any) (*OSM, error) {
 		return nil
 	})
 }
+
+// SplitPath splits a path into pieces, as preferred paths are.
+var SplitPath = splitPath

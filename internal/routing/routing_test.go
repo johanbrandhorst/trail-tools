@@ -287,3 +287,32 @@ func TestRouteErrors(t *testing.T) {
 }
 
 // writeTile writes a gzipped HGT tile with size samples on each side to dir.
+
+func TestSplitPath(t *testing.T) {
+	t.Parallel()
+	// Eleven points about 111 m apart, a kilometer and a bit.
+	var path []geo.Point
+	for i := range 11 {
+		path = append(path, geo.Point{Lat: float64(i) * 0.001})
+	}
+	pieces := routing.SplitPath(path, 300)
+	// Pieces of three segments, the last one shorter, each starting where
+	// the one before ends.
+	if len(pieces) != 4 {
+		t.Fatalf("got %d pieces, want 4", len(pieces))
+	}
+	for i, piece := range pieces {
+		if want := min(4, len(path)-3*i); len(piece) != want {
+			t.Errorf("piece %d has %d points, want %d", i, len(piece), want)
+		}
+		if i > 0 && piece[0] != pieces[i-1][len(pieces[i-1])-1] {
+			t.Errorf("piece %d doesn't start where piece %d ends", i, i-1)
+		}
+	}
+	if last := pieces[len(pieces)-1]; last[len(last)-1] != path[len(path)-1] {
+		t.Error("the last piece doesn't end where the path does")
+	}
+	if got := routing.SplitPath(path[:2], 300); len(got) != 1 || len(got[0]) != 2 {
+		t.Errorf("got %v for a short path, want it whole", got)
+	}
+}
