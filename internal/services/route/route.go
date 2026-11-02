@@ -326,10 +326,14 @@ func checkTrack(points []geo.Point) error {
 // trails, and warning says so.
 func (s *Service) routeFromTrack(ctx context.Context, route *routes.Route, track []geo.Point, conversion routesv1.TrackConversion) (warning string, err error) {
 	if conversion == routesv1.TrackConversion_TRACK_CONVERSION_SNAP {
-		waypoints, legs, err := s.snapTrack(ctx, track)
+		waypoints, legs, spurs, err := s.snapTrack(ctx, track)
 		switch {
 		case err == nil:
 			route.Waypoints, route.Legs = waypoints, legs
+			if spurs > 0 {
+				return fmt.Sprintf("Left out %d short out-and-backs of the track, of under %d m there and back, like stops, wrong turns and short detours, "+
+					"so the route needs fewer waypoints. Add a waypoint to put one back.", spurs, maxSpurMeters), nil
+			}
 			return "", nil
 		case ctx.Err() != nil:
 			return "", s.toConnectError(ctx, err, "failed to snap the track to the map")
