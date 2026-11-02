@@ -50,6 +50,24 @@ const (
 	// sections, the route usually differs because of the waypoints rather
 	// than the profile, so the call is saved.
 	maxShortestSnapMeters = 3000
+	// maxSpurMeters is the longest out-and-back along a track, there and
+	// back, that snapping leaves out: a stop where the GPS wandered, a wrong
+	// turn, or a short detour. Following one takes several waypoints and
+	// straight legs, which clutter the route. It's shorter than a lap of a
+	// running track, so laps are kept.
+	maxSpurMeters = 300
+	// minSpurMeters is the shortest out-and-back that's reported as left out.
+	// Shorter ones are GPS jitter.
+	minSpurMeters = 80
+	// spurReturnMeters is how close a track must come back to a point to
+	// have gone out and back from it: about the spacing of the resampled
+	// track.
+	spurReturnMeters = snapSpacingMeters
+	// spurReturnElevationMeters is how close in elevation a track must come
+	// back to a point to have gone out and back from it, when it has
+	// elevations. The legs of a tight switchback pass within
+	// spurReturnMeters of each other, but higher up.
+	spurReturnElevationMeters = 5
 )
 
 // snapProfiles are the profiles tried, in order, to follow the track.
@@ -83,13 +101,17 @@ type trackSnapper struct {
 // between the existing ones strays from the track, starting with just the
 // start and finish, and then removed again where routing around them still
 // follows the track.
-func (s *Service) snapTrack(ctx context.Context, track []geo.Point) ([]routes.LatLng, []routes.Leg, error) {
+//
+// Short out-and-backs are left out first, see removeSpurs, and spurs is how
+// many of at least minSpurMeters were.
+func (s *Service) snapTrack(ctx context.Context, track []geo.Point) (_ []routes.LatLng, _ []routes.Leg, spurs int, _ error) {
 	points := resample(track, snapSpacingMeters)
 	if len(points) > maxSnapPoints {
-		return nil, nil, fmt.Errorf("%w: the track is longer than about %d km", errInvalidRoute, maxSnapPoints*snapSpacingMeters/1000)
+		return nil, nil, 0, fmt.Errorf("%w: the track is longer than about %d km", errInvalidRoute, maxSnapPoints*snapSpacingMeters/1000)
 	}
+	points, spurs = removeSpurs(points)
 	if len(points) < 2 {
-		return nil, nil, fmt.Errorf("%w: the track is too short", errInvalidRoute)
+		return nil, nil, 0, fmt.Errorf("%w: the track is too short", errInvalidRoute)
 	}
 	t := &trackSnapper{
 		s:           s,
@@ -100,18 +122,58 @@ func (s *Service) snapTrack(ctx context.Context, track []geo.Point) ([]routes.La
 	}
 	legs, err := t.fit(ctx, 0, len(points)-1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	legs, err = t.merge(ctx, legs)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	s.log.DebugContext(ctx, "Snapped track to the map", slog.Int("points", len(points)), slog.Int("legs", len(legs)), slog.Int("routing_calls", int(t.calls.Load())))
 	if len(legs)+1 > maxWaypoints {
-		return nil, nil, fmt.Errorf("%w: the track needs more than %d waypoints to follow; import it exactly instead", errInvalidRoute, maxWaypoints)
+		return nil, nil, 0, fmt.Errorf("%w: the track needs more than %d waypoints to follow; import it exactly instead", errInvalidRoute, maxWaypoints)
 	}
 	waypoints, routeLegs := t.build(legs)
-	return waypoints, routeLegs, nil
+	return waypoints, routeLegs, spurs, nil
+}
+
+// sameElevation reports whether two points are within
+// spurReturnElevationMeters of each other in elevation, or either has none.
+func sameElevation(a, b geo.Point) bool {
+	return a.Ele == 0 || b.Ele == 0 || math.Abs(a.Ele-b.Ele) <= spurReturnElevationMeters
+}
+
+// removeSpurs removes the short out-and-backs from a resampled track: where
+// it comes back within spurReturnMeters of a point, at the same elevation,
+// after at most maxSpurMeters, the points in between are left out. It returns the track,
+// and how many out-and-backs of at least minSpurMeters it removed.
+func removeSpurs(points []geo.Point) ([]geo.Point, int) {
+	if len(points) < 3 {
+		return points, 0
+	}
+	dists := geo.CumulativeDistances(points)
+	result := make([]geo.Point, 0, len(points))
+	removed := 0
+	for i := 0; i < len(points); {
+		result = append(result, points[i])
+		// The furthest return within reach removes the whole out-and-back,
+		// with any smaller ones in it.
+		back := -1
+		for j := i + 2; j < len(points) && dists[j]-dists[i] <= maxSpurMeters; j++ {
+			if geo.Distance(points[i], points[j]) <= spurReturnMeters && sameElevation(points[i], points[j]) {
+				back = j
+			}
+		}
+		if back < 0 {
+			i++
+			continue
+		}
+		if dists[back]-dists[i] >= minSpurMeters {
+			removed++
+		}
+		// The track goes on from the point it came back to.
+		i = back
+	}
+	return result, removed
 }
 
 // fit returns legs that follow the track from points[i] to points[j].

@@ -1216,8 +1216,11 @@ export enum TrackConversion {
    * 40 meters, and sections without a matching mapped path become STRAIGHT
    * legs. The result is a normal waypoint route that can be reshaped by
    * moving one of its few waypoints, but its path may differ slightly from
-   * the recording. Slower than EXACT, as many candidate legs are routed. Best
-   * for using a previous run as the starting point of a new route.
+   * the recording. Short out-and-backs, of under 300 m there and back, are
+   * left out, like stops where the GPS wandered, wrong turns and short
+   * detours; the response's warning says how many. Slower than EXACT, as
+   * many candidate legs are routed. Best for using a previous run as the
+   * starting point of a new route.
    *
    * @generated from enum value: TRACK_CONVERSION_SNAP = 2;
    */
