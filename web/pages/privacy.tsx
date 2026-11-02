@@ -71,7 +71,7 @@ const PrivacyPage: React.FC = () => (
             activities&apos; summaries and activity files, with the same kind of
             details and samples, and the sets of strength workouts recorded by
             your watch. With your permission, we also send the workouts you plan
-            to your Garmin Connect calendar.
+            to your Garmin Connect calendar, and their routes as courses.
           </li>
           <li>
             <strong>Garmin LiveTrack links</strong> that you or your crew add to
@@ -109,13 +109,51 @@ const PrivacyPage: React.FC = () => (
           share. Anyone with a share link can see what it shares until you turn
           it off.
         </p>
+        <p>AI agents you connect can see your data too, as described below.</p>
+      </Section>
+
+      <Section title="Garmin data">
         <p>
-          You can connect AI agents, like Claude or ChatGPT, through the
-          app&apos;s MCP server. An agent you connect can read and change your
-          data on your behalf, as you would, and the company providing it
-          handles that data under its own privacy policy. You can revoke an
-          agent&apos;s access at any time in your settings. The app itself
-          doesn&apos;t send your data to AI or machine learning services.
+          If you connect Garmin Connect, we receive your activities&apos;
+          summaries and, when we need their samples or strength sets, their
+          activity files. We use them only to show your training in the app,
+          match activities to your planned workouts, log the sets of your
+          strength workouts, and let you share what you choose. With your
+          permission, we send your upcoming workouts, and the routes of your
+          upcoming runs and races as courses, to your Garmin Connect account.
+        </p>
+        <p>
+          We never sell Garmin data, and we don&apos;t share it with anyone
+          except the service providers below, which host the app, and the AI
+          agents you connect yourself. We don&apos;t use Garmin data, or
+          anything derived from it, to train, evaluate or improve AI models, and
+          we don&apos;t let anyone else do so.
+        </p>
+        <p>
+          You can see your Garmin activities in the app, and correct or delete
+          them there. To stop sharing, disconnect Garmin in Settings, which
+          deregisters the app from your Garmin account and removes the workouts
+          and courses we put there, or remove the app in Garmin Connect. To get
+          a copy of your Garmin data, or have it all deleted, email us.
+        </p>
+      </Section>
+
+      <Section title="AI transparency">
+        <p>
+          The app itself doesn&apos;t send your data, including Garmin data, to
+          AI or machine learning services. You can choose to connect an AI
+          agent, like Claude or ChatGPT, through the app&apos;s MCP server, so
+          it can plan your training with you. Before an agent can access
+          anything, you&apos;re asked to explicitly allow it on a consent page,
+          which says that it will be able to see your data, including activities
+          from Garmin and Strava.
+        </p>
+        <p>
+          An agent you connect reads and changes your data on your behalf, as
+          you would, and the company providing it handles that data under its
+          own privacy policy. You can withdraw your consent at any time by
+          disconnecting the agent under Connected apps in Settings, which stops
+          its access immediately.
         </p>
       </Section>
 
@@ -159,10 +197,11 @@ const PrivacyPage: React.FC = () => (
         <p>
           You can delete what you&apos;ve created, and disconnect Strava or
           Garmin, at any time in the app. Disconnecting stops syncing and
-          deletes our access tokens. Activities deleted on Strava or Garmin are
-          deleted here too. To delete your whole account, or all the data from
-          Strava or Garmin, email us and we&apos;ll delete it within 30 days,
-          along with the files stored for it.
+          deletes our access tokens. Activities deleted on Strava are deleted
+          here too; Garmin doesn&apos;t tell us about deleted activities, so
+          delete those here as well. To delete your whole account, or all the
+          data from Strava or Garmin, email us and we&apos;ll delete it within
+          30 days, along with the files stored for it.
         </p>
       </Section>
 
