@@ -387,6 +387,10 @@ type fakeRouter struct {
 	prefer     [][]geo.Point
 }
 
+// offMapLat is the latitude of points the fake router finds no mapped path
+// near, routing to a point about 220 m north of them instead.
+const offMapLat = 0.0123
+
 // fakeRoutePath returns the points of a path that bows east by bow degrees
 // in the middle.
 func fakeRoutePath(from, to geo.Point, bow float64) []geo.Point {
@@ -413,6 +417,10 @@ func (f *fakeRouter) Route(_ context.Context, req routing.Request) (*routing.Pat
 		return nil, errors.New("the routing graph is unavailable")
 	}
 	path := &routing.Path{Points: fakeRoutePath(req.From, req.To, 0)}
+	if req.To.Lat == offMapLat {
+		// The nearest mapped path ends about 220 m north of the point.
+		path.Points[len(path.Points)-1].Lat += 0.002
+	}
 	for range path.Points {
 		path.Terrains = append(path.Terrains, geo.TerrainTrail)
 	}

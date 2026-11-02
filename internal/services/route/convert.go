@@ -174,6 +174,7 @@ func routeToProto(route *routes.Route, includePoints bool) *routesv1.Route {
 		LegProfiles: legProfiles,
 		Stats:       StatsToProto(route.Stats),
 		Source:      sourceToProto(route.Source),
+		Warnings:    routeWarnings(route),
 	}
 	if !route.CreateTime.IsZero() {
 		b.CreateTime = timestamppb.New(route.CreateTime)

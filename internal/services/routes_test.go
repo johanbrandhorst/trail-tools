@@ -656,3 +656,52 @@ func TestSnapTrack(t *testing.T) {
 		t.Errorf("unexpected copy %v", copied.GetRoute())
 	}
 }
+
+func TestRouteWarnings(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// An out-and-back repeats the way out, which the preview points out,
+	// from a little after the turnaround, at 1.1 km, to the end.
+	preview, err := e.routes.PreviewRoute(ctx, routesv1.PreviewRouteRequest_builder{
+		Waypoints: latLngs(0, 0, 0.01, 0, 0, 0),
+	}.Build())
+	if err != nil {
+		t.Fatalf("PreviewRoute: %v", err)
+	}
+	warnings := preview.GetRoute().GetWarnings()
+	if len(warnings) != 1 || warnings[0].GetKind() != routesv1.RouteWarningKind_ROUTE_WARNING_KIND_REPEATED_SECTION ||
+		!approx(warnings[0].GetStartDistanceMeters(), 1300, 200) || !approx(warnings[0].GetEndDistanceMeters(), 2224, 100) ||
+		warnings[0].GetEarlierStartDistanceMeters() < warnings[0].GetEarlierEndDistanceMeters() ||
+		!strings.Contains(warnings[0].GetMessage(), "goes back over") {
+		t.Errorf("unexpected warnings of an out-and-back %v", warnings)
+	}
+
+	// A waypoint far from any mapped path is pointed out, but not one on a
+	// straight leg, which is meant to leave the map.
+	created, err := e.routes.CreateRoute(ctx, routesv1.CreateRouteRequest_builder{
+		Name: "Off the map",
+		Waypoints: routesv1.Waypoints_builder{
+			Waypoints:   latLngs(0, 0, offMapLat, 0, 0.02, 0.01),
+			LegProfiles: []routesv1.RoutingProfile{routesv1.RoutingProfile_ROUTING_PROFILE_TRAIL, routesv1.RoutingProfile_ROUTING_PROFILE_STRAIGHT},
+		}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateRoute: %v", err)
+	}
+	warnings = created.GetRoute().GetWarnings()
+	if len(warnings) != 1 || warnings[0].GetKind() != routesv1.RouteWarningKind_ROUTE_WARNING_KIND_OFF_MAP_WAYPOINT ||
+		warnings[0].GetWaypointIndex() != 1 || !strings.Contains(warnings[0].GetMessage(), "Waypoint 2") {
+		t.Errorf("unexpected warnings of a waypoint off the map %v", warnings)
+	}
+	// They're kept with the route, but not listed.
+	got, err := e.routes.GetRoute(ctx, routesv1.GetRouteRequest_builder{Id: created.GetRoute().GetId()}.Build())
+	if err != nil || len(got.GetRoute().GetWarnings()) != 1 {
+		t.Errorf("GetRoute: got warnings %v (%v), want the off-map waypoint", got.GetRoute().GetWarnings(), err)
+	}
+	listed, err := e.routes.ListRoutes(ctx, routesv1.ListRoutesRequest_builder{}.Build())
+	if err != nil || len(listed.GetRoutes()) != 1 || len(listed.GetRoutes()[0].GetWarnings()) != 0 {
+		t.Errorf("ListRoutes: got %v (%v), want the route without warnings", listed.GetRoutes(), err)
+	}
+}

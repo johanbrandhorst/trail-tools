@@ -35,10 +35,90 @@ const (
 // almost nothing. It's approximate: separate trails within about 15 m of each
 // other count as the same.
 func RepeatedDistance(points []Point) float64 {
-	spacing := math.Max(repeatSpacing, sampledDistance(points)/maxRepeatSamples)
-	samples := resample(points, spacing)
-	if len(samples) < 2 {
+	r := findRepeats(points)
+	if r == nil {
 		return 0
+	}
+	repeated := 0
+	for _, m := range r.matches {
+		if m >= 0 {
+			repeated++
+		}
+	}
+	total := CumulativeDistances(points)[len(points)-1]
+	return math.Min(total, float64(repeated)*r.spacing)
+}
+
+// RepeatedSection is a section of a track that retraces ground it covered
+// earlier, by distance along the track in meters.
+type RepeatedSection struct {
+	StartMeters, EndMeters float64
+	// Where along the track the ground it retraces was first covered. It's
+	// the start of the earlier part for a section in the same direction,
+	// and its end for one in the opposite direction, like the way back of
+	// an out-and-back.
+	EarlierStartMeters, EarlierEndMeters float64
+}
+
+const (
+	// repeatSectionGapMeters is the longest gap in a repeated section,
+	// where the track wanders more than repeatTolerance from the earlier
+	// part, which still counts as one section.
+	repeatSectionGapMeters = 50.0
+	// minRepeatSectionMeters is the shortest repeated section reported.
+	minRepeatSectionMeters = 100.0
+)
+
+// RepeatedSections returns the sections of a track of at least 100 m that
+// retrace ground it covered earlier, in order, as RepeatedDistance counts
+// them.
+func RepeatedSections(points []Point) []RepeatedSection {
+	r := findRepeats(points)
+	if r == nil {
+		return nil
+	}
+	var sections []RepeatedSection
+	var current *RepeatedSection
+	lastRepeat := -1
+	flush := func() {
+		if current != nil && current.EndMeters-current.StartMeters >= minRepeatSectionMeters {
+			sections = append(sections, *current)
+		}
+		current = nil
+	}
+	gap := int(repeatSectionGapMeters / r.spacing)
+	for i, m := range r.matches {
+		if m < 0 {
+			continue
+		}
+		if current == nil || i-lastRepeat > gap+1 {
+			flush()
+			current = &RepeatedSection{StartMeters: r.along[i], EarlierStartMeters: r.along[m]}
+		}
+		current.EndMeters = r.along[i]
+		current.EarlierEndMeters = r.along[m]
+		lastRepeat = i
+	}
+	flush()
+	return sections
+}
+
+// repeats are the samples of a track and the earlier ones they repeat.
+type repeats struct {
+	spacing float64
+	// The distance along the track of each sample, in meters.
+	along []float64
+	// The index of the earlier sample each sample repeats, or -1.
+	matches []int
+}
+
+// findRepeats samples a track and finds the samples that retrace an
+// earlier part of it, or returns nil for a track too short to sample.
+func findRepeats(points []Point) *repeats {
+	spacing := math.Max(repeatSpacing, sampledDistance(points)/maxRepeatSamples)
+	samples, along := resample(points, spacing)
+	if len(samples) < 2 {
+		return nil
 	}
 	// Index the samples by cell, with cells as wide as the tolerance, so
 	// nearby samples are in the same or a neighboring cell.
@@ -56,8 +136,9 @@ func RepeatedDistance(points []Point) float64 {
 		return dx / n, dy / n
 	}
 	gap := max(1, int(repeatMinGap/spacing))
-	repeated := 0
+	matches := make([]int, len(samples))
 	for i, s := range samples {
+		matches[i] = -1
 		if i >= gap {
 			// Earlier samples become candidates once they're far enough
 			// behind.
@@ -77,15 +158,14 @@ func RepeatedDistance(points []Point) float64 {
 					}
 					ox, oy := direction(j)
 					if math.Abs(dx*ox+dy*oy) >= repeatMinAlignment {
-						repeated++
+						matches[i] = j
 						break search
 					}
 				}
 			}
 		}
 	}
-	total := CumulativeDistances(points)[len(points)-1]
-	return math.Min(total, float64(repeated)*spacing)
+	return &repeats{spacing: spacing, along: along, matches: matches}
 }
 
 // xy is a position in meters on a local flat projection.
@@ -104,11 +184,11 @@ func sampledDistance(points []Point) float64 {
 }
 
 // resample returns points spaced along a track, projected to meters around
-// its first point. Lines longer than repeatMaxGap aren't sampled, but
-// sampling starts again from their end.
-func resample(points []Point, spacing float64) []xy {
+// its first point, with their distances along the track. Lines longer than
+// repeatMaxGap aren't sampled, but sampling starts again from their end.
+func resample(points []Point, spacing float64) ([]xy, []float64) {
 	if len(points) == 0 {
-		return nil
+		return nil, nil
 	}
 	origin := points[0]
 	cosLat := math.Cos(origin.Lat * math.Pi / 180)
@@ -119,21 +199,28 @@ func resample(points []Point, spacing float64) []xy {
 		}
 	}
 	samples := []xy{project(points[0])}
-	// The distance along the track to the next sample.
+	along := []float64{0}
+	// The distance along the track to the next sample, since sampling last
+	// started, and the distance along the whole track to points[i-1].
 	next := spacing
 	walked := 0.0
+	total := 0.0
 	for i := 1; i < len(points); i++ {
 		d := Distance(points[i-1], points[i])
 		if d > repeatMaxGap {
+			total += d
 			samples = append(samples, project(points[i]))
+			along = append(along, total)
 			walked, next = 0, spacing
 			continue
 		}
 		for d > 0 && walked+d >= next {
 			samples = append(samples, project(Interpolate(points[i-1], points[i], (next-walked)/d)))
+			along = append(along, total+next-walked)
 			next += spacing
 		}
 		walked += d
+		total += d
 	}
-	return samples
+	return samples, along
 }
