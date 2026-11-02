@@ -51,6 +51,13 @@ service ExerciseService {
   // watches show and count the exercises of the catalog when the workout is
   // on the user's Garmin calendar.
   rpc SearchGarminExercises(SearchGarminExercisesRequest) returns (SearchGarminExercisesResponse);
+  // List stock poses of the stick figure of exercise animations, like
+  // standing, the bottom of a squat or a push-up, and a glute bridge, each
+  // with the anchor, planted points and props that usually go with it.
+  // Start an animation's keyframes from these and adjust them, rather than
+  // working out every angle: they put hands, feet and shoulders on the
+  // floor where they should be.
+  rpc ListStockPoses(ListStockPosesRequest) returns (ListStockPosesResponse);
 }
 
 // Muscle is a muscle or muscle group an exercise works.
@@ -141,7 +148,7 @@ message Exercise {
 // stays where it is, and the figure moves around it; planted hands and feet
 // stay where they are in the first pose too, their knee or elbow bending to
 // keep them there. The floor is under the lowest point of the first pose
-// that no prop supports.
+// that no prop supports. Start the poses from ListStockPoses.
 message ExerciseAnimation {
   // What the animation shows, e.g. "The movement" or "Setting up".
   // Required.
@@ -363,6 +370,30 @@ message SearchGarminExercisesRequest {
 message SearchGarminExercisesResponse {
   // The matching exercises, the shortest names first.
   repeated GarminExercise exercises = 1;
+}
+
+message ListStockPosesRequest {}
+
+message ListStockPosesResponse {
+  // The stock poses.
+  repeated StockPose poses = 1;
+}
+
+// A stock pose of the stick figure, to start an animation's keyframes from.
+message StockPose {
+  // The name, e.g. "squat_bottom".
+  string name = 1;
+  // What the pose is, and the exercises it's for.
+  string description = 2;
+  // The pose.
+  Pose pose = 3;
+  // The animation's anchor that usually goes with the pose.
+  BodyPoint anchor = 4;
+  // The planted points that usually go with the pose.
+  repeated BodyPoint planted = 5;
+  // The props the pose needs, e.g. a bench to sit on. Weights are left to
+  // the exercise.
+  repeated AnimationProp props = 6;
 }
 
 // An exercise of Garmin's catalog.

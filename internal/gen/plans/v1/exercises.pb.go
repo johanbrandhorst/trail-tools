@@ -554,7 +554,7 @@ func (b0 Exercise_builder) Build() *Exercise {
 // stays where it is, and the figure moves around it; planted hands and feet
 // stay where they are in the first pose too, their knee or elbow bending to
 // keep them there. The floor is under the lowest point of the first pose
-// that no prop supports.
+// that no prop supports. Start the poses from ListStockPoses.
 type ExerciseAnimation struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Title     string                 `protobuf:"bytes,1,opt,name=title,proto3"`
@@ -2423,6 +2423,257 @@ func (b0 SearchGarminExercisesResponse_builder) Build() *SearchGarminExercisesRe
 	return m0
 }
 
+type ListStockPosesRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListStockPosesRequest) Reset() {
+	*x = ListStockPosesRequest{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListStockPosesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListStockPosesRequest) ProtoMessage() {}
+
+func (x *ListStockPosesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type ListStockPosesRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 ListStockPosesRequest_builder) Build() *ListStockPosesRequest {
+	m0 := &ListStockPosesRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type ListStockPosesResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Poses *[]*StockPose          `protobuf:"bytes,1,rep,name=poses,proto3"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ListStockPosesResponse) Reset() {
+	*x = ListStockPosesResponse{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListStockPosesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListStockPosesResponse) ProtoMessage() {}
+
+func (x *ListStockPosesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ListStockPosesResponse) GetPoses() []*StockPose {
+	if x != nil {
+		if x.xxx_hidden_Poses != nil {
+			return *x.xxx_hidden_Poses
+		}
+	}
+	return nil
+}
+
+func (x *ListStockPosesResponse) SetPoses(v []*StockPose) {
+	x.xxx_hidden_Poses = &v
+}
+
+type ListStockPosesResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The stock poses.
+	Poses []*StockPose
+}
+
+func (b0 ListStockPosesResponse_builder) Build() *ListStockPosesResponse {
+	m0 := &ListStockPosesResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Poses = &b.Poses
+	return m0
+}
+
+// A stock pose of the stick figure, to start an animation's keyframes from.
+type StockPose struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,1,opt,name=name,proto3"`
+	xxx_hidden_Description string                 `protobuf:"bytes,2,opt,name=description,proto3"`
+	xxx_hidden_Pose        *Pose                  `protobuf:"bytes,3,opt,name=pose,proto3"`
+	xxx_hidden_Anchor      BodyPoint              `protobuf:"varint,4,opt,name=anchor,proto3,enum=plans.v1.BodyPoint"`
+	xxx_hidden_Planted     []BodyPoint            `protobuf:"varint,5,rep,packed,name=planted,proto3,enum=plans.v1.BodyPoint"`
+	xxx_hidden_Props       *[]*AnimationProp      `protobuf:"bytes,6,rep,name=props,proto3"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *StockPose) Reset() {
+	*x = StockPose{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StockPose) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StockPose) ProtoMessage() {}
+
+func (x *StockPose) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *StockPose) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *StockPose) GetDescription() string {
+	if x != nil {
+		return x.xxx_hidden_Description
+	}
+	return ""
+}
+
+func (x *StockPose) GetPose() *Pose {
+	if x != nil {
+		return x.xxx_hidden_Pose
+	}
+	return nil
+}
+
+func (x *StockPose) GetAnchor() BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Anchor
+	}
+	return BodyPoint_BODY_POINT_UNSPECIFIED
+}
+
+func (x *StockPose) GetPlanted() []BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Planted
+	}
+	return nil
+}
+
+func (x *StockPose) GetProps() []*AnimationProp {
+	if x != nil {
+		if x.xxx_hidden_Props != nil {
+			return *x.xxx_hidden_Props
+		}
+	}
+	return nil
+}
+
+func (x *StockPose) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *StockPose) SetDescription(v string) {
+	x.xxx_hidden_Description = v
+}
+
+func (x *StockPose) SetPose(v *Pose) {
+	x.xxx_hidden_Pose = v
+}
+
+func (x *StockPose) SetAnchor(v BodyPoint) {
+	x.xxx_hidden_Anchor = v
+}
+
+func (x *StockPose) SetPlanted(v []BodyPoint) {
+	x.xxx_hidden_Planted = v
+}
+
+func (x *StockPose) SetProps(v []*AnimationProp) {
+	x.xxx_hidden_Props = &v
+}
+
+func (x *StockPose) HasPose() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Pose != nil
+}
+
+func (x *StockPose) ClearPose() {
+	x.xxx_hidden_Pose = nil
+}
+
+type StockPose_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The name, e.g. "squat_bottom".
+	Name string
+	// What the pose is, and the exercises it's for.
+	Description string
+	// The pose.
+	Pose *Pose
+	// The animation's anchor that usually goes with the pose.
+	Anchor BodyPoint
+	// The planted points that usually go with the pose.
+	Planted []BodyPoint
+	// The props the pose needs, e.g. a bench to sit on. Weights are left to
+	// the exercise.
+	Props []*AnimationProp
+}
+
+func (b0 StockPose_builder) Build() *StockPose {
+	m0 := &StockPose{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Description = b.Description
+	x.xxx_hidden_Pose = b.Pose
+	x.xxx_hidden_Anchor = b.Anchor
+	x.xxx_hidden_Planted = b.Planted
+	x.xxx_hidden_Props = &b.Props
+	return m0
+}
+
 // An exercise of Garmin's catalog.
 type GarminExercise struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
@@ -2435,7 +2686,7 @@ type GarminExercise struct {
 
 func (x *GarminExercise) Reset() {
 	*x = GarminExercise{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	mi := &file_plans_v1_exercises_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2447,7 +2698,7 @@ func (x *GarminExercise) String() string {
 func (*GarminExercise) ProtoMessage() {}
 
 func (x *GarminExercise) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[24]
+	mi := &file_plans_v1_exercises_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2613,7 +2864,17 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"W\n" +
 	"\x1dSearchGarminExercisesResponse\x126\n" +
-	"\texercises\x18\x01 \x03(\v2\x18.plans.v1.GarminExerciseR\texercises\"P\n" +
+	"\texercises\x18\x01 \x03(\v2\x18.plans.v1.GarminExerciseR\texercises\"\x17\n" +
+	"\x15ListStockPosesRequest\"C\n" +
+	"\x16ListStockPosesResponse\x12)\n" +
+	"\x05poses\x18\x01 \x03(\v2\x13.plans.v1.StockPoseR\x05poses\"\xf0\x01\n" +
+	"\tStockPose\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\"\n" +
+	"\x04pose\x18\x03 \x01(\v2\x0e.plans.v1.PoseR\x04pose\x12+\n" +
+	"\x06anchor\x18\x04 \x01(\x0e2\x13.plans.v1.BodyPointR\x06anchor\x12-\n" +
+	"\aplanted\x18\x05 \x03(\x0e2\x13.plans.v1.BodyPointR\aplanted\x12-\n" +
+	"\x05props\x18\x06 \x03(\v2\x17.plans.v1.AnimationPropR\x05props\"P\n" +
 	"\x0eGarminExercise\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x12\n" +
@@ -2663,7 +2924,7 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x1cANIMATION_PROP_KIND_DUMBBELL\x10\x03\x12\"\n" +
 	"\x1eANIMATION_PROP_KIND_KETTLEBELL\x10\x04\x12\x1b\n" +
 	"\x17ANIMATION_PROP_KIND_MAT\x10\x05\x12\x1b\n" +
-	"\x17ANIMATION_PROP_KIND_BAR\x10\x062\xb5\x06\n" +
+	"\x17ANIMATION_PROP_KIND_BAR\x10\x062\x8a\a\n" +
 	"\x0fExerciseService\x12V\n" +
 	"\x0fCreateExercises\x12 .plans.v1.CreateExercisesRequest\x1a!.plans.v1.CreateExercisesResponse\x12P\n" +
 	"\rListExercises\x12\x1e.plans.v1.ListExercisesRequest\x1a\x1f.plans.v1.ListExercisesResponse\x12J\n" +
@@ -2673,11 +2934,12 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x13ListExerciseHistory\x12$.plans.v1.ListExerciseHistoryRequest\x1a%.plans.v1.ListExerciseHistoryResponse\x12Y\n" +
 	"\x10GetHomeEquipment\x12!.plans.v1.GetHomeEquipmentRequest\x1a\".plans.v1.GetHomeEquipmentResponse\x12Y\n" +
 	"\x10SetHomeEquipment\x12!.plans.v1.SetHomeEquipmentRequest\x1a\".plans.v1.SetHomeEquipmentResponse\x12h\n" +
-	"\x15SearchGarminExercises\x12&.plans.v1.SearchGarminExercisesRequest\x1a'.plans.v1.SearchGarminExercisesResponseB\xa5\x01\n" +
+	"\x15SearchGarminExercises\x12&.plans.v1.SearchGarminExercisesRequest\x1a'.plans.v1.SearchGarminExercisesResponse\x12S\n" +
+	"\x0eListStockPoses\x12\x1f.plans.v1.ListStockPosesRequest\x1a .plans.v1.ListStockPosesResponseB\xa5\x01\n" +
 	"\fcom.plans.v1B\x0eExercisesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_exercises_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_plans_v1_exercises_proto_goTypes = []any{
 	(Muscle)(0),                           // 0: plans.v1.Muscle
 	(BodyPoint)(0),                        // 1: plans.v1.BodyPoint
@@ -2706,21 +2968,24 @@ var file_plans_v1_exercises_proto_goTypes = []any{
 	(*SetHomeEquipmentResponse)(nil),      // 24: plans.v1.SetHomeEquipmentResponse
 	(*SearchGarminExercisesRequest)(nil),  // 25: plans.v1.SearchGarminExercisesRequest
 	(*SearchGarminExercisesResponse)(nil), // 26: plans.v1.SearchGarminExercisesResponse
-	(*GarminExercise)(nil),                // 27: plans.v1.GarminExercise
-	(Equipment)(0),                        // 28: plans.v1.Equipment
-	(*timestamppb.Timestamp)(nil),         // 29: google.protobuf.Timestamp
-	(*PlannedExercise)(nil),               // 30: plans.v1.PlannedExercise
-	(*LoggedExercise)(nil),                // 31: plans.v1.LoggedExercise
-	(SessionEffort)(0),                    // 32: plans.v1.SessionEffort
-	(*fieldmaskpb.FieldMask)(nil),         // 33: google.protobuf.FieldMask
-	(*OwnedEquipment)(nil),                // 34: plans.v1.OwnedEquipment
+	(*ListStockPosesRequest)(nil),         // 27: plans.v1.ListStockPosesRequest
+	(*ListStockPosesResponse)(nil),        // 28: plans.v1.ListStockPosesResponse
+	(*StockPose)(nil),                     // 29: plans.v1.StockPose
+	(*GarminExercise)(nil),                // 30: plans.v1.GarminExercise
+	(Equipment)(0),                        // 31: plans.v1.Equipment
+	(*timestamppb.Timestamp)(nil),         // 32: google.protobuf.Timestamp
+	(*PlannedExercise)(nil),               // 33: plans.v1.PlannedExercise
+	(*LoggedExercise)(nil),                // 34: plans.v1.LoggedExercise
+	(SessionEffort)(0),                    // 35: plans.v1.SessionEffort
+	(*fieldmaskpb.FieldMask)(nil),         // 36: google.protobuf.FieldMask
+	(*OwnedEquipment)(nil),                // 37: plans.v1.OwnedEquipment
 }
 var file_plans_v1_exercises_proto_depIdxs = []int32{
 	0,  // 0: plans.v1.Exercise.primary_muscles:type_name -> plans.v1.Muscle
 	0,  // 1: plans.v1.Exercise.secondary_muscles:type_name -> plans.v1.Muscle
-	28, // 2: plans.v1.Exercise.equipment:type_name -> plans.v1.Equipment
-	29, // 3: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
-	29, // 4: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
+	31, // 2: plans.v1.Exercise.equipment:type_name -> plans.v1.Equipment
+	32, // 3: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
+	32, // 4: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
 	4,  // 5: plans.v1.Exercise.animations:type_name -> plans.v1.ExerciseAnimation
 	1,  // 6: plans.v1.ExerciseAnimation.anchor:type_name -> plans.v1.BodyPoint
 	1,  // 7: plans.v1.ExerciseAnimation.planted:type_name -> plans.v1.BodyPoint
@@ -2730,46 +2995,53 @@ var file_plans_v1_exercises_proto_depIdxs = []int32{
 	1,  // 11: plans.v1.AnimationProp.point:type_name -> plans.v1.BodyPoint
 	7,  // 12: plans.v1.AnimationKeyframe.pose:type_name -> plans.v1.Pose
 	1,  // 13: plans.v1.AnimationKeyframe.highlight:type_name -> plans.v1.BodyPoint
-	30, // 14: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
-	31, // 15: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
-	32, // 16: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
+	33, // 14: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
+	34, // 15: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
+	35, // 16: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
 	3,  // 17: plans.v1.CreateExercisesRequest.exercises:type_name -> plans.v1.Exercise
 	3,  // 18: plans.v1.CreateExercisesResponse.exercises:type_name -> plans.v1.Exercise
 	3,  // 19: plans.v1.ListExercisesResponse.exercises:type_name -> plans.v1.Exercise
 	3,  // 20: plans.v1.GetExerciseResponse.exercise:type_name -> plans.v1.Exercise
 	3,  // 21: plans.v1.UpdateExerciseRequest.exercise:type_name -> plans.v1.Exercise
-	33, // 22: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	36, // 22: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
 	3,  // 23: plans.v1.UpdateExerciseResponse.exercise:type_name -> plans.v1.Exercise
 	8,  // 24: plans.v1.ListExerciseHistoryResponse.entries:type_name -> plans.v1.ExerciseHistoryEntry
-	34, // 25: plans.v1.GetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
-	29, // 26: plans.v1.GetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
-	34, // 27: plans.v1.SetHomeEquipmentRequest.equipment:type_name -> plans.v1.OwnedEquipment
-	34, // 28: plans.v1.SetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
-	29, // 29: plans.v1.SetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
-	27, // 30: plans.v1.SearchGarminExercisesResponse.exercises:type_name -> plans.v1.GarminExercise
-	9,  // 31: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
-	11, // 32: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
-	13, // 33: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
-	15, // 34: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
-	17, // 35: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
-	19, // 36: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
-	21, // 37: plans.v1.ExerciseService.GetHomeEquipment:input_type -> plans.v1.GetHomeEquipmentRequest
-	23, // 38: plans.v1.ExerciseService.SetHomeEquipment:input_type -> plans.v1.SetHomeEquipmentRequest
-	25, // 39: plans.v1.ExerciseService.SearchGarminExercises:input_type -> plans.v1.SearchGarminExercisesRequest
-	10, // 40: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
-	12, // 41: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
-	14, // 42: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
-	16, // 43: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
-	18, // 44: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
-	20, // 45: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
-	22, // 46: plans.v1.ExerciseService.GetHomeEquipment:output_type -> plans.v1.GetHomeEquipmentResponse
-	24, // 47: plans.v1.ExerciseService.SetHomeEquipment:output_type -> plans.v1.SetHomeEquipmentResponse
-	26, // 48: plans.v1.ExerciseService.SearchGarminExercises:output_type -> plans.v1.SearchGarminExercisesResponse
-	40, // [40:49] is the sub-list for method output_type
-	31, // [31:40] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	37, // 25: plans.v1.GetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	32, // 26: plans.v1.GetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	37, // 27: plans.v1.SetHomeEquipmentRequest.equipment:type_name -> plans.v1.OwnedEquipment
+	37, // 28: plans.v1.SetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	32, // 29: plans.v1.SetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	30, // 30: plans.v1.SearchGarminExercisesResponse.exercises:type_name -> plans.v1.GarminExercise
+	29, // 31: plans.v1.ListStockPosesResponse.poses:type_name -> plans.v1.StockPose
+	7,  // 32: plans.v1.StockPose.pose:type_name -> plans.v1.Pose
+	1,  // 33: plans.v1.StockPose.anchor:type_name -> plans.v1.BodyPoint
+	1,  // 34: plans.v1.StockPose.planted:type_name -> plans.v1.BodyPoint
+	5,  // 35: plans.v1.StockPose.props:type_name -> plans.v1.AnimationProp
+	9,  // 36: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
+	11, // 37: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
+	13, // 38: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
+	15, // 39: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
+	17, // 40: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
+	19, // 41: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
+	21, // 42: plans.v1.ExerciseService.GetHomeEquipment:input_type -> plans.v1.GetHomeEquipmentRequest
+	23, // 43: plans.v1.ExerciseService.SetHomeEquipment:input_type -> plans.v1.SetHomeEquipmentRequest
+	25, // 44: plans.v1.ExerciseService.SearchGarminExercises:input_type -> plans.v1.SearchGarminExercisesRequest
+	27, // 45: plans.v1.ExerciseService.ListStockPoses:input_type -> plans.v1.ListStockPosesRequest
+	10, // 46: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
+	12, // 47: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
+	14, // 48: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
+	16, // 49: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
+	18, // 50: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
+	20, // 51: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
+	22, // 52: plans.v1.ExerciseService.GetHomeEquipment:output_type -> plans.v1.GetHomeEquipmentResponse
+	24, // 53: plans.v1.ExerciseService.SetHomeEquipment:output_type -> plans.v1.SetHomeEquipmentResponse
+	26, // 54: plans.v1.ExerciseService.SearchGarminExercises:output_type -> plans.v1.SearchGarminExercisesResponse
+	28, // 55: plans.v1.ExerciseService.ListStockPoses:output_type -> plans.v1.ListStockPosesResponse
+	46, // [46:56] is the sub-list for method output_type
+	36, // [36:46] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_exercises_proto_init() }
@@ -2785,7 +3057,7 @@ func file_plans_v1_exercises_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_exercises_proto_rawDesc), len(file_plans_v1_exercises_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   25,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

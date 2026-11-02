@@ -51,6 +51,9 @@ const (
 	// ExerciseServiceSearchGarminExercisesProcedure is the procedure name of the ExerciseService's
 	// SearchGarminExercises RPC.
 	ExerciseServiceSearchGarminExercisesProcedure = "/plans.v1.ExerciseService/SearchGarminExercises"
+	// ExerciseServiceListStockPosesProcedure is the procedure name of the ExerciseService's
+	// ListStockPoses RPC.
+	ExerciseServiceListStockPosesProcedure = "/plans.v1.ExerciseService/ListStockPoses"
 )
 
 var (
@@ -117,6 +120,13 @@ var (
 			Procedure:  ExerciseServiceSearchGarminExercisesProcedure,
 		}
 	})
+	exerciseServiceListStockPosesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_exercises_proto.Services().ByName("ExerciseService").Methods().ByName("ListStockPoses"),
+			Procedure:  ExerciseServiceListStockPosesProcedure,
+		}
+	})
 )
 
 // ExerciseServiceClient is a client for the plans.v1.ExerciseService service.
@@ -151,6 +161,13 @@ type ExerciseServiceClient interface {
 	// watches show and count the exercises of the catalog when the workout is
 	// on the user's Garmin calendar.
 	SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error)
+	// List stock poses of the stick figure of exercise animations, like
+	// standing, the bottom of a squat or a push-up, and a glute bridge, each
+	// with the anchor, planted points and props that usually go with it.
+	// Start an animation's keyframes from these and adjust them, rather than
+	// working out every angle: they put hands, feet and shoulders on the
+	// floor where they should be.
+	ListStockPoses(context.Context, *v1.ListStockPosesRequest) (*v1.ListStockPosesResponse, error)
 }
 
 // NewExerciseServiceClient constructs a client for the plans.v1.ExerciseService service. Multiple
@@ -191,6 +208,13 @@ type ExerciseServiceHandler interface {
 	// watches show and count the exercises of the catalog when the workout is
 	// on the user's Garmin calendar.
 	SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error)
+	// List stock poses of the stick figure of exercise animations, like
+	// standing, the bottom of a squat or a push-up, and a glute bridge, each
+	// with the anchor, planted points and props that usually go with it.
+	// Start an animation's keyframes from these and adjust them, rather than
+	// working out every angle: they put hands, feet and shoulders on the
+	// floor where they should be.
+	ListStockPoses(context.Context, *v1.ListStockPosesRequest) (*v1.ListStockPosesResponse, error)
 }
 
 // RegisterExerciseServiceHandler registers svc as the plans.v1.ExerciseService implementation on
@@ -207,6 +231,7 @@ func RegisterExerciseServiceHandler(server *connect.Server, svc ExerciseServiceH
 		connect.Method{Spec: exerciseServiceGetHomeEquipmentSpec(), Handler: adapter.getHomeEquipment},
 		connect.Method{Spec: exerciseServiceSetHomeEquipmentSpec(), Handler: adapter.setHomeEquipment},
 		connect.Method{Spec: exerciseServiceSearchGarminExercisesSpec(), Handler: adapter.searchGarminExercises},
+		connect.Method{Spec: exerciseServiceListStockPosesSpec(), Handler: adapter.listStockPoses},
 	)
 }
 
@@ -247,6 +272,10 @@ func (UnimplementedExerciseServiceHandler) SetHomeEquipment(context.Context, *v1
 
 func (UnimplementedExerciseServiceHandler) SearchGarminExercises(context.Context, *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.SearchGarminExercises is not implemented")
+}
+
+func (UnimplementedExerciseServiceHandler) ListStockPoses(context.Context, *v1.ListStockPosesRequest) (*v1.ListStockPosesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.ListStockPoses is not implemented")
 }
 
 type exerciseServiceClient struct {
@@ -320,6 +349,14 @@ func (c *exerciseServiceClient) SetHomeEquipment(ctx context.Context, req *v1.Se
 func (c *exerciseServiceClient) SearchGarminExercises(ctx context.Context, req *v1.SearchGarminExercisesRequest) (*v1.SearchGarminExercisesResponse, error) {
 	var res v1.SearchGarminExercisesResponse
 	if err := c.client.CallUnary(ctx, exerciseServiceSearchGarminExercisesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *exerciseServiceClient) ListStockPoses(ctx context.Context, req *v1.ListStockPosesRequest) (*v1.ListStockPosesResponse, error) {
+	var res v1.ListStockPosesResponse
+	if err := c.client.CallUnary(ctx, exerciseServiceListStockPosesSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -429,6 +466,18 @@ func (h exerciseServiceHandler) searchGarminExercises(ctx context.Context, _ con
 		return err
 	}
 	res, err := h.svc.SearchGarminExercises(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h exerciseServiceHandler) listStockPoses(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListStockPosesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListStockPoses(ctx, &req)
 	if err != nil {
 		return err
 	}
