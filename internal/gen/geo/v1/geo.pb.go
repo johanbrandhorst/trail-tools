@@ -1707,6 +1707,300 @@ func (b0 HeatmapCell_builder) Build() *HeatmapCell {
 	return m0
 }
 
+type ListFamiliarTrailsRequest struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Bounds    *BoundingBox           `protobuf:"bytes,1,opt,name=bounds,proto3"`
+	xxx_hidden_StartDate string                 `protobuf:"bytes,2,opt,name=start_date,json=startDate,proto3"`
+	xxx_hidden_EndDate   string                 `protobuf:"bytes,3,opt,name=end_date,json=endDate,proto3"`
+	xxx_hidden_Limit     int32                  `protobuf:"varint,4,opt,name=limit,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ListFamiliarTrailsRequest) Reset() {
+	*x = ListFamiliarTrailsRequest{}
+	mi := &file_geo_v1_geo_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFamiliarTrailsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFamiliarTrailsRequest) ProtoMessage() {}
+
+func (x *ListFamiliarTrailsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_geo_v1_geo_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ListFamiliarTrailsRequest) GetBounds() *BoundingBox {
+	if x != nil {
+		return x.xxx_hidden_Bounds
+	}
+	return nil
+}
+
+func (x *ListFamiliarTrailsRequest) GetStartDate() string {
+	if x != nil {
+		return x.xxx_hidden_StartDate
+	}
+	return ""
+}
+
+func (x *ListFamiliarTrailsRequest) GetEndDate() string {
+	if x != nil {
+		return x.xxx_hidden_EndDate
+	}
+	return ""
+}
+
+func (x *ListFamiliarTrailsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.xxx_hidden_Limit
+	}
+	return 0
+}
+
+func (x *ListFamiliarTrailsRequest) SetBounds(v *BoundingBox) {
+	x.xxx_hidden_Bounds = v
+}
+
+func (x *ListFamiliarTrailsRequest) SetStartDate(v string) {
+	x.xxx_hidden_StartDate = v
+}
+
+func (x *ListFamiliarTrailsRequest) SetEndDate(v string) {
+	x.xxx_hidden_EndDate = v
+}
+
+func (x *ListFamiliarTrailsRequest) SetLimit(v int32) {
+	x.xxx_hidden_Limit = v
+}
+
+func (x *ListFamiliarTrailsRequest) HasBounds() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Bounds != nil
+}
+
+func (x *ListFamiliarTrailsRequest) ClearBounds() {
+	x.xxx_hidden_Bounds = nil
+}
+
+type ListFamiliarTrailsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The area to search, at most 30 km across.
+	Bounds *BoundingBox
+	// Only count activities that started on or after this date (YYYY-MM-DD).
+	StartDate string
+	// Only count activities that started on or before this date (YYYY-MM-DD).
+	EndDate string
+	// Maximum number of trails to return, the most run first. Defaults to 50,
+	// maximum 200.
+	Limit int32
+}
+
+func (b0 ListFamiliarTrailsRequest_builder) Build() *ListFamiliarTrailsRequest {
+	m0 := &ListFamiliarTrailsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Bounds = b.Bounds
+	x.xxx_hidden_StartDate = b.StartDate
+	x.xxx_hidden_EndDate = b.EndDate
+	x.xxx_hidden_Limit = b.Limit
+	return m0
+}
+
+// A trail or road the user has run.
+type FamiliarTrail struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Trail           *Trail                 `protobuf:"bytes,1,opt,name=trail,proto3"`
+	xxx_hidden_ActivityCount   int32                  `protobuf:"varint,2,opt,name=activity_count,json=activityCount,proto3"`
+	xxx_hidden_RunLengthMeters float64                `protobuf:"fixed64,3,opt,name=run_length_meters,json=runLengthMeters,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *FamiliarTrail) Reset() {
+	*x = FamiliarTrail{}
+	mi := &file_geo_v1_geo_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FamiliarTrail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FamiliarTrail) ProtoMessage() {}
+
+func (x *FamiliarTrail) ProtoReflect() protoreflect.Message {
+	mi := &file_geo_v1_geo_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *FamiliarTrail) GetTrail() *Trail {
+	if x != nil {
+		return x.xxx_hidden_Trail
+	}
+	return nil
+}
+
+func (x *FamiliarTrail) GetActivityCount() int32 {
+	if x != nil {
+		return x.xxx_hidden_ActivityCount
+	}
+	return 0
+}
+
+func (x *FamiliarTrail) GetRunLengthMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_RunLengthMeters
+	}
+	return 0
+}
+
+func (x *FamiliarTrail) SetTrail(v *Trail) {
+	x.xxx_hidden_Trail = v
+}
+
+func (x *FamiliarTrail) SetActivityCount(v int32) {
+	x.xxx_hidden_ActivityCount = v
+}
+
+func (x *FamiliarTrail) SetRunLengthMeters(v float64) {
+	x.xxx_hidden_RunLengthMeters = v
+}
+
+func (x *FamiliarTrail) HasTrail() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Trail != nil
+}
+
+func (x *FamiliarTrail) ClearTrail() {
+	x.xxx_hidden_Trail = nil
+}
+
+type FamiliarTrail_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The way. Its length_meters is its length in the bounds, and its start
+	// and end are where the part the user ran starts and ends. Its
+	// nearest_point and distance_from_center_meters are unset.
+	Trail *Trail
+	// How many activities ran along the way's most run part.
+	ActivityCount int32
+	// How much of the way the user has run, in meters.
+	RunLengthMeters float64
+}
+
+func (b0 FamiliarTrail_builder) Build() *FamiliarTrail {
+	m0 := &FamiliarTrail{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Trail = b.Trail
+	x.xxx_hidden_ActivityCount = b.ActivityCount
+	x.xxx_hidden_RunLengthMeters = b.RunLengthMeters
+	return m0
+}
+
+type ListFamiliarTrailsResponse struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Trails    *[]*FamiliarTrail      `protobuf:"bytes,1,rep,name=trails,proto3"`
+	xxx_hidden_Truncated bool                   `protobuf:"varint,2,opt,name=truncated,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ListFamiliarTrailsResponse) Reset() {
+	*x = ListFamiliarTrailsResponse{}
+	mi := &file_geo_v1_geo_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFamiliarTrailsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFamiliarTrailsResponse) ProtoMessage() {}
+
+func (x *ListFamiliarTrailsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_geo_v1_geo_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ListFamiliarTrailsResponse) GetTrails() []*FamiliarTrail {
+	if x != nil {
+		if x.xxx_hidden_Trails != nil {
+			return *x.xxx_hidden_Trails
+		}
+	}
+	return nil
+}
+
+func (x *ListFamiliarTrailsResponse) GetTruncated() bool {
+	if x != nil {
+		return x.xxx_hidden_Truncated
+	}
+	return false
+}
+
+func (x *ListFamiliarTrailsResponse) SetTrails(v []*FamiliarTrail) {
+	x.xxx_hidden_Trails = &v
+}
+
+func (x *ListFamiliarTrailsResponse) SetTruncated(v bool) {
+	x.xxx_hidden_Truncated = v
+}
+
+type ListFamiliarTrailsResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The trails, the most run first, then the longest run.
+	Trails []*FamiliarTrail
+	// Whether some activities were left out, as there were too many. The
+	// 1,000 most recent activities in the area are counted; use dates or a
+	// smaller area to count others.
+	Truncated bool
+}
+
+func (b0 ListFamiliarTrailsResponse_builder) Build() *ListFamiliarTrailsResponse {
+	m0 := &ListFamiliarTrailsResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Trails = &b.Trails
+	x.xxx_hidden_Truncated = b.Truncated
+	return m0
+}
+
 type ListHeatmapTracksRequest struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Bounds          *BoundingBox           `protobuf:"bytes,1,opt,name=bounds,proto3"`
@@ -1717,7 +2011,7 @@ type ListHeatmapTracksRequest struct {
 
 func (x *ListHeatmapTracksRequest) Reset() {
 	*x = ListHeatmapTracksRequest{}
-	mi := &file_geo_v1_geo_proto_msgTypes[15]
+	mi := &file_geo_v1_geo_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1729,7 +2023,7 @@ func (x *ListHeatmapTracksRequest) String() string {
 func (*ListHeatmapTracksRequest) ProtoMessage() {}
 
 func (x *ListHeatmapTracksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_geo_v1_geo_proto_msgTypes[15]
+	mi := &file_geo_v1_geo_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1804,7 +2098,7 @@ type ListHeatmapTracksResponse struct {
 
 func (x *ListHeatmapTracksResponse) Reset() {
 	*x = ListHeatmapTracksResponse{}
-	mi := &file_geo_v1_geo_proto_msgTypes[16]
+	mi := &file_geo_v1_geo_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1816,7 +2110,7 @@ func (x *ListHeatmapTracksResponse) String() string {
 func (*ListHeatmapTracksResponse) ProtoMessage() {}
 
 func (x *ListHeatmapTracksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_geo_v1_geo_proto_msgTypes[16]
+	mi := &file_geo_v1_geo_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1881,7 +2175,7 @@ type GetPersonalHeatmapResponse struct {
 
 func (x *GetPersonalHeatmapResponse) Reset() {
 	*x = GetPersonalHeatmapResponse{}
-	mi := &file_geo_v1_geo_proto_msgTypes[17]
+	mi := &file_geo_v1_geo_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1893,7 +2187,7 @@ func (x *GetPersonalHeatmapResponse) String() string {
 func (*GetPersonalHeatmapResponse) ProtoMessage() {}
 
 func (x *GetPersonalHeatmapResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_geo_v1_geo_proto_msgTypes[17]
+	mi := &file_geo_v1_geo_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2049,7 +2343,20 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\"\\\n" +
 	"\vHeatmapCell\x12&\n" +
 	"\x06center\x18\x01 \x01(\v2\x0e.geo.v1.LatLngR\x06center\x12%\n" +
-	"\x0eactivity_count\x18\x02 \x01(\x05R\ractivityCount\"r\n" +
+	"\x0eactivity_count\x18\x02 \x01(\x05R\ractivityCount\"\x98\x01\n" +
+	"\x19ListFamiliarTrailsRequest\x12+\n" +
+	"\x06bounds\x18\x01 \x01(\v2\x13.geo.v1.BoundingBoxR\x06bounds\x12\x1d\n" +
+	"\n" +
+	"start_date\x18\x02 \x01(\tR\tstartDate\x12\x19\n" +
+	"\bend_date\x18\x03 \x01(\tR\aendDate\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\"\x87\x01\n" +
+	"\rFamiliarTrail\x12#\n" +
+	"\x05trail\x18\x01 \x01(\v2\r.geo.v1.TrailR\x05trail\x12%\n" +
+	"\x0eactivity_count\x18\x02 \x01(\x05R\ractivityCount\x12*\n" +
+	"\x11run_length_meters\x18\x03 \x01(\x01R\x0frunLengthMeters\"i\n" +
+	"\x1aListFamiliarTrailsResponse\x12-\n" +
+	"\x06trails\x18\x01 \x03(\v2\x15.geo.v1.FamiliarTrailR\x06trails\x12\x1c\n" +
+	"\ttruncated\x18\x02 \x01(\bR\ttruncated\"r\n" +
 	"\x18ListHeatmapTracksRequest\x12+\n" +
 	"\x06bounds\x18\x01 \x01(\v2\x13.geo.v1.BoundingBoxR\x06bounds\x12)\n" +
 	"\x10tolerance_meters\x18\x02 \x01(\x01R\x0ftoleranceMeters\"W\n" +
@@ -2076,7 +2383,7 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\x1ePOINT_OF_INTEREST_KIND_SHELTER\x10\x05\x12\"\n" +
 	"\x1ePOINT_OF_INTEREST_KIND_TOILETS\x10\x06\x12!\n" +
 	"\x1dPOINT_OF_INTEREST_KIND_SADDLE\x10\a\x12$\n" +
-	" POINT_OF_INTEREST_KIND_TRAILHEAD\x10\b2\x89\x04\n" +
+	" POINT_OF_INTEREST_KIND_TRAILHEAD\x10\b2\xe6\x04\n" +
 	"\n" +
 	"GeoService\x12I\n" +
 	"\fSearchPlaces\x12\x1b.geo.v1.SearchPlacesRequest\x1a\x1c.geo.v1.SearchPlacesResponse\x12C\n" +
@@ -2084,13 +2391,14 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"FindTrails\x12\x19.geo.v1.FindTrailsRequest\x1a\x1a.geo.v1.FindTrailsResponse\x12a\n" +
 	"\x14FindPointsOfInterest\x12#.geo.v1.FindPointsOfInterestRequest\x1a$.geo.v1.FindPointsOfInterestResponse\x12I\n" +
 	"\fGetElevation\x12\x1b.geo.v1.GetElevationRequest\x1a\x1c.geo.v1.GetElevationResponse\x12[\n" +
-	"\x12GetPersonalHeatmap\x12!.geo.v1.GetPersonalHeatmapRequest\x1a\".geo.v1.GetPersonalHeatmapResponse\x12`\n" +
+	"\x12GetPersonalHeatmap\x12!.geo.v1.GetPersonalHeatmapRequest\x1a\".geo.v1.GetPersonalHeatmapResponse\x12[\n" +
+	"\x12ListFamiliarTrails\x12!.geo.v1.ListFamiliarTrailsRequest\x1a\".geo.v1.ListFamiliarTrailsResponse\x12`\n" +
 	"\x11ListHeatmapTracks\x12 .geo.v1.ListHeatmapTracksRequest\x1a!.geo.v1.ListHeatmapTracksResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x91\x01\n" +
 	"\n" +
 	"com.geo.v1B\bGeoProtoP\x01Z@github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1;geov1\xa2\x02\x03GXX\xaa\x02\x06Geo.V1\xca\x02\x06Geo\\V1\xe2\x02\x12Geo\\V1\\GPBMetadata\xea\x02\aGeo::V1b\x06proto3"
 
 var file_geo_v1_geo_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_geo_v1_geo_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_geo_v1_geo_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_geo_v1_geo_proto_goTypes = []any{
 	(Terrain)(0),                         // 0: geo.v1.Terrain
 	(PointOfInterestKind)(0),             // 1: geo.v1.PointOfInterestKind
@@ -2109,9 +2417,12 @@ var file_geo_v1_geo_proto_goTypes = []any{
 	(*GetElevationResponse)(nil),         // 14: geo.v1.GetElevationResponse
 	(*GetPersonalHeatmapRequest)(nil),    // 15: geo.v1.GetPersonalHeatmapRequest
 	(*HeatmapCell)(nil),                  // 16: geo.v1.HeatmapCell
-	(*ListHeatmapTracksRequest)(nil),     // 17: geo.v1.ListHeatmapTracksRequest
-	(*ListHeatmapTracksResponse)(nil),    // 18: geo.v1.ListHeatmapTracksResponse
-	(*GetPersonalHeatmapResponse)(nil),   // 19: geo.v1.GetPersonalHeatmapResponse
+	(*ListFamiliarTrailsRequest)(nil),    // 17: geo.v1.ListFamiliarTrailsRequest
+	(*FamiliarTrail)(nil),                // 18: geo.v1.FamiliarTrail
+	(*ListFamiliarTrailsResponse)(nil),   // 19: geo.v1.ListFamiliarTrailsResponse
+	(*ListHeatmapTracksRequest)(nil),     // 20: geo.v1.ListHeatmapTracksRequest
+	(*ListHeatmapTracksResponse)(nil),    // 21: geo.v1.ListHeatmapTracksResponse
+	(*GetPersonalHeatmapResponse)(nil),   // 22: geo.v1.GetPersonalHeatmapResponse
 }
 var file_geo_v1_geo_proto_depIdxs = []int32{
 	2,  // 0: geo.v1.Place.location:type_name -> geo.v1.LatLng
@@ -2132,25 +2443,30 @@ var file_geo_v1_geo_proto_depIdxs = []int32{
 	2,  // 15: geo.v1.GetElevationRequest.points:type_name -> geo.v1.LatLng
 	3,  // 16: geo.v1.GetPersonalHeatmapRequest.bounds:type_name -> geo.v1.BoundingBox
 	2,  // 17: geo.v1.HeatmapCell.center:type_name -> geo.v1.LatLng
-	3,  // 18: geo.v1.ListHeatmapTracksRequest.bounds:type_name -> geo.v1.BoundingBox
-	16, // 19: geo.v1.GetPersonalHeatmapResponse.cells:type_name -> geo.v1.HeatmapCell
-	4,  // 20: geo.v1.GeoService.SearchPlaces:input_type -> geo.v1.SearchPlacesRequest
-	7,  // 21: geo.v1.GeoService.FindTrails:input_type -> geo.v1.FindTrailsRequest
-	10, // 22: geo.v1.GeoService.FindPointsOfInterest:input_type -> geo.v1.FindPointsOfInterestRequest
-	13, // 23: geo.v1.GeoService.GetElevation:input_type -> geo.v1.GetElevationRequest
-	15, // 24: geo.v1.GeoService.GetPersonalHeatmap:input_type -> geo.v1.GetPersonalHeatmapRequest
-	17, // 25: geo.v1.GeoService.ListHeatmapTracks:input_type -> geo.v1.ListHeatmapTracksRequest
-	6,  // 26: geo.v1.GeoService.SearchPlaces:output_type -> geo.v1.SearchPlacesResponse
-	9,  // 27: geo.v1.GeoService.FindTrails:output_type -> geo.v1.FindTrailsResponse
-	12, // 28: geo.v1.GeoService.FindPointsOfInterest:output_type -> geo.v1.FindPointsOfInterestResponse
-	14, // 29: geo.v1.GeoService.GetElevation:output_type -> geo.v1.GetElevationResponse
-	19, // 30: geo.v1.GeoService.GetPersonalHeatmap:output_type -> geo.v1.GetPersonalHeatmapResponse
-	18, // 31: geo.v1.GeoService.ListHeatmapTracks:output_type -> geo.v1.ListHeatmapTracksResponse
-	26, // [26:32] is the sub-list for method output_type
-	20, // [20:26] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	3,  // 18: geo.v1.ListFamiliarTrailsRequest.bounds:type_name -> geo.v1.BoundingBox
+	8,  // 19: geo.v1.FamiliarTrail.trail:type_name -> geo.v1.Trail
+	18, // 20: geo.v1.ListFamiliarTrailsResponse.trails:type_name -> geo.v1.FamiliarTrail
+	3,  // 21: geo.v1.ListHeatmapTracksRequest.bounds:type_name -> geo.v1.BoundingBox
+	16, // 22: geo.v1.GetPersonalHeatmapResponse.cells:type_name -> geo.v1.HeatmapCell
+	4,  // 23: geo.v1.GeoService.SearchPlaces:input_type -> geo.v1.SearchPlacesRequest
+	7,  // 24: geo.v1.GeoService.FindTrails:input_type -> geo.v1.FindTrailsRequest
+	10, // 25: geo.v1.GeoService.FindPointsOfInterest:input_type -> geo.v1.FindPointsOfInterestRequest
+	13, // 26: geo.v1.GeoService.GetElevation:input_type -> geo.v1.GetElevationRequest
+	15, // 27: geo.v1.GeoService.GetPersonalHeatmap:input_type -> geo.v1.GetPersonalHeatmapRequest
+	17, // 28: geo.v1.GeoService.ListFamiliarTrails:input_type -> geo.v1.ListFamiliarTrailsRequest
+	20, // 29: geo.v1.GeoService.ListHeatmapTracks:input_type -> geo.v1.ListHeatmapTracksRequest
+	6,  // 30: geo.v1.GeoService.SearchPlaces:output_type -> geo.v1.SearchPlacesResponse
+	9,  // 31: geo.v1.GeoService.FindTrails:output_type -> geo.v1.FindTrailsResponse
+	12, // 32: geo.v1.GeoService.FindPointsOfInterest:output_type -> geo.v1.FindPointsOfInterestResponse
+	14, // 33: geo.v1.GeoService.GetElevation:output_type -> geo.v1.GetElevationResponse
+	22, // 34: geo.v1.GeoService.GetPersonalHeatmap:output_type -> geo.v1.GetPersonalHeatmapResponse
+	19, // 35: geo.v1.GeoService.ListFamiliarTrails:output_type -> geo.v1.ListFamiliarTrailsResponse
+	21, // 36: geo.v1.GeoService.ListHeatmapTracks:output_type -> geo.v1.ListHeatmapTracksResponse
+	30, // [30:37] is the sub-list for method output_type
+	23, // [23:30] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_geo_v1_geo_proto_init() }
@@ -2164,7 +2480,7 @@ func file_geo_v1_geo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_geo_v1_geo_proto_rawDesc), len(file_geo_v1_geo_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   18,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

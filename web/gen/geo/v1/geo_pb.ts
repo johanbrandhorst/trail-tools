@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file geo/v1/geo.proto.
  */
 export const file_geo_v1_geo: GenFile = /*@__PURE__*/
-  fileDesc("ChBnZW8vdjEvZ2VvLnByb3RvEgZnZW8udjEiIgoGTGF0TG5nEgsKA2xhdBgBIAEoARILCgNsbmcYAiABKAEiRwoLQm91bmRpbmdCb3gSDQoFc291dGgYASABKAESDAoEd2VzdBgCIAEoARINCgVub3J0aBgDIAEoARIMCgRlYXN0GAQgASgBIjMKE1NlYXJjaFBsYWNlc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSDQoFbGltaXQYAiABKAUifAoFUGxhY2USDAoEbmFtZRgBIAEoCRIgCghsb2NhdGlvbhgCIAEoCzIOLmdlby52MS5MYXRMbmcSEAoIY2F0ZWdvcnkYAyABKAkSDAoEdHlwZRgEIAEoCRIjCgZib3VuZHMYBSABKAsyEy5nZW8udjEuQm91bmRpbmdCb3giNQoUU2VhcmNoUGxhY2VzUmVzcG9uc2USHQoGcGxhY2VzGAEgAygLMg0uZ2VvLnYxLlBsYWNlIpYBChFGaW5kVHJhaWxzUmVxdWVzdBIeCgZjZW50ZXIYASABKAsyDi5nZW8udjEuTGF0TG5nEhUKDXJhZGl1c19tZXRlcnMYAiABKAESDQoFbGltaXQYAyABKAUSGAoQaW5jbHVkZV9nZW9tZXRyeRgEIAEoCBIhChlnZW9tZXRyeV90b2xlcmFuY2VfbWV0ZXJzGAUgASgBIr0CCgVUcmFpbBIOCgZvc21faWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdoaWdod2F5GAMgASgJEg8KB3N1cmZhY2UYBCABKAkSEQoJc2FjX3NjYWxlGAUgASgJEiAKB3RlcnJhaW4YBiABKA4yDy5nZW8udjEuVGVycmFpbhIVCg1sZW5ndGhfbWV0ZXJzGAcgASgBEh0KBXN0YXJ0GAggASgLMg4uZ2VvLnYxLkxhdExuZxIbCgNlbmQYCSABKAsyDi5nZW8udjEuTGF0TG5nEiUKDW5lYXJlc3RfcG9pbnQYCiABKAsyDi5nZW8udjEuTGF0TG5nEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgLIAEoARIgCghnZW9tZXRyeRgMIAMoCzIOLmdlby52MS5MYXRMbmciMwoSRmluZFRyYWlsc1Jlc3BvbnNlEh0KBnRyYWlscxgBIAMoCzINLmdlby52MS5UcmFpbCKPAQobRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0Eh4KBmNlbnRlchgBIAEoCzIOLmdlby52MS5MYXRMbmcSFQoNcmFkaXVzX21ldGVycxgCIAEoARIqCgVraW5kcxgDIAMoDjIbLmdlby52MS5Qb2ludE9mSW50ZXJlc3RLaW5kEg0KBWxpbWl0GAQgASgFIrsBCg9Qb2ludE9mSW50ZXJlc3QSDgoGb3NtX2lkGAEgASgJEikKBGtpbmQYAiABKA4yGy5nZW8udjEuUG9pbnRPZkludGVyZXN0S2luZBIMCgRuYW1lGAMgASgJEiAKCGxvY2F0aW9uGAQgASgLMg4uZ2VvLnYxLkxhdExuZxIYChBlbGV2YXRpb25fbWV0ZXJzGAUgASgBEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgGIAEoASJHChxGaW5kUG9pbnRzT2ZJbnRlcmVzdFJlc3BvbnNlEicKBnBvaW50cxgBIAMoCzIXLmdlby52MS5Qb2ludE9mSW50ZXJlc3QiNQoTR2V0RWxldmF0aW9uUmVxdWVzdBIeCgZwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nIjEKFEdldEVsZXZhdGlvblJlc3BvbnNlEhkKEWVsZXZhdGlvbnNfbWV0ZXJzGAEgAygBIo8BChlHZXRQZXJzb25hbEhlYXRtYXBSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBIYChBjZWxsX3NpemVfbWV0ZXJzGAIgASgBEhIKCnN0YXJ0X2RhdGUYAyABKAkSEAoIZW5kX2RhdGUYBCABKAkSDQoFbGltaXQYBSABKAUiRQoLSGVhdG1hcENlbGwSHgoGY2VudGVyGAEgASgLMg4uZ2VvLnYxLkxhdExuZxIWCg5hY3Rpdml0eV9jb3VudBgCIAEoBSJZChhMaXN0SGVhdG1hcFRyYWNrc1JlcXVlc3QSIwoGYm91bmRzGAEgASgLMhMuZ2VvLnYxLkJvdW5kaW5nQm94EhgKEHRvbGVyYW5jZV9tZXRlcnMYAiABKAEiQQoZTGlzdEhlYXRtYXBUcmFja3NSZXNwb25zZRIRCglwb2x5bGluZXMYASADKAkSEQoJdHJ1bmNhdGVkGAIgASgIIoUBChpHZXRQZXJzb25hbEhlYXRtYXBSZXNwb25zZRIiCgVjZWxscxgBIAMoCzITLmdlby52MS5IZWF0bWFwQ2VsbBIYChBjZWxsX3NpemVfbWV0ZXJzGAIgASgBEhYKDmFjdGl2aXR5X2NvdW50GAMgASgFEhEKCXRydW5jYXRlZBgEIAEoCCpzCgdUZXJyYWluEhcKE1RFUlJBSU5fVU5TUEVDSUZJRUQQABIRCg1URVJSQUlOX1BBVkVEEAESEgoOVEVSUkFJTl9HUkFWRUwQAhIRCg1URVJSQUlOX1RSQUlMEAMSFQoRVEVSUkFJTl9URUNITklDQUwQBCrbAgoTUG9pbnRPZkludGVyZXN0S2luZBImCiJQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1VOU1BFQ0lGSUVEEAASHwobUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9QRUFLEAESIAocUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9XQVRFUhACEiIKHlBPSU5UX09GX0lOVEVSRVNUX0tJTkRfUEFSS0lORxADEiQKIFBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVklFV1BPSU5UEAQSIgoeUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9TSEVMVEVSEAUSIgoeUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9UT0lMRVRTEAYSIQodUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9TQURETEUQBxIkCiBQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1RSQUlMSEVBRBAIMokECgpHZW9TZXJ2aWNlEkkKDFNlYXJjaFBsYWNlcxIbLmdlby52MS5TZWFyY2hQbGFjZXNSZXF1ZXN0GhwuZ2VvLnYxLlNlYXJjaFBsYWNlc1Jlc3BvbnNlEkMKCkZpbmRUcmFpbHMSGS5nZW8udjEuRmluZFRyYWlsc1JlcXVlc3QaGi5nZW8udjEuRmluZFRyYWlsc1Jlc3BvbnNlEmEKFEZpbmRQb2ludHNPZkludGVyZXN0EiMuZ2VvLnYxLkZpbmRQb2ludHNPZkludGVyZXN0UmVxdWVzdBokLmdlby52MS5GaW5kUG9pbnRzT2ZJbnRlcmVzdFJlc3BvbnNlEkkKDEdldEVsZXZhdGlvbhIbLmdlby52MS5HZXRFbGV2YXRpb25SZXF1ZXN0GhwuZ2VvLnYxLkdldEVsZXZhdGlvblJlc3BvbnNlElsKEkdldFBlcnNvbmFsSGVhdG1hcBIhLmdlby52MS5HZXRQZXJzb25hbEhlYXRtYXBSZXF1ZXN0GiIuZ2VvLnYxLkdldFBlcnNvbmFsSGVhdG1hcFJlc3BvbnNlEmAKEUxpc3RIZWF0bWFwVHJhY2tzEiAuZ2VvLnYxLkxpc3RIZWF0bWFwVHJhY2tzUmVxdWVzdBohLmdlby52MS5MaXN0SGVhdG1hcFRyYWNrc1Jlc3BvbnNlIgainxkCCAFCkQEKCmNvbS5nZW8udjFCCEdlb1Byb3RvUAFaQGdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9nZW8vdjE7Z2VvdjGiAgNHWFiqAgZHZW8uVjHKAgZHZW9cVjHiAhJHZW9cVjFcR1BCTWV0YWRhdGHqAgdHZW86OlYxYgZwcm90bzM", [file_mcp_v1_options]);
+  fileDesc("ChBnZW8vdjEvZ2VvLnByb3RvEgZnZW8udjEiIgoGTGF0TG5nEgsKA2xhdBgBIAEoARILCgNsbmcYAiABKAEiRwoLQm91bmRpbmdCb3gSDQoFc291dGgYASABKAESDAoEd2VzdBgCIAEoARINCgVub3J0aBgDIAEoARIMCgRlYXN0GAQgASgBIjMKE1NlYXJjaFBsYWNlc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSDQoFbGltaXQYAiABKAUifAoFUGxhY2USDAoEbmFtZRgBIAEoCRIgCghsb2NhdGlvbhgCIAEoCzIOLmdlby52MS5MYXRMbmcSEAoIY2F0ZWdvcnkYAyABKAkSDAoEdHlwZRgEIAEoCRIjCgZib3VuZHMYBSABKAsyEy5nZW8udjEuQm91bmRpbmdCb3giNQoUU2VhcmNoUGxhY2VzUmVzcG9uc2USHQoGcGxhY2VzGAEgAygLMg0uZ2VvLnYxLlBsYWNlIpYBChFGaW5kVHJhaWxzUmVxdWVzdBIeCgZjZW50ZXIYASABKAsyDi5nZW8udjEuTGF0TG5nEhUKDXJhZGl1c19tZXRlcnMYAiABKAESDQoFbGltaXQYAyABKAUSGAoQaW5jbHVkZV9nZW9tZXRyeRgEIAEoCBIhChlnZW9tZXRyeV90b2xlcmFuY2VfbWV0ZXJzGAUgASgBIr0CCgVUcmFpbBIOCgZvc21faWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdoaWdod2F5GAMgASgJEg8KB3N1cmZhY2UYBCABKAkSEQoJc2FjX3NjYWxlGAUgASgJEiAKB3RlcnJhaW4YBiABKA4yDy5nZW8udjEuVGVycmFpbhIVCg1sZW5ndGhfbWV0ZXJzGAcgASgBEh0KBXN0YXJ0GAggASgLMg4uZ2VvLnYxLkxhdExuZxIbCgNlbmQYCSABKAsyDi5nZW8udjEuTGF0TG5nEiUKDW5lYXJlc3RfcG9pbnQYCiABKAsyDi5nZW8udjEuTGF0TG5nEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgLIAEoARIgCghnZW9tZXRyeRgMIAMoCzIOLmdlby52MS5MYXRMbmciMwoSRmluZFRyYWlsc1Jlc3BvbnNlEh0KBnRyYWlscxgBIAMoCzINLmdlby52MS5UcmFpbCKPAQobRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0Eh4KBmNlbnRlchgBIAEoCzIOLmdlby52MS5MYXRMbmcSFQoNcmFkaXVzX21ldGVycxgCIAEoARIqCgVraW5kcxgDIAMoDjIbLmdlby52MS5Qb2ludE9mSW50ZXJlc3RLaW5kEg0KBWxpbWl0GAQgASgFIrsBCg9Qb2ludE9mSW50ZXJlc3QSDgoGb3NtX2lkGAEgASgJEikKBGtpbmQYAiABKA4yGy5nZW8udjEuUG9pbnRPZkludGVyZXN0S2luZBIMCgRuYW1lGAMgASgJEiAKCGxvY2F0aW9uGAQgASgLMg4uZ2VvLnYxLkxhdExuZxIYChBlbGV2YXRpb25fbWV0ZXJzGAUgASgBEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgGIAEoASJHChxGaW5kUG9pbnRzT2ZJbnRlcmVzdFJlc3BvbnNlEicKBnBvaW50cxgBIAMoCzIXLmdlby52MS5Qb2ludE9mSW50ZXJlc3QiNQoTR2V0RWxldmF0aW9uUmVxdWVzdBIeCgZwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nIjEKFEdldEVsZXZhdGlvblJlc3BvbnNlEhkKEWVsZXZhdGlvbnNfbWV0ZXJzGAEgAygBIo8BChlHZXRQZXJzb25hbEhlYXRtYXBSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBIYChBjZWxsX3NpemVfbWV0ZXJzGAIgASgBEhIKCnN0YXJ0X2RhdGUYAyABKAkSEAoIZW5kX2RhdGUYBCABKAkSDQoFbGltaXQYBSABKAUiRQoLSGVhdG1hcENlbGwSHgoGY2VudGVyGAEgASgLMg4uZ2VvLnYxLkxhdExuZxIWCg5hY3Rpdml0eV9jb3VudBgCIAEoBSJ1ChlMaXN0RmFtaWxpYXJUcmFpbHNSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBISCgpzdGFydF9kYXRlGAIgASgJEhAKCGVuZF9kYXRlGAMgASgJEg0KBWxpbWl0GAQgASgFImAKDUZhbWlsaWFyVHJhaWwSHAoFdHJhaWwYASABKAsyDS5nZW8udjEuVHJhaWwSFgoOYWN0aXZpdHlfY291bnQYAiABKAUSGQoRcnVuX2xlbmd0aF9tZXRlcnMYAyABKAEiVgoaTGlzdEZhbWlsaWFyVHJhaWxzUmVzcG9uc2USJQoGdHJhaWxzGAEgAygLMhUuZ2VvLnYxLkZhbWlsaWFyVHJhaWwSEQoJdHJ1bmNhdGVkGAIgASgIIlkKGExpc3RIZWF0bWFwVHJhY2tzUmVxdWVzdBIjCgZib3VuZHMYASABKAsyEy5nZW8udjEuQm91bmRpbmdCb3gSGAoQdG9sZXJhbmNlX21ldGVycxgCIAEoASJBChlMaXN0SGVhdG1hcFRyYWNrc1Jlc3BvbnNlEhEKCXBvbHlsaW5lcxgBIAMoCRIRCgl0cnVuY2F0ZWQYAiABKAgihQEKGkdldFBlcnNvbmFsSGVhdG1hcFJlc3BvbnNlEiIKBWNlbGxzGAEgAygLMhMuZ2VvLnYxLkhlYXRtYXBDZWxsEhgKEGNlbGxfc2l6ZV9tZXRlcnMYAiABKAESFgoOYWN0aXZpdHlfY291bnQYAyABKAUSEQoJdHJ1bmNhdGVkGAQgASgIKnMKB1RlcnJhaW4SFwoTVEVSUkFJTl9VTlNQRUNJRklFRBAAEhEKDVRFUlJBSU5fUEFWRUQQARISCg5URVJSQUlOX0dSQVZFTBACEhEKDVRFUlJBSU5fVFJBSUwQAxIVChFURVJSQUlOX1RFQ0hOSUNBTBAEKtsCChNQb2ludE9mSW50ZXJlc3RLaW5kEiYKIlBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVU5TUEVDSUZJRUQQABIfChtQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1BFQUsQARIgChxQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1dBVEVSEAISIgoeUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9QQVJLSU5HEAMSJAogUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9WSUVXUE9JTlQQBBIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NIRUxURVIQBRIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1RPSUxFVFMQBhIhCh1QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NBRERMRRAHEiQKIFBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVFJBSUxIRUFEEAgy5gQKCkdlb1NlcnZpY2USSQoMU2VhcmNoUGxhY2VzEhsuZ2VvLnYxLlNlYXJjaFBsYWNlc1JlcXVlc3QaHC5nZW8udjEuU2VhcmNoUGxhY2VzUmVzcG9uc2USQwoKRmluZFRyYWlscxIZLmdlby52MS5GaW5kVHJhaWxzUmVxdWVzdBoaLmdlby52MS5GaW5kVHJhaWxzUmVzcG9uc2USYQoURmluZFBvaW50c09mSW50ZXJlc3QSIy5nZW8udjEuRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0GiQuZ2VvLnYxLkZpbmRQb2ludHNPZkludGVyZXN0UmVzcG9uc2USSQoMR2V0RWxldmF0aW9uEhsuZ2VvLnYxLkdldEVsZXZhdGlvblJlcXVlc3QaHC5nZW8udjEuR2V0RWxldmF0aW9uUmVzcG9uc2USWwoSR2V0UGVyc29uYWxIZWF0bWFwEiEuZ2VvLnYxLkdldFBlcnNvbmFsSGVhdG1hcFJlcXVlc3QaIi5nZW8udjEuR2V0UGVyc29uYWxIZWF0bWFwUmVzcG9uc2USWwoSTGlzdEZhbWlsaWFyVHJhaWxzEiEuZ2VvLnYxLkxpc3RGYW1pbGlhclRyYWlsc1JlcXVlc3QaIi5nZW8udjEuTGlzdEZhbWlsaWFyVHJhaWxzUmVzcG9uc2USYAoRTGlzdEhlYXRtYXBUcmFja3MSIC5nZW8udjEuTGlzdEhlYXRtYXBUcmFja3NSZXF1ZXN0GiEuZ2VvLnYxLkxpc3RIZWF0bWFwVHJhY2tzUmVzcG9uc2UiBqKfGQIIAUKRAQoKY29tLmdlby52MUIIR2VvUHJvdG9QAVpAZ2l0aHViLmNvbS9qb2hhbmJyYW5kaG9yc3QvdHJhaWwtdG9vbHMvaW50ZXJuYWwvZ2VuL2dlby92MTtnZW92MaICA0dYWKoCBkdlby5WMcoCBkdlb1xWMeICEkdlb1xWMVxHUEJNZXRhZGF0YeoCB0dlbzo6VjFiBnByb3RvMw", [file_mcp_v1_options]);
 
 /**
  * A WGS84 coordinate.
@@ -579,6 +579,112 @@ export const HeatmapCellSchema: GenMessage<HeatmapCell> = /*@__PURE__*/
   messageDesc(file_geo_v1_geo, 14);
 
 /**
+ * @generated from message geo.v1.ListFamiliarTrailsRequest
+ */
+export type ListFamiliarTrailsRequest = Message<"geo.v1.ListFamiliarTrailsRequest"> & {
+  /**
+   * The area to search, at most 30 km across.
+   *
+   * @generated from field: geo.v1.BoundingBox bounds = 1;
+   */
+  bounds?: BoundingBox | undefined;
+
+  /**
+   * Only count activities that started on or after this date (YYYY-MM-DD).
+   *
+   * @generated from field: string start_date = 2;
+   */
+  startDate: string;
+
+  /**
+   * Only count activities that started on or before this date (YYYY-MM-DD).
+   *
+   * @generated from field: string end_date = 3;
+   */
+  endDate: string;
+
+  /**
+   * Maximum number of trails to return, the most run first. Defaults to 50,
+   * maximum 200.
+   *
+   * @generated from field: int32 limit = 4;
+   */
+  limit: number;
+};
+
+/**
+ * Describes the message geo.v1.ListFamiliarTrailsRequest.
+ * Use `create(ListFamiliarTrailsRequestSchema)` to create a new message.
+ */
+export const ListFamiliarTrailsRequestSchema: GenMessage<ListFamiliarTrailsRequest> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 15);
+
+/**
+ * A trail or road the user has run.
+ *
+ * @generated from message geo.v1.FamiliarTrail
+ */
+export type FamiliarTrail = Message<"geo.v1.FamiliarTrail"> & {
+  /**
+   * The way. Its length_meters is its length in the bounds, and its start
+   * and end are where the part the user ran starts and ends. Its
+   * nearest_point and distance_from_center_meters are unset.
+   *
+   * @generated from field: geo.v1.Trail trail = 1;
+   */
+  trail?: Trail | undefined;
+
+  /**
+   * How many activities ran along the way's most run part.
+   *
+   * @generated from field: int32 activity_count = 2;
+   */
+  activityCount: number;
+
+  /**
+   * How much of the way the user has run, in meters.
+   *
+   * @generated from field: double run_length_meters = 3;
+   */
+  runLengthMeters: number;
+};
+
+/**
+ * Describes the message geo.v1.FamiliarTrail.
+ * Use `create(FamiliarTrailSchema)` to create a new message.
+ */
+export const FamiliarTrailSchema: GenMessage<FamiliarTrail> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 16);
+
+/**
+ * @generated from message geo.v1.ListFamiliarTrailsResponse
+ */
+export type ListFamiliarTrailsResponse = Message<"geo.v1.ListFamiliarTrailsResponse"> & {
+  /**
+   * The trails, the most run first, then the longest run.
+   *
+   * @generated from field: repeated geo.v1.FamiliarTrail trails = 1;
+   */
+  trails: FamiliarTrail[];
+
+  /**
+   * Whether some activities were left out, as there were too many. The
+   * 1,000 most recent activities in the area are counted; use dates or a
+   * smaller area to count others.
+   *
+   * @generated from field: bool truncated = 2;
+   */
+  truncated: boolean;
+};
+
+/**
+ * Describes the message geo.v1.ListFamiliarTrailsResponse.
+ * Use `create(ListFamiliarTrailsResponseSchema)` to create a new message.
+ */
+export const ListFamiliarTrailsResponseSchema: GenMessage<ListFamiliarTrailsResponse> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 17);
+
+/**
  * @generated from message geo.v1.ListHeatmapTracksRequest
  */
 export type ListHeatmapTracksRequest = Message<"geo.v1.ListHeatmapTracksRequest"> & {
@@ -605,7 +711,7 @@ export type ListHeatmapTracksRequest = Message<"geo.v1.ListHeatmapTracksRequest"
  * Use `create(ListHeatmapTracksRequestSchema)` to create a new message.
  */
 export const ListHeatmapTracksRequestSchema: GenMessage<ListHeatmapTracksRequest> = /*@__PURE__*/
-  messageDesc(file_geo_v1_geo, 15);
+  messageDesc(file_geo_v1_geo, 18);
 
 /**
  * @generated from message geo.v1.ListHeatmapTracksResponse
@@ -633,7 +739,7 @@ export type ListHeatmapTracksResponse = Message<"geo.v1.ListHeatmapTracksRespons
  * Use `create(ListHeatmapTracksResponseSchema)` to create a new message.
  */
 export const ListHeatmapTracksResponseSchema: GenMessage<ListHeatmapTracksResponse> = /*@__PURE__*/
-  messageDesc(file_geo_v1_geo, 16);
+  messageDesc(file_geo_v1_geo, 19);
 
 /**
  * @generated from message geo.v1.GetPersonalHeatmapResponse
@@ -675,7 +781,7 @@ export type GetPersonalHeatmapResponse = Message<"geo.v1.GetPersonalHeatmapRespo
  * Use `create(GetPersonalHeatmapResponseSchema)` to create a new message.
  */
 export const GetPersonalHeatmapResponseSchema: GenMessage<GetPersonalHeatmapResponse> = /*@__PURE__*/
-  messageDesc(file_geo_v1_geo, 17);
+  messageDesc(file_geo_v1_geo, 20);
 
 /**
  * Terrain is a coarse classification of the surface underfoot.
@@ -868,6 +974,21 @@ export const GeoService: GenService<{
     methodKind: "unary";
     input: typeof GetPersonalHeatmapRequestSchema;
     output: typeof GetPersonalHeatmapResponseSchema;
+  },
+  /**
+   * List the trails and roads the user has run in a bounding box, the most
+   * run first, by matching their GPS tracks to the mapped ways. Unlike the
+   * heatmap's cells, these are the ways routes are built on: use them to
+   * find the user's favorite trails, and to route along them with the
+   * HEATMAP or TRAIL profile. Only areas whose map data has been imported
+   * can be searched.
+   *
+   * @generated from rpc geo.v1.GeoService.ListFamiliarTrails
+   */
+  listFamiliarTrails: {
+    methodKind: "unary";
+    input: typeof ListFamiliarTrailsRequestSchema;
+    output: typeof ListFamiliarTrailsResponseSchema;
   },
   /**
    * List the parts of the user's GPS tracks inside a bounding box, simplified,
