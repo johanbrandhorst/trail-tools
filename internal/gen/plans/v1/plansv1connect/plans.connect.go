@@ -60,6 +60,12 @@ const (
 	// TrainingPlanServiceDeleteWorkoutsProcedure is the procedure name of the TrainingPlanService's
 	// DeleteWorkouts RPC.
 	TrainingPlanServiceDeleteWorkoutsProcedure = "/plans.v1.TrainingPlanService/DeleteWorkouts"
+	// TrainingPlanServiceSetStrengthLogProcedure is the procedure name of the TrainingPlanService's
+	// SetStrengthLog RPC.
+	TrainingPlanServiceSetStrengthLogProcedure = "/plans.v1.TrainingPlanService/SetStrengthLog"
+	// TrainingPlanServiceDeleteStrengthLogProcedure is the procedure name of the TrainingPlanService's
+	// DeleteStrengthLog RPC.
+	TrainingPlanServiceDeleteStrengthLogProcedure = "/plans.v1.TrainingPlanService/DeleteStrengthLog"
 	// TrainingPlanServiceListWorkoutWeatherProcedure is the procedure name of the TrainingPlanService's
 	// ListWorkoutWeather RPC.
 	TrainingPlanServiceListWorkoutWeatherProcedure = "/plans.v1.TrainingPlanService/ListWorkoutWeather"
@@ -153,6 +159,20 @@ var (
 			Procedure:  TrainingPlanServiceDeleteWorkoutsProcedure,
 		}
 	})
+	trainingPlanServiceSetStrengthLogSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("SetStrengthLog"),
+			Procedure:  TrainingPlanServiceSetStrengthLogProcedure,
+		}
+	})
+	trainingPlanServiceDeleteStrengthLogSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("DeleteStrengthLog"),
+			Procedure:  TrainingPlanServiceDeleteStrengthLogProcedure,
+		}
+	})
 	trainingPlanServiceListWorkoutWeatherSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -201,8 +221,18 @@ type TrainingPlanServiceClient interface {
 	CreateWorkouts(context.Context, *v1.CreateWorkoutsRequest) (*v1.CreateWorkoutsResponse, error)
 	// Update a workout.
 	UpdateWorkout(context.Context, *v1.UpdateWorkoutRequest) (*v1.UpdateWorkoutResponse, error)
-	// Delete one or more workouts.
+	// Delete one or more workouts. The logs of deleted strength workouts are
+	// kept in the history of their exercises.
 	DeleteWorkouts(context.Context, *v1.DeleteWorkoutsRequest) (*v1.DeleteWorkoutsResponse, error)
+	// Save what the user did in a strength workout, replacing any earlier log,
+	// which completes the workout. The user usually does this in the web app
+	// as they finish the workout. Links the workout to the user's strength
+	// activity of the same day, if it has none. Fails with
+	// FAILED_PRECONDITION if the workout isn't a strength workout.
+	SetStrengthLog(context.Context, *v1.SetStrengthLogRequest) (*v1.SetStrengthLogResponse, error)
+	// Delete the log of a strength workout, so it's no longer complete. Its
+	// sets are removed from the history of its exercises.
+	DeleteStrengthLog(context.Context, *v1.DeleteStrengthLogRequest) (*v1.DeleteStrengthLogResponse, error)
 	// List the weather forecast for the days of the user's workouts in a date
 	// range, without hourly forecasts. Forecasts are available up to 15 days
 	// ahead, so workouts after that and before today are left out, as are rest
@@ -251,8 +281,18 @@ type TrainingPlanServiceHandler interface {
 	CreateWorkouts(context.Context, *v1.CreateWorkoutsRequest) (*v1.CreateWorkoutsResponse, error)
 	// Update a workout.
 	UpdateWorkout(context.Context, *v1.UpdateWorkoutRequest) (*v1.UpdateWorkoutResponse, error)
-	// Delete one or more workouts.
+	// Delete one or more workouts. The logs of deleted strength workouts are
+	// kept in the history of their exercises.
 	DeleteWorkouts(context.Context, *v1.DeleteWorkoutsRequest) (*v1.DeleteWorkoutsResponse, error)
+	// Save what the user did in a strength workout, replacing any earlier log,
+	// which completes the workout. The user usually does this in the web app
+	// as they finish the workout. Links the workout to the user's strength
+	// activity of the same day, if it has none. Fails with
+	// FAILED_PRECONDITION if the workout isn't a strength workout.
+	SetStrengthLog(context.Context, *v1.SetStrengthLogRequest) (*v1.SetStrengthLogResponse, error)
+	// Delete the log of a strength workout, so it's no longer complete. Its
+	// sets are removed from the history of its exercises.
+	DeleteStrengthLog(context.Context, *v1.DeleteStrengthLogRequest) (*v1.DeleteStrengthLogResponse, error)
 	// List the weather forecast for the days of the user's workouts in a date
 	// range, without hourly forecasts. Forecasts are available up to 15 days
 	// ahead, so workouts after that and before today are left out, as are rest
@@ -280,6 +320,8 @@ func RegisterTrainingPlanServiceHandler(server *connect.Server, svc TrainingPlan
 		connect.Method{Spec: trainingPlanServiceCreateWorkoutsSpec(), Handler: adapter.createWorkouts},
 		connect.Method{Spec: trainingPlanServiceUpdateWorkoutSpec(), Handler: adapter.updateWorkout},
 		connect.Method{Spec: trainingPlanServiceDeleteWorkoutsSpec(), Handler: adapter.deleteWorkouts},
+		connect.Method{Spec: trainingPlanServiceSetStrengthLogSpec(), Handler: adapter.setStrengthLog},
+		connect.Method{Spec: trainingPlanServiceDeleteStrengthLogSpec(), Handler: adapter.deleteStrengthLog},
 		connect.Method{Spec: trainingPlanServiceListWorkoutWeatherSpec(), Handler: adapter.listWorkoutWeather},
 		connect.Method{Spec: trainingPlanServiceGetWorkoutWeatherSpec(), Handler: adapter.getWorkoutWeather},
 	)
@@ -334,6 +376,14 @@ func (UnimplementedTrainingPlanServiceHandler) UpdateWorkout(context.Context, *v
 
 func (UnimplementedTrainingPlanServiceHandler) DeleteWorkouts(context.Context, *v1.DeleteWorkoutsRequest) (*v1.DeleteWorkoutsResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.DeleteWorkouts is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) SetStrengthLog(context.Context, *v1.SetStrengthLogRequest) (*v1.SetStrengthLogResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.SetStrengthLog is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) DeleteStrengthLog(context.Context, *v1.DeleteStrengthLogRequest) (*v1.DeleteStrengthLogResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.DeleteStrengthLog is not implemented")
 }
 
 func (UnimplementedTrainingPlanServiceHandler) ListWorkoutWeather(context.Context, *v1.ListWorkoutWeatherRequest) (*v1.ListWorkoutWeatherResponse, error) {
@@ -439,6 +489,22 @@ func (c *trainingPlanServiceClient) UpdateWorkout(ctx context.Context, req *v1.U
 func (c *trainingPlanServiceClient) DeleteWorkouts(ctx context.Context, req *v1.DeleteWorkoutsRequest) (*v1.DeleteWorkoutsResponse, error) {
 	var res v1.DeleteWorkoutsResponse
 	if err := c.client.CallUnary(ctx, trainingPlanServiceDeleteWorkoutsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) SetStrengthLog(ctx context.Context, req *v1.SetStrengthLogRequest) (*v1.SetStrengthLogResponse, error) {
+	var res v1.SetStrengthLogResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceSetStrengthLogSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) DeleteStrengthLog(ctx context.Context, req *v1.DeleteStrengthLogRequest) (*v1.DeleteStrengthLogResponse, error) {
+	var res v1.DeleteStrengthLogResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceDeleteStrengthLogSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -600,6 +666,30 @@ func (h trainingPlanServiceHandler) deleteWorkouts(ctx context.Context, _ connec
 		return err
 	}
 	res, err := h.svc.DeleteWorkouts(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) setStrengthLog(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetStrengthLogRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetStrengthLog(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) deleteStrengthLog(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.DeleteStrengthLogRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DeleteStrengthLog(ctx, &req)
 	if err != nil {
 		return err
 	}

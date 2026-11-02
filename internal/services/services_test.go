@@ -101,6 +101,7 @@ type env struct {
 	mapDataAPI routingv1connect.MapDataServiceClient
 	imports    *fakeImportRunner
 	plans      plansv1connect.TrainingPlanServiceClient
+	exercises  plansv1connect.ExerciseServiceClient
 	races      racesv1connect.RaceServiceClient
 	racePlans  racesv1connect.RacePlanServiceClient
 	// Race reports of the user, anyone and another user.
@@ -111,12 +112,13 @@ type env struct {
 	otherRaces       racesv1connect.RaceServiceClient
 	otherPlans       racesv1connect.RacePlanServiceClient
 	// Another user's training plans.
-	otherTraining plansv1connect.TrainingPlanServiceClient
-	oauth         oauthv1connect.OAuthServiceClient
-	anonOAuth     oauthv1connect.OAuthServiceClient
-	trips         tripsv1connect.TripReportServiceClient
-	anonTrips     tripsv1connect.TripReportServiceClient
-	otherTrips    tripsv1connect.TripReportServiceClient
+	otherTraining  plansv1connect.TrainingPlanServiceClient
+	otherExercises plansv1connect.ExerciseServiceClient
+	oauth          oauthv1connect.OAuthServiceClient
+	anonOAuth      oauthv1connect.OAuthServiceClient
+	trips          tripsv1connect.TripReportServiceClient
+	anonTrips      tripsv1connect.TripReportServiceClient
+	otherTrips     tripsv1connect.TripReportServiceClient
 	// Lactate tests of the user, and of another user.
 	lactate      lactatev1connect.LactateTestServiceClient
 	otherLactate lactatev1connect.LactateTestServiceClient
@@ -225,6 +227,7 @@ func newEnv(t *testing.T) *env {
 	routesv1connect.RegisterRouteServiceHandler(srv2, routeService)
 	geov1connect.RegisterGeoServiceHandler(srv2, geoService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(srv2, planService)
+	plansv1connect.RegisterExerciseServiceHandler(srv2, plan.NewExerciseService(log, report, planRepo))
 	racesv1connect.RegisterRaceServiceHandler(srv2, raceService)
 	racesv1connect.RegisterRacePlanServiceHandler(srv2, racePlanService)
 	tripsv1connect.RegisterTripReportServiceHandler(srv2, tripService)
@@ -283,6 +286,7 @@ func newEnv(t *testing.T) *env {
 	e.geo = geov1connect.NewGeoServiceClient(authed)
 	e.mapDataAPI = routingv1connect.NewMapDataServiceClient(authed)
 	e.plans = plansv1connect.NewTrainingPlanServiceClient(authed)
+	e.exercises = plansv1connect.NewExerciseServiceClient(authed)
 	e.races = racesv1connect.NewRaceServiceClient(authed)
 	e.racePlans = racesv1connect.NewRacePlanServiceClient(authed)
 	e.anonPlans = racesv1connect.NewRacePlanServiceClient(anon)
@@ -290,6 +294,7 @@ func newEnv(t *testing.T) *env {
 	e.otherRaces = racesv1connect.NewRaceServiceClient(other)
 	e.otherPlans = racesv1connect.NewRacePlanServiceClient(other)
 	e.otherTraining = plansv1connect.NewTrainingPlanServiceClient(other)
+	e.otherExercises = plansv1connect.NewExerciseServiceClient(other)
 	e.oauth = oauthv1connect.NewOAuthServiceClient(signedIn)
 	e.anonOAuth = oauthv1connect.NewOAuthServiceClient(anon)
 	e.trips = tripsv1connect.NewTripReportServiceClient(authed)

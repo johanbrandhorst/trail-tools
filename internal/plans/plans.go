@@ -98,6 +98,10 @@ type Workout struct {
 	RouteID pgtype.UUID
 	// Invalid if the workout has not been completed.
 	CompletedActivityID pgtype.UUID
+	// The exercises of a strength workout, in order. Nil for other types.
+	Exercises []*PlannedExercise
+	// The log of a completed strength workout. Nil if it has none.
+	Log *StrengthLog
 }
 
 // CreateTrainingPlan stores a new training plan.
@@ -334,14 +338,16 @@ func (r *Repository) DeletePeriods(ctx context.Context, planID pgtype.UUID, ids 
 	return nil
 }
 
-// CreateWorkouts creates workouts in a plan, in a single statement. The
-// caller must check the plan belongs to the user.
-func (r *Repository) CreateWorkouts(ctx context.Context, planID pgtype.UUID, workouts []*Workout) ([]*Workout, error) {
+// CreateWorkouts creates workouts in a plan with their exercises, in a
+// single round trip. The caller must check the plan belongs to the user.
+func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.UUID, workouts []*Workout) ([]*Workout, error) {
 	params := &gen.CreateWorkoutsParams{PlanID: planID}
 	for _, w := range workouts {
 		// The IDs are assigned here to return the workouts in the order
-		// given, which returning doesn't promise.
-		params.Ids = append(params.Ids, store.NewUUID())
+		// given, which returning doesn't promise, and to insert their
+		// exercises in the same batch.
+		w.ID = store.NewUUID()
+		params.Ids = append(params.Ids, w.ID)
 		params.Dates = append(params.Dates, store.DateToPG(w.Date))
 		params.Types = append(params.Types, string(w.Type))
 		params.Titles = append(params.Titles, w.Title)
@@ -353,12 +359,24 @@ func (r *Repository) CreateWorkouts(ctx context.Context, planID pgtype.UUID, wor
 		params.RouteIds = append(params.RouteIds, w.RouteID)
 		params.CompletedActivityIds = append(params.CompletedActivityIds, w.CompletedActivityID)
 	}
-	dbWorkouts, err := r.q.CreateWorkouts(ctx, params)
+	var wr workoutReader
+	err := r.db.Transact(ctx, func(b *store.Batch) error {
+		b.Read(func(db store.Querier) error {
+			var err error
+			wr.rows, err = gen.New(db).CreateWorkouts(ctx, params)
+			return err
+		})
+		if err := queueReplaceExercises(ctx, gen.New(b), workouts, false); err != nil {
+			return err
+		}
+		wr.queue(ctx, b, workoutFilter{userID: userID, planID: planID, workoutIDs: params.Ids})
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workouts: %w", err)
 	}
-	byID := make(map[pgtype.UUID]*gen.Workout, len(dbWorkouts))
-	for _, w := range dbWorkouts {
+	byID := map[pgtype.UUID]*Workout{}
+	for _, w := range wr.workouts() {
 		byID[w.ID] = w
 	}
 	result := make([]*Workout, len(params.Ids))
@@ -367,87 +385,118 @@ func (r *Repository) CreateWorkouts(ctx context.Context, planID pgtype.UUID, wor
 		if !ok {
 			return nil, fmt.Errorf("created workout %s wasn't returned", store.UUIDToString(id))
 		}
-		result[i] = workoutFromDB(w)
+		result[i] = w
 	}
 	return result, nil
 }
 
-// ListWorkouts lists a plan's workouts in an inclusive date range, in date
-// order. Zero dates are unbounded. The caller must check the plan belongs to
-// the user.
-func (r *Repository) ListWorkouts(ctx context.Context, planID pgtype.UUID, startDate, endDate time.Time) ([]*Workout, error) {
-	dbWorkouts, err := r.q.ListWorkouts(ctx, &gen.ListWorkoutsParams{
-		PlanID:    planID,
-		StartDate: store.DateToPG(startDate),
-		EndDate:   store.DateToPG(endDate),
+// ListWorkouts lists a plan's workouts with their exercises and logs in an
+// inclusive date range, in date order, in a single round trip. Zero dates
+// are unbounded. The caller must check the plan belongs to the user.
+func (r *Repository) ListWorkouts(ctx context.Context, userID, planID pgtype.UUID, startDate, endDate time.Time) ([]*Workout, error) {
+	return r.readWorkouts(ctx, workoutFilter{userID: userID, planID: planID, startDate: startDate, endDate: endDate}, func(q *gen.Queries) ([]*gen.Workout, error) {
+		return q.ListWorkouts(ctx, &gen.ListWorkoutsParams{
+			PlanID:    planID,
+			StartDate: store.DateToPG(startDate),
+			EndDate:   store.DateToPG(endDate),
+		})
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list workouts: %w", err)
-	}
-	result := make([]*Workout, len(dbWorkouts))
-	for i, w := range dbWorkouts {
-		result[i] = workoutFromDB(w)
-	}
-	return result, nil
 }
 
-// ListUserWorkouts lists the workouts of all the user's plans in date
-// order, optionally limited to a date range.
+// ListUserWorkouts lists the workouts of all the user's plans with their
+// exercises and logs in date order, optionally limited to a date range, in a
+// single round trip.
 func (r *Repository) ListUserWorkouts(ctx context.Context, userID pgtype.UUID, startDate, endDate time.Time) ([]*Workout, error) {
-	dbWorkouts, err := r.q.ListUserWorkouts(ctx, &gen.ListUserWorkoutsParams{
-		UserID:    userID,
-		StartDate: store.DateToPG(startDate),
-		EndDate:   store.DateToPG(endDate),
+	return r.readWorkouts(ctx, workoutFilter{userID: userID, startDate: startDate, endDate: endDate}, func(q *gen.Queries) ([]*gen.Workout, error) {
+		return q.ListUserWorkouts(ctx, &gen.ListUserWorkoutsParams{
+			UserID:    userID,
+			StartDate: store.DateToPG(startDate),
+			EndDate:   store.DateToPG(endDate),
+		})
+	})
+}
+
+// GetWorkout gets one of the user's workouts with its exercises and log.
+func (r *Repository) GetWorkout(ctx context.Context, userID, workoutID pgtype.UUID) (*Workout, error) {
+	workouts, err := r.readWorkouts(ctx, workoutFilter{userID: userID, workoutIDs: []pgtype.UUID{workoutID}}, func(q *gen.Queries) ([]*gen.Workout, error) {
+		w, err := q.GetWorkout(ctx, &gen.GetWorkoutParams{ID: workoutID, UserID: userID})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return []*gen.Workout{w}, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(workouts) == 0 {
+		return nil, store.ErrNotFound
+	}
+	return workouts[0], nil
+}
+
+// readWorkouts reads workouts, with the exercises and logs of those f
+// selects, in a single round trip.
+func (r *Repository) readWorkouts(ctx context.Context, f workoutFilter, query func(q *gen.Queries) ([]*gen.Workout, error)) ([]*Workout, error) {
+	var wr workoutReader
+	err := r.db.ReadSnapshot(ctx, func(b *store.Batch) error {
+		b.Read(func(db store.Querier) error {
+			var err error
+			wr.rows, err = query(gen.New(db))
+			return err
+		})
+		wr.queue(ctx, b, f)
+		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workouts: %w", err)
 	}
-	result := make([]*Workout, len(dbWorkouts))
-	for i, w := range dbWorkouts {
-		result[i] = workoutFromDB(w)
-	}
-	return result, nil
+	return wr.workouts(), nil
 }
 
-// GetWorkout gets one of the user's workouts.
-func (r *Repository) GetWorkout(ctx context.Context, userID, workoutID pgtype.UUID) (*Workout, error) {
-	w, err := r.q.GetWorkout(ctx, &gen.GetWorkoutParams{ID: workoutID, UserID: userID})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
+// UpdateWorkout replaces one of the user's workouts and its exercises,
+// keeping its log, in a single round trip. The caller must check the
+// workout belongs to the user.
+func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *Workout) (*Workout, error) {
+	var wr workoutReader
+	err := r.db.Transact(ctx, func(b *store.Batch) error {
+		b.Read(func(db store.Querier) error {
+			row, err := gen.New(db).UpdateWorkout(ctx, &gen.UpdateWorkoutParams{
+				ID:                        w.ID,
+				Date:                      store.DateToPG(w.Date),
+				Type:                      gen.WorkoutType(w.Type),
+				Title:                     w.Title,
+				Description:               w.Description,
+				TargetDistanceMeters:      w.TargetDistanceMeters,
+				TargetElevationGainMeters: w.TargetElevationGainMeters,
+				TargetDurationSeconds:     w.TargetDurationSeconds,
+				TargetTerrain:             terrainToDB(w.TargetTerrain),
+				RouteID:                   w.RouteID,
+				CompletedActivityID:       w.CompletedActivityID,
+			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return store.ErrNotFound
+			}
+			wr.rows = []*gen.Workout{row}
+			return err
+		})
+		if err := queueReplaceExercises(ctx, gen.New(b), []*Workout{w}, true); err != nil {
+			return err
 		}
-		return nil, fmt.Errorf("failed to get workout: %w", err)
-	}
-	return workoutFromDB(w), nil
-}
-
-// UpdateWorkout replaces a workout. The caller must check the workout belongs
-// to the user.
-func (r *Repository) UpdateWorkout(ctx context.Context, w *Workout) (*Workout, error) {
-	dbWorkout, err := r.q.UpdateWorkout(ctx, &gen.UpdateWorkoutParams{
-		ID:                        w.ID,
-		Date:                      store.DateToPG(w.Date),
-		Type:                      gen.WorkoutType(w.Type),
-		Title:                     w.Title,
-		Description:               w.Description,
-		TargetDistanceMeters:      w.TargetDistanceMeters,
-		TargetElevationGainMeters: w.TargetElevationGainMeters,
-		TargetDurationSeconds:     w.TargetDurationSeconds,
-		TargetTerrain:             terrainToDB(w.TargetTerrain),
-		RouteID:                   w.RouteID,
-		CompletedActivityID:       w.CompletedActivityID,
+		wr.queue(ctx, b, workoutFilter{userID: userID, workoutIDs: []pgtype.UUID{w.ID}})
+		return nil
 	})
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, err
+	}
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, store.ErrNotFound
-		}
 		return nil, fmt.Errorf("failed to update workout: %w", err)
 	}
-	return workoutFromDB(dbWorkout), nil
+	return wr.workouts()[0], nil
 }
 
-// DeleteWorkouts deletes workouts of a plan. The caller must check the plan
-// belongs to the user.
+// DeleteWorkouts deletes workouts of a plan, with their exercises. Their
+// logs are kept as the history of their exercises. The caller must check the
+// plan belongs to the user.
 func (r *Repository) DeleteWorkouts(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error {
 	if _, err := r.q.DeleteWorkouts(ctx, &gen.DeleteWorkoutsParams{PlanID: planID, Ids: ids}); err != nil {
 		return fmt.Errorf("failed to delete workouts: %w", err)

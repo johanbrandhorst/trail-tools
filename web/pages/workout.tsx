@@ -6,6 +6,7 @@ import MapView from "@components/map/map-view";
 import WorkoutDialog from "@components/plans/workout-dialog";
 import { WeatherForecast } from "@components/plans/workout-weather";
 import { toTuples } from "@components/routes/route-geometry";
+import StrengthWorkoutView from "@components/strength/strength-workout";
 import Card from "@components/ui/card";
 import QueryError from "@components/ui/query-error";
 import { linkClass, secondaryButton } from "@components/ui/styles";
@@ -19,6 +20,7 @@ import {
 import { skipToken } from "@tanstack/react-query";
 import { listActivities } from "gen/activities/v1/activities-ActivityService_connectquery";
 import { Terrain } from "gen/geo/v1/geo_pb";
+import { listExercises } from "gen/plans/v1/exercises-ExerciseService_connectquery";
 import {
   getTrainingPlan,
   getWorkout,
@@ -31,6 +33,7 @@ import type { Route } from "gen/routes/v1/routes_pb";
 import { addDays, today } from "helpers/dates";
 import { formatDate, formatHoursMinutes, formatKm } from "helpers/format";
 import { terrainStyle, workoutStyle } from "helpers/labels";
+import { isCompleted, workoutTargets } from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -66,28 +69,35 @@ const Goal: React.FC<{ workout: Workout }> = ({ workout }) => {
   const threshold = useAerobicThreshold();
   const capped = workout.type === WorkoutType.BASE && threshold !== undefined;
   const targets: { label: string; value: string }[] = [];
-  if (workout.targetDistanceMeters > 0) {
+  const planned = workoutTargets(workout);
+  if (planned.distanceMeters > 0) {
     targets.push({
       label: "Distance",
-      value: formatKm(workout.targetDistanceMeters),
+      value: formatKm(planned.distanceMeters),
     });
   }
-  if (workout.targetElevationGainMeters > 0) {
+  if (planned.elevationGainMeters > 0) {
     targets.push({
       label: "Elevation gain",
-      value: `${Math.round(workout.targetElevationGainMeters).toLocaleString()} m`,
+      value: `${Math.round(planned.elevationGainMeters).toLocaleString()} m`,
     });
   }
-  if (workout.targetDurationSeconds > 0) {
+  if (planned.durationSeconds > 0) {
     targets.push({
       label: "Time",
-      value: formatHoursMinutes(workout.targetDurationSeconds),
+      value: formatHoursMinutes(planned.durationSeconds),
     });
   }
-  if (workout.targetTerrain !== Terrain.UNSPECIFIED) {
+  if (workout.details.case === "strength") {
+    const count = workout.details.value.exercises.length;
+    if (count > 0) {
+      targets.push({ label: "Exercises", value: String(count) });
+    }
+  }
+  if (planned.terrain !== Terrain.UNSPECIFIED) {
     targets.push({
       label: "Terrain",
-      value: terrainStyle(workout.targetTerrain).label,
+      value: terrainStyle(planned.terrain).label,
     });
   }
   if (capped) {
@@ -230,9 +240,9 @@ const WeatherCard: React.FC<{ workout: Workout }> = ({ workout }) => {
     <Card
       title="Weather"
       actions={
-        workout.routeId !== "" && (
+        workoutTargets(workout).routeId !== "" && (
           <Link
-            to={`/forecast?route=${workout.routeId}&start=${workout.date}T07:00`}
+            to={`/forecast?route=${workoutTargets(workout).routeId}&start=${workout.date}T07:00`}
             className={`${linkClass} text-sm`}
           >
             Forecast along the route
@@ -261,11 +271,19 @@ const WorkoutPage: React.FC = () => {
     getTrainingPlan,
     workout === undefined ? skipToken : { id: workout.planId }
   );
+  const routeId = workout === undefined ? "" : workoutTargets(workout).routeId;
   const route = useQuery(
     getRoute,
-    workout === undefined || workout.routeId === ""
-      ? skipToken
-      : { id: workout.routeId, includePoints: true }
+    routeId === "" ? skipToken : { id: routeId, includePoints: true }
+  );
+  // The library, for the instructions and muscles of strength exercises.
+  const exercises = useQuery(
+    listExercises,
+    workout?.details.case === "strength" ? {} : skipToken
+  );
+  const library = useMemo(
+    () => new Map((exercises.data?.exercises ?? []).map((ex) => [ex.id, ex])),
+    [exercises.data]
   );
   // Activities around the day, to mark the workout as completed.
   const activities = useQuery(
@@ -354,6 +372,12 @@ const WorkoutPage: React.FC = () => {
               Completed: see the activity
             </Link>
           )}
+          {workout.completedActivityId === "" && isCompleted(workout) && (
+            <p className="inline-flex items-center gap-1 self-start text-sm font-medium text-emerald-700">
+              <CheckCircleIcon className="size-4" />
+              Completed
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -369,10 +393,17 @@ const WorkoutPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="flex min-w-0 flex-col gap-4">
           <Goal workout={workout} />
+          {workout.details.case === "strength" && (
+            <StrengthWorkoutView
+              workout={workout}
+              strength={workout.details.value}
+              exercises={library}
+            />
+          )}
           {route.data?.route !== undefined && (
             <RouteCard route={route.data.route} />
           )}
-          {workout.routeId === "" && outdoors(workout) && (
+          {routeId === "" && outdoors(workout) && (
             <Card title="Route">
               <p className="text-sm text-gray-600">
                 No route yet.{" "}

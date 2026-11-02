@@ -616,6 +616,7 @@ func run(
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
+	exerciseService := plan.NewExerciseService(log, report, planRepo)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, livetrack.New("", telemetry.NewClient(liveTrackTimeout)), baseURL)
 	// Activities are synced from Strava before importing their photos into
@@ -659,6 +660,7 @@ func run(
 	geov1connect.RegisterGeoServiceHandler(server, geoService)
 	routingv1connect.RegisterMapDataServiceHandler(server, mapDataService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(server, planService)
+	plansv1connect.RegisterExerciseServiceHandler(server, exerciseService)
 	racesv1connect.RegisterRaceServiceHandler(server, raceService)
 	racesv1connect.RegisterRacePlanServiceHandler(server, racePlanService)
 	racesv1connect.RegisterRaceReportServiceHandler(server, raceReportService)
@@ -701,6 +703,7 @@ func run(
 		mcp.Service{Name: routesv1connect.RouteServiceName, Handler: routeService},
 		mcp.Service{Name: geov1connect.GeoServiceName, Handler: geoService},
 		mcp.Service{Name: plansv1connect.TrainingPlanServiceName, Handler: planService},
+		mcp.Service{Name: plansv1connect.ExerciseServiceName, Handler: exerciseService},
 		mcp.Service{Name: racesv1connect.RaceServiceName, Handler: raceService},
 		mcp.Service{Name: racesv1connect.RacePlanServiceName, Handler: racePlanService},
 		mcp.Service{Name: tripsv1connect.TripReportServiceName, Handler: tripService},

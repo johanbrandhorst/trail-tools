@@ -13,10 +13,13 @@ import "mcp/v1/options.proto";
 // 1. Months: the training phase (e.g. base, build, peak, taper) and monthly
 //    volume targets.
 // 2. Weeks: the weekly focus and volume targets. Weeks start on Monday.
-// 3. Days: individual workouts, each optionally linked to a route.
+// 3. Days: individual workouts: runs, optionally linked to a route,
+//    cross-training, strength training, races and rest days.
 //
 // Months and weeks are both plan periods, created with SetPlanPeriods. Workouts
-// are created in bulk with CreateWorkouts. Dates are local dates in the format
+// are created in bulk with CreateWorkouts. Strength workouts list exercises
+// from the user's exercise library, see ExerciseService, and the user logs
+// what they did in them in the web app. Dates are local dates in the format
 // YYYY-MM-DD. Compare the plan with what was actually run using
 // ActivityService.SummarizeActivities and ActivityService.ListActivities.
 service TrainingPlanService {
@@ -50,8 +53,18 @@ service TrainingPlanService {
   rpc CreateWorkouts(CreateWorkoutsRequest) returns (CreateWorkoutsResponse);
   // Update a workout.
   rpc UpdateWorkout(UpdateWorkoutRequest) returns (UpdateWorkoutResponse);
-  // Delete one or more workouts.
+  // Delete one or more workouts. The logs of deleted strength workouts are
+  // kept in the history of their exercises.
   rpc DeleteWorkouts(DeleteWorkoutsRequest) returns (DeleteWorkoutsResponse);
+  // Save what the user did in a strength workout, replacing any earlier log,
+  // which completes the workout. The user usually does this in the web app
+  // as they finish the workout. Links the workout to the user's strength
+  // activity of the same day, if it has none. Fails with
+  // FAILED_PRECONDITION if the workout isn't a strength workout.
+  rpc SetStrengthLog(SetStrengthLogRequest) returns (SetStrengthLogResponse);
+  // Delete the log of a strength workout, so it's no longer complete. Its
+  // sets are removed from the history of its exercises.
+  rpc DeleteStrengthLog(DeleteStrengthLogRequest) returns (DeleteStrengthLogResponse);
   // List the weather forecast for the days of the user's workouts in a date
   // range, without hourly forecasts. Forecasts are available up to 15 days
   // ahead, so workouts after that and before today are left out, as are rest
@@ -115,8 +128,10 @@ message PlanPeriod {
   int32 target_duration_seconds = 8;
 }
 
-// WorkoutType is the type of a workout. The workout's title and description
-// say what it is, e.g. "Tempo 3x10 min" or "Long run".
+// WorkoutType is the type of a workout, for filtering and display. It's set
+// from the workout's details: a run's intensity, or its kind. The workout's
+// title and description say what it is, e.g. "Tempo 3x10 min" or "Long
+// run".
 enum WorkoutType {
   WORKOUT_TYPE_UNSPECIFIED = 0;
   // Aerobic running: easy, recovery and long runs, and steady vert.
@@ -150,7 +165,9 @@ enum WorkoutType {
   WORKOUT_TYPE_OTHER = 12 [deprecated = true];
 }
 
-// A workout planned for a day.
+// A workout planned for a day. What a workout is, and what can be planned
+// for it, depends on its kind: exactly one of run, cross_training, strength,
+// race and rest must be set.
 message Workout {
   // The ID of the workout. Ignored when creating workouts.
   string id = 1;
@@ -158,25 +175,215 @@ message Workout {
   string plan_id = 2 [(mcp.v1.field).output_only = true];
   // The date of the workout (YYYY-MM-DD).
   string date = 3;
-  // The type of workout.
-  WorkoutType type = 4;
+  // The type of workout, set from which of run, cross_training, strength,
+  // race and rest is set. Ignored in requests.
+  WorkoutType type = 4 [(mcp.v1.field).output_only = true];
   // A short title, e.g. "Long run with 1000m vert".
   string title = 5;
   // A description of the workout: structure, intensity and purpose.
   string description = 6;
-  // Target distance in meters. 0 if not set.
-  double target_distance_meters = 7;
-  // Target elevation gain in meters. 0 if not set.
-  double target_elevation_gain_meters = 8;
-  // Target moving time in seconds. 0 if not set.
-  int32 target_duration_seconds = 9;
-  // The preferred terrain, if any.
-  geo.v1.Terrain target_terrain = 10;
-  // The ID of the route to run, if any. See RouteService.
-  string route_id = 11;
   // The ID of the activity that completed this workout, if any. See
-  // ActivityService.
+  // ActivityService. Strength workouts are linked to the user's strength
+  // activity of the same day when it's synced from Strava or the workout's
+  // log is saved, unless one is already set.
   string completed_activity_id = 12;
+
+  // What the workout is. Exactly one must be set.
+  oneof details {
+    // A run: easy, long or hard.
+    RunWorkout run = 13;
+    // Cycling, swimming, skiing or other non-running cardio.
+    CrossTrainingWorkout cross_training = 14;
+    // Strength and mobility training, with its exercises.
+    StrengthWorkout strength = 15;
+    // A race, either a goal race or a tune-up.
+    RaceWorkout race = 16;
+    // A rest day.
+    RestDay rest = 17;
+  }
+
+  reserved 7, 8, 9, 10, 11;
+  reserved "target_distance_meters", "target_elevation_gain_meters", "target_duration_seconds", "target_terrain", "route_id";
+}
+
+// RunIntensity is how hard a run is.
+enum RunIntensity {
+  RUN_INTENSITY_UNSPECIFIED = 0;
+  // Aerobic running: easy, recovery and long runs, and steady vert.
+  RUN_INTENSITY_BASE = 1;
+  // Hard running: tempo, intervals and hill repeats.
+  RUN_INTENSITY_HARD = 2;
+}
+
+// A run.
+message RunWorkout {
+  // How hard the run is. Required.
+  RunIntensity intensity = 1;
+  // Target distance in meters. 0 if not set.
+  double target_distance_meters = 2;
+  // Target elevation gain in meters. 0 if not set.
+  double target_elevation_gain_meters = 3;
+  // Target moving time in seconds. 0 if not set.
+  int32 target_duration_seconds = 4;
+  // The preferred terrain, if any.
+  geo.v1.Terrain target_terrain = 5;
+  // The ID of the route to run, if any. See RouteService.
+  string route_id = 6;
+}
+
+// Cycling, swimming, skiing or other non-running cardio. The workout's title
+// says which.
+message CrossTrainingWorkout {
+  // Target distance in meters. 0 if not set.
+  double target_distance_meters = 1;
+  // Target elevation gain in meters. 0 if not set.
+  double target_elevation_gain_meters = 2;
+  // Target moving time in seconds. 0 if not set.
+  int32 target_duration_seconds = 3;
+}
+
+// A race, either a goal race or a tune-up. The race itself is managed with
+// RaceService.
+message RaceWorkout {
+  // The race distance in meters. 0 if not set.
+  double target_distance_meters = 1;
+  // The race's elevation gain in meters. 0 if not set.
+  double target_elevation_gain_meters = 2;
+  // The goal finish time in seconds. 0 if not set.
+  int32 target_duration_seconds = 3;
+  // The ID of the route of the race course, if any. See RouteService.
+  string route_id = 4;
+}
+
+// A rest day.
+message RestDay {}
+
+// Strength and mobility training. The user follows it on their phone in the
+// web app: exercise by exercise, logging the reps of each set and how each
+// exercise felt. That log is saved with the workout, and kept for each
+// exercise's history (see ExerciseService.ListExerciseHistory), so use the
+// logs of earlier workouts to choose the weights and reps of the next.
+message StrengthWorkout {
+  // The exercises in the order they are done. Maximum 40.
+  repeated PlannedExercise exercises = 1;
+  // How long the session takes in seconds, including rest. 0 if not set.
+  int32 target_duration_seconds = 2;
+  // What the user did, saved when they finish the workout with
+  // SetStrengthLog. Unset until then. A workout with a log is complete.
+  StrengthLog log = 3 [(mcp.v1.field).output_only = true];
+}
+
+// An exercise of a strength workout, with what to do: the sets, reps or
+// hold time, weight and rest. The exercise itself (its instructions and
+// muscles) is in the user's exercise library, see ExerciseService.
+message PlannedExercise {
+  // The ID of the exercise in the user's library. Required: create the
+  // exercise with CreateExercises first.
+  string exercise_id = 1;
+  // The name of the exercise.
+  string exercise_name = 2 [(mcp.v1.field).output_only = true];
+  // The part of the workout the exercise is in, e.g. "Warm-up", "Main",
+  // "Superset A" or "Cool-down". Consecutive exercises in the same group are
+  // shown together; name a group "Superset" or "Circuit" for exercises done
+  // back to back, with the rest after the last of them. Empty if none.
+  string group = 3;
+  // The number of sets, or rounds of a superset. At least 1.
+  int32 sets = 4;
+  // The reps of each set, per side for exercises done on each side. 0 for
+  // exercises held for a time.
+  int32 reps = 5;
+  // How long each set is held in seconds, per side for exercises done on
+  // each side, e.g. 30 for a plank. 0 for exercises done for reps. One of
+  // reps and hold_seconds must be set.
+  int32 hold_seconds = 6;
+  // The weight in kilograms, of each dumbbell or kettlebell for exercises
+  // with two, e.g. 10 for two 10 kg dumbbells. 0 for bodyweight. Choose it
+  // when planning: the user uses this weight rather than picking one on the
+  // day.
+  double weight_kilograms = 7;
+  // The rest after each set in seconds. 0 if none.
+  int32 rest_seconds = 8;
+  // The tempo, e.g. "3 s down, 1 s pause". Empty if none.
+  string tempo = 9;
+  // How hard the last reps of each set should feel, from 1 (very easy) to
+  // 10 (maximal). 0 if not set. Most strength work for runners is 6 to 8,
+  // leaving two to four reps in reserve.
+  int32 target_effort = 10;
+  // Notes for this workout, e.g. "Slow and controlled on the way down".
+  // Shown with the exercise's instructions and how it should feel. Empty if
+  // none.
+  string notes = 11;
+}
+
+// SessionEffort is how hard a whole strength session felt.
+enum SessionEffort {
+  SESSION_EFFORT_UNSPECIFIED = 0;
+  SESSION_EFFORT_VERY_EASY = 1;
+  SESSION_EFFORT_EASY = 2;
+  SESSION_EFFORT_ABOUT_RIGHT = 3;
+  SESSION_EFFORT_HARD = 4;
+  SESSION_EFFORT_VERY_HARD = 5;
+}
+
+// ExerciseEffort is how hard an exercise felt compared to what was planned.
+enum ExerciseEffort {
+  EXERCISE_EFFORT_UNSPECIFIED = 0;
+  // Easier than the planned effort: increase the weight or reps.
+  EXERCISE_EFFORT_TOO_EASY = 1;
+  EXERCISE_EFFORT_JUST_RIGHT = 2;
+  // Harder than the planned effort: decrease the weight or reps.
+  EXERCISE_EFFORT_TOO_HARD = 3;
+}
+
+// ExerciseVolume is how the number of reps or sets of an exercise felt.
+enum ExerciseVolume {
+  EXERCISE_VOLUME_UNSPECIFIED = 0;
+  EXERCISE_VOLUME_TOO_FEW = 1;
+  EXERCISE_VOLUME_ABOUT_RIGHT = 2;
+  EXERCISE_VOLUME_TOO_MANY = 3;
+}
+
+// What the user did in a strength workout, and how it felt.
+message StrengthLog {
+  // When the workout was completed: when the log was first saved.
+  google.protobuf.Timestamp complete_time = 1 [(mcp.v1.field).output_only = true];
+  // How hard the whole session felt. Unspecified if not rated.
+  SessionEffort effort = 2;
+  // Notes on the session, e.g. "Left knee felt the step-downs". Empty if
+  // none.
+  string notes = 3;
+  // The exercises done, in order. Maximum 40.
+  repeated LoggedExercise exercises = 4;
+}
+
+// An exercise as it was done.
+message LoggedExercise {
+  // The ID of the exercise in the user's library. Required.
+  string exercise_id = 1;
+  // The name of the exercise.
+  string exercise_name = 2 [(mcp.v1.field).output_only = true];
+  // The sets done, in order. Sets that were skipped are left out. Maximum
+  // 20.
+  repeated LoggedSet sets = 3;
+  // How hard the exercise felt compared to the plan. Unspecified if not
+  // rated.
+  ExerciseEffort effort = 4;
+  // How the number of reps felt. Unspecified if not rated.
+  ExerciseVolume volume = 5;
+  // Notes on the exercise, e.g. "Last set wobbly on the left leg". Empty if
+  // none.
+  string notes = 6;
+}
+
+// A set as it was done.
+message LoggedSet {
+  // The reps done, per side for exercises done on each side. 0 for
+  // exercises held for a time.
+  int32 reps = 1;
+  // How long the set was held in seconds. 0 for exercises done for reps.
+  int32 hold_seconds = 2;
+  // The weight used in kilograms, as in PlannedExercise. 0 for bodyweight.
+  double weight_kilograms = 3;
 }
 
 message CreateTrainingPlanRequest {
@@ -381,7 +588,9 @@ message CreateWorkoutsResponse {
 message UpdateWorkoutRequest {
   // The workout to update. The ID must be set.
   Workout workout = 1;
-  // The fields to update, e.g. "title,route_id". If empty, all fields are
+  // The fields to update, e.g. "title,strength". The kind of workout is
+  // updated as a whole: "run" replaces the run's targets and route, and
+  // "strength" its exercises, keeping its log. If empty, all fields are
   // replaced.
   google.protobuf.FieldMask update_mask = 2;
 }
@@ -399,3 +608,22 @@ message DeleteWorkoutsRequest {
 }
 
 message DeleteWorkoutsResponse {}
+
+message SetStrengthLogRequest {
+  // The ID of the strength workout.
+  string workout_id = 1;
+  // What the user did.
+  StrengthLog log = 2;
+}
+
+message SetStrengthLogResponse {
+  // The workout with its log.
+  Workout workout = 1;
+}
+
+message DeleteStrengthLogRequest {
+  // The ID of the strength workout.
+  string workout_id = 1;
+}
+
+message DeleteStrengthLogResponse {}

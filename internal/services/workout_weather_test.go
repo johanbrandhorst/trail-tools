@@ -35,11 +35,13 @@ func TestWorkoutWeather(t *testing.T) {
 	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: plan.GetPlan().GetId(),
 		Workouts: []*plansv1.Workout{
-			plansv1.Workout_builder{Date: day(1), Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, Title: "Easy run"}.Build(),
-			plansv1.Workout_builder{Date: day(2), Type: plansv1.WorkoutType_WORKOUT_TYPE_INTENSITY, Title: "Hills", RouteId: route.GetRoute().GetId()}.Build(),
-			plansv1.Workout_builder{Date: day(3), Type: plansv1.WorkoutType_WORKOUT_TYPE_REST}.Build(),
-			plansv1.Workout_builder{Date: day(4), Type: plansv1.WorkoutType_WORKOUT_TYPE_STRENGTH, Title: "Gym"}.Build(),
-			plansv1.Workout_builder{Date: day(20), Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, Title: "Too far ahead"}.Build(),
+			plansv1.Workout_builder{Date: day(1), Run: baseRun(), Title: "Easy run"}.Build(),
+			plansv1.Workout_builder{Date: day(2), Title: "Hills", Run: plansv1.RunWorkout_builder{
+				Intensity: plansv1.RunIntensity_RUN_INTENSITY_HARD, RouteId: route.GetRoute().GetId(),
+			}.Build()}.Build(),
+			plansv1.Workout_builder{Date: day(3), Rest: plansv1.RestDay_builder{}.Build()}.Build(),
+			plansv1.Workout_builder{Date: day(4), Strength: plansv1.StrengthWorkout_builder{}.Build(), Title: "Gym"}.Build(),
+			plansv1.Workout_builder{Date: day(20), Run: baseRun(), Title: "Too far ahead"}.Build(),
 		},
 	}.Build())
 	if err != nil {

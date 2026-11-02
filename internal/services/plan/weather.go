@@ -30,9 +30,10 @@ type RouteSource interface {
 }
 
 // ActivitySource finds where the user's activities start, for workouts
-// without a route.
+// without a route, and links strength workouts to their activities.
 type ActivitySource interface {
 	LatestStartPoint(ctx context.Context, userID pgtype.UUID) (geo.Point, bool, error)
+	LinkStrengthWorkouts(ctx context.Context, userID pgtype.UUID) error
 }
 
 const (

@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package plans.v1;
+
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "mcp/v1/options.proto";
+import "plans/v1/plans.proto";
+
+// ExerciseService manages the user's exercise library: the strength and
+// mobility exercises their strength workouts are made of, with how to do
+// them, how they should feel and the muscles they work. Each exercise is
+// defined once and reused across workouts (see
+// TrainingPlanService.CreateWorkouts), so its history is kept: what the user
+// did each time, with how it felt. Look an exercise up with ListExercises
+// before creating it, and reuse it rather than creating a duplicate.
+service ExerciseService {
+  // Create one or more exercises. Fails with ALREADY_EXISTS if the user has
+  // an exercise with the same name, ignoring case.
+  rpc CreateExercises(CreateExercisesRequest) returns (CreateExercisesResponse);
+  // List the user's exercises, by name.
+  rpc ListExercises(ListExercisesRequest) returns (ListExercisesResponse);
+  // Get an exercise by ID.
+  rpc GetExercise(GetExerciseRequest) returns (GetExerciseResponse);
+  // Update an exercise. Workouts and logs refer to the exercise, so they
+  // show the change too.
+  rpc UpdateExercise(UpdateExerciseRequest) returns (UpdateExerciseResponse);
+  // Delete an exercise. Fails with FAILED_PRECONDITION if a workout or a log
+  // refers to it: remove it from those workouts first, or keep it.
+  rpc DeleteExercise(DeleteExerciseRequest) returns (DeleteExerciseResponse);
+  // List what the user did in exercises, from the logs of their strength
+  // workouts, in date order: the sets with their reps and weights, what was
+  // planned, and how it felt. Use it to progress the weights and reps of
+  // the next workouts, and to analyze training over time.
+  rpc ListExerciseHistory(ListExerciseHistoryRequest) returns (ListExerciseHistoryResponse);
+}
+
+// Muscle is a muscle or muscle group an exercise works.
+enum Muscle {
+  MUSCLE_UNSPECIFIED = 0;
+  MUSCLE_NECK = 1;
+  // The trapezius and rhomboids.
+  MUSCLE_UPPER_BACK = 2;
+  // The latissimus dorsi.
+  MUSCLE_LATS = 3;
+  // The erector spinae.
+  MUSCLE_LOWER_BACK = 4;
+  // The deltoids.
+  MUSCLE_SHOULDERS = 5;
+  MUSCLE_CHEST = 6;
+  MUSCLE_BICEPS = 7;
+  MUSCLE_TRICEPS = 8;
+  MUSCLE_FOREARMS = 9;
+  // The rectus abdominis and deep core.
+  MUSCLE_ABS = 10;
+  MUSCLE_OBLIQUES = 11;
+  // The iliopsoas and rectus femoris at the front of the hip.
+  MUSCLE_HIP_FLEXORS = 12;
+  // The gluteus maximus.
+  MUSCLE_GLUTES = 13;
+  // The gluteus medius and minimus at the side of the hip, which keep the
+  // pelvis level on one leg.
+  MUSCLE_HIP_ABDUCTORS = 14;
+  // The inner thigh.
+  MUSCLE_ADDUCTORS = 15;
+  MUSCLE_QUADS = 16;
+  MUSCLE_HAMSTRINGS = 17;
+  // The gastrocnemius and soleus.
+  MUSCLE_CALVES = 18;
+  // The tibialis anterior at the front of the shin.
+  MUSCLE_SHINS = 19;
+  // The muscles of the foot and ankle.
+  MUSCLE_FEET = 20;
+}
+
+// An exercise in the user's library.
+message Exercise {
+  // The ID of the exercise. Ignored when creating exercises.
+  string id = 1;
+  // The name, e.g. "Bulgarian split squat". Required, and unique among the
+  // user's exercises, ignoring case.
+  string name = 2;
+  // How to do the exercise, step by step, e.g. "Rest the back foot
+  // laces-down on a bench about knee height". At most 10 steps.
+  repeated string instructions = 3;
+  // How the exercise should feel and where, and what to watch out for, e.g.
+  // "You should feel it in the front leg's glute and thigh. Sharp pain at
+  // the front of the knee means stop: shorten the stance." Empty if none.
+  string feel = 4;
+  // The muscles the exercise works hardest.
+  repeated Muscle primary_muscles = 5;
+  // The muscles the exercise also works.
+  repeated Muscle secondary_muscles = 6;
+  // The equipment needed, e.g. "Two dumbbells and a bench". Empty for none.
+  string equipment = 7;
+  // Whether the exercise is done on each side in turn, like a lunge, so
+  // planned and logged reps and hold times are per side.
+  bool each_side = 8;
+  // When the exercise was created.
+  google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];
+  // When the exercise was last updated.
+  google.protobuf.Timestamp update_time = 10 [(mcp.v1.field).output_only = true];
+}
+
+// What the user did in an exercise in one strength workout.
+message ExerciseHistoryEntry {
+  // The date of the workout (YYYY-MM-DD).
+  string date = 1;
+  // The ID of the workout. Empty if the workout has since been deleted.
+  string workout_id = 2;
+  // The title of the workout. Empty if the workout has since been deleted.
+  string workout_title = 3;
+  // What was planned for the exercise, as it was when the log was saved.
+  // Unset if the exercise wasn't planned for the workout.
+  PlannedExercise planned = 4;
+  // What the user did and how it felt.
+  LoggedExercise logged = 5;
+  // How hard the whole session felt.
+  SessionEffort session_effort = 6;
+}
+
+message CreateExercisesRequest {
+  // The exercises to create. Maximum 100.
+  repeated Exercise exercises = 1;
+}
+
+message CreateExercisesResponse {
+  // The created exercises, in the order given.
+  repeated Exercise exercises = 1;
+}
+
+message ListExercisesRequest {}
+
+message ListExercisesResponse {
+  // The user's exercises, by name.
+  repeated Exercise exercises = 1;
+}
+
+message GetExerciseRequest {
+  // The ID of the exercise.
+  string id = 1;
+}
+
+message GetExerciseResponse {
+  // The exercise.
+  Exercise exercise = 1;
+}
+
+message UpdateExerciseRequest {
+  // The exercise to update. The ID must be set.
+  Exercise exercise = 1;
+  // The fields to update, e.g. "instructions,feel". If empty, all fields
+  // are replaced.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message UpdateExerciseResponse {
+  // The updated exercise.
+  Exercise exercise = 1;
+}
+
+message DeleteExerciseRequest {
+  // The ID of the exercise.
+  string id = 1;
+}
+
+message DeleteExerciseResponse {}
+
+message ListExerciseHistoryRequest {
+  // The IDs of the exercises. If empty, the history of all the user's
+  // exercises is listed.
+  repeated string exercise_ids = 1;
+  // Only include workouts on or after this date (YYYY-MM-DD).
+  string start_date = 2;
+  // Only include workouts on or before this date (YYYY-MM-DD).
+  string end_date = 3;
+}
+
+message ListExerciseHistoryResponse {
+  // The entries in date order, then in the order the exercises were done.
+  repeated ExerciseHistoryEntry entries = 1;
+}

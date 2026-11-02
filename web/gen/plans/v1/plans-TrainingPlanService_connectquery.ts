@@ -90,11 +90,31 @@ export const createWorkouts = TrainingPlanService.method.createWorkouts;
 export const updateWorkout = TrainingPlanService.method.updateWorkout;
 
 /**
- * Delete one or more workouts.
+ * Delete one or more workouts. The logs of deleted strength workouts are
+ * kept in the history of their exercises.
  *
  * @generated from rpc plans.v1.TrainingPlanService.DeleteWorkouts
  */
 export const deleteWorkouts = TrainingPlanService.method.deleteWorkouts;
+
+/**
+ * Save what the user did in a strength workout, replacing any earlier log,
+ * which completes the workout. The user usually does this in the web app
+ * as they finish the workout. Links the workout to the user's strength
+ * activity of the same day, if it has none. Fails with
+ * FAILED_PRECONDITION if the workout isn't a strength workout.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.SetStrengthLog
+ */
+export const setStrengthLog = TrainingPlanService.method.setStrengthLog;
+
+/**
+ * Delete the log of a strength workout, so it's no longer complete. Its
+ * sets are removed from the history of its exercises.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.DeleteStrengthLog
+ */
+export const deleteStrengthLog = TrainingPlanService.method.deleteStrengthLog;
 
 /**
  * List the weather forecast for the days of the user's workouts in a date

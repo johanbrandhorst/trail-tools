@@ -90,20 +90,50 @@ type ActivitySummary struct {
 	RawJSON []byte
 }
 
-// UpsertActivity creates or updates an activity from Strava.
+// UpsertActivity creates or updates an activity from Strava, and links
+// strength workouts to it.
 func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (pgtype.UUID, error) {
 	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a})); err != nil {
 		return pgtype.UUID{}, fmt.Errorf("failed to store activity summary: %w", err)
 	}
-	id, err := r.q.UpsertActivity(ctx, upsertActivityParams(userID, a))
-	if err != nil {
+	// Strength workouts are linked to the activity in the same round trip.
+	var id pgtype.UUID
+	var batch store.Batch
+	batch.Read(func(db store.Querier) error {
+		var err error
+		id, err = gen.New(db).UpsertActivity(ctx, upsertActivityParams(userID, a))
+		return err
+	})
+	if err := queueLinkStrengthWorkouts(ctx, gen.New(&batch), userID); err != nil {
+		return pgtype.UUID{}, err
+	}
+	if err := batch.Send(ctx, r.db); err != nil {
 		return pgtype.UUID{}, fmt.Errorf("failed to upsert activity: %w", err)
 	}
 	return id, nil
 }
 
+// StrengthSportTypes are the Strava sport types of strength training, whose
+// activities complete the user's strength workouts of the same day.
+var StrengthSportTypes = []string{"WeightTraining", "Workout", "Crossfit", "HighIntensityIntervalTraining"}
+
+// LinkStrengthWorkouts links the user's strength workouts that have no
+// activity to a strength activity of the same day that no workout has, if
+// any.
+func (r *Repository) LinkStrengthWorkouts(ctx context.Context, userID pgtype.UUID) error {
+	if err := queueLinkStrengthWorkouts(ctx, r.q, userID); err != nil {
+		return fmt.Errorf("failed to link strength workouts: %w", err)
+	}
+	return nil
+}
+
+func queueLinkStrengthWorkouts(ctx context.Context, q *gen.Queries, userID pgtype.UUID) error {
+	return q.LinkStrengthWorkouts(ctx, &gen.LinkStrengthWorkoutsParams{UserID: userID, SportTypes: StrengthSportTypes})
+}
+
 // StoreListedActivities creates or updates a page of the user's activities
-// listed from Strava, and records how far the listing got: the activities
+// listed from Strava, links strength workouts to them, and records how far
+// the listing got: the activities
 // that started before listBefore remain to be listed. A zero listBefore
 // records that the listing finished. It takes a single round trip to the
 // database.
@@ -115,6 +145,11 @@ func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UU
 	q := gen.New(&batch)
 	for _, a := range page {
 		if _, err := q.UpsertActivity(ctx, upsertActivityParams(userID, a)); err != nil {
+			return err
+		}
+	}
+	if len(page) > 0 {
+		if err := queueLinkStrengthWorkouts(ctx, q, userID); err != nil {
 			return err
 		}
 	}
