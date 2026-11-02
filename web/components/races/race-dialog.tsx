@@ -109,6 +109,9 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
   const [onCalendar, setOnCalendar] = useState(
     race?.onCalendar ?? defaultOnCalendar
   );
+  const [dateUnconfirmed, setDateUnconfirmed] = useState(
+    race?.dateUnconfirmed ?? false
+  );
   const [validation, setValidation] = useState("");
 
   const onSuccess = async (saved: Race | undefined) => {
@@ -247,6 +250,7 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
       courseRouteId,
       cutoffSeconds,
       date,
+      dateUnconfirmed,
       distanceMeters,
       elevationGainMeters: vertMeters,
       eventId: raceEventId,
@@ -333,6 +337,11 @@ const RaceDialog: React.FC<RaceDialogProps> = ({
             options={PRIORITY_SELECT}
           />
         </div>
+        <CheckboxField
+          label="The date isn't confirmed yet"
+          checked={dateUnconfirmed}
+          onChange={setDateUnconfirmed}
+        />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <TextField label="Location" value={location} onChange={setLocation} />
           <TextField

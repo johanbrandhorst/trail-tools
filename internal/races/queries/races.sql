@@ -13,9 +13,10 @@ insert into races (
   course_route_id,
   notes,
   on_calendar,
-  event_id
+  event_id,
+  date_unconfirmed
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 )
 returning *;
 
@@ -44,6 +45,7 @@ update races set
   notes = $13,
   on_calendar = $14,
   event_id = $15,
+  date_unconfirmed = $16,
   update_time = now()
 where id = $1 and user_id = $2
 returning *;

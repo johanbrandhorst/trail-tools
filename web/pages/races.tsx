@@ -226,6 +226,14 @@ const RaceRow: React.FC<RaceRowProps> = ({
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1">
+          {race.dateUnconfirmed && (
+            <Badge
+              className="bg-amber-50 text-amber-800 ring-amber-300"
+              title="The organizers haven't confirmed the date yet"
+            >
+              Date TBC
+            </Badge>
+          )}
           {race.priority !== RacePriority.UNSPECIFIED && (
             <Badge className={priorityClass(race.priority)}>
               {priorityLabel(race.priority)}

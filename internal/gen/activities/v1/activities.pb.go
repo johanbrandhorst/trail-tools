@@ -196,6 +196,8 @@ type Activity struct {
 	xxx_hidden_GarminActivityId    string                 `protobuf:"bytes,24,opt,name=garmin_activity_id,json=garminActivityId,proto3"`
 	xxx_hidden_GarminUrl           string                 `protobuf:"bytes,25,opt,name=garmin_url,json=garminUrl,proto3"`
 	xxx_hidden_DataSource          ActivitySource         `protobuf:"varint,26,opt,name=data_source,json=dataSource,proto3,enum=activities.v1.ActivitySource"`
+	xxx_hidden_StartLocation       *LatLng                `protobuf:"bytes,27,opt,name=start_location,json=startLocation,proto3"`
+	xxx_hidden_EndLocation         *LatLng                `protobuf:"bytes,28,opt,name=end_location,json=endLocation,proto3"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -407,6 +409,20 @@ func (x *Activity) GetDataSource() ActivitySource {
 	return ActivitySource_ACTIVITY_SOURCE_UNSPECIFIED
 }
 
+func (x *Activity) GetStartLocation() *LatLng {
+	if x != nil {
+		return x.xxx_hidden_StartLocation
+	}
+	return nil
+}
+
+func (x *Activity) GetEndLocation() *LatLng {
+	if x != nil {
+		return x.xxx_hidden_EndLocation
+	}
+	return nil
+}
+
 func (x *Activity) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -511,6 +527,14 @@ func (x *Activity) SetDataSource(v ActivitySource) {
 	x.xxx_hidden_DataSource = v
 }
 
+func (x *Activity) SetStartLocation(v *LatLng) {
+	x.xxx_hidden_StartLocation = v
+}
+
+func (x *Activity) SetEndLocation(v *LatLng) {
+	x.xxx_hidden_EndLocation = v
+}
+
 func (x *Activity) HasStartTime() bool {
 	if x == nil {
 		return false
@@ -518,8 +542,30 @@ func (x *Activity) HasStartTime() bool {
 	return x.xxx_hidden_StartTime != nil
 }
 
+func (x *Activity) HasStartLocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_StartLocation != nil
+}
+
+func (x *Activity) HasEndLocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_EndLocation != nil
+}
+
 func (x *Activity) ClearStartTime() {
 	x.xxx_hidden_StartTime = nil
+}
+
+func (x *Activity) ClearStartLocation() {
+	x.xxx_hidden_StartLocation = nil
+}
+
+func (x *Activity) ClearEndLocation() {
+	x.xxx_hidden_EndLocation = nil
 }
 
 type Activity_builder struct {
@@ -561,6 +607,8 @@ type Activity_builder struct {
 	// Average cadence in steps per minute, 0 if not recorded.
 	AverageCadenceSpm float64
 	// The Google encoded polyline of the activity's route at low resolution.
+	// Most of a listed activity's size; ListActivities leaves it out with
+	// omit_summary_polyline.
 	SummaryPolyline string
 	// Whether detailed data streams have been synced for this activity.
 	HasStreams bool
@@ -584,6 +632,12 @@ type Activity_builder struct {
 	// Strava and Garmin keeps those of the first to have its samples, and
 	// Strava's name and description.
 	DataSource ActivitySource
+	// Where the activity started, from its route at low resolution. Unset if
+	// it has no route, like activities recorded indoors.
+	StartLocation *LatLng
+	// Where the activity ended, from its route at low resolution. Unset if it
+	// has no route.
+	EndLocation *LatLng
 }
 
 func (b0 Activity_builder) Build() *Activity {
@@ -616,6 +670,8 @@ func (b0 Activity_builder) Build() *Activity {
 	x.xxx_hidden_GarminActivityId = b.GarminActivityId
 	x.xxx_hidden_GarminUrl = b.GarminUrl
 	x.xxx_hidden_DataSource = b.DataSource
+	x.xxx_hidden_StartLocation = b.StartLocation
+	x.xxx_hidden_EndLocation = b.EndLocation
 	return m0
 }
 
@@ -1047,15 +1103,16 @@ func (b0 ActivityStreams_builder) Build() *ActivityStreams {
 }
 
 type ListActivitiesRequest struct {
-	state                 protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_StartDate  string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3"`
-	xxx_hidden_EndDate    string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3"`
-	xxx_hidden_SportTypes []string               `protobuf:"bytes,3,rep,name=sport_types,json=sportTypes,proto3"`
-	xxx_hidden_PageSize   int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3"`
-	xxx_hidden_PageToken  string                 `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3"`
-	xxx_hidden_Sort       ActivitySort           `protobuf:"varint,6,opt,name=sort,proto3,enum=activities.v1.ActivitySort"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state                          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_StartDate           string                 `protobuf:"bytes,1,opt,name=start_date,json=startDate,proto3"`
+	xxx_hidden_EndDate             string                 `protobuf:"bytes,2,opt,name=end_date,json=endDate,proto3"`
+	xxx_hidden_SportTypes          []string               `protobuf:"bytes,3,rep,name=sport_types,json=sportTypes,proto3"`
+	xxx_hidden_PageSize            int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3"`
+	xxx_hidden_PageToken           string                 `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3"`
+	xxx_hidden_Sort                ActivitySort           `protobuf:"varint,6,opt,name=sort,proto3,enum=activities.v1.ActivitySort"`
+	xxx_hidden_OmitSummaryPolyline bool                   `protobuf:"varint,7,opt,name=omit_summary_polyline,json=omitSummaryPolyline,proto3"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *ListActivitiesRequest) Reset() {
@@ -1125,6 +1182,13 @@ func (x *ListActivitiesRequest) GetSort() ActivitySort {
 	return ActivitySort_ACTIVITY_SORT_UNSPECIFIED
 }
 
+func (x *ListActivitiesRequest) GetOmitSummaryPolyline() bool {
+	if x != nil {
+		return x.xxx_hidden_OmitSummaryPolyline
+	}
+	return false
+}
+
 func (x *ListActivitiesRequest) SetStartDate(v string) {
 	x.xxx_hidden_StartDate = v
 }
@@ -1149,6 +1213,10 @@ func (x *ListActivitiesRequest) SetSort(v ActivitySort) {
 	x.xxx_hidden_Sort = v
 }
 
+func (x *ListActivitiesRequest) SetOmitSummaryPolyline(v bool) {
+	x.xxx_hidden_OmitSummaryPolyline = v
+}
+
 type ListActivitiesRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1166,6 +1234,11 @@ type ListActivitiesRequest_builder struct {
 	// How to order the activities. Defaults to the most recent first. Use the
 	// others to find the biggest days, e.g. by elevation gain.
 	Sort ActivitySort
+	// Leave out the activities' summary_polyline, which is most of a listing's
+	// size. Their start_location and end_location are still set. Use it unless
+	// the routes' shapes are needed, then get the few activities with
+	// GetActivity.
+	OmitSummaryPolyline bool
 }
 
 func (b0 ListActivitiesRequest_builder) Build() *ListActivitiesRequest {
@@ -1178,6 +1251,7 @@ func (b0 ListActivitiesRequest_builder) Build() *ListActivitiesRequest {
 	x.xxx_hidden_PageSize = b.PageSize
 	x.xxx_hidden_PageToken = b.PageToken
 	x.xxx_hidden_Sort = b.Sort
+	x.xxx_hidden_OmitSummaryPolyline = b.OmitSummaryPolyline
 	return m0
 }
 
@@ -1775,7 +1849,7 @@ var File_activities_v1_activities_proto protoreflect.FileDescriptor
 
 const file_activities_v1_activities_proto_rawDesc = "" +
 	"\n" +
-	"\x1eactivities/v1/activities.proto\x12\ractivities.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8f\b\n" +
+	"\x1eactivities/v1/activities.proto\x12\ractivities.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x87\t\n" +
 	"\bActivity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tstrava_id\x18\x02 \x01(\tR\bstravaId\x12\x12\n" +
@@ -1811,7 +1885,9 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\n" +
 	"garmin_url\x18\x19 \x01(\tR\tgarminUrl\x12>\n" +
 	"\vdata_source\x18\x1a \x01(\x0e2\x1d.activities.v1.ActivitySourceR\n" +
-	"dataSource\"\xe7\x01\n" +
+	"dataSource\x12<\n" +
+	"\x0estart_location\x18\x1b \x01(\v2\x15.activities.v1.LatLngR\rstartLocation\x128\n" +
+	"\fend_location\x18\x1c \x01(\v2\x15.activities.v1.LatLngR\vendLocation\"\xe7\x01\n" +
 	"\rActivityPhoto\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\acaption\x18\x02 \x01(\tR\acaption\x121\n" +
@@ -1834,7 +1910,7 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\vcadence_spm\x18\a \x03(\x01R\n" +
 	"cadenceSpm\x12!\n" +
 	"\fvelocity_mps\x18\b \x03(\x01R\vvelocityMps\x12#\n" +
-	"\rgrade_percent\x18\t \x03(\x01R\fgradePercent\"\xdf\x01\n" +
+	"\rgrade_percent\x18\t \x03(\x01R\fgradePercent\"\x93\x02\n" +
 	"\x15ListActivitiesRequest\x12\x1d\n" +
 	"\n" +
 	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +
@@ -1844,7 +1920,8 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x05 \x01(\tR\tpageToken\x12/\n" +
-	"\x04sort\x18\x06 \x01(\x0e2\x1b.activities.v1.ActivitySortR\x04sort\"y\n" +
+	"\x04sort\x18\x06 \x01(\x0e2\x1b.activities.v1.ActivitySortR\x04sort\x122\n" +
+	"\x15omit_summary_polyline\x18\a \x01(\bR\x13omitSummaryPolyline\"y\n" +
 	"\x16ListActivitiesResponse\x127\n" +
 	"\n" +
 	"activities\x18\x01 \x03(\v2\x17.activities.v1.ActivityR\n" +
@@ -1917,26 +1994,28 @@ var file_activities_v1_activities_proto_goTypes = []any{
 var file_activities_v1_activities_proto_depIdxs = []int32{
 	14, // 0: activities.v1.Activity.start_time:type_name -> google.protobuf.Timestamp
 	0,  // 1: activities.v1.Activity.data_source:type_name -> activities.v1.ActivitySource
-	5,  // 2: activities.v1.ActivityPhoto.location:type_name -> activities.v1.LatLng
-	14, // 3: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
-	1,  // 4: activities.v1.ListActivitiesRequest.sort:type_name -> activities.v1.ActivitySort
-	3,  // 5: activities.v1.ListActivitiesResponse.activities:type_name -> activities.v1.Activity
-	3,  // 6: activities.v1.GetActivityResponse.activity:type_name -> activities.v1.Activity
-	6,  // 7: activities.v1.GetActivityResponse.streams:type_name -> activities.v1.ActivityStreams
-	4,  // 8: activities.v1.GetActivityResponse.photos:type_name -> activities.v1.ActivityPhoto
-	2,  // 9: activities.v1.SummarizeActivitiesRequest.interval:type_name -> activities.v1.SummaryInterval
-	12, // 10: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
-	7,  // 11: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
-	9,  // 12: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
-	11, // 13: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
-	8,  // 14: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
-	10, // 15: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
-	13, // 16: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
-	14, // [14:17] is the sub-list for method output_type
-	11, // [11:14] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	5,  // 2: activities.v1.Activity.start_location:type_name -> activities.v1.LatLng
+	5,  // 3: activities.v1.Activity.end_location:type_name -> activities.v1.LatLng
+	5,  // 4: activities.v1.ActivityPhoto.location:type_name -> activities.v1.LatLng
+	14, // 5: activities.v1.ActivityPhoto.taken_time:type_name -> google.protobuf.Timestamp
+	1,  // 6: activities.v1.ListActivitiesRequest.sort:type_name -> activities.v1.ActivitySort
+	3,  // 7: activities.v1.ListActivitiesResponse.activities:type_name -> activities.v1.Activity
+	3,  // 8: activities.v1.GetActivityResponse.activity:type_name -> activities.v1.Activity
+	6,  // 9: activities.v1.GetActivityResponse.streams:type_name -> activities.v1.ActivityStreams
+	4,  // 10: activities.v1.GetActivityResponse.photos:type_name -> activities.v1.ActivityPhoto
+	2,  // 11: activities.v1.SummarizeActivitiesRequest.interval:type_name -> activities.v1.SummaryInterval
+	12, // 12: activities.v1.SummarizeActivitiesResponse.summaries:type_name -> activities.v1.ActivitySummary
+	7,  // 13: activities.v1.ActivityService.ListActivities:input_type -> activities.v1.ListActivitiesRequest
+	9,  // 14: activities.v1.ActivityService.GetActivity:input_type -> activities.v1.GetActivityRequest
+	11, // 15: activities.v1.ActivityService.SummarizeActivities:input_type -> activities.v1.SummarizeActivitiesRequest
+	8,  // 16: activities.v1.ActivityService.ListActivities:output_type -> activities.v1.ListActivitiesResponse
+	10, // 17: activities.v1.ActivityService.GetActivity:output_type -> activities.v1.GetActivityResponse
+	13, // 18: activities.v1.ActivityService.SummarizeActivities:output_type -> activities.v1.SummarizeActivitiesResponse
+	16, // [16:19] is the sub-list for method output_type
+	13, // [13:16] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_activities_v1_activities_proto_init() }
