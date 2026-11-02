@@ -90,3 +90,58 @@ func (r *Repository) GetWorkoutByActivity(ctx context.Context, userID, activityI
 	}
 	return r.GetWorkout(ctx, userID, id)
 }
+
+// GarminCourse is a course on the user's Garmin account, of a route.
+type GarminCourse struct {
+	ID pgtype.UUID
+	// Invalid once the route was deleted, so its course is removed from
+	// Garmin too.
+	RouteID        pgtype.UUID
+	GarminCourseID int64
+	// A hash of what was sent, to send it again only when it changes.
+	ContentHash string
+}
+
+// ListGarminCourses lists the courses on the user's Garmin account.
+func (r *Repository) ListGarminCourses(ctx context.Context, userID pgtype.UUID) ([]*GarminCourse, error) {
+	rows, err := r.q.ListGarminCourses(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Garmin courses: %w", err)
+	}
+	result := make([]*GarminCourse, len(rows))
+	for i, row := range rows {
+		result[i] = &GarminCourse{ID: row.ID, RouteID: row.RouteID, GarminCourseID: row.GarminCourseID, ContentHash: row.ContentHash}
+	}
+	return result, nil
+}
+
+// AddGarminCourse records a course put on the user's Garmin account.
+func (r *Repository) AddGarminCourse(ctx context.Context, userID pgtype.UUID, c *GarminCourse) error {
+	if err := r.q.InsertGarminCourse(ctx, &gen.InsertGarminCourseParams{
+		UserID:         userID,
+		RouteID:        c.RouteID,
+		GarminCourseID: c.GarminCourseID,
+		ContentHash:    c.ContentHash,
+	}); err != nil {
+		return fmt.Errorf("failed to record Garmin course: %w", err)
+	}
+	return nil
+}
+
+// RemoveGarminCourse forgets a course removed from the user's Garmin
+// account.
+func (r *Repository) RemoveGarminCourse(ctx context.Context, userID, id pgtype.UUID) error {
+	if err := r.q.DeleteGarminCourse(ctx, &gen.DeleteGarminCourseParams{ID: id, UserID: userID}); err != nil {
+		return fmt.Errorf("failed to remove Garmin course: %w", err)
+	}
+	return nil
+}
+
+// RemoveGarminCourses forgets all the user's courses on Garmin, once they
+// disconnect it.
+func (r *Repository) RemoveGarminCourses(ctx context.Context, userID pgtype.UUID) error {
+	if err := r.q.DeleteGarminCourses(ctx, userID); err != nil {
+		return fmt.Errorf("failed to remove Garmin courses: %w", err)
+	}
+	return nil
+}

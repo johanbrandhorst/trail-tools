@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,6 +39,8 @@ type Client interface {
 	CreateWorkout(ctx context.Context, accessToken string, w *garmin.Workout) (int64, error)
 	DeleteWorkout(ctx context.Context, accessToken string, id int64) error
 	ScheduleWorkout(ctx context.Context, accessToken string, workoutID int64, date time.Time) (int64, error)
+	CreateCourse(ctx context.Context, accessToken string, course *garmin.Course) (int64, error)
+	DeleteCourse(ctx context.Context, accessToken string, id int64) error
 }
 
 // ActivityRepository stores Garmin connections and activities.
@@ -78,6 +81,10 @@ type PlanRepository interface {
 	AddGarminWorkout(ctx context.Context, userID pgtype.UUID, w *plans.GarminWorkout) error
 	RemoveGarminWorkout(ctx context.Context, userID, id pgtype.UUID) error
 	RemoveGarminWorkouts(ctx context.Context, userID pgtype.UUID) error
+	ListGarminCourses(ctx context.Context, userID pgtype.UUID) ([]*plans.GarminCourse, error)
+	AddGarminCourse(ctx context.Context, userID pgtype.UUID, c *plans.GarminCourse) error
+	RemoveGarminCourse(ctx context.Context, userID, id pgtype.UUID) error
+	RemoveGarminCourses(ctx context.Context, userID pgtype.UUID) error
 	GetWorkoutByActivity(ctx context.Context, userID, activityID pgtype.UUID) (*plans.Workout, error)
 	SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *plans.Workout, log *plans.StrengthLog) error
 }
@@ -115,12 +122,13 @@ type Syncer struct {
 	// handle them in the background.
 	trigger Trigger
 	queue   notificationQueue
+	routes  RouteRepository
 }
 
 // NewSyncer creates a Syncer. trigger starts the scheduled sync, which
 // handles queued notifications; if nil, they're handled in the background.
-func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository, trigger Trigger) *Syncer {
-	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, nowFn: time.Now, trigger: trigger}
+func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository, routeRepo RouteRepository, trigger Trigger) *Syncer {
+	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, routes: routeRepo, nowFn: time.Now, trigger: trigger}
 }
 
 // token returns a fresh access token of a connection, refreshing it if it
@@ -360,16 +368,16 @@ func (s *Syncer) sync(ctx context.Context, conn *activities.GarminConnection) er
 			}
 		}
 	}
-	if slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) {
-		message, err := s.syncWorkouts(ctx, conn)
+	if syncsCalendar(conn) {
+		message, err := s.syncCalendar(ctx, conn)
 		if err != nil {
 			errs = append(errs, err)
-			message = "Putting workouts on the Garmin calendar failed; it's retried within the hour."
+			message = "Putting workouts or courses on Garmin failed; it's retried within the hour."
 			if errors.Is(err, garmin.ErrUnauthorized) {
 				message = "Garmin rejected the connection; reconnect Garmin."
 			}
 			if errors.Is(err, garmin.ErrPermissionDenied) {
-				message = "Garmin doesn't allow putting workouts on the calendar; allow it in Garmin Connect, or reconnect Garmin."
+				message = "Garmin doesn't allow putting workouts or courses on it; allow it in Garmin Connect, or reconnect Garmin."
 			}
 		}
 		if recordErr := s.activities.FinishGarminWorkoutsSync(ctx, conn.UserID, s.nowFn(), message); recordErr != nil {
@@ -379,11 +387,16 @@ func (s *Syncer) sync(ctx context.Context, conn *activities.GarminConnection) er
 	return errors.Join(errs...)
 }
 
-// syncWorkouts puts the user's runs and strength workouts of the coming
-// days on their Garmin calendar, replacing those that changed and removing
-// those deleted or moved away, and returns what it did. Workouts that
-// didn't change aren't sent again.
-func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnection) (string, error) {
+// syncsCalendar reports whether the user lets the app put workouts or
+// courses on their Garmin account.
+func syncsCalendar(conn *activities.GarminConnection) bool {
+	return slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) || slices.Contains(conn.Permissions, garmin.PermissionCourseImport)
+}
+
+// syncCalendar puts the user's workouts of the coming days on their Garmin
+// calendar, and the routes of their runs and races as courses, as far as
+// they allow, and returns what it did.
+func (s *Syncer) syncCalendar(ctx context.Context, conn *activities.GarminConnection) (string, error) {
 	lock, _ := s.workoutLocks.LoadOrStore(conn.UserID, &sync.Mutex{})
 	lock.(*sync.Mutex).Lock()
 	defer lock.(*sync.Mutex).Unlock()
@@ -392,6 +405,38 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 	if err != nil {
 		return "", err
 	}
+	token, err := s.token(ctx, conn)
+	if err != nil {
+		return "", err
+	}
+	var messages []string
+	if slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) {
+		message, err := s.syncWorkouts(ctx, conn, token, today, workouts)
+		if err != nil {
+			return "", err
+		}
+		messages = append(messages, message)
+	}
+	if slices.Contains(conn.Permissions, garmin.PermissionCourseImport) {
+		message, err := s.syncCourses(ctx, conn, token, workouts)
+		if err != nil {
+			return "", err
+		}
+		if message != "" {
+			messages = append(messages, message)
+		}
+	}
+	if len(messages) == 0 {
+		return "Garmin is up to date.", nil
+	}
+	return strings.Join(messages, " "), nil
+}
+
+// syncWorkouts puts the user's runs and strength workouts of the coming
+// days on their Garmin calendar, replacing those that changed and removing
+// those deleted or moved away, and returns what it did. Workouts that
+// didn't change aren't sent again.
+func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnection, token string, today time.Time, workouts []*plans.Workout) (string, error) {
 	onGarmin, err := s.plans.ListGarminWorkouts(ctx, conn.UserID)
 	if err != nil {
 		return "", err
@@ -412,10 +457,6 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 		default:
 			byWorkout[g.WorkoutID] = g
 		}
-	}
-	token, err := s.token(ctx, conn)
-	if err != nil {
-		return "", err
 	}
 	added, removed := 0, 0
 	keep := map[pgtype.UUID]bool{}
@@ -547,11 +588,17 @@ func (s *Syncer) cleanUpGarmin(ctx context.Context, conn *activities.GarminConne
 			}
 		}
 	}
+	if err := s.removeAllCourses(ctx, conn.UserID, token); err != nil {
+		return err
+	}
 	return s.client.Deregister(ctx, token)
 }
 
 // forget deletes a connection and the record of its workouts.
 func (s *Syncer) forget(ctx context.Context, userID pgtype.UUID) error {
+	if err := s.plans.RemoveGarminCourses(ctx, userID); err != nil {
+		return err
+	}
 	if err := s.plans.RemoveGarminWorkouts(ctx, userID); err != nil {
 		return err
 	}
@@ -631,10 +678,10 @@ func (s *Syncer) WorkoutsChanged(ctx context.Context, userID pgtype.UUID, dates 
 		s.report.Report(ctx, "Failed to get a Garmin connection, putting changed workouts on the calendar with the next sync", err)
 		return
 	}
-	if !slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) {
+	if !syncsCalendar(conn) {
 		return
 	}
-	message, err := s.syncWorkouts(ctx, conn)
+	message, err := s.syncCalendar(ctx, conn)
 	if err != nil {
 		s.log.WarnContext(ctx, "Failed to put changed workouts on the Garmin calendar, retrying with the next sync",
 			slog.String("user_id", store.UUIDToString(userID)), slogor.Err(err))

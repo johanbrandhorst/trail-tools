@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file garmin/v1/garmin.proto.
  */
 export const file_garmin_v1_garmin: GenFile = /*@__PURE__*/
-  fileDesc("ChZnYXJtaW4vdjEvZ2FybWluLnByb3RvEglnYXJtaW4udjEi8AEKEEdhcm1pbkNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhIKCmNvbmZpZ3VyZWQYAiABKAgSGgoSYWN0aXZpdGllc19hbGxvd2VkGAMgASgIEhgKEHdvcmtvdXRzX2FsbG93ZWQYBCABKAgSNgoSd29ya291dHNfc3luY190aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxzeW5jX21lc3NhZ2UYBiABKAkSFQoNd29ya291dF9jb3VudBgHIAEoBRIaChJwZW5kaW5nX2ZpbGVfY291bnQYCCABKAUiHAoaR2V0R2FybWluQ29ubmVjdGlvblJlcXVlc3QiTgobR2V0R2FybWluQ29ubmVjdGlvblJlc3BvbnNlEi8KCmNvbm5lY3Rpb24YASABKAsyGy5nYXJtaW4udjEuR2FybWluQ29ubmVjdGlvbiITChFTeW5jR2FybWluUmVxdWVzdCJFChJTeW5jR2FybWluUmVzcG9uc2USLwoKY29ubmVjdGlvbhgBIAEoCzIbLmdhcm1pbi52MS5HYXJtaW5Db25uZWN0aW9uIhkKF0Rpc2Nvbm5lY3RHYXJtaW5SZXF1ZXN0IhoKGERpc2Nvbm5lY3RHYXJtaW5SZXNwb25zZTKlAgoNR2FybWluU2VydmljZRJkChNHZXRHYXJtaW5Db25uZWN0aW9uEiUuZ2FybWluLnYxLkdldEdhcm1pbkNvbm5lY3Rpb25SZXF1ZXN0GiYuZ2FybWluLnYxLkdldEdhcm1pbkNvbm5lY3Rpb25SZXNwb25zZRJJCgpTeW5jR2FybWluEhwuZ2FybWluLnYxLlN5bmNHYXJtaW5SZXF1ZXN0Gh0uZ2FybWluLnYxLlN5bmNHYXJtaW5SZXNwb25zZRJjChBEaXNjb25uZWN0R2FybWluEiIuZ2FybWluLnYxLkRpc2Nvbm5lY3RHYXJtaW5SZXF1ZXN0GiMuZ2FybWluLnYxLkRpc2Nvbm5lY3RHYXJtaW5SZXNwb25zZSIGop8ZAggBQqkBCg1jb20uZ2FybWluLnYxQgtHYXJtaW5Qcm90b1ABWkZnaXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vZ2FybWluL3YxO2dhcm1pbnYxogIDR1hYqgIJR2FybWluLlYxygIJR2FybWluXFYx4gIVR2FybWluXFYxXEdQQk1ldGFkYXRh6gIKR2FybWluOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_mcp_v1_options]);
+  fileDesc("ChZnYXJtaW4vdjEvZ2FybWluLnByb3RvEglnYXJtaW4udjEinwIKEEdhcm1pbkNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhIKCmNvbmZpZ3VyZWQYAiABKAgSGgoSYWN0aXZpdGllc19hbGxvd2VkGAMgASgIEhgKEHdvcmtvdXRzX2FsbG93ZWQYBCABKAgSNgoSd29ya291dHNfc3luY190aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxzeW5jX21lc3NhZ2UYBiABKAkSFQoNd29ya291dF9jb3VudBgHIAEoBRIaChJwZW5kaW5nX2ZpbGVfY291bnQYCCABKAUSFwoPY291cnNlc19hbGxvd2VkGAkgASgIEhQKDGNvdXJzZV9jb3VudBgKIAEoBSIcChpHZXRHYXJtaW5Db25uZWN0aW9uUmVxdWVzdCJOChtHZXRHYXJtaW5Db25uZWN0aW9uUmVzcG9uc2USLwoKY29ubmVjdGlvbhgBIAEoCzIbLmdhcm1pbi52MS5HYXJtaW5Db25uZWN0aW9uIhMKEVN5bmNHYXJtaW5SZXF1ZXN0IkUKElN5bmNHYXJtaW5SZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuZ2FybWluLnYxLkdhcm1pbkNvbm5lY3Rpb24iGQoXRGlzY29ubmVjdEdhcm1pblJlcXVlc3QiGgoYRGlzY29ubmVjdEdhcm1pblJlc3BvbnNlMqUCCg1HYXJtaW5TZXJ2aWNlEmQKE0dldEdhcm1pbkNvbm5lY3Rpb24SJS5nYXJtaW4udjEuR2V0R2FybWluQ29ubmVjdGlvblJlcXVlc3QaJi5nYXJtaW4udjEuR2V0R2FybWluQ29ubmVjdGlvblJlc3BvbnNlEkkKClN5bmNHYXJtaW4SHC5nYXJtaW4udjEuU3luY0dhcm1pblJlcXVlc3QaHS5nYXJtaW4udjEuU3luY0dhcm1pblJlc3BvbnNlEmMKEERpc2Nvbm5lY3RHYXJtaW4SIi5nYXJtaW4udjEuRGlzY29ubmVjdEdhcm1pblJlcXVlc3QaIy5nYXJtaW4udjEuRGlzY29ubmVjdEdhcm1pblJlc3BvbnNlIgainxkCCAFCqQEKDWNvbS5nYXJtaW4udjFCC0dhcm1pblByb3RvUAFaRmdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9nYXJtaW4vdjE7Z2FybWludjGiAgNHWFiqAglHYXJtaW4uVjHKAglHYXJtaW5cVjHiAhVHYXJtaW5cVjFcR1BCTWV0YWRhdGHqAgpHYXJtaW46OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_mcp_v1_options]);
 
 /**
  * The status of the Garmin connection.
@@ -76,6 +76,21 @@ export type GarminConnection = Message<"garmin.v1.GarminConnection"> & {
    * @generated from field: int32 pending_file_count = 8;
    */
   pendingFileCount: number;
+
+  /**
+   * Whether the user lets the app put the routes of their upcoming runs and
+   * races on their Garmin account as courses, for the watch to navigate.
+   *
+   * @generated from field: bool courses_allowed = 9;
+   */
+  coursesAllowed: boolean;
+
+  /**
+   * How many courses are on the Garmin account.
+   *
+   * @generated from field: int32 course_count = 10;
+   */
+  courseCount: number;
 };
 
 /**
@@ -180,7 +195,8 @@ export const DisconnectGarminResponseSchema: GenMessage<DisconnectGarminResponse
  * Once connected, the user's activities come straight from Garmin, with the
  * sets of strength workouts, alongside any from Strava: an activity on both
  * is one activity. Upcoming runs and strength workouts are put on the user's
- * Garmin Connect calendar, which syncs them to their watch. The account is
+ * Garmin Connect calendar, and the routes of upcoming runs and races are put
+ * on it as courses, which Garmin syncs to their watch. The account is
  * connected in the browser by visiting /garmin/connect.
  *
  * @generated from service garmin.v1.GarminService
@@ -197,7 +213,8 @@ export const GarminService: GenService<{
     output: typeof GetGarminConnectionResponseSchema;
   },
   /**
-   * Put the upcoming workouts on the user's Garmin calendar now, and
+   * Put the upcoming workouts and their routes' courses on the user's Garmin
+   * account now, and
    * download the activities Garmin sent that are waiting. This also
    * happens on its own after workouts change and every hour.
    *

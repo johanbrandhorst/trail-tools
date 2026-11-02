@@ -652,7 +652,7 @@ func run(
 		if syncJob != nil {
 			garminTrigger = syncJob
 		}
-		garminSyncer = garminsvc.NewSyncer(log, report, garminClient, activityRepo, planRepo, garminTrigger)
+		garminSyncer = garminsvc.NewSyncer(log, report, garminClient, activityRepo, planRepo, routeRepo, garminTrigger)
 		garminOAuth = garminsvc.NewOAuth(log, report, garminClient, activityRepo, garminSyncer, []byte(garminConf.ClientSecret))
 		garminWebhook, err = garminsvc.NewWebhook(log, report, activityRepo, garminSyncer, baseURL+garminsvc.WebhookPath, garminConf.WebhookSecret, garminConf.ClientID)
 		if err != nil {

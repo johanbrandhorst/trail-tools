@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteGarminCourse = `-- name: DeleteGarminCourse :exec
+delete from garmin_courses
+where id = $1 and user_id = $2
+`
+
+type DeleteGarminCourseParams struct {
+	ID     pgtype.UUID
+	UserID pgtype.UUID
+}
+
+func (q *Queries) DeleteGarminCourse(ctx context.Context, arg *DeleteGarminCourseParams) error {
+	_, err := q.db.Exec(ctx, deleteGarminCourse, arg.ID, arg.UserID)
+	return err
+}
+
+const deleteGarminCourses = `-- name: DeleteGarminCourses :exec
+delete from garmin_courses
+where user_id = $1
+`
+
+func (q *Queries) DeleteGarminCourses(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteGarminCourses, userID)
+	return err
+}
+
 const deleteGarminWorkout = `-- name: DeleteGarminWorkout :exec
 delete from garmin_workouts
 where id = $1 and user_id = $2
@@ -57,6 +82,34 @@ func (q *Queries) GetWorkoutByActivity(ctx context.Context, arg *GetWorkoutByAct
 	return id, err
 }
 
+const insertGarminCourse = `-- name: InsertGarminCourse :exec
+insert into garmin_courses (
+  user_id,
+  route_id,
+  garmin_course_id,
+  content_hash
+) values (
+  $1, $2, $3, $4
+)
+`
+
+type InsertGarminCourseParams struct {
+	UserID         pgtype.UUID
+	RouteID        pgtype.UUID
+	GarminCourseID int64
+	ContentHash    string
+}
+
+func (q *Queries) InsertGarminCourse(ctx context.Context, arg *InsertGarminCourseParams) error {
+	_, err := q.db.Exec(ctx, insertGarminCourse,
+		arg.UserID,
+		arg.RouteID,
+		arg.GarminCourseID,
+		arg.ContentHash,
+	)
+	return err
+}
+
 const insertGarminWorkout = `-- name: InsertGarminWorkout :exec
 insert into garmin_workouts (
   user_id,
@@ -86,6 +139,39 @@ func (q *Queries) InsertGarminWorkout(ctx context.Context, arg *InsertGarminWork
 		arg.ContentHash,
 	)
 	return err
+}
+
+const listGarminCourses = `-- name: ListGarminCourses :many
+select id, user_id, route_id, garmin_course_id, content_hash, create_time from garmin_courses
+where user_id = $1
+`
+
+// Lists the courses on the user's Garmin account.
+func (q *Queries) ListGarminCourses(ctx context.Context, userID pgtype.UUID) ([]*GarminCourse, error) {
+	rows, err := q.db.Query(ctx, listGarminCourses, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*GarminCourse
+	for rows.Next() {
+		var i GarminCourse
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.RouteID,
+			&i.GarminCourseID,
+			&i.ContentHash,
+			&i.CreateTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listGarminWorkouts = `-- name: ListGarminWorkouts :many
