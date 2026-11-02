@@ -74,6 +74,15 @@ export const workoutMuscles = (exercises: Exercise[]): MuscleSet => {
   };
 };
 
+/*
+ * NBSP is a space lines don't break at, which keeps numbers with their
+ * units: "90 s" rather than "90" at the end of a line and "s" on the next.
+ */
+const NBSP = "\u00A0";
+
+// KeepTogether keeps the words of a short phrase on one line.
+const keepTogether = (text: string): string => text.replaceAll(" ", NBSP);
+
 // PerSide returns " each side" for exercises done on each side.
 const perSide = (eachSide: boolean): string => (eachSide ? " each side" : "");
 
@@ -87,7 +96,7 @@ export const formatWeight = (
   const value = Number.isInteger(weight.value)
     ? String(weight.value)
     : weight.value.toFixed(1);
-  return `${value} ${weight.unit === WeightUnit.POUNDS ? "lb" : "kg"}`;
+  return `${value}${NBSP}${weight.unit === WeightUnit.POUNDS ? "lb" : "kg"}`;
 };
 
 // HasWeight reports whether a weight is set, rather than bodyweight.
@@ -154,9 +163,9 @@ export const equipmentLabel = (equipment: Equipment): string =>
 // FormatSeconds formats a short duration, like rest, as seconds or minutes.
 export const formatSeconds = (seconds: number): string => {
   if (seconds < 120 || seconds % 60 !== 0) {
-    return `${seconds} s`;
+    return `${seconds}${NBSP}s`;
   }
-  return `${seconds / 60} min`;
+  return `${seconds / 60}${NBSP}min`;
 };
 
 // FormatReps formats what a set is: its reps or how long it's held.
@@ -177,8 +186,11 @@ export const formatDose = (
   planned: PlannedExercise,
   eachSide: boolean
 ): string => {
+  // Lines only break between the parts.
   const parts = [
-    `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, eachSide)}`,
+    keepTogether(
+      `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, eachSide)}`
+    ),
   ];
   if (hasWeight(planned.weight)) {
     parts.push(formatWeight(planned.weight));
@@ -187,7 +199,7 @@ export const formatDose = (
     parts.push(planned.tempo);
   }
   if (planned.restSeconds > 0) {
-    parts.push(`rest ${formatSeconds(planned.restSeconds)}`);
+    parts.push(keepTogether(`rest ${formatSeconds(planned.restSeconds)}`));
   }
   return parts.join(" · ");
 };
@@ -196,7 +208,9 @@ export const formatDose = (
 export const formatSet = (set: LoggedSet): string => {
   const reps =
     set.holdSeconds > 0 ? formatSeconds(set.holdSeconds) : `${set.reps}`;
-  return hasWeight(set.weight) ? `${reps} × ${formatWeight(set.weight)}` : reps;
+  return keepTogether(
+    hasWeight(set.weight) ? `${reps} × ${formatWeight(set.weight)}` : reps
+  );
 };
 
 // FeedbackStyle is how a rating is shown.

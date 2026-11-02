@@ -583,14 +583,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
   stats.push({
     label: "Weight",
     sub:
-      exercise === undefined
-        ? ""
-        : [
-            exercise.equipment.map(equipmentLabel).join(", "),
-            exercise.equipmentNotes,
-          ]
-            .filter((part) => part !== "")
-            .join(" · "),
+      planned.weight === undefined || planned.weight.value === 0 ? "" : "each",
     value: formatWeight(planned.weight),
   });
   if (planned.tempo !== "") {
@@ -612,7 +605,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
             {planned.group}
           </span>
         )}
-        <h1 className="text-[1.75rem] leading-tight font-semibold">
+        <h1 className="text-[1.75rem] leading-tight font-semibold text-balance">
           {planned.exerciseName}
         </h1>
       </div>
@@ -637,6 +630,17 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
           </div>
         ))}
       </dl>
+      {exercise !== undefined && exercise.equipment.length > 0 && (
+        <p className="-mt-2 text-sm text-pretty text-gray-600">
+          <span className="font-medium text-gray-800">Equipment:</span>{" "}
+          {[
+            exercise.equipment.map(equipmentLabel).join(", "),
+            exercise.equipmentNotes,
+          ]
+            .filter((part) => part !== "")
+            .join(" · ")}
+        </p>
+      )}
 
       <section className="flex flex-col gap-2">
         <h2 className="text-[0.9375rem] font-semibold">Sets</h2>
@@ -867,7 +871,8 @@ interface ChipsProps<Value> {
   // The value of no choice, chosen by tapping the chosen chip again.
   none: Value;
   onChange: (value: Value) => void;
-  columns: string;
+  // Tailwind classes laying the chips out, e.g. "grid grid-cols-3".
+  layout: string;
 }
 
 // Chips picks one of a few options, or none.
@@ -876,9 +881,9 @@ const Chips = <Value,>({
   value,
   none,
   onChange,
-  columns,
+  layout,
 }: ChipsProps<Value>) => (
-  <div className={`grid gap-1.5 ${columns}`}>
+  <div className={`gap-1.5 ${layout}`}>
     {options.map((option) => {
       const selected = option.value === value;
       return (
@@ -886,7 +891,7 @@ const Chips = <Value,>({
           key={option.label}
           type="button"
           aria-pressed={selected}
-          className={`min-h-11 rounded-full px-2 text-sm font-medium ${
+          className={`min-h-11 rounded-full px-3.5 text-sm font-medium whitespace-nowrap ${
             selected
               ? "bg-ink text-white"
               : "bg-white text-gray-800 ring-1 ring-gray-300 ring-inset"
@@ -914,7 +919,7 @@ const Debrief: React.FC<DebriefProps> = ({ draft, onChange }) => (
     <div className="flex flex-col gap-1.5">
       <span className="text-sm text-gray-600">Effort</span>
       <Chips
-        columns="grid-cols-3"
+        layout="grid grid-cols-3"
         options={EXERCISE_EFFORTS.map((entry) => ({
           label: entry.style.label,
           value: entry.effort,
@@ -929,7 +934,7 @@ const Debrief: React.FC<DebriefProps> = ({ draft, onChange }) => (
     <div className="flex flex-col gap-1.5">
       <span className="text-sm text-gray-600">Reps</span>
       <Chips
-        columns="grid-cols-3"
+        layout="grid grid-cols-3"
         options={EXERCISE_VOLUMES.map((entry) => ({
           label: entry.style.label
             .replace(" reps", "")
@@ -985,7 +990,7 @@ const FinishStep: React.FC<FinishStepProps> = ({
       </div>
       <Card title="How hard was the session?">
         <Chips
-          columns="grid-cols-5"
+          layout="flex flex-wrap"
           options={SESSION_EFFORTS.map((entry) => ({
             label: entry.label,
             value: entry.effort,
@@ -1012,20 +1017,20 @@ const FinishStep: React.FC<FinishStepProps> = ({
               <li key={index}>
                 <button
                   type="button"
-                  className="flex min-h-11 w-full items-center gap-2.5 px-4 py-2.5 text-left hover:bg-gray-50"
+                  className="flex min-h-11 w-full flex-col items-start gap-1.5 px-4 py-2.5 text-left hover:bg-gray-50"
                   onClick={() => {
                     onStep(index);
                   }}
                 >
-                  <span className="flex min-w-0 grow flex-col">
+                  <span className="flex w-full items-baseline justify-between gap-3">
                     <span className="text-sm font-medium">
                       {item.exerciseName}
                     </span>
-                    <span className="text-xs text-gray-600 tabular-nums">
+                    <span className="shrink-0 text-xs text-gray-600 tabular-nums">
                       {sets} of {item.sets} sets
                     </span>
                   </span>
-                  <span className="flex max-w-44 flex-wrap justify-end gap-1">
+                  <span className="flex flex-wrap gap-1">
                     {styles.length === 0 ? (
                       <Badge>Not rated</Badge>
                     ) : (

@@ -78,7 +78,9 @@ const ExercisePage: React.FC = () => {
         Exercises
       </Link>
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900">{ex.name}</h1>
+        <h1 className="text-2xl font-bold text-balance text-gray-900">
+          {ex.name}
+        </h1>
         <p className="text-sm text-gray-600">
           {[
             ex.equipment.length === 0
@@ -159,12 +161,16 @@ const ExercisePage: React.FC = () => {
                             </Link>
                           )}
                         </td>
-                        <td className={`${tdClass} tabular-nums`}>
+                        <td
+                          className={`${tdClass} whitespace-nowrap tabular-nums`}
+                        >
                           {entry.planned === undefined
                             ? "–"
                             : formatDose(entry.planned, ex.eachSide)}
                         </td>
-                        <td className={`${tdClass} tabular-nums`}>
+                        <td
+                          className={`${tdClass} whitespace-nowrap tabular-nums`}
+                        >
                           {entry.logged === undefined ||
                           entry.logged.sets.length === 0
                             ? "–"

@@ -360,10 +360,21 @@ const WorkoutPage: React.FC = () => {
             <span
               className={`inline-block size-2.5 rounded-sm ${style.dotClass}`}
             />
-            {style.label} · {formatDate(workout.date)}
-            {startWindow(workout) !== "" && ` · Start ${startWindow(workout)}`}
+            {/* Lines break between the parts, not within them. */}
+            <span className="flex flex-wrap gap-x-1">
+              <span className="whitespace-nowrap">
+                {style.label} · {formatDate(workout.date)}
+              </span>
+              {startWindow(workout) !== "" && (
+                <span className="whitespace-nowrap">
+                  · Start {startWindow(workout)}
+                </span>
+              )}
+            </span>
           </p>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-balance text-gray-900">
+            {title}
+          </h1>
           {workout.completedActivityId !== "" && (
             <Link
               to={`/activities/${workout.completedActivityId}`}
