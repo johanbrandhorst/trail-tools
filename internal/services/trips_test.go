@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"image"
-	"image/color"
 	"image/jpeg"
 	"io"
 	"io/fs"
@@ -577,10 +576,13 @@ func TestPublicTripReportsHideHome(t *testing.T) {
 
 func testJPEG(t *testing.T, w, h int) []byte {
 	t.Helper()
+	// The pixels are written directly, as setting them one by one through
+	// the image.Image interface is slow under the race detector.
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := range h {
 		for x := range w {
-			img.Set(x, y, color.RGBA{R: uint8(x), G: uint8(y), B: 80, A: 255})
+			i := img.PixOffset(x, y)
+			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = uint8(x), uint8(y), 80, 255
 		}
 	}
 	var buf bytes.Buffer
@@ -617,7 +619,10 @@ func TestTripPhotos(t *testing.T) {
 		t.Fatal(err)
 	}
 	reportID := created.GetReport().GetId()
-	data := testJPEG(t, 3000, 2000)
+	// Photos are small, as resizing is slow under the race detector, except
+	// those checking that large photos are downscaled.
+	data := testJPEG(t, 300, 200)
+	large := testJPEG(t, 2100, 1400)
 	upload := func(b tripsv1.UploadTripPhotoRequest_builder) *tripsv1.TripPhoto {
 		t.Helper()
 		b.ReportId = reportID
@@ -633,6 +638,7 @@ func TestTripPhotos(t *testing.T) {
 
 	// The GPS position of a photo is used as is.
 	gps := upload(tripsv1.UploadTripPhotoRequest_builder{
+		Data:     large,
 		Caption:  " The start ",
 		Location: geov1.LatLng_builder{Lat: 0.0181, Lng: 0.0001}.Build(),
 	})
@@ -659,7 +665,7 @@ func TestTripPhotos(t *testing.T) {
 		t.Errorf("unexpected local time photo %v", local)
 	}
 	// Photos taken away from the track's time aren't placed.
-	unplaced := upload(tripsv1.UploadTripPhotoRequest_builder{TakenTime: timestamppb.New(tripStart.Add(24 * time.Hour))})
+	unplaced := upload(tripsv1.UploadTripPhotoRequest_builder{Data: large, TakenTime: timestamppb.New(tripStart.Add(24 * time.Hour))})
 	if unplaced.HasLocation() || unplaced.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_UNSPECIFIED || unplaced.HasTrackDistanceMeters() {
 		t.Errorf("unexpected unplaced photo %v", unplaced)
 	}

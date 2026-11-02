@@ -36,7 +36,10 @@ func TestRaceReportPhotos(t *testing.T) {
 		t.Fatal(err)
 	}
 	reportID := created.GetReport().GetId()
-	data := testJPEG(t, 3000, 2000)
+	// Photos are small, as resizing is slow under the race detector, except
+	// the one checking that large photos are downscaled.
+	data := testJPEG(t, 300, 200)
+	large := testJPEG(t, 2100, 1400)
 	upload := func(b racesv1.UploadRaceReportPhotoRequest_builder) *racesv1.RaceReportPhoto {
 		t.Helper()
 		b.ReportId = reportID
@@ -53,6 +56,7 @@ func TestRaceReportPhotos(t *testing.T) {
 	// Photos are placed on the track at the time they were taken, like trip
 	// photos.
 	timed := upload(racesv1.UploadRaceReportPhotoRequest_builder{
+		Data:      large,
 		TakenTime: timestamppb.New(tripStart.Add(30*time.Minute + 18*time.Second)),
 	})
 	if timed.GetLocationSource() != tripsv1.LocationSource_LOCATION_SOURCE_TRACK_TIME || !approx(timed.GetTrackDistanceMeters(), 5050, 1e-6) ||
@@ -223,7 +227,7 @@ func TestRaceReportPhotos(t *testing.T) {
 			t.Errorf("draft photo for %s: status %d, want 404", name, resp.StatusCode)
 		}
 	}
-	resp, body = e.get(gps.GetThumbnailUrl(), e.token)
+	resp, body = e.get(timed.GetThumbnailUrl(), e.token)
 	if cfg, err := jpeg.DecodeConfig(bytes.NewReader(body)); resp.StatusCode != http.StatusOK || err != nil || cfg.Width != 480 ||
 		!strings.HasPrefix(resp.Header.Get("Cache-Control"), "private") {
 		t.Errorf("draft thumbnail for the author: status %d, %v, %v, headers %v", resp.StatusCode, cfg, err, resp.Header)

@@ -20,7 +20,7 @@ func TestGetTripPhoto(t *testing.T) {
 	}
 	upload, err := e.trips.UploadTripPhoto(ctx, tripsv1.UploadTripPhotoRequest_builder{
 		ReportId: created.GetReport().GetId(),
-		Data:     testJPEG(t, 3000, 2000),
+		Data:     testJPEG(t, 2100, 1400),
 		Caption:  "Summit",
 	}.Build())
 	if err != nil {
