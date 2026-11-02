@@ -246,6 +246,7 @@ func newEnv(t *testing.T) *env {
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
 
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))
+	mux.Handle("/workouts/", planService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle("/race-plans/", racePlanService.CourseHandler(http.NotFoundHandler()))
 	e.imports = &fakeImportRunner{}
 	srv3 := connect.NewServer()

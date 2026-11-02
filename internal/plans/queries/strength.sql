@@ -56,7 +56,7 @@ where id = $1 and user_id = $2;
 -- name: ListWorkoutExercises :many
 -- Lists the exercises of the user's workouts, optionally of a plan, of
 -- some workouts or within dates, by workout and position.
-select we.*, e.name as exercise_name, e.equipment::text[] as exercise_equipment
+select we.*, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side
 from workout_exercises we
 join workouts w on w.id = we.workout_id
 join training_plans p on p.id = w.plan_id

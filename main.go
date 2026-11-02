@@ -802,6 +802,9 @@ func run(
 	// Serve routes as GPX files, falling back to the frontend for other
 	// /routes/ pages.
 	mux.Handle("/routes/", authenticate(routeService.DownloadHandler(indexHandler)))
+	// Serve strength workouts as Garmin workouts, falling back to the
+	// frontend for other /workouts/ pages.
+	mux.Handle("/workouts/", authenticate(planService.DownloadHandler(indexHandler)))
 	mux.Handle("/race-plans/", authenticate(racePlanService.CourseHandler(indexHandler)))
 	// Registering /routes/ makes the mux redirect /routes to /routes/, so
 	// serve the frontend for /routes explicitly.

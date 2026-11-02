@@ -1,7 +1,9 @@
 package services_test
 
 import (
+	"bytes"
 	"context"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -202,6 +204,20 @@ func TestStrengthWorkouts(t *testing.T) {
 	}
 	if got := renamed.GetWorkout().GetStrength().GetExercises(); len(got) != 2 {
 		t.Errorf("renaming left %d exercises, want 2", len(got))
+	}
+
+	// Strength workouts download as Garmin workouts, of the user's own
+	// workouts only, and other kinds don't.
+	resp, file := e.get("/workouts/"+first.GetId()+".fit", e.token)
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "application/vnd.ant.fit" || !bytes.Equal(file[8:12], []byte(".FIT")) ||
+		!strings.Contains(resp.Header.Get("Content-Disposition"), "Hips-hamstrings-and-downhill-legs.fit") {
+		t.Errorf("downloading a strength workout: %d %v", resp.StatusCode, resp.Header)
+	}
+	if resp, _ := e.get("/workouts/"+first.GetId()+".fit", e.otherToken); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("another user downloading a workout: %d, want 404", resp.StatusCode)
+	}
+	if resp, _ := e.get("/workouts/"+run.GetId()+".fit", e.token); resp.StatusCode != http.StatusConflict {
+		t.Errorf("downloading a run: %d, want 409", resp.StatusCode)
 	}
 
 	// The strength activity of the day syncs, and completes the first

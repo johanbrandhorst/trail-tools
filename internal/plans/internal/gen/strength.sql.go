@@ -859,7 +859,7 @@ func (q *Queries) ListStrengthLogs(ctx context.Context, arg *ListStrengthLogsPar
 }
 
 const listWorkoutExercises = `-- name: ListWorkoutExercises :many
-select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, e.name as exercise_name, e.equipment::text[] as exercise_equipment
+select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side
 from workout_exercises we
 join workouts w on w.id = we.workout_id
 join training_plans p on p.id = w.plan_id
@@ -896,6 +896,7 @@ type ListWorkoutExercisesRow struct {
 	Notes             string
 	ExerciseName      string
 	ExerciseEquipment []string
+	ExerciseEachSide  bool
 }
 
 // Lists the exercises of the user's workouts, optionally of a plan, of
@@ -931,6 +932,7 @@ func (q *Queries) ListWorkoutExercises(ctx context.Context, arg *ListWorkoutExer
 			&i.Notes,
 			&i.ExerciseName,
 			&i.ExerciseEquipment,
+			&i.ExerciseEachSide,
 		); err != nil {
 			return nil, err
 		}

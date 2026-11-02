@@ -147,6 +147,8 @@ type PlannedExercise struct {
 	ExerciseName string
 	// The equipment of the exercise, set when reading.
 	ExerciseEquipment []Equipment
+	// Whether the exercise is done on each side, set when reading.
+	ExerciseEachSide bool
 	// The part of the workout, e.g. "Warm-up". Empty if none.
 	Group string
 	Sets  int32
@@ -611,6 +613,7 @@ func (wr *workoutReader) workouts() []*Workout {
 			ExerciseID:        row.ExerciseID,
 			ExerciseName:      row.ExerciseName,
 			ExerciseEquipment: equipmentFromDB(row.ExerciseEquipment),
+			ExerciseEachSide:  row.ExerciseEachSide,
 			Group:             row.GroupName,
 			Sets:              row.Sets,
 			Reps:              row.Reps,

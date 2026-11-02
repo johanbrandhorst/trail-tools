@@ -2,7 +2,11 @@ import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
 import { Badge, EmptyState } from "@components/ui/misc";
 import { ErrorText } from "@components/ui/query-error";
-import { ghostDangerButton, primaryButton } from "@components/ui/styles";
+import {
+  ghostDangerButton,
+  linkClass,
+  primaryButton,
+} from "@components/ui/styles";
 import { useMutation } from "@connectrpc/connect-query";
 import { ChevronRightIcon, PlayIcon } from "@heroicons/react/24/solid";
 import { useQueryClient } from "@tanstack/react-query";
@@ -74,6 +78,19 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
         <PlayIcon className="size-5" />
         {log === undefined ? "Start workout" : "Edit the log"}
       </Link>
+      <p className="-mt-2 text-sm text-gray-600">
+        Or{" "}
+        <a
+          href={`/workouts/${workout.id}.fit`}
+          download
+          className={linkClass}
+          title="A Garmin workout with the sets, reps, weights and rest"
+        >
+          download it for your Garmin watch
+        </a>
+        : import it in Garmin Connect, or copy it to the GARMIN/NewFiles folder
+        of the watch.
+      </p>
       <EquipmentCheck
         workout={workout}
         strength={strength}
