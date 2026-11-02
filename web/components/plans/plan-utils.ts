@@ -6,6 +6,7 @@ import type { PlanPeriod, TrainingPlan, Workout } from "gen/plans/v1/plans_pb";
 import { PeriodGranularity } from "gen/plans/v1/plans_pb";
 import type { Race } from "gen/races/v1/races_pb";
 import { isWithin, today } from "helpers/dates";
+import { workoutTargets } from "helpers/workouts";
 
 export const groupWorkoutsByDate = (
   workouts: Workout[]
@@ -92,9 +93,10 @@ export const workoutTotals = (workouts: Workout[]): Totals => {
     elevationGainMeters: 0,
   };
   for (const workout of workouts) {
-    totals.distanceMeters += workout.targetDistanceMeters;
-    totals.elevationGainMeters += workout.targetElevationGainMeters;
-    totals.durationSeconds += workout.targetDurationSeconds;
+    const targets = workoutTargets(workout);
+    totals.distanceMeters += targets.distanceMeters;
+    totals.elevationGainMeters += targets.elevationGainMeters;
+    totals.durationSeconds += targets.durationSeconds;
   }
   return totals;
 };

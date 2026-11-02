@@ -18,7 +18,6 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
 	"github.com/johanbrandhorst/trail-tools/internal/protomask"
 	"github.com/johanbrandhorst/trail-tools/internal/services/activity"
-	"github.com/johanbrandhorst/trail-tools/internal/services/route"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -34,14 +33,17 @@ type PlanRepository interface {
 	SetPeriods(ctx context.Context, planID pgtype.UUID, periods []*plans.Period) ([]*plans.Period, error)
 	ListPeriods(ctx context.Context, planID pgtype.UUID) ([]*plans.Period, error)
 	DeletePeriods(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error
-	CreateWorkouts(ctx context.Context, planID pgtype.UUID, workouts []*plans.Workout) ([]*plans.Workout, error)
-	ListWorkouts(ctx context.Context, planID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
+	CreateWorkouts(ctx context.Context, userID, planID pgtype.UUID, workouts []*plans.Workout) ([]*plans.Workout, error)
+	ListWorkouts(ctx context.Context, userID, planID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
 	ListUserWorkouts(ctx context.Context, userID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
 	GetWorkout(ctx context.Context, userID, workoutID pgtype.UUID) (*plans.Workout, error)
-	UpdateWorkout(ctx context.Context, w *plans.Workout) (*plans.Workout, error)
+	UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *plans.Workout) (*plans.Workout, error)
 	DeleteWorkouts(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error
 	FindReferences(ctx context.Context, userID pgtype.UUID, routeIDs, activityIDs []pgtype.UUID) (routes, activities map[pgtype.UUID]bool, err error)
 	RacesExist(ctx context.Context, userID pgtype.UUID, raceIDs []pgtype.UUID) (bool, error)
+	FindExercises(ctx context.Context, userID pgtype.UUID, ids []pgtype.UUID) (map[pgtype.UUID]*plans.Exercise, error)
+	SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *plans.Workout, log *plans.StrengthLog) error
+	DeleteStrengthLog(ctx context.Context, userID, workoutID pgtype.UUID) error
 }
 
 // Service implements API handlers for the training plan service.
@@ -229,7 +231,7 @@ func (s *Service) ListWorkouts(ctx context.Context, req *plansv1.ListWorkoutsReq
 		if planErr != nil {
 			return nil, planErr
 		}
-		workouts, err = s.plans.ListWorkouts(ctx, plan.ID, startDate, endDate)
+		workouts, err = s.plans.ListWorkouts(ctx, plan.UserID, plan.ID, startDate, endDate)
 	}
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list workouts")
@@ -261,7 +263,7 @@ func (s *Service) CreateWorkouts(ctx context.Context, req *plansv1.CreateWorkout
 	if err := s.checkReferences(ctx, plan.UserID, workouts); err != nil {
 		return nil, err
 	}
-	created, err := s.plans.CreateWorkouts(ctx, plan.ID, workouts)
+	created, err := s.plans.CreateWorkouts(ctx, plan.UserID, plan.ID, workouts)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to create workouts")
 	}
@@ -317,7 +319,7 @@ func (s *Service) UpdateWorkout(ctx context.Context, req *plansv1.UpdateWorkoutR
 		return nil, err
 	}
 	workout.ID = existing.ID
-	updated, err := s.plans.UpdateWorkout(ctx, workout)
+	updated, err := s.plans.UpdateWorkout(ctx, userID, workout)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to update workout")
 	}
@@ -442,27 +444,16 @@ func workoutFromProto(w *plansv1.Workout, plan *plans.TrainingPlan) (*plans.Work
 	if date.Before(plan.StartDate) || date.After(plan.EndDate) {
 		return nil, invalidArgument("date %s is outside the plan (%s to %s)", store.FormatDate(date), store.FormatDate(plan.StartDate), store.FormatDate(plan.EndDate))
 	}
-	workoutType, ok := workoutTypeFromProto(w.GetType())
-	if !ok {
-		return nil, invalidArgument("type is required")
-	}
-	if err := validateTargets(w.GetTargetDistanceMeters(), w.GetTargetElevationGainMeters(), w.GetTargetDurationSeconds()); err != nil {
-		return nil, invalidArgument("%v", err)
-	}
 	workout := &plans.Workout{
-		Date:                      date,
-		Type:                      workoutType,
-		Title:                     strings.TrimSpace(w.GetTitle()),
-		Description:               w.GetDescription(),
-		TargetDistanceMeters:      w.GetTargetDistanceMeters(),
-		TargetElevationGainMeters: w.GetTargetElevationGainMeters(),
-		TargetDurationSeconds:     w.GetTargetDurationSeconds(),
-		TargetTerrain:             route.TerrainFromProto(w.GetTargetTerrain()),
+		Date:        date,
+		Title:       strings.TrimSpace(w.GetTitle()),
+		Description: w.GetDescription(),
 	}
-	if w.GetRouteId() != "" {
-		if workout.RouteID, err = store.StringToUUID(w.GetRouteId()); err != nil {
-			return nil, invalidArgument("invalid route_id: %v", err)
-		}
+	if err := workoutDetailsFromProto(w, workout); err != nil {
+		return nil, err
+	}
+	if err := startWindowFromProto(w, workout); err != nil {
+		return nil, err
 	}
 	if w.GetCompletedActivityId() != "" {
 		if workout.CompletedActivityID, err = store.StringToUUID(w.GetCompletedActivityId()); err != nil {
@@ -472,9 +463,9 @@ func workoutFromProto(w *plansv1.Workout, plan *plans.TrainingPlan) (*plans.Work
 	return workout, nil
 }
 
-// checkReferences checks that the routes and activities of workouts exist and
-// belong to the user. It checks them all in one query, as a plan can be
-// created with hundreds of workouts at once.
+// checkReferences checks that the routes, activities and exercises of
+// workouts exist and belong to the user. It checks them all in two queries,
+// as a plan can be created with hundreds of workouts at once.
 func (s *Service) checkReferences(ctx context.Context, userID pgtype.UUID, workouts []*plans.Workout) error {
 	var routeIDs, activityIDs []pgtype.UUID
 	for _, w := range workouts {
@@ -489,6 +480,10 @@ func (s *Service) checkReferences(ctx context.Context, userID pgtype.UUID, worko
 	if err != nil {
 		return s.toConnectError(ctx, err, "failed to check routes and activities")
 	}
+	exercises, err := s.plans.FindExercises(ctx, userID, exerciseIDs(workouts))
+	if err != nil {
+		return s.toConnectError(ctx, err, "failed to check exercises")
+	}
 	for i, w := range workouts {
 		prefix := ""
 		if len(workouts) > 1 {
@@ -499,6 +494,11 @@ func (s *Service) checkReferences(ctx context.Context, userID pgtype.UUID, worko
 		}
 		if w.CompletedActivityID.Valid && !activities[w.CompletedActivityID] {
 			return invalidArgument("%sactivity %s does not exist", prefix, store.UUIDToString(w.CompletedActivityID))
+		}
+		for j, e := range w.Exercises {
+			if exercises[e.ExerciseID] == nil {
+				return invalidArgument("%sstrength.exercises[%d]: exercise %s does not exist; create it with CreateExercises first", prefix, j, store.UUIDToString(e.ExerciseID))
+			}
 		}
 	}
 	return nil
@@ -542,23 +542,6 @@ func periodToProto(p *plans.Period) *plansv1.PlanPeriod {
 		TargetDistanceMeters:      p.TargetDistanceMeters,
 		TargetElevationGainMeters: p.TargetElevationGainMeters,
 		TargetDurationSeconds:     p.TargetDurationSeconds,
-	}.Build()
-}
-
-func workoutToProto(w *plans.Workout) *plansv1.Workout {
-	return plansv1.Workout_builder{
-		Id:                        store.UUIDToString(w.ID),
-		PlanId:                    store.UUIDToString(w.PlanID),
-		Date:                      store.FormatDate(w.Date),
-		Type:                      workoutTypeToProto(w.Type),
-		Title:                     w.Title,
-		Description:               w.Description,
-		TargetDistanceMeters:      w.TargetDistanceMeters,
-		TargetElevationGainMeters: w.TargetElevationGainMeters,
-		TargetDurationSeconds:     w.TargetDurationSeconds,
-		TargetTerrain:             route.TerrainToProto(w.TargetTerrain),
-		RouteId:                   store.UUIDToString(w.RouteID),
-		CompletedActivityId:       store.UUIDToString(w.CompletedActivityID),
 	}.Build()
 }
 

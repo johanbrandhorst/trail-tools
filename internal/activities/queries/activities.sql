@@ -201,3 +201,23 @@ where user_id = $1
   and (sqlc.narg(end_date)::date is null or start_date_local <= sqlc.narg(end_date)::date)
 order by start_date_local desc, id
 limit sqlc.arg(max_activities);
+
+-- name: LinkStrengthWorkouts :exec
+-- Links the user's strength workouts that have no activity to a strength
+-- activity of the same day that no workout has, the first of the day if
+-- there are several.
+update workouts w set
+  completed_activity_id = m.activity_id
+from (
+  select distinct on (sw.id) sw.id as workout_id, a.id as activity_id
+  from workouts sw
+  join training_plans p on p.id = sw.plan_id
+  join strava_activities a on a.user_id = p.user_id and a.start_date_local = sw.date
+  where p.user_id = sqlc.arg(user_id)::uuid
+    and sw.type = 'strength'
+    and sw.completed_activity_id is null
+    and a.sport_type = any(sqlc.arg(sport_types)::text[])
+    and not exists (select 1 from workouts o where o.completed_activity_id = a.id)
+  order by sw.id, a.start_time
+) m
+where w.id = m.workout_id;

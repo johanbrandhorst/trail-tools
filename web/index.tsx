@@ -24,6 +24,18 @@ const transport = createConnectTransport({
 
 const queryClient = new QueryClient();
 
+/*
+ * The service worker makes the app installable on a phone's home screen,
+ * and open without a connection. Browsers without one work as before.
+ */
+if ("serviceWorker" in navigator) {
+  globalThis.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+      console.error("Failed to register the service worker:", error);
+    });
+  });
+}
+
 /**
  * A data router, rather than a BrowserRouter, so that pages can block
  * navigation with useBlocker while they have unsaved changes. The app still

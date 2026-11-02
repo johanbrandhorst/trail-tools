@@ -78,7 +78,9 @@ insert into workouts (
   target_duration_seconds,
   target_terrain,
   route_id,
-  completed_activity_id
+  completed_activity_id,
+  start_time,
+  start_window_minutes
 )
 select
   w.id,
@@ -92,7 +94,9 @@ select
   w.target_duration_seconds,
   nullif(w.target_terrain, '')::terrain,
   w.route_id,
-  w.completed_activity_id
+  w.completed_activity_id,
+  w.start_time,
+  w.start_window_minutes
 from (
   select
     unnest(sqlc.arg(ids)::uuid[]) as id,
@@ -106,7 +110,10 @@ from (
     -- Empty if the workout has no target terrain.
     unnest(sqlc.arg(target_terrains)::text[]) as target_terrain,
     unnest(sqlc.arg(route_ids)::uuid[]) as route_id,
-    unnest(sqlc.arg(completed_activity_ids)::uuid[]) as completed_activity_id
+    unnest(sqlc.arg(completed_activity_ids)::uuid[]) as completed_activity_id,
+    -- Null if the workout can be done any time of the day.
+    unnest(sqlc.arg(start_times)::time[]) as start_time,
+    unnest(sqlc.arg(start_windows_minutes)::integer[]) as start_window_minutes
 ) w
 returning *;
 
@@ -147,7 +154,9 @@ update workouts set
   target_duration_seconds = $8,
   target_terrain = $9,
   route_id = $10,
-  completed_activity_id = $11
+  completed_activity_id = $11,
+  start_time = $12,
+  start_window_minutes = $13
 where id = $1
 returning *;
 

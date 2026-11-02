@@ -8,6 +8,9 @@ import ActivitiesPage from "pages/activities";
 import ActivityPage from "pages/activity";
 import CalendarPage from "pages/calendar";
 import DashboardPage from "pages/dashboard";
+import EquipmentPage from "pages/equipment";
+import ExercisePage from "pages/exercise";
+import ExercisesPage from "pages/exercises";
 import ForecastPage from "pages/forecast";
 import InvitePage from "pages/invite";
 import LactateTestPage from "pages/lactate-test";
@@ -30,6 +33,7 @@ import RoutesPage from "pages/routes";
 import SettingsPage from "pages/settings";
 import SharedRacePlanPage from "pages/shared-race-plan";
 import SignInPage from "pages/sign-in";
+import StrengthSessionPage from "pages/strength-session";
 import TripReportPage from "pages/trip-report";
 import TripReportsPage from "pages/trip-reports";
 import WorkoutPage from "pages/workout";
@@ -134,6 +138,9 @@ const App: React.FC = () => {
             <Route path="/plans" element={<PlansPage />} />
             <Route path="/plans/:id" element={<PlanPage />} />
             <Route path="/workouts/:id" element={<WorkoutPage />} />
+            <Route path="/exercises" element={<ExercisesPage />} />
+            <Route path="/equipment" element={<EquipmentPage />} />
+            <Route path="/exercises/:id" element={<ExercisePage />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/routes/new" element={<RoutePage isNew />} />
             <Route path="/routes/:id" element={<RoutePage isNew={false} />} />
@@ -161,6 +168,11 @@ const App: React.FC = () => {
           </>
         )}
       </Route>
+      {/* Strength workouts are followed on the phone without the header,
+          to leave the screen to the exercise. */}
+      {user !== null && (
+        <Route path="/workouts/:id/session" element={<StrengthSessionPage />} />
+      )}
       {user === null && <Route path="*" element={<SignInPage />} />}
     </Routes>
   );

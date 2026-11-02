@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"slices"
 	"time"
 
 	"connectrpc.com/connect/v2"
@@ -30,9 +31,10 @@ type RouteSource interface {
 }
 
 // ActivitySource finds where the user's activities start, for workouts
-// without a route.
+// without a route, and links strength workouts to their activities.
 type ActivitySource interface {
 	LatestStartPoint(ctx context.Context, userID pgtype.UUID) (geo.Point, bool, error)
+	LinkStrengthWorkouts(ctx context.Context, userID pgtype.UUID) error
 }
 
 const (
@@ -167,7 +169,7 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			s.report.Report(ctx, "Failed to get weather forecast", err)
 			return nil, connect.NewError(connect.CodeUnavailable, "the weather forecast is unavailable, try again later")
 		}
-		g.byLocalDay = daytimeByLocalDay(hours)
+		g.byLocalDay = byLocalDay(hours)
 	}
 	var result []*plansv1.WorkoutWeather
 	for _, w := range workouts {
@@ -176,8 +178,9 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			continue
 		}
 		date := store.FormatDate(w.Date)
-		hours := g.byLocalDay[date]
-		if len(hours) == 0 {
+		all := g.byLocalDay[date]
+		daytime := slices.DeleteFunc(slices.Clone(all), func(h mapdata.Weather) bool { return !isDaytime(h) })
+		if len(daytime) == 0 {
 			continue
 		}
 		b := plansv1.WorkoutWeather_builder{
@@ -185,11 +188,21 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			Date:           date,
 			Location:       geov1.LatLng_builder{Lat: g.location.point.Lat, Lng: g.location.point.Lng}.Build(),
 			LocationSource: g.location.source,
-			Day:            summarizeDay(hours),
+			Day:            summarizeDay(daytime),
+		}
+		during, start, end := duringWorkout(w, all)
+		if len(during) > 0 {
+			b.Workout = summarizeDay(during)
+			b.WorkoutStartTime = timestamppb.New(start)
+			b.WorkoutEndTime = timestamppb.New(end)
 		}
 		if hourly {
-			for _, h := range hours {
-				b.Hours = append(b.Hours, hourToProto(h))
+			// The daytime, and the hours of the workout outside it, like
+			// an early start.
+			for _, h := range all {
+				if isDaytime(h) || slices.ContainsFunc(during, func(d mapdata.Weather) bool { return d.Time.Equal(h.Time) }) {
+					b.Hours = append(b.Hours, hourToProto(h))
+				}
 			}
 		}
 		result = append(result, b.Build())
@@ -237,19 +250,64 @@ func (s *Service) workoutLocation(ctx context.Context, userID pgtype.UUID, w *pl
 // daylight saving time transition within it a single offset would shift
 // every later day by an hour, dropping an hour at one end of the daytime and
 // adding one from the night at the other.
-func daytimeByLocalDay(hours []mapdata.Weather) map[string][]mapdata.Weather {
-	byLocalDay := make(map[string][]mapdata.Weather)
+func byLocalDay(hours []mapdata.Weather) map[string][]mapdata.Weather {
+	result := make(map[string][]mapdata.Weather)
 	for _, h := range hours {
-		// Shifting the UTC time by the offset gives a time whose UTC fields
-		// are the local ones, without needing the time zone.
-		local := h.Time.UTC().Add(h.UTCOffset)
-		if local.Hour() < daytimeFirstHour || local.Hour() > daytimeLastHour {
-			continue
-		}
-		day := local.Format(time.DateOnly)
-		byLocalDay[day] = append(byLocalDay[day], h)
+		day := localTime(h).Format(time.DateOnly)
+		result[day] = append(result[day], h)
 	}
-	return byLocalDay
+	return result
+}
+
+// localTime returns the local time of an hour as a time whose UTC fields
+// are the local ones: shifting the UTC time by the offset doesn't need the
+// time zone.
+func localTime(h mapdata.Weather) time.Time {
+	return h.Time.UTC().Add(h.UTCOffset)
+}
+
+// isDaytime reports whether an hour is in the daytime the day's weather
+// summarizes.
+func isDaytime(h mapdata.Weather) bool {
+	hour := localTime(h).Hour()
+	return hour >= daytimeFirstHour && hour <= daytimeLastHour
+}
+
+// defaultWorkoutDuration is how long a workout without a target duration is
+// taken to last.
+const defaultWorkoutDuration = time.Hour
+
+// duringWorkout returns the hours of a day that overlap the workout, from
+// the start of its start window to the end of the window plus its target
+// duration, and when that period starts and ends. It returns no hours for
+// workouts without a start time.
+func duringWorkout(w *plans.Workout, hours []mapdata.Weather) (during []mapdata.Weather, start, end time.Time) {
+	if w.StartTime == "" || len(hours) == 0 {
+		return nil, time.Time{}, time.Time{}
+	}
+	clock, err := time.Parse("15:04", w.StartTime)
+	if err != nil {
+		return nil, time.Time{}, time.Time{}
+	}
+	duration := time.Duration(w.TargetDurationSeconds) * time.Second
+	if duration == 0 {
+		duration = defaultWorkoutDuration
+	}
+	// In the shifted local time of the hours.
+	localStart := time.Date(w.Date.Year(), w.Date.Month(), w.Date.Day(), clock.Hour(), clock.Minute(), 0, 0, time.UTC)
+	localEnd := localStart.Add(time.Duration(w.StartWindowMinutes)*time.Minute + duration)
+	for _, h := range hours {
+		hourStart := localTime(h)
+		if hourStart.Add(time.Hour).After(localStart) && hourStart.Before(localEnd) {
+			during = append(during, h)
+		}
+	}
+	if len(during) == 0 {
+		return nil, time.Time{}, time.Time{}
+	}
+	// Back to real instants, with the offset of the first hour.
+	offset := during[0].UTCOffset
+	return during, localStart.Add(-offset), localEnd.Add(-offset)
 }
 
 // summarizeDay summarizes the weather of the hours of a day.

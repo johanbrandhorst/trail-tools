@@ -616,6 +616,7 @@ func run(
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
+	exerciseService := plan.NewExerciseService(log, report, planRepo)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)
 	racePlanService := raceplan.NewService(log, report, raceRepo, routeRepo, livetrack.New("", telemetry.NewClient(liveTrackTimeout)), baseURL)
 	// Activities are synced from Strava before importing their photos into
@@ -659,6 +660,7 @@ func run(
 	geov1connect.RegisterGeoServiceHandler(server, geoService)
 	routingv1connect.RegisterMapDataServiceHandler(server, mapDataService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(server, planService)
+	plansv1connect.RegisterExerciseServiceHandler(server, exerciseService)
 	racesv1connect.RegisterRaceServiceHandler(server, raceService)
 	racesv1connect.RegisterRacePlanServiceHandler(server, racePlanService)
 	racesv1connect.RegisterRaceReportServiceHandler(server, raceReportService)
@@ -701,6 +703,7 @@ func run(
 		mcp.Service{Name: routesv1connect.RouteServiceName, Handler: routeService},
 		mcp.Service{Name: geov1connect.GeoServiceName, Handler: geoService},
 		mcp.Service{Name: plansv1connect.TrainingPlanServiceName, Handler: planService},
+		mcp.Service{Name: plansv1connect.ExerciseServiceName, Handler: exerciseService},
 		mcp.Service{Name: racesv1connect.RaceServiceName, Handler: raceService},
 		mcp.Service{Name: racesv1connect.RacePlanServiceName, Handler: racePlanService},
 		mcp.Service{Name: tripsv1connect.TripReportServiceName, Handler: tripService},
@@ -765,8 +768,17 @@ func run(
 		})
 	}
 
-	// Serve index.js, index.js.map, index.css, favicon.svg, img/ and fonts/ directly
+	// Serve index.js, index.js.map, index.css, favicon.svg, img/ and fonts/
+	// directly, and the web app manifest and service worker, which make the
+	// app installable and must be at the root to control all its pages.
 	mux.Handle("/index.js", fileServer)
+	mux.Handle("/sw.js", fileServer)
+	mux.Handle("/manifest.webmanifest", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Browsers only take a manifest with its media type, which Go
+		// doesn't know the extension of.
+		w.Header().Set("Content-Type", "application/manifest+json")
+		fileServer.ServeHTTP(w, r)
+	}))
 	mux.Handle("/index.js.map", fileServer)
 	mux.Handle("/index.css", fileServer)
 	mux.Handle("/favicon.svg", fileServer)
@@ -790,6 +802,9 @@ func run(
 	// Serve routes as GPX files, falling back to the frontend for other
 	// /routes/ pages.
 	mux.Handle("/routes/", authenticate(routeService.DownloadHandler(indexHandler)))
+	// Serve strength workouts as Garmin workouts, falling back to the
+	// frontend for other /workouts/ pages.
+	mux.Handle("/workouts/", authenticate(planService.DownloadHandler(indexHandler)))
 	mux.Handle("/race-plans/", authenticate(racePlanService.CourseHandler(indexHandler)))
 	// Registering /routes/ makes the mux redirect /routes to /routes/, so
 	// serve the frontend for /routes explicitly.
