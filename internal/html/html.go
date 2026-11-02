@@ -69,6 +69,12 @@ var indexTemplate = template.Must(template.New(templateName).Parse(
     {{- end }}
     <link rel="stylesheet" href="{{ .CSS }}" />
     <link rel="icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/img/icon-192.png" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="trailrunn.ing" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <script src="{{ .JS }}" defer></script>
   </head>
   <body class="h-full">

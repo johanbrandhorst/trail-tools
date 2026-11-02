@@ -77,6 +77,191 @@ func (e ContingencyScenario) Valid() bool {
 	return false
 }
 
+type Equipment string
+
+const (
+	EquipmentDumbbells         Equipment = "dumbbells"
+	EquipmentKettlebell        Equipment = "kettlebell"
+	EquipmentBarbell           Equipment = "barbell"
+	EquipmentSquatRack         Equipment = "squat_rack"
+	EquipmentMedicineBall      Equipment = "medicine_ball"
+	EquipmentBench             Equipment = "bench"
+	EquipmentStep              Equipment = "step"
+	EquipmentMat               Equipment = "mat"
+	EquipmentResistanceBand    Equipment = "resistance_band"
+	EquipmentMiniBand          Equipment = "mini_band"
+	EquipmentPullUpBar         Equipment = "pull_up_bar"
+	EquipmentSuspensionTrainer Equipment = "suspension_trainer"
+	EquipmentFoamRoller        Equipment = "foam_roller"
+	EquipmentSliders           Equipment = "sliders"
+	EquipmentBalanceBoard      Equipment = "balance_board"
+	EquipmentJumpRope          Equipment = "jump_rope"
+)
+
+func (e *Equipment) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Equipment(s)
+	case string:
+		*e = Equipment(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Equipment: %T", src)
+	}
+	return nil
+}
+
+type NullEquipment struct {
+	Equipment Equipment
+	Valid     bool // Valid is true if Equipment is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEquipment) Scan(value interface{}) error {
+	if value == nil {
+		ns.Equipment, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Equipment.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEquipment) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Equipment), nil
+}
+
+func (e Equipment) Valid() bool {
+	switch e {
+	case EquipmentDumbbells,
+		EquipmentKettlebell,
+		EquipmentBarbell,
+		EquipmentSquatRack,
+		EquipmentMedicineBall,
+		EquipmentBench,
+		EquipmentStep,
+		EquipmentMat,
+		EquipmentResistanceBand,
+		EquipmentMiniBand,
+		EquipmentPullUpBar,
+		EquipmentSuspensionTrainer,
+		EquipmentFoamRoller,
+		EquipmentSliders,
+		EquipmentBalanceBoard,
+		EquipmentJumpRope:
+		return true
+	}
+	return false
+}
+
+type ExerciseEffort string
+
+const (
+	ExerciseEffortTooEasy   ExerciseEffort = "too_easy"
+	ExerciseEffortJustRight ExerciseEffort = "just_right"
+	ExerciseEffortTooHard   ExerciseEffort = "too_hard"
+)
+
+func (e *ExerciseEffort) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ExerciseEffort(s)
+	case string:
+		*e = ExerciseEffort(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ExerciseEffort: %T", src)
+	}
+	return nil
+}
+
+type NullExerciseEffort struct {
+	ExerciseEffort ExerciseEffort
+	Valid          bool // Valid is true if ExerciseEffort is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullExerciseEffort) Scan(value interface{}) error {
+	if value == nil {
+		ns.ExerciseEffort, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ExerciseEffort.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullExerciseEffort) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ExerciseEffort), nil
+}
+
+func (e ExerciseEffort) Valid() bool {
+	switch e {
+	case ExerciseEffortTooEasy,
+		ExerciseEffortJustRight,
+		ExerciseEffortTooHard:
+		return true
+	}
+	return false
+}
+
+type ExerciseVolume string
+
+const (
+	ExerciseVolumeTooFew     ExerciseVolume = "too_few"
+	ExerciseVolumeAboutRight ExerciseVolume = "about_right"
+	ExerciseVolumeTooMany    ExerciseVolume = "too_many"
+)
+
+func (e *ExerciseVolume) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ExerciseVolume(s)
+	case string:
+		*e = ExerciseVolume(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ExerciseVolume: %T", src)
+	}
+	return nil
+}
+
+type NullExerciseVolume struct {
+	ExerciseVolume ExerciseVolume
+	Valid          bool // Valid is true if ExerciseVolume is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullExerciseVolume) Scan(value interface{}) error {
+	if value == nil {
+		ns.ExerciseVolume, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ExerciseVolume.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullExerciseVolume) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ExerciseVolume), nil
+}
+
+func (e ExerciseVolume) Valid() bool {
+	switch e {
+	case ExerciseVolumeTooFew,
+		ExerciseVolumeAboutRight,
+		ExerciseVolumeTooMany:
+		return true
+	}
+	return false
+}
+
 type InvitationKind string
 
 const (
@@ -123,6 +308,93 @@ func (e InvitationKind) Valid() bool {
 	switch e {
 	case InvitationKindNewUser,
 		InvitationKindAddPasskey:
+		return true
+	}
+	return false
+}
+
+type Muscle string
+
+const (
+	MuscleNeck         Muscle = "neck"
+	MuscleUpperBack    Muscle = "upper_back"
+	MuscleLats         Muscle = "lats"
+	MuscleLowerBack    Muscle = "lower_back"
+	MuscleShoulders    Muscle = "shoulders"
+	MuscleChest        Muscle = "chest"
+	MuscleBiceps       Muscle = "biceps"
+	MuscleTriceps      Muscle = "triceps"
+	MuscleForearms     Muscle = "forearms"
+	MuscleAbs          Muscle = "abs"
+	MuscleObliques     Muscle = "obliques"
+	MuscleHipFlexors   Muscle = "hip_flexors"
+	MuscleGlutes       Muscle = "glutes"
+	MuscleHipAbductors Muscle = "hip_abductors"
+	MuscleAdductors    Muscle = "adductors"
+	MuscleQuads        Muscle = "quads"
+	MuscleHamstrings   Muscle = "hamstrings"
+	MuscleCalves       Muscle = "calves"
+	MuscleShins        Muscle = "shins"
+	MuscleFeet         Muscle = "feet"
+)
+
+func (e *Muscle) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Muscle(s)
+	case string:
+		*e = Muscle(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Muscle: %T", src)
+	}
+	return nil
+}
+
+type NullMuscle struct {
+	Muscle Muscle
+	Valid  bool // Valid is true if Muscle is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMuscle) Scan(value interface{}) error {
+	if value == nil {
+		ns.Muscle, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Muscle.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMuscle) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Muscle), nil
+}
+
+func (e Muscle) Valid() bool {
+	switch e {
+	case MuscleNeck,
+		MuscleUpperBack,
+		MuscleLats,
+		MuscleLowerBack,
+		MuscleShoulders,
+		MuscleChest,
+		MuscleBiceps,
+		MuscleTriceps,
+		MuscleForearms,
+		MuscleAbs,
+		MuscleObliques,
+		MuscleHipFlexors,
+		MuscleGlutes,
+		MuscleHipAbductors,
+		MuscleAdductors,
+		MuscleQuads,
+		MuscleHamstrings,
+		MuscleCalves,
+		MuscleShins,
+		MuscleFeet:
 		return true
 	}
 	return false
@@ -499,6 +771,63 @@ func (e RoutingProfile) Valid() bool {
 	return false
 }
 
+type SessionEffort string
+
+const (
+	SessionEffortVeryEasy   SessionEffort = "very_easy"
+	SessionEffortEasy       SessionEffort = "easy"
+	SessionEffortAboutRight SessionEffort = "about_right"
+	SessionEffortHard       SessionEffort = "hard"
+	SessionEffortVeryHard   SessionEffort = "very_hard"
+)
+
+func (e *SessionEffort) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SessionEffort(s)
+	case string:
+		*e = SessionEffort(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SessionEffort: %T", src)
+	}
+	return nil
+}
+
+type NullSessionEffort struct {
+	SessionEffort SessionEffort
+	Valid         bool // Valid is true if SessionEffort is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSessionEffort) Scan(value interface{}) error {
+	if value == nil {
+		ns.SessionEffort, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SessionEffort.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSessionEffort) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SessionEffort), nil
+}
+
+func (e SessionEffort) Valid() bool {
+	switch e {
+	case SessionEffortVeryEasy,
+		SessionEffortEasy,
+		SessionEffortAboutRight,
+		SessionEffortHard,
+		SessionEffortVeryHard:
+		return true
+	}
+	return false
+}
+
 type StravaSyncState string
 
 const (
@@ -609,6 +938,57 @@ func (e Terrain) Valid() bool {
 	return false
 }
 
+type WeightUnit string
+
+const (
+	WeightUnitKilograms WeightUnit = "kilograms"
+	WeightUnitPounds    WeightUnit = "pounds"
+)
+
+func (e *WeightUnit) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = WeightUnit(s)
+	case string:
+		*e = WeightUnit(s)
+	default:
+		return fmt.Errorf("unsupported scan type for WeightUnit: %T", src)
+	}
+	return nil
+}
+
+type NullWeightUnit struct {
+	WeightUnit WeightUnit
+	Valid      bool // Valid is true if WeightUnit is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullWeightUnit) Scan(value interface{}) error {
+	if value == nil {
+		ns.WeightUnit, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.WeightUnit.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullWeightUnit) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.WeightUnit), nil
+}
+
+func (e WeightUnit) Valid() bool {
+	switch e {
+	case WeightUnitKilograms,
+		WeightUnitPounds:
+		return true
+	}
+	return false
+}
+
 type WorkoutType string
 
 const (
@@ -677,6 +1057,28 @@ type APIToken struct {
 	LastUsedTime pgtype.Timestamptz
 	OAuthGrantID pgtype.UUID
 	ExpireTime   pgtype.Timestamptz
+}
+
+type Exercise struct {
+	ID               pgtype.UUID
+	UserID           pgtype.UUID
+	Name             string
+	Instructions     []string
+	Feel             string
+	PrimaryMuscles   []Muscle
+	SecondaryMuscles []Muscle
+	Equipment        []Equipment
+	EquipmentNotes   string
+	EachSide         bool
+	Animations       json.RawMessage
+	CreateTime       pgtype.Timestamptz
+	UpdateTime       pgtype.Timestamptz
+}
+
+type HomeEquipment struct {
+	UserID     pgtype.UUID
+	Equipment  json.RawMessage
+	UpdateTime pgtype.Timestamptz
 }
 
 type Invitation struct {
@@ -1150,6 +1552,46 @@ type StravaConnection struct {
 	SyncStartTime pgtype.Timestamptz
 }
 
+type StrengthLog struct {
+	ID           pgtype.UUID
+	UserID       pgtype.UUID
+	WorkoutID    pgtype.UUID
+	Date         pgtype.Date
+	Effort       NullSessionEffort
+	Notes        string
+	CompleteTime pgtype.Timestamptz
+	UpdateTime   pgtype.Timestamptz
+}
+
+type StrengthLogExercise struct {
+	LogID               pgtype.UUID
+	Position            int32
+	ExerciseID          pgtype.UUID
+	Effort              NullExerciseEffort
+	Volume              NullExerciseVolume
+	Notes               string
+	PlannedGroupName    pgtype.Text
+	PlannedSets         pgtype.Int4
+	PlannedReps         pgtype.Int4
+	PlannedHoldSeconds  pgtype.Int4
+	PlannedWeightValue  pgtype.Float8
+	PlannedWeightUnit   NullWeightUnit
+	PlannedRestSeconds  pgtype.Int4
+	PlannedTempo        pgtype.Text
+	PlannedTargetEffort pgtype.Int4
+	PlannedNotes        pgtype.Text
+}
+
+type StrengthLogSet struct {
+	LogID       pgtype.UUID
+	Position    int32
+	SetNumber   int32
+	Reps        int32
+	HoldSeconds int32
+	WeightValue float64
+	WeightUnit  NullWeightUnit
+}
+
 type TrainingPlan struct {
 	ID          pgtype.UUID
 	UserID      pgtype.UUID
@@ -1237,4 +1679,22 @@ type Workout struct {
 	RouteID                   pgtype.UUID
 	CompletedActivityID       pgtype.UUID
 	CreateTime                pgtype.Timestamptz
+	StartTime                 pgtype.Time
+	StartWindowMinutes        int32
+}
+
+type WorkoutExercise struct {
+	WorkoutID    pgtype.UUID
+	Position     int32
+	ExerciseID   pgtype.UUID
+	GroupName    string
+	Sets         int32
+	Reps         int32
+	HoldSeconds  int32
+	WeightValue  float64
+	WeightUnit   NullWeightUnit
+	RestSeconds  int32
+	Tempo        string
+	TargetEffort int32
+	Notes        string
 }

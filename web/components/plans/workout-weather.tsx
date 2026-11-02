@@ -85,8 +85,43 @@ const formatHour = (time: Timestamp | undefined): string =>
     ? ""
     : timestampDate(time).toLocaleTimeString(undefined, { hour: "numeric" });
 
-const HourCell: React.FC<{ hour: HourWeather }> = ({ hour }) => (
-  <li className="flex w-14 shrink-0 flex-col items-center gap-0.5 rounded-md py-2 text-xs tabular-nums">
+// FormatClock formats the time of day of a time, e.g. "07:30".
+const formatClock = (time: Timestamp | undefined): string =>
+  time === undefined
+    ? ""
+    : timestampDate(time).toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+// During reports whether an hour overlaps the workout.
+const during = (hour: HourWeather, weather: WorkoutWeather): boolean => {
+  const { workoutStartTime, workoutEndTime } = weather;
+  if (
+    hour.time === undefined ||
+    workoutStartTime === undefined ||
+    workoutEndTime === undefined
+  ) {
+    return false;
+  }
+  const start = timestampDate(hour.time).getTime();
+  const hourMs = 60 * 60 * 1000;
+  return (
+    start + hourMs > timestampDate(workoutStartTime).getTime() &&
+    start < timestampDate(workoutEndTime).getTime()
+  );
+};
+
+interface HourCellProps {
+  hour: HourWeather;
+  // Whether the hour overlaps the workout.
+  workout: boolean;
+}
+
+const HourCell: React.FC<HourCellProps> = ({ hour, workout }) => (
+  <li
+    className={`flex w-14 shrink-0 flex-col items-center gap-0.5 rounded-md py-2 text-xs tabular-nums ${workout ? "bg-brand-50 ring-1 ring-brand-200 ring-inset" : ""}`}
+  >
     <span className="text-gray-500">{formatHour(hour.time)}</span>
     <span className="text-xl" aria-hidden="true">
       {weatherSymbol(hour.weatherCode, hour.isDay)}
@@ -112,16 +147,26 @@ const HourCell: React.FC<{ hour: HourWeather }> = ({ hour }) => (
   </li>
 );
 
-// WeatherForecast shows the forecast of a workout's day, hour by hour.
+/**
+ * WeatherForecast shows the forecast of a workout's day, hour by hour: the
+ * weather during the workout, if it has a start time, or else of the
+ * daytime.
+ */
 export const WeatherForecast: React.FC<{ weather: WorkoutWeather }> = ({
   weather,
 }) => {
-  const { day } = weather;
+  const day = weather.workout ?? weather.day;
   if (day === undefined) {
     return null;
   }
   return (
     <div className="flex flex-col gap-3">
+      {weather.workout !== undefined && (
+        <p className="text-sm font-medium text-gray-700 tabular-nums">
+          During the workout, {formatClock(weather.workoutStartTime)} to{" "}
+          {formatClock(weather.workoutEndTime)}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <div className="flex items-center gap-3">
           <span className="text-4xl" aria-hidden="true">
@@ -164,7 +209,11 @@ export const WeatherForecast: React.FC<{ weather: WorkoutWeather }> = ({
           aria-label="Hourly forecast"
         >
           {weather.hours.map((hour) => (
-            <HourCell key={String(hour.time?.seconds)} hour={hour} />
+            <HourCell
+              key={String(hour.time?.seconds)}
+              hour={hour}
+              workout={during(hour, weather)}
+            />
           ))}
         </ol>
       )}

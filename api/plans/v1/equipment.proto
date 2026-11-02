@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package plans.v1;
+
+import "mcp/v1/options.proto";
+
+// Equipment is a kind of equipment exercises use.
+enum Equipment {
+  EQUIPMENT_UNSPECIFIED = 0;
+  // A pair of dumbbells. Weights are of each dumbbell.
+  EQUIPMENT_DUMBBELLS = 1;
+  // A kettlebell. Weights are of the kettlebell.
+  EQUIPMENT_KETTLEBELL = 2;
+  // A barbell with plates.
+  EQUIPMENT_BARBELL = 3;
+  // A squat rack or stand to hold a barbell.
+  EQUIPMENT_SQUAT_RACK = 4;
+  // A medicine ball or slam ball. Weights are of the ball.
+  EQUIPMENT_MEDICINE_BALL = 5;
+  // A bench, or a sturdy chair or sofa at about knee height.
+  EQUIPMENT_BENCH = 6;
+  // A step or box to step onto or off.
+  EQUIPMENT_STEP = 7;
+  // An exercise mat.
+  EQUIPMENT_MAT = 8;
+  // Long resistance bands, with handles or as loops.
+  EQUIPMENT_RESISTANCE_BAND = 9;
+  // Short loop bands worn around the legs.
+  EQUIPMENT_MINI_BAND = 10;
+  // A pull-up bar.
+  EQUIPMENT_PULL_UP_BAR = 11;
+  // Suspension straps, like a TRX, or gymnastic rings.
+  EQUIPMENT_SUSPENSION_TRAINER = 12;
+  EQUIPMENT_FOAM_ROLLER = 13;
+  // Sliders or towels to slide on a smooth floor.
+  EQUIPMENT_SLIDERS = 14;
+  // A balance board or cushion.
+  EQUIPMENT_BALANCE_BOARD = 15;
+  EQUIPMENT_JUMP_ROPE = 16;
+}
+
+// WeightUnit is the unit of a weight. Weights are in the unit of the
+// equipment, as dumbbells and kettlebells come in kilograms or pounds.
+enum WeightUnit {
+  WEIGHT_UNIT_UNSPECIFIED = 0;
+  WEIGHT_UNIT_KILOGRAMS = 1;
+  WEIGHT_UNIT_POUNDS = 2;
+}
+
+// A weight in the unit it's marked in, e.g. 25 pounds for a 25 lb
+// dumbbell. Unlike other quantities, weights keep their unit, so they match
+// the user's equipment exactly.
+message Weight {
+  // The weight in its unit. 0 for none, i.e. bodyweight.
+  double value = 1;
+  // The unit of the value. Required if the value is set.
+  WeightUnit unit = 2;
+  // The weight in kilograms, for comparing weights in different units.
+  double kilograms = 3 [(mcp.v1.field).output_only = true];
+}
+
+// Equipment the user has at home, with the weights of dumbbells,
+// kettlebells and medicine balls.
+message OwnedEquipment {
+  // The kind of equipment. Required, and listed at most once.
+  Equipment equipment = 1;
+  // The weights the user has, e.g. 10 kg and 25 lb dumbbells. Only for
+  // dumbbells, kettlebells and medicine balls. At most 30.
+  repeated Weight weights = 2;
+  // Notes, e.g. "Light and medium bands". Empty if none.
+  string notes = 3;
+}

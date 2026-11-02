@@ -17,6 +17,8 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/johanbrandhorst/trail-tools/internal/apidesc"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -164,10 +166,40 @@ func TestOutputSchemaEnumIncludesZero(t *testing.T) {
 }
 
 func TestSchemaEnumOmitsDeprecated(t *testing.T) {
-	s := newInputSchema(findMessage(t, "plans.v1.CreateWorkoutsRequest"))
-	types := s.Properties["workouts"].Items.Properties["type"].Enum
+	// No request takes an enum with deprecated values, so the test takes a
+	// message with a field of one, the workout type.
+	files, err := apidesc.Files()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fd, err := protodesc.NewFile(&descriptorpb.FileDescriptorProto{
+		Name:       proto.String("test/v1/test.proto"),
+		Package:    proto.String("test.v1"),
+		Syntax:     proto.String("proto3"),
+		Dependency: []string{"plans/v1/plans.proto"},
+		MessageType: []*descriptorpb.DescriptorProto{{
+			Name: proto.String("Request"),
+			Field: []*descriptorpb.FieldDescriptorProto{{
+				Name:     proto.String("type"),
+				JsonName: proto.String("type"),
+				Number:   proto.Int32(1),
+				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+				TypeName: proto.String(".plans.v1.WorkoutType"),
+			}},
+		}},
+	}, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	md := fd.Messages().ByName("Request")
+	types := newInputSchema(md).Properties["type"].Enum
 	if !slices.Contains(types, any("WORKOUT_TYPE_BASE")) || slices.Contains(types, any("WORKOUT_TYPE_EASY")) {
 		t.Errorf("workout types %v, want only the current ones", types)
+	}
+	// Outputs may still have them.
+	if types := newOutputSchema(md).Properties["type"].Enum; !slices.Contains(types, any("WORKOUT_TYPE_EASY")) {
+		t.Errorf("output workout types %v, want the deprecated ones too", types)
 	}
 }
 

@@ -22,7 +22,7 @@ import {
   updateWorkout,
 } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import type { Workout } from "gen/plans/v1/plans_pb";
-import { TrainingPlanService } from "gen/plans/v1/plans_pb";
+import { TrainingPlanService, WorkoutType } from "gen/plans/v1/plans_pb";
 import {
   createRoute,
   getRoute,
@@ -33,6 +33,7 @@ import { RouteService, TrackConversion } from "gen/routes/v1/routes_pb";
 import { formatDate, formatHoursMinutes, formatKm } from "helpers/format";
 import { workoutStyle } from "helpers/labels";
 import { invalidateServices } from "helpers/query";
+import { hasRoute, workoutDetails, workoutTargets } from "helpers/workouts";
 import React, { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
@@ -72,10 +73,22 @@ const useRouteCreated = () => {
       return;
     }
     if (workoutId !== "") {
-      await linkWorkout.mutateAsync({
-        updateMask: { paths: ["route_id"] },
-        workout: { id: workoutId, routeId: route.id },
-      });
+      if (workout !== undefined) {
+        /*
+         * The route is part of the run's or race's details, which are
+         * replaced as a whole. A workout that can't have a route becomes an
+         * easy run.
+         */
+        const details = workoutDetails(
+          hasRoute(workout.type) ? workout.type : WorkoutType.BASE,
+          { ...workoutTargets(workout), routeId: route.id },
+          workout
+        );
+        await linkWorkout.mutateAsync({
+          updateMask: { paths: [details.case === "race" ? "race" : "run"] },
+          workout: { details, id: workoutId },
+        });
+      }
       await invalidateServices(queryClient, [TrainingPlanService]);
       if (returnPath === null) {
         void navigate(-1);
@@ -288,14 +301,15 @@ interface WorkoutContextProps {
 // WorkoutContext describes the workout a route is being designed for.
 const WorkoutContext: React.FC<WorkoutContextProps> = ({ workout }) => {
   const targets: string[] = [];
-  if (workout.targetDistanceMeters > 0) {
-    targets.push(formatKm(workout.targetDistanceMeters));
+  const target = workoutTargets(workout);
+  if (target.distanceMeters > 0) {
+    targets.push(formatKm(target.distanceMeters));
   }
-  if (workout.targetElevationGainMeters > 0) {
-    targets.push(`${Math.round(workout.targetElevationGainMeters)} m`);
+  if (target.elevationGainMeters > 0) {
+    targets.push(`${Math.round(target.elevationGainMeters)} m`);
   }
-  if (workout.targetDurationSeconds > 0) {
-    targets.push(formatHoursMinutes(workout.targetDurationSeconds));
+  if (target.durationSeconds > 0) {
+    targets.push(formatHoursMinutes(target.durationSeconds));
   }
   const { label } = workoutStyle(workout.type);
   return (

@@ -35,17 +35,23 @@ func TestWorkoutWeather(t *testing.T) {
 	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: plan.GetPlan().GetId(),
 		Workouts: []*plansv1.Workout{
-			plansv1.Workout_builder{Date: day(1), Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, Title: "Easy run"}.Build(),
-			plansv1.Workout_builder{Date: day(2), Type: plansv1.WorkoutType_WORKOUT_TYPE_INTENSITY, Title: "Hills", RouteId: route.GetRoute().GetId()}.Build(),
-			plansv1.Workout_builder{Date: day(3), Type: plansv1.WorkoutType_WORKOUT_TYPE_REST}.Build(),
-			plansv1.Workout_builder{Date: day(4), Type: plansv1.WorkoutType_WORKOUT_TYPE_STRENGTH, Title: "Gym"}.Build(),
-			plansv1.Workout_builder{Date: day(20), Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, Title: "Too far ahead"}.Build(),
+			plansv1.Workout_builder{Date: day(1), Run: baseRun(), Title: "Easy run"}.Build(),
+			plansv1.Workout_builder{Date: day(2), Title: "Hills", Run: plansv1.RunWorkout_builder{
+				Intensity: plansv1.RunIntensity_RUN_INTENSITY_HARD, RouteId: route.GetRoute().GetId(),
+			}.Build()}.Build(),
+			plansv1.Workout_builder{Date: day(3), Rest: plansv1.RestDay_builder{}.Build()}.Build(),
+			plansv1.Workout_builder{Date: day(4), Strength: plansv1.StrengthWorkout_builder{}.Build(), Title: "Gym"}.Build(),
+			plansv1.Workout_builder{Date: day(20), Run: baseRun(), Title: "Too far ahead"}.Build(),
+			// Started between 05:00 and 06:00, and taking 90 minutes.
+			plansv1.Workout_builder{Date: day(5), StartTime: "05:00", Title: "Early", Run: plansv1.RunWorkout_builder{
+				Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetDurationSeconds: 5400,
+			}.Build()}.Build(),
 		},
 	}.Build())
 	if err != nil {
 		t.Fatalf("CreateWorkouts: %v", err)
 	}
-	easy, hills, rest, strength, later := created.GetWorkouts()[0], created.GetWorkouts()[1], created.GetWorkouts()[2], created.GetWorkouts()[3], created.GetWorkouts()[4]
+	easy, hills, rest, strength, later, early := created.GetWorkouts()[0], created.GetWorkouts()[1], created.GetWorkouts()[2], created.GetWorkouts()[3], created.GetWorkouts()[4], created.GetWorkouts()[5]
 	list := func() map[string]*plansv1.WorkoutWeather {
 		t.Helper()
 		resp, err := e.plans.ListWorkoutWeather(ctx, plansv1.ListWorkoutWeatherRequest_builder{StartDate: day(-30), EndDate: day(30)}.Build())
@@ -74,8 +80,8 @@ func TestWorkoutWeather(t *testing.T) {
 	e.createActivity()
 	calls := len(e.mapData.hourlyForecasts)
 	weather = list()
-	if len(weather) != 2 || weather[rest.GetId()] != nil || weather[strength.GetId()] != nil || weather[later.GetId()] != nil {
-		t.Fatalf("got weather for %d workouts, want 2: %v", len(weather), weather)
+	if len(weather) != 3 || weather[rest.GetId()] != nil || weather[strength.GetId()] != nil || weather[later.GetId()] != nil {
+		t.Fatalf("got weather for %d workouts, want 3: %v", len(weather), weather)
 	}
 	if n := len(e.mapData.hourlyForecasts) - calls; n != 2 {
 		t.Errorf("%d forecasts, want one for each location", n)
@@ -98,6 +104,23 @@ func TestWorkoutWeather(t *testing.T) {
 	hours := got.GetWeather().GetHours()
 	if len(hours) != 15 || !hours[0].GetTime().AsTime().Equal(today.AddDate(0, 0, 1).Add(6*time.Hour)) || hours[4].GetWeatherCode() != 61 {
 		t.Errorf("unexpected hours %v", hours)
+	}
+	// Without a start time, there's no weather of the workout itself.
+	if got.GetWeather().HasWorkout() {
+		t.Errorf("a workout without a start time has the weather of the workout %v", got.GetWeather().GetWorkout())
+	}
+	// With one, the weather of the workout is from the start of the window
+	// to its end plus the workout's duration, and its hours before the
+	// daytime are listed too.
+	got, err = e.plans.GetWorkoutWeather(ctx, plansv1.GetWorkoutWeatherRequest_builder{WorkoutId: early.GetId()}.Build())
+	if err != nil {
+		t.Fatalf("GetWorkoutWeather: %v", err)
+	}
+	start := today.AddDate(0, 0, 5).Add(5 * time.Hour)
+	if w := got.GetWeather(); !w.HasWorkout() || !w.GetWorkoutStartTime().AsTime().Equal(start) ||
+		!w.GetWorkoutEndTime().AsTime().Equal(start.Add(150*time.Minute)) || len(w.GetHours()) != 16 ||
+		!w.GetHours()[0].GetTime().AsTime().Equal(start) {
+		t.Errorf("unexpected weather of an early workout: %v", w)
 	}
 	for _, id := range []string{rest.GetId(), strength.GetId(), later.GetId()} {
 		got, err := e.plans.GetWorkoutWeather(ctx, plansv1.GetWorkoutWeatherRequest_builder{WorkoutId: id}.Build())

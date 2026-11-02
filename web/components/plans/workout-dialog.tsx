@@ -33,6 +33,12 @@ import {
   parseMeters,
 } from "helpers/parse";
 import { invalidateServices } from "helpers/query";
+import {
+  detailsPath,
+  hasRoute,
+  workoutDetails,
+  workoutTargets,
+} from "helpers/workouts";
 import React, { useState } from "react";
 import { Link } from "react-router";
 
@@ -56,6 +62,17 @@ const TYPE_OPTIONS: SelectOption[] = WORKOUT_STYLES.map((style) => ({
   value: String(style.type),
 }));
 
+// WINDOW_OPTIONS are the lengths of start windows to choose from.
+const WINDOW_OPTIONS: SelectOption[] = [15, 30, 45, 60, 90, 120, 180, 240].map(
+  (minutes) => ({
+    label:
+      minutes < 60
+        ? `${minutes} minutes`
+        : `${minutes / 60} ${minutes === 60 ? "hour" : "hours"}`,
+    value: String(minutes),
+  })
+);
+
 const TERRAIN_OPTIONS: SelectOption[] = TERRAIN_STYLES.map((style) => ({
   label: style.terrain === Terrain.UNSPECIFIED ? "Any terrain" : style.label,
   value: String(style.terrain),
@@ -78,19 +95,28 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
   const [type, setType] = useState(String(workout?.type ?? WorkoutType.BASE));
   const [title, setTitle] = useState(workout?.title ?? "");
   const [description, setDescription] = useState(workout?.description ?? "");
+  const stored = workout === undefined ? undefined : workoutTargets(workout);
   const [distance, setDistance] = useState(
-    kmInput(workout?.targetDistanceMeters ?? 0)
+    kmInput(stored?.distanceMeters ?? 0)
   );
   const [vert, setVert] = useState(
-    numberInput(workout?.targetElevationGainMeters ?? 0)
+    numberInput(stored?.elevationGainMeters ?? 0)
   );
   const [duration, setDuration] = useState(
-    hoursMinutesInput(workout?.targetDurationSeconds ?? 0)
+    hoursMinutesInput(stored?.durationSeconds ?? 0)
   );
-  const [terrain, setTerrain] = useState(String(workout?.targetTerrain ?? 0));
-  const [routeId, setRouteId] = useState(workout?.routeId ?? "");
+  const [terrain, setTerrain] = useState(String(stored?.terrain ?? 0));
+  const [routeId, setRouteId] = useState(stored?.routeId ?? "");
   const [completedId, setCompletedId] = useState(
     workout?.completedActivityId ?? ""
+  );
+  const [startTime, setStartTime] = useState(workout?.startTime ?? "");
+  const [windowMinutes, setWindowMinutes] = useState(
+    String(
+      workout === undefined || workout.startWindowMinutes === 0
+        ? 60
+        : workout.startWindowMinutes
+    )
   );
   const [validation, setValidation] = useState("");
 
@@ -112,19 +138,19 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     // Unedited inputs keep the stored values, which they show rounded.
     const distanceMeters = parseEdited(
       distance,
-      workout?.targetDistanceMeters ?? 0,
+      stored?.distanceMeters ?? 0,
       kmInput,
       parseKm
     );
     const vertMeters = parseEdited(
       vert,
-      workout?.targetElevationGainMeters ?? 0,
+      stored?.elevationGainMeters ?? 0,
       numberInput,
       parseMeters
     );
     const durationSeconds = parseEdited(
       duration,
-      workout?.targetDurationSeconds ?? 0,
+      stored?.durationSeconds ?? 0,
       hoursMinutesInput,
       parseDuration
     );
@@ -143,29 +169,35 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     setValidation("");
     const workoutType: WorkoutType = Number(type);
     const targetTerrain: Terrain = Number(terrain);
+    // Fields the kind of workout doesn't have are left out.
+    const targets = {
+      distanceMeters: distanceMeters,
+      durationSeconds: durationSeconds,
+      elevationGainMeters: vertMeters,
+      routeId: hasRoute(workoutType) ? routeId : "",
+      terrain: targetTerrain,
+    };
+    const details = workoutDetails(workoutType, targets, workout);
     const fields = {
       completedActivityId: completedId,
       date,
       description,
-      routeId,
-      targetDistanceMeters: distanceMeters,
-      targetDurationSeconds: durationSeconds,
-      targetElevationGainMeters: vertMeters,
-      targetTerrain,
+      details,
+      startTime,
+      startWindowMinutes: startTime === "" ? 0 : Number(windowMinutes),
       title,
-      type: workoutType,
     };
     if (workout === undefined) {
       create.mutate({ planId, workouts: [fields] });
       return;
     }
-    // Only send the fields that changed.
+    /*
+     * Only send the fields that changed. The details of the kind of
+     * workout are replaced as a whole.
+     */
     const paths: string[] = [];
     if (fields.date !== workout.date) {
       paths.push("date");
-    }
-    if (fields.type !== workout.type) {
-      paths.push("type");
     }
     if (fields.title !== workout.title) {
       paths.push("title");
@@ -173,25 +205,25 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     if (fields.description !== workout.description) {
       paths.push("description");
     }
-    if (fields.targetDistanceMeters !== workout.targetDistanceMeters) {
-      paths.push("target_distance_meters");
-    }
+    const before = workoutDetails(
+      workout.type,
+      workoutTargets(workout),
+      workout
+    );
     if (
-      fields.targetElevationGainMeters !== workout.targetElevationGainMeters
+      workoutType !== workout.type ||
+      JSON.stringify(details.value) !== JSON.stringify(before.value)
     ) {
-      paths.push("target_elevation_gain_meters");
-    }
-    if (fields.targetDurationSeconds !== workout.targetDurationSeconds) {
-      paths.push("target_duration_seconds");
-    }
-    if (fields.targetTerrain !== workout.targetTerrain) {
-      paths.push("target_terrain");
-    }
-    if (fields.routeId !== workout.routeId) {
-      paths.push("route_id");
+      paths.push(detailsPath(workoutType));
     }
     if (fields.completedActivityId !== workout.completedActivityId) {
       paths.push("completed_activity_id");
+    }
+    if (
+      fields.startTime !== workout.startTime ||
+      fields.startWindowMinutes !== workout.startWindowMinutes
+    ) {
+      paths.push("start_time", "start_window_minutes");
     }
     if (paths.length === 0) {
       onClose();
@@ -234,6 +266,9 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     activityOptions.push({ label: "Linked activity", value: completedId });
   }
 
+  const selectedType: WorkoutType = Number(type);
+  const isRun =
+    selectedType === WorkoutType.BASE || selectedType === WorkoutType.INTENSITY;
   const designLink =
     workout === undefined
       ? ""
@@ -267,12 +302,31 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
             onChange={setType}
             options={TYPE_OPTIONS}
           />
-          <SelectField
-            label="Terrain"
-            value={terrain}
-            onChange={setTerrain}
-            options={TERRAIN_OPTIONS}
+          {isRun && (
+            <SelectField
+              label="Terrain"
+              value={terrain}
+              onChange={setTerrain}
+              options={TERRAIN_OPTIONS}
+            />
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField
+            label="Start from"
+            type="time"
+            value={startTime}
+            onChange={setStartTime}
+            hint="Empty for any time of the day."
           />
+          {startTime !== "" && (
+            <SelectField
+              label="Start within"
+              value={windowMinutes}
+              onChange={setWindowMinutes}
+              options={WINDOW_OPTIONS}
+            />
+          )}
         </div>
         <TextField
           label="Title"
@@ -287,50 +341,64 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
           onChange={setDescription}
           placeholder="Structure, intensity and purpose"
         />
-        <div className="grid grid-cols-3 gap-3">
-          <TextField
-            label="Distance (km)"
-            value={distance}
-            onChange={setDistance}
-            inputMode="decimal"
-          />
-          <TextField
-            label="Elevation gain (m)"
-            value={vert}
-            onChange={setVert}
-            inputMode="numeric"
-          />
-          <TextField
-            label="Duration (h:mm)"
-            value={duration}
-            onChange={setDuration}
-            placeholder="1:30"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <SelectField
-            label="Route"
-            value={routeId}
-            onChange={setRouteId}
-            options={routeOptions}
-          />
-          <div className="flex gap-3 text-xs">
-            {routeId !== "" && (
-              <Link to={`/routes/${routeId}`} className={linkClass}>
-                View route
-              </Link>
+        {selectedType !== WorkoutType.REST && (
+          <div className="grid grid-cols-3 gap-3">
+            {selectedType !== WorkoutType.STRENGTH && (
+              <>
+                <TextField
+                  label="Distance (km)"
+                  value={distance}
+                  onChange={setDistance}
+                  inputMode="decimal"
+                />
+                <TextField
+                  label="Elevation gain (m)"
+                  value={vert}
+                  onChange={setVert}
+                  inputMode="numeric"
+                />
+              </>
             )}
-            {designLink === "" ? (
-              <span className="text-gray-500">
-                Save the workout to design a route for it.
-              </span>
-            ) : (
-              <Link to={designLink} className={linkClass}>
-                Design a new route
-              </Link>
-            )}
+            <TextField
+              label="Duration (h:mm)"
+              value={duration}
+              onChange={setDuration}
+              placeholder="1:30"
+            />
           </div>
-        </div>
+        )}
+        {selectedType === WorkoutType.STRENGTH && (
+          <p className="text-sm text-gray-600">
+            Plan the exercises of strength workouts through the MCP server, from
+            the exercise library.
+          </p>
+        )}
+        {hasRoute(selectedType) && (
+          <div className="flex flex-col gap-1">
+            <SelectField
+              label="Route"
+              value={routeId}
+              onChange={setRouteId}
+              options={routeOptions}
+            />
+            <div className="flex gap-3 text-xs">
+              {routeId !== "" && (
+                <Link to={`/routes/${routeId}`} className={linkClass}>
+                  View route
+                </Link>
+              )}
+              {designLink === "" ? (
+                <span className="text-gray-500">
+                  Save the workout to design a route for it.
+                </span>
+              ) : (
+                <Link to={designLink} className={linkClass}>
+                  Design a new route
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
         <SelectField
           label="Completed by activity"
           value={completedId}

@@ -4,6 +4,7 @@ import type { Workout, WorkoutWeather } from "gen/plans/v1/plans_pb";
 import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { formatHoursMinutes } from "helpers/format";
 import { workoutStyle } from "helpers/labels";
+import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React from "react";
 
 import { WeatherBadge } from "./workout-weather";
@@ -21,14 +22,21 @@ interface WorkoutCardProps {
  */
 const targets = (workout: Workout, capBpm: number | undefined): string => {
   const parts: string[] = [];
-  if (workout.targetDistanceMeters > 0) {
-    parts.push(`${(workout.targetDistanceMeters / 1000).toFixed(1)} km`);
+  const target = workoutTargets(workout);
+  if (target.distanceMeters > 0) {
+    parts.push(`${(target.distanceMeters / 1000).toFixed(1)} km`);
   }
-  if (workout.targetElevationGainMeters > 0) {
-    parts.push(`${Math.round(workout.targetElevationGainMeters)} m`);
+  if (target.elevationGainMeters > 0) {
+    parts.push(`${Math.round(target.elevationGainMeters)} m`);
   }
-  if (workout.targetDurationSeconds > 0 && parts.length < 2) {
-    parts.push(formatHoursMinutes(workout.targetDurationSeconds));
+  if (target.durationSeconds > 0 && parts.length < 2) {
+    parts.push(formatHoursMinutes(target.durationSeconds));
+  }
+  if (workout.details.case === "strength" && parts.length < 2) {
+    const count = workout.details.value.exercises.length;
+    if (count > 0) {
+      parts.push(`${count} ${count === 1 ? "exercise" : "exercises"}`);
+    }
   }
   if (workout.type === WorkoutType.BASE && capBpm !== undefined) {
     parts.push(`<${capBpm} bpm`);
@@ -44,7 +52,14 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
 }) => {
   const style = workoutStyle(workout.type);
   const threshold = useAerobicThreshold();
-  const detail = targets(workout, threshold?.heartRateBpm);
+  const detail = [
+    startWindow(workout),
+    targets(workout, threshold?.heartRateBpm),
+  ]
+    .filter((part) => part !== "")
+    .join(" · ");
+  // The weather during the workout, if it has a start time.
+  const forecastDay = weather?.workout ?? weather?.day;
   const content = (
     <>
       <span className="flex items-start justify-between gap-1">
@@ -52,10 +67,10 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
           {workout.title === "" ? style.label : workout.title}
         </span>
         <span className="flex shrink-0 items-center gap-0.5">
-          {workout.routeId !== "" && (
+          {workoutTargets(workout).routeId !== "" && (
             <MapIcon className="size-3.5 opacity-70" aria-label="Has route" />
           )}
-          {workout.completedActivityId !== "" && (
+          {isCompleted(workout) && (
             <CheckCircleIcon
               className="size-3.5 text-emerald-600"
               aria-label="Completed"
@@ -66,7 +81,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
       {detail !== "" && (
         <span className="tabular-nums opacity-80">{detail}</span>
       )}
-      {weather?.day !== undefined && <WeatherBadge day={weather.day} />}
+      {forecastDay !== undefined && <WeatherBadge day={forecastDay} />}
     </>
   );
   const className = `flex w-full flex-col rounded border-l-4 border px-1.5 py-1 text-left text-[11px] leading-tight ${style.cardClass}`;

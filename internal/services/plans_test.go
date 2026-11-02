@@ -121,33 +121,39 @@ func TestTrainingPlans(t *testing.T) {
 	workouts, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: planID,
 		Workouts: []*plansv1.Workout{
-			plansv1.Workout_builder{Date: "2026-11-03", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, Title: "Easy 8k", TargetDistanceMeters: 8000}.Build(),
+			plansv1.Workout_builder{Date: "2026-11-03", Title: "Easy 8k", Run: plansv1.RunWorkout_builder{Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetDistanceMeters: 8000}.Build()}.Build(),
 			plansv1.Workout_builder{
-				// Older clients may send deprecated types.
-				//lint:ignore SA1019 Testing a deprecated type.
-				Date: "2026-11-08", Type: plansv1.WorkoutType_WORKOUT_TYPE_LONG_RUN, Title: "Long run",
-				TargetElevationGainMeters: 1000, TargetTerrain: geov1.Terrain_TERRAIN_TRAIL, RouteId: route.GetRoute().GetId(),
+				Date: "2026-11-08", Title: "Long run",
+				Run: plansv1.RunWorkout_builder{
+					Intensity:                 plansv1.RunIntensity_RUN_INTENSITY_BASE,
+					TargetElevationGainMeters: 1000, TargetTerrain: geov1.Terrain_TERRAIN_TRAIL, RouteId: route.GetRoute().GetId(),
+				}.Build(),
 			}.Build(),
-			plansv1.Workout_builder{Date: "2026-11-10", Type: plansv1.WorkoutType_WORKOUT_TYPE_REST}.Build(),
+			plansv1.Workout_builder{Date: "2026-11-10", Rest: plansv1.RestDay_builder{}.Build()}.Build(),
 		},
 	}.Build())
 	if err != nil {
 		t.Fatalf("CreateWorkouts: %v", err)
 	}
 	longRun := workouts.GetWorkouts()[1]
-	if longRun.GetPlanId() != planID || longRun.GetRouteId() != route.GetRoute().GetId() || longRun.GetTargetTerrain() != geov1.Terrain_TERRAIN_TRAIL {
+	if longRun.GetPlanId() != planID || longRun.GetRun().GetRouteId() != route.GetRoute().GetId() || longRun.GetRun().GetTargetTerrain() != geov1.Terrain_TERRAIN_TRAIL {
 		t.Errorf("unexpected workout %v", longRun)
 	}
 	if longRun.GetType() != plansv1.WorkoutType_WORKOUT_TYPE_BASE {
 		t.Errorf("a long run has type %v, want base", longRun.GetType())
 	}
-	// Workouts must be inside the plan and have a type, and the batch is
-	// atomic.
+	// Workouts must say what kind of workout they are.
+	_, err = e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId:   planID,
+		Workouts: []*plansv1.Workout{plansv1.Workout_builder{Date: "2026-11-04", Title: "Something"}.Build()},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	// Workouts must be inside the plan, and the batch is atomic.
 	_, err = e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: planID,
 		Workouts: []*plansv1.Workout{
-			plansv1.Workout_builder{Date: "2026-11-04", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE}.Build(),
-			plansv1.Workout_builder{Date: "2026-10-01", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE}.Build(),
+			plansv1.Workout_builder{Date: "2026-11-04", Run: baseRun()}.Build(),
+			plansv1.Workout_builder{Date: "2026-10-01", Run: baseRun()}.Build(),
 		},
 	}.Build())
 	wantCode(t, err, connect.CodeInvalidArgument)
@@ -175,15 +181,19 @@ func TestTrainingPlans(t *testing.T) {
 		t.Errorf("another user listed %d workouts (%v), want none", len(others.GetWorkouts()), err)
 	}
 
-	// Move the long run a day and unassign its route.
+	// Move the long run a day and unassign its route, which replaces the
+	// run's details.
 	moved, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
-		Workout:    plansv1.Workout_builder{Id: longRun.GetId(), Date: "2026-11-07", Title: "ignored"}.Build(),
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"date", "route_id"}},
+		Workout: plansv1.Workout_builder{
+			Id: longRun.GetId(), Date: "2026-11-07", Title: "ignored",
+			Run: plansv1.RunWorkout_builder{Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetElevationGainMeters: 1000}.Build(),
+		}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"date", "run"}},
 	}.Build())
 	if err != nil {
 		t.Fatalf("UpdateWorkout: %v", err)
 	}
-	if w := moved.GetWorkout(); w.GetDate() != "2026-11-07" || w.GetRouteId() != "" || w.GetTitle() != "Long run" {
+	if w := moved.GetWorkout(); w.GetDate() != "2026-11-07" || w.GetRun().GetRouteId() != "" || w.GetRun().GetTargetElevationGainMeters() != 1000 || w.GetTitle() != "Long run" {
 		t.Errorf("unexpected moved workout %v", w)
 	}
 
@@ -250,7 +260,7 @@ func TestTrainingPlanDates(t *testing.T) {
 	for day := time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC); !day.After(time.Date(2027, 3, 28, 0, 0, 0, 0, time.UTC)); day = day.AddDate(0, 0, 1) {
 		batch = append(batch, plansv1.Workout_builder{
 			Date:  day.Format(time.DateOnly),
-			Type:  plansv1.WorkoutType_WORKOUT_TYPE_BASE,
+			Run:   baseRun(),
 			Title: "Day " + strconv.Itoa(len(batch)+1),
 		}.Build())
 	}
@@ -277,13 +287,17 @@ func TestTrainingPlanDates(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, w := range map[string]*plansv1.Workout{
-		"missing route":    plansv1.Workout_builder{Date: "2026-11-03", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, RouteId: "00000000-0000-0000-0000-000000000000"}.Build(),
-		"missing activity": plansv1.Workout_builder{Date: "2026-11-03", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, CompletedActivityId: "00000000-0000-0000-0000-000000000000"}.Build(),
+		"missing route": plansv1.Workout_builder{Date: "2026-11-03", Run: plansv1.RunWorkout_builder{
+			Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, RouteId: "00000000-0000-0000-0000-000000000000",
+		}.Build()}.Build(),
+		"missing activity": plansv1.Workout_builder{Date: "2026-11-03", Run: baseRun(), CompletedActivityId: "00000000-0000-0000-0000-000000000000"}.Build(),
 	} {
 		_, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 			PlanId: planID,
 			Workouts: []*plansv1.Workout{
-				plansv1.Workout_builder{Date: "2026-11-02", Type: plansv1.WorkoutType_WORKOUT_TYPE_BASE, RouteId: route.GetRoute().GetId()}.Build(),
+				plansv1.Workout_builder{Date: "2026-11-02", Run: plansv1.RunWorkout_builder{
+					Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, RouteId: route.GetRoute().GetId(),
+				}.Build()}.Build(),
 				w,
 			},
 		}.Build())
@@ -359,4 +373,9 @@ func TestTrainingPlanDates(t *testing.T) {
 	if err := shorten("2027-03-20"); err != nil {
 		t.Fatalf("UpdateTrainingPlan after deleting the workouts and week: %v", err)
 	}
+}
+
+// baseRun returns the details of an easy run without targets.
+func baseRun() *plansv1.RunWorkout {
+	return plansv1.RunWorkout_builder{Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE}.Build()
 }
