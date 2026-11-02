@@ -64,6 +64,12 @@ interface RoutePathProps {
    * is clicked or dragged. Without it, the path is not editable.
    */
   onInsert?: ((index: number, position: LatLng) => void) | undefined;
+  /**
+   * Called to continue the route from its finish to a point on the path. With
+   * it, clicking the path asks whether to insert a waypoint or continue the
+   * route there, to return along a section already run.
+   */
+  onAppend?: ((position: LatLng) => void) | undefined;
   // Called with the index of the path point under the mouse, or null.
   onHover?: ((index: number | null) => void) | undefined;
 }
@@ -82,10 +88,21 @@ const insertIndex = (pathIndex: number, waypointIndexes: number[]): number => {
   return Math.max(waypointIndexes.length - 1, 1);
 };
 
+const choiceButton = (label: string, onClick: () => void): HTMLElement => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className =
+    "w-full rounded px-2 py-1.5 text-left text-sm whitespace-nowrap text-gray-800 hover:bg-brand-50";
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
+};
+
 /**
  * RoutePath draws a route's path, with dashed straight legs. When editable,
  * hovering the path shows a handle that can be clicked to insert a waypoint,
- * or dragged to insert and move one.
+ * or dragged to insert and move one. When the route can also be continued,
+ * clicking the path asks which of the two to do.
  */
 const RoutePath: React.FC<RoutePathProps> = ({
   points,
@@ -93,6 +110,7 @@ const RoutePath: React.FC<RoutePathProps> = ({
   legProfiles,
   waypoints,
   onInsert,
+  onAppend,
   onHover,
 }) => {
   const map = useMap();
@@ -152,6 +170,10 @@ const RoutePath: React.FC<RoutePathProps> = ({
   const handleInsert = useEffectEvent((pathIndex: number, position: LatLng) => {
     onInsert?.(insertIndex(pathIndex, waypointIndexes), position);
   });
+  const handleAppend = useEffectEvent((position: LatLng) => {
+    onAppend?.(position);
+  });
+  const canAppend = useEffectEvent(() => onAppend !== undefined);
   const handleHover = useEffectEvent((index: number | null) => {
     onHover?.(index);
   });
@@ -211,6 +233,41 @@ const RoutePath: React.FC<RoutePathProps> = ({
       interactive: false,
       weight: 3,
     });
+    /**
+     * The choice offered when clicking the path. Its buttons are created once,
+     * and act on the path point last clicked.
+     */
+    let choiceIndex = 0;
+    let choicePosition = map.getCenter();
+    const choiceContent = document.createElement("div");
+    choiceContent.className = "flex flex-col";
+    const choice = leaflet.popup({
+      className: "route-choice",
+      closeButton: false,
+      content: choiceContent,
+      minWidth: 0,
+      offset: [0, -4],
+    });
+    choiceContent.append(
+      choiceButton("Continue the route here", () => {
+        choice.close();
+        handleAppend(choicePosition);
+      }),
+      choiceButton("Add a waypoint here", () => {
+        choice.close();
+        handleInsert(choiceIndex, choicePosition);
+      })
+    );
+    // Click inserts a waypoint, or asks whether to continue the route instead.
+    const click = (pathIndex: number, position: LatLng) => {
+      if (!canAppend()) {
+        handleInsert(pathIndex, position);
+        return;
+      }
+      choiceIndex = pathIndex;
+      choicePosition = position;
+      choice.setLatLng(position).openOn(map);
+    };
     let handleIndex = 0;
     /**
      * Whether the handle is pressed, so it is not moved or hidden while the
@@ -264,7 +321,7 @@ const RoutePath: React.FC<RoutePathProps> = ({
     });
     handle.on("click", () => {
       pressed = false;
-      handleInsert(handleIndex, handle.getLatLng());
+      click(handleIndex, handle.getLatLng());
       hide();
     });
     handle.on("dragstart", () => {
@@ -290,12 +347,12 @@ const RoutePath: React.FC<RoutePathProps> = ({
       handleInsert(handleIndex, handle.getLatLng());
       hide();
     });
-    // Touch devices have no hover: tapping the path inserts a waypoint.
+    // Touch devices have no hover: tapping the path acts like the handle.
     hitLine.on("click", (event: LeafletMouseEvent) => {
       const closest = hitLine.closestLayerPoint(event.layerPoint);
       const position =
         closest === null ? event.latlng : map.layerPointToLatLng(closest);
-      handleInsert(nearestIndex(positions, position), position);
+      click(nearestIndex(positions, position), position);
     });
     return () => {
       map.off("mousemove", onMouseMove);
@@ -303,6 +360,7 @@ const RoutePath: React.FC<RoutePathProps> = ({
       map.off("mouseup", release);
       hitLine.remove();
       handle.remove();
+      choice.remove();
       rubberBand.remove();
     };
   }, [map, positions, editable, hoverable]);
