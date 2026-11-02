@@ -8,7 +8,9 @@ import "mcp/v1/options.proto";
 
 // LactateTestService manages the user's blood lactate tests, which find the
 // heart rate of their aerobic threshold (LT1, also called AeT): the top of
-// their easy, zone 2 running.
+// their easy, zone 2 running. Tests that go on to harder stages also find
+// their anaerobic threshold (LT2, also called AnT): about the hardest effort
+// they can hold for an hour.
 //
 // In a test, the user runs stages at increasing heart rates, e.g. 100, 110,
 // 120 bpm, holding each for a few minutes, and measures their blood lactate
@@ -16,6 +18,11 @@ import "mcp/v1/options.proto";
 // the heart rate at which lactate reaches 2 mmol/L, interpolated between the
 // stages. Two other common definitions are computed for comparison: 2.5
 // mmol/L, and 1 mmol/L above the lowest reading.
+//
+// The anaerobic threshold is the heart rate at which lactate reaches 4
+// mmol/L, and, for tests of at least four stages, by the Dmax method too.
+// Finding it takes stages up to about 5 mmol/L, which most aerobic threshold
+// tests stop short of.
 //
 // The aerobic threshold of the user's latest test that found one is their
 // aerobic heart rate cap: base workouts in training plans, see
@@ -89,14 +96,21 @@ message LactateTest {
   // The heart rate at the aerobic threshold by each definition, for
   // comparison, starting with 2 mmol/L.
   repeated ThresholdEstimate threshold_estimates = 8 [(mcp.v1.field).output_only = true];
+  // The heart rate at the anaerobic threshold, where lactate first rises to
+  // 4 mmol/L, interpolated between the stages. 0 if no stage reached it.
+  int32 anaerobic_threshold_heart_rate_bpm = 11 [(mcp.v1.field).output_only = true];
+  // The heart rate at the anaerobic threshold by each definition, for
+  // comparison, starting with 4 mmol/L. Dmax is left out for tests of fewer
+  // than four stages, or whose lactate doesn't curve upward.
+  repeated ThresholdEstimate anaerobic_threshold_estimates = 12 [(mcp.v1.field).output_only = true];
   // When the test was created.
   google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];
   // When the test was last updated.
   google.protobuf.Timestamp update_time = 10 [(mcp.v1.field).output_only = true];
 }
 
-// ThresholdDefinition is a definition of the aerobic threshold by blood
-// lactate.
+// ThresholdDefinition is a definition of the aerobic or anaerobic threshold
+// by blood lactate.
 enum ThresholdDefinition {
   THRESHOLD_DEFINITION_UNSPECIFIED = 0;
   // Lactate reaches 2 mmol/L, the definition the aerobic threshold uses.
@@ -105,13 +119,20 @@ enum ThresholdDefinition {
   THRESHOLD_DEFINITION_FIXED_2_5_MMOL = 2;
   // Lactate rises 1 mmol/L above the lowest reading.
   THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL = 3;
+  // Lactate reaches 4 mmol/L, the definition the anaerobic threshold uses.
+  THRESHOLD_DEFINITION_FIXED_4_MMOL = 4;
+  // Dmax: where a cubic fitted to the stages is furthest from the straight
+  // line between the first and last stage. Depends on where the test starts
+  // and stops.
+  THRESHOLD_DEFINITION_DMAX = 5;
 }
 
-// The aerobic threshold of a test by one definition.
+// A threshold of a test by one definition.
 message ThresholdEstimate {
   // The definition.
   ThresholdDefinition definition = 1;
-  // The lactate the definition looks for, in mmol/L, e.g. 2.
+  // The lactate the definition looks for, in mmol/L, e.g. 2. For Dmax, the
+  // fitted lactate at its heart rate.
   double lactate_mmol_per_liter = 2;
   // The heart rate where lactate first rises to it, interpolated between the
   // stages. 0 if no stage reached it, or the first stage was already above

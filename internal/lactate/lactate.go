@@ -20,6 +20,21 @@ import (
 // the definition Uphill Athlete uses.
 const AerobicThresholdMmolPerLiter = 2.0
 
+// AnaerobicThresholdMmolPerLiter is the blood lactate at the anaerobic
+// threshold by its classic fixed definition, the onset of blood lactate
+// accumulation.
+const AnaerobicThresholdMmolPerLiter = 4.0
+
+// minDmaxStages is the fewest stages Dmax fits a curve to: a cubic needs four
+// points, and fewer stages don't describe the curve's bend.
+const minDmaxStages = 4
+
+// minDmaxBendMmolPerLiter is how far below the straight line between the
+// first and last stage the fitted curve must bend for Dmax to mean anything,
+// in mmol/L. Lactate that rises in a straight line, or falls, has no Dmax,
+// and less is within a meter's error.
+const minDmaxBendMmolPerLiter = 0.2
+
 // Test is a blood lactate test.
 type Test struct {
 	ID     pgtype.UUID
@@ -68,6 +83,101 @@ func (t *Test) HeartRateAt(mmolPerLiter float64) int32 {
 		return int32(math.Round(float64(below.HeartRateBPM) + f*float64(reached.HeartRateBPM-below.HeartRateBPM)))
 	}
 	return 0
+}
+
+// Dmax returns the anaerobic threshold by the Dmax method: the heart rate
+// where a cubic fitted to the stages is furthest below the straight line from
+// the first stage's heart rate to the last's, and the fitted lactate there.
+// It reports false for tests of fewer than minDmaxStages stages, or whose
+// curve doesn't bend upward by at least minDmaxBendMmolPerLiter.
+//
+// Unlike a fixed lactate, Dmax adapts to the user's baseline, but it depends
+// on where the test starts and stops: stopping a stage early or late moves
+// it.
+func (t *Test) Dmax() (heartRateBPM int32, mmolPerLiter float64, ok bool) {
+	if len(t.Stages) < minDmaxStages {
+		return 0, 0, false
+	}
+	first, last := float64(t.Stages[0].HeartRateBPM), float64(t.Stages[len(t.Stages)-1].HeartRateBPM)
+	span := last - first
+	if span <= 0 {
+		return 0, 0, false
+	}
+	// The heart rates are scaled to 0 to 1, so the fit is well conditioned.
+	xs, ys := make([]float64, len(t.Stages)), make([]float64, len(t.Stages))
+	for i, s := range t.Stages {
+		xs[i], ys[i] = (float64(s.HeartRateBPM)-first)/span, s.LactateMmolPerLiter
+	}
+	coefficients, ok := fitPolynomial(xs, ys, 3)
+	if !ok {
+		return 0, 0, false
+	}
+	fit := func(x float64) float64 {
+		return coefficients[0] + x*(coefficients[1]+x*(coefficients[2]+x*coefficients[3]))
+	}
+	start, end := fit(0), fit(1)
+	// The furthest point vertically is also the furthest perpendicularly,
+	// as the line is straight. Searching every tenth of a bpm is precise
+	// enough, and cheap.
+	steps := int(math.Ceil(span * 10))
+	bestX, bestDistance := 0.0, 0.0
+	for i := 1; i < steps; i++ {
+		x := float64(i) / float64(steps)
+		if distance := start + x*(end-start) - fit(x); distance > bestDistance {
+			bestX, bestDistance = x, distance
+		}
+	}
+	if bestDistance < minDmaxBendMmolPerLiter {
+		return 0, 0, false
+	}
+	return int32(math.Round(first + bestX*span)), fit(bestX), true
+}
+
+// fitPolynomial fits a polynomial of a degree to points by least squares,
+// and returns its coefficients, lowest degree first. It reports false if the
+// points don't determine it.
+func fitPolynomial(xs, ys []float64, degree int) ([]float64, bool) {
+	n := degree + 1
+	// The normal equations, as an augmented matrix.
+	m := make([][]float64, n)
+	for row := range m {
+		m[row] = make([]float64, n+1)
+		for col := range n {
+			for _, x := range xs {
+				m[row][col] += math.Pow(x, float64(row+col))
+			}
+		}
+		for i, x := range xs {
+			m[row][n] += ys[i] * math.Pow(x, float64(row))
+		}
+	}
+	// Gaussian elimination with partial pivoting.
+	for col := range n {
+		pivot := col
+		for row := col + 1; row < n; row++ {
+			if math.Abs(m[row][col]) > math.Abs(m[pivot][col]) {
+				pivot = row
+			}
+		}
+		if math.Abs(m[pivot][col]) < 1e-12 {
+			return nil, false
+		}
+		m[col], m[pivot] = m[pivot], m[col]
+		for row := range n {
+			if row == col {
+				continue
+			}
+			factor := m[row][col] / m[col][col]
+			for k := col; k <= n; k++ {
+				m[row][k] -= factor * m[col][k]
+			}
+		}
+	}
+	coefficients := make([]float64, n)
+	for i := range n {
+		coefficients[i] = m[i][n] / m[i][i]
+	}
+	return coefficients, true
 }
 
 // Repository stores lactate tests.

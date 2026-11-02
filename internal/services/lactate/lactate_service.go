@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
@@ -221,17 +222,29 @@ func TestToProto(t *lactate.Test) *lactatev1.LactateTest {
 	if lowest > 0 {
 		estimates = append(estimates, estimate(lactatev1.ThresholdDefinition_THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL, lowest+lowestPlusMmolPerLiter))
 	}
+	anaerobic := []*lactatev1.ThresholdEstimate{
+		estimate(lactatev1.ThresholdDefinition_THRESHOLD_DEFINITION_FIXED_4_MMOL, lactate.AnaerobicThresholdMmolPerLiter),
+	}
+	if heartRate, mmol, ok := t.Dmax(); ok {
+		anaerobic = append(anaerobic, lactatev1.ThresholdEstimate_builder{
+			Definition:          lactatev1.ThresholdDefinition_THRESHOLD_DEFINITION_DMAX,
+			LactateMmolPerLiter: math.Round(mmol*10) / 10,
+			HeartRateBpm:        heartRate,
+		}.Build())
+	}
 	return lactatev1.LactateTest_builder{
-		Id:                           store.UUIDToString(t.ID),
-		Date:                         store.FormatDate(t.Date),
-		Notes:                        t.Notes,
-		RestingLactateMmolPerLiter:   t.RestingLactateMmolPerLiter,
-		Stages:                       stages,
-		LowestLactateMmolPerLiter:    lowest,
-		AerobicThresholdHeartRateBpm: t.HeartRateAt(lactate.AerobicThresholdMmolPerLiter),
-		ThresholdEstimates:           estimates,
-		CreateTime:                   timestamppb.New(t.CreateTime),
-		UpdateTime:                   timestamppb.New(t.UpdateTime),
+		Id:                             store.UUIDToString(t.ID),
+		Date:                           store.FormatDate(t.Date),
+		Notes:                          t.Notes,
+		RestingLactateMmolPerLiter:     t.RestingLactateMmolPerLiter,
+		Stages:                         stages,
+		LowestLactateMmolPerLiter:      lowest,
+		AerobicThresholdHeartRateBpm:   t.HeartRateAt(lactate.AerobicThresholdMmolPerLiter),
+		ThresholdEstimates:             estimates,
+		AnaerobicThresholdHeartRateBpm: t.HeartRateAt(lactate.AnaerobicThresholdMmolPerLiter),
+		AnaerobicThresholdEstimates:    anaerobic,
+		CreateTime:                     timestamppb.New(t.CreateTime),
+		UpdateTime:                     timestamppb.New(t.UpdateTime),
 	}.Build()
 }
 

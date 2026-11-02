@@ -23,8 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ThresholdDefinition is a definition of the aerobic threshold by blood
-// lactate.
+// ThresholdDefinition is a definition of the aerobic or anaerobic threshold
+// by blood lactate.
 type ThresholdDefinition int32
 
 const (
@@ -35,6 +35,12 @@ const (
 	ThresholdDefinition_THRESHOLD_DEFINITION_FIXED_2_5_MMOL ThresholdDefinition = 2
 	// Lactate rises 1 mmol/L above the lowest reading.
 	ThresholdDefinition_THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL ThresholdDefinition = 3
+	// Lactate reaches 4 mmol/L, the definition the anaerobic threshold uses.
+	ThresholdDefinition_THRESHOLD_DEFINITION_FIXED_4_MMOL ThresholdDefinition = 4
+	// Dmax: where a cubic fitted to the stages is furthest from the straight
+	// line between the first and last stage. Depends on where the test starts
+	// and stops.
+	ThresholdDefinition_THRESHOLD_DEFINITION_DMAX ThresholdDefinition = 5
 )
 
 // Enum value maps for ThresholdDefinition.
@@ -44,12 +50,16 @@ var (
 		1: "THRESHOLD_DEFINITION_FIXED_2_MMOL",
 		2: "THRESHOLD_DEFINITION_FIXED_2_5_MMOL",
 		3: "THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL",
+		4: "THRESHOLD_DEFINITION_FIXED_4_MMOL",
+		5: "THRESHOLD_DEFINITION_DMAX",
 	}
 	ThresholdDefinition_value = map[string]int32{
 		"THRESHOLD_DEFINITION_UNSPECIFIED":        0,
 		"THRESHOLD_DEFINITION_FIXED_2_MMOL":       1,
 		"THRESHOLD_DEFINITION_FIXED_2_5_MMOL":     2,
 		"THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL": 3,
+		"THRESHOLD_DEFINITION_FIXED_4_MMOL":       4,
+		"THRESHOLD_DEFINITION_DMAX":               5,
 	}
 )
 
@@ -77,19 +87,21 @@ func (x ThresholdDefinition) Number() protoreflect.EnumNumber {
 
 // A blood lactate test.
 type LactateTest struct {
-	state                                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id                           string                 `protobuf:"bytes,1,opt,name=id,proto3"`
-	xxx_hidden_Date                         string                 `protobuf:"bytes,2,opt,name=date,proto3"`
-	xxx_hidden_Notes                        string                 `protobuf:"bytes,3,opt,name=notes,proto3"`
-	xxx_hidden_RestingLactateMmolPerLiter   float64                `protobuf:"fixed64,4,opt,name=resting_lactate_mmol_per_liter,json=restingLactateMmolPerLiter,proto3"`
-	xxx_hidden_Stages                       *[]*LactateStage       `protobuf:"bytes,5,rep,name=stages,proto3"`
-	xxx_hidden_LowestLactateMmolPerLiter    float64                `protobuf:"fixed64,6,opt,name=lowest_lactate_mmol_per_liter,json=lowestLactateMmolPerLiter,proto3"`
-	xxx_hidden_AerobicThresholdHeartRateBpm int32                  `protobuf:"varint,7,opt,name=aerobic_threshold_heart_rate_bpm,json=aerobicThresholdHeartRateBpm,proto3"`
-	xxx_hidden_ThresholdEstimates           *[]*ThresholdEstimate  `protobuf:"bytes,8,rep,name=threshold_estimates,json=thresholdEstimates,proto3"`
-	xxx_hidden_CreateTime                   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3"`
-	xxx_hidden_UpdateTime                   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
-	unknownFields                           protoimpl.UnknownFields
-	sizeCache                               protoimpl.SizeCache
+	state                                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                             string                 `protobuf:"bytes,1,opt,name=id,proto3"`
+	xxx_hidden_Date                           string                 `protobuf:"bytes,2,opt,name=date,proto3"`
+	xxx_hidden_Notes                          string                 `protobuf:"bytes,3,opt,name=notes,proto3"`
+	xxx_hidden_RestingLactateMmolPerLiter     float64                `protobuf:"fixed64,4,opt,name=resting_lactate_mmol_per_liter,json=restingLactateMmolPerLiter,proto3"`
+	xxx_hidden_Stages                         *[]*LactateStage       `protobuf:"bytes,5,rep,name=stages,proto3"`
+	xxx_hidden_LowestLactateMmolPerLiter      float64                `protobuf:"fixed64,6,opt,name=lowest_lactate_mmol_per_liter,json=lowestLactateMmolPerLiter,proto3"`
+	xxx_hidden_AerobicThresholdHeartRateBpm   int32                  `protobuf:"varint,7,opt,name=aerobic_threshold_heart_rate_bpm,json=aerobicThresholdHeartRateBpm,proto3"`
+	xxx_hidden_ThresholdEstimates             *[]*ThresholdEstimate  `protobuf:"bytes,8,rep,name=threshold_estimates,json=thresholdEstimates,proto3"`
+	xxx_hidden_AnaerobicThresholdHeartRateBpm int32                  `protobuf:"varint,11,opt,name=anaerobic_threshold_heart_rate_bpm,json=anaerobicThresholdHeartRateBpm,proto3"`
+	xxx_hidden_AnaerobicThresholdEstimates    *[]*ThresholdEstimate  `protobuf:"bytes,12,rep,name=anaerobic_threshold_estimates,json=anaerobicThresholdEstimates,proto3"`
+	xxx_hidden_CreateTime                     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3"`
+	xxx_hidden_UpdateTime                     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
+	unknownFields                             protoimpl.UnknownFields
+	sizeCache                                 protoimpl.SizeCache
 }
 
 func (x *LactateTest) Reset() {
@@ -177,6 +189,22 @@ func (x *LactateTest) GetThresholdEstimates() []*ThresholdEstimate {
 	return nil
 }
 
+func (x *LactateTest) GetAnaerobicThresholdHeartRateBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_AnaerobicThresholdHeartRateBpm
+	}
+	return 0
+}
+
+func (x *LactateTest) GetAnaerobicThresholdEstimates() []*ThresholdEstimate {
+	if x != nil {
+		if x.xxx_hidden_AnaerobicThresholdEstimates != nil {
+			return *x.xxx_hidden_AnaerobicThresholdEstimates
+		}
+	}
+	return nil
+}
+
 func (x *LactateTest) GetCreateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_CreateTime
@@ -221,6 +249,14 @@ func (x *LactateTest) SetAerobicThresholdHeartRateBpm(v int32) {
 
 func (x *LactateTest) SetThresholdEstimates(v []*ThresholdEstimate) {
 	x.xxx_hidden_ThresholdEstimates = &v
+}
+
+func (x *LactateTest) SetAnaerobicThresholdHeartRateBpm(v int32) {
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = v
+}
+
+func (x *LactateTest) SetAnaerobicThresholdEstimates(v []*ThresholdEstimate) {
+	x.xxx_hidden_AnaerobicThresholdEstimates = &v
 }
 
 func (x *LactateTest) SetCreateTime(v *timestamppb.Timestamp) {
@@ -280,6 +316,13 @@ type LactateTest_builder struct {
 	// The heart rate at the aerobic threshold by each definition, for
 	// comparison, starting with 2 mmol/L.
 	ThresholdEstimates []*ThresholdEstimate
+	// The heart rate at the anaerobic threshold, where lactate first rises to
+	// 4 mmol/L, interpolated between the stages. 0 if no stage reached it.
+	AnaerobicThresholdHeartRateBpm int32
+	// The heart rate at the anaerobic threshold by each definition, for
+	// comparison, starting with 4 mmol/L. Dmax is left out for tests of fewer
+	// than four stages, or whose lactate doesn't curve upward.
+	AnaerobicThresholdEstimates []*ThresholdEstimate
 	// When the test was created.
 	CreateTime *timestamppb.Timestamp
 	// When the test was last updated.
@@ -298,12 +341,14 @@ func (b0 LactateTest_builder) Build() *LactateTest {
 	x.xxx_hidden_LowestLactateMmolPerLiter = b.LowestLactateMmolPerLiter
 	x.xxx_hidden_AerobicThresholdHeartRateBpm = b.AerobicThresholdHeartRateBpm
 	x.xxx_hidden_ThresholdEstimates = &b.ThresholdEstimates
+	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = b.AnaerobicThresholdHeartRateBpm
+	x.xxx_hidden_AnaerobicThresholdEstimates = &b.AnaerobicThresholdEstimates
 	x.xxx_hidden_CreateTime = b.CreateTime
 	x.xxx_hidden_UpdateTime = b.UpdateTime
 	return m0
 }
 
-// The aerobic threshold of a test by one definition.
+// A threshold of a test by one definition.
 type ThresholdEstimate struct {
 	state                          protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Definition          ThresholdDefinition    `protobuf:"varint,1,opt,name=definition,proto3,enum=lactate.v1.ThresholdDefinition"`
@@ -376,7 +421,8 @@ type ThresholdEstimate_builder struct {
 
 	// The definition.
 	Definition ThresholdDefinition
-	// The lactate the definition looks for, in mmol/L, e.g. 2.
+	// The lactate the definition looks for, in mmol/L, e.g. 2. For Dmax, the
+	// fitted lactate at its heart rate.
 	LactateMmolPerLiter float64
 	// The heart rate where lactate first rises to it, interpolated between the
 	// stages. 0 if no stage reached it, or the first stage was already above
@@ -2044,7 +2090,7 @@ var File_lactate_v1_lactate_proto protoreflect.FileDescriptor
 const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\n" +
 	"\x18lactate/v1/lactate.proto\x12\n" +
-	"lactate.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xb9\x04\n" +
+	"lactate.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xf8\x05\n" +
 	"\vLactateTest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x14\n" +
@@ -2053,7 +2099,9 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x06stages\x18\x05 \x03(\v2\x18.lactate.v1.LactateStageR\x06stages\x12H\n" +
 	"\x1dlowest_lactate_mmol_per_liter\x18\x06 \x01(\x01B\x06\xaa\x9f\x19\x02\b\x01R\x19lowestLactateMmolPerLiter\x12N\n" +
 	" aerobic_threshold_heart_rate_bpm\x18\a \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x1caerobicThresholdHeartRateBpm\x12V\n" +
-	"\x13threshold_estimates\x18\b \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x12thresholdEstimates\x12C\n" +
+	"\x13threshold_estimates\x18\b \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x12thresholdEstimates\x12R\n" +
+	"\"anaerobic_threshold_heart_rate_bpm\x18\v \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x1eanaerobicThresholdHeartRateBpm\x12i\n" +
+	"\x1danaerobic_threshold_estimates\x18\f \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x1banaerobicThresholdEstimates\x12C\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
 	"createTime\x12C\n" +
 	"\vupdate_time\x18\n" +
@@ -2124,12 +2172,14 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x18RecordLactateTestRequest\x12+\n" +
 	"\x04test\x18\x01 \x01(\v2\x17.lactate.v1.LactateTestR\x04test\"H\n" +
 	"\x19RecordLactateTestResponse\x12+\n" +
-	"\x04test\x18\x01 \x01(\v2\x17.lactate.v1.LactateTestR\x04test*\xb8\x01\n" +
+	"\x04test\x18\x01 \x01(\v2\x17.lactate.v1.LactateTestR\x04test*\xfe\x01\n" +
 	"\x13ThresholdDefinition\x12$\n" +
 	" THRESHOLD_DEFINITION_UNSPECIFIED\x10\x00\x12%\n" +
 	"!THRESHOLD_DEFINITION_FIXED_2_MMOL\x10\x01\x12'\n" +
 	"#THRESHOLD_DEFINITION_FIXED_2_5_MMOL\x10\x02\x12+\n" +
-	"'THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL\x10\x032\xae\t\n" +
+	"'THRESHOLD_DEFINITION_LOWEST_PLUS_1_MMOL\x10\x03\x12%\n" +
+	"!THRESHOLD_DEFINITION_FIXED_4_MMOL\x10\x04\x12\x1d\n" +
+	"\x19THRESHOLD_DEFINITION_DMAX\x10\x052\xae\t\n" +
 	"\x12LactateTestService\x12`\n" +
 	"\x11CreateLactateTest\x12$.lactate.v1.CreateLactateTestRequest\x1a%.lactate.v1.CreateLactateTestResponse\x12W\n" +
 	"\x0eGetLactateTest\x12!.lactate.v1.GetLactateTestRequest\x1a\".lactate.v1.GetLactateTestResponse\x12]\n" +
@@ -2182,53 +2232,54 @@ var file_lactate_v1_lactate_proto_goTypes = []any{
 var file_lactate_v1_lactate_proto_depIdxs = []int32{
 	3,  // 0: lactate.v1.LactateTest.stages:type_name -> lactate.v1.LactateStage
 	2,  // 1: lactate.v1.LactateTest.threshold_estimates:type_name -> lactate.v1.ThresholdEstimate
-	27, // 2: lactate.v1.LactateTest.create_time:type_name -> google.protobuf.Timestamp
-	27, // 3: lactate.v1.LactateTest.update_time:type_name -> google.protobuf.Timestamp
-	0,  // 4: lactate.v1.ThresholdEstimate.definition:type_name -> lactate.v1.ThresholdDefinition
-	1,  // 5: lactate.v1.CreateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
-	1,  // 6: lactate.v1.CreateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	1,  // 7: lactate.v1.GetLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	1,  // 8: lactate.v1.ListLactateTestsResponse.tests:type_name -> lactate.v1.LactateTest
-	1,  // 9: lactate.v1.UpdateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
-	28, // 10: lactate.v1.UpdateLactateTestRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 11: lactate.v1.UpdateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	27, // 12: lactate.v1.LactateTestShare.expire_time:type_name -> google.protobuf.Timestamp
-	27, // 13: lactate.v1.LactateTestShare.create_time:type_name -> google.protobuf.Timestamp
-	14, // 14: lactate.v1.CreateLactateTestShareResponse.share:type_name -> lactate.v1.LactateTestShare
-	14, // 15: lactate.v1.ListLactateTestSharesResponse.shares:type_name -> lactate.v1.LactateTestShare
-	27, // 16: lactate.v1.CreateLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
-	1,  // 17: lactate.v1.CreateLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
-	27, // 18: lactate.v1.GetLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
-	1,  // 19: lactate.v1.GetLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
-	1,  // 20: lactate.v1.RecordLactateTestRequest.test:type_name -> lactate.v1.LactateTest
-	1,  // 21: lactate.v1.RecordLactateTestResponse.test:type_name -> lactate.v1.LactateTest
-	4,  // 22: lactate.v1.LactateTestService.CreateLactateTest:input_type -> lactate.v1.CreateLactateTestRequest
-	6,  // 23: lactate.v1.LactateTestService.GetLactateTest:input_type -> lactate.v1.GetLactateTestRequest
-	8,  // 24: lactate.v1.LactateTestService.ListLactateTests:input_type -> lactate.v1.ListLactateTestsRequest
-	10, // 25: lactate.v1.LactateTestService.UpdateLactateTest:input_type -> lactate.v1.UpdateLactateTestRequest
-	12, // 26: lactate.v1.LactateTestService.DeleteLactateTest:input_type -> lactate.v1.DeleteLactateTestRequest
-	15, // 27: lactate.v1.LactateTestService.CreateLactateTestShare:input_type -> lactate.v1.CreateLactateTestShareRequest
-	17, // 28: lactate.v1.LactateTestService.ListLactateTestShares:input_type -> lactate.v1.ListLactateTestSharesRequest
-	19, // 29: lactate.v1.LactateTestService.DeleteLactateTestShare:input_type -> lactate.v1.DeleteLactateTestShareRequest
-	21, // 30: lactate.v1.LactateTestService.CreateLactateTestRecording:input_type -> lactate.v1.CreateLactateTestRecordingRequest
-	23, // 31: lactate.v1.LactateTestService.GetLactateTestRecording:input_type -> lactate.v1.GetLactateTestRecordingRequest
-	25, // 32: lactate.v1.LactateTestService.RecordLactateTest:input_type -> lactate.v1.RecordLactateTestRequest
-	5,  // 33: lactate.v1.LactateTestService.CreateLactateTest:output_type -> lactate.v1.CreateLactateTestResponse
-	7,  // 34: lactate.v1.LactateTestService.GetLactateTest:output_type -> lactate.v1.GetLactateTestResponse
-	9,  // 35: lactate.v1.LactateTestService.ListLactateTests:output_type -> lactate.v1.ListLactateTestsResponse
-	11, // 36: lactate.v1.LactateTestService.UpdateLactateTest:output_type -> lactate.v1.UpdateLactateTestResponse
-	13, // 37: lactate.v1.LactateTestService.DeleteLactateTest:output_type -> lactate.v1.DeleteLactateTestResponse
-	16, // 38: lactate.v1.LactateTestService.CreateLactateTestShare:output_type -> lactate.v1.CreateLactateTestShareResponse
-	18, // 39: lactate.v1.LactateTestService.ListLactateTestShares:output_type -> lactate.v1.ListLactateTestSharesResponse
-	20, // 40: lactate.v1.LactateTestService.DeleteLactateTestShare:output_type -> lactate.v1.DeleteLactateTestShareResponse
-	22, // 41: lactate.v1.LactateTestService.CreateLactateTestRecording:output_type -> lactate.v1.CreateLactateTestRecordingResponse
-	24, // 42: lactate.v1.LactateTestService.GetLactateTestRecording:output_type -> lactate.v1.GetLactateTestRecordingResponse
-	26, // 43: lactate.v1.LactateTestService.RecordLactateTest:output_type -> lactate.v1.RecordLactateTestResponse
-	33, // [33:44] is the sub-list for method output_type
-	22, // [22:33] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	2,  // 2: lactate.v1.LactateTest.anaerobic_threshold_estimates:type_name -> lactate.v1.ThresholdEstimate
+	27, // 3: lactate.v1.LactateTest.create_time:type_name -> google.protobuf.Timestamp
+	27, // 4: lactate.v1.LactateTest.update_time:type_name -> google.protobuf.Timestamp
+	0,  // 5: lactate.v1.ThresholdEstimate.definition:type_name -> lactate.v1.ThresholdDefinition
+	1,  // 6: lactate.v1.CreateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
+	1,  // 7: lactate.v1.CreateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
+	1,  // 8: lactate.v1.GetLactateTestResponse.test:type_name -> lactate.v1.LactateTest
+	1,  // 9: lactate.v1.ListLactateTestsResponse.tests:type_name -> lactate.v1.LactateTest
+	1,  // 10: lactate.v1.UpdateLactateTestRequest.test:type_name -> lactate.v1.LactateTest
+	28, // 11: lactate.v1.UpdateLactateTestRequest.update_mask:type_name -> google.protobuf.FieldMask
+	1,  // 12: lactate.v1.UpdateLactateTestResponse.test:type_name -> lactate.v1.LactateTest
+	27, // 13: lactate.v1.LactateTestShare.expire_time:type_name -> google.protobuf.Timestamp
+	27, // 14: lactate.v1.LactateTestShare.create_time:type_name -> google.protobuf.Timestamp
+	14, // 15: lactate.v1.CreateLactateTestShareResponse.share:type_name -> lactate.v1.LactateTestShare
+	14, // 16: lactate.v1.ListLactateTestSharesResponse.shares:type_name -> lactate.v1.LactateTestShare
+	27, // 17: lactate.v1.CreateLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
+	1,  // 18: lactate.v1.CreateLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
+	27, // 19: lactate.v1.GetLactateTestRecordingResponse.expire_time:type_name -> google.protobuf.Timestamp
+	1,  // 20: lactate.v1.GetLactateTestRecordingResponse.test:type_name -> lactate.v1.LactateTest
+	1,  // 21: lactate.v1.RecordLactateTestRequest.test:type_name -> lactate.v1.LactateTest
+	1,  // 22: lactate.v1.RecordLactateTestResponse.test:type_name -> lactate.v1.LactateTest
+	4,  // 23: lactate.v1.LactateTestService.CreateLactateTest:input_type -> lactate.v1.CreateLactateTestRequest
+	6,  // 24: lactate.v1.LactateTestService.GetLactateTest:input_type -> lactate.v1.GetLactateTestRequest
+	8,  // 25: lactate.v1.LactateTestService.ListLactateTests:input_type -> lactate.v1.ListLactateTestsRequest
+	10, // 26: lactate.v1.LactateTestService.UpdateLactateTest:input_type -> lactate.v1.UpdateLactateTestRequest
+	12, // 27: lactate.v1.LactateTestService.DeleteLactateTest:input_type -> lactate.v1.DeleteLactateTestRequest
+	15, // 28: lactate.v1.LactateTestService.CreateLactateTestShare:input_type -> lactate.v1.CreateLactateTestShareRequest
+	17, // 29: lactate.v1.LactateTestService.ListLactateTestShares:input_type -> lactate.v1.ListLactateTestSharesRequest
+	19, // 30: lactate.v1.LactateTestService.DeleteLactateTestShare:input_type -> lactate.v1.DeleteLactateTestShareRequest
+	21, // 31: lactate.v1.LactateTestService.CreateLactateTestRecording:input_type -> lactate.v1.CreateLactateTestRecordingRequest
+	23, // 32: lactate.v1.LactateTestService.GetLactateTestRecording:input_type -> lactate.v1.GetLactateTestRecordingRequest
+	25, // 33: lactate.v1.LactateTestService.RecordLactateTest:input_type -> lactate.v1.RecordLactateTestRequest
+	5,  // 34: lactate.v1.LactateTestService.CreateLactateTest:output_type -> lactate.v1.CreateLactateTestResponse
+	7,  // 35: lactate.v1.LactateTestService.GetLactateTest:output_type -> lactate.v1.GetLactateTestResponse
+	9,  // 36: lactate.v1.LactateTestService.ListLactateTests:output_type -> lactate.v1.ListLactateTestsResponse
+	11, // 37: lactate.v1.LactateTestService.UpdateLactateTest:output_type -> lactate.v1.UpdateLactateTestResponse
+	13, // 38: lactate.v1.LactateTestService.DeleteLactateTest:output_type -> lactate.v1.DeleteLactateTestResponse
+	16, // 39: lactate.v1.LactateTestService.CreateLactateTestShare:output_type -> lactate.v1.CreateLactateTestShareResponse
+	18, // 40: lactate.v1.LactateTestService.ListLactateTestShares:output_type -> lactate.v1.ListLactateTestSharesResponse
+	20, // 41: lactate.v1.LactateTestService.DeleteLactateTestShare:output_type -> lactate.v1.DeleteLactateTestShareResponse
+	22, // 42: lactate.v1.LactateTestService.CreateLactateTestRecording:output_type -> lactate.v1.CreateLactateTestRecordingResponse
+	24, // 43: lactate.v1.LactateTestService.GetLactateTestRecording:output_type -> lactate.v1.GetLactateTestRecordingResponse
+	26, // 44: lactate.v1.LactateTestService.RecordLactateTest:output_type -> lactate.v1.RecordLactateTestResponse
+	34, // [34:45] is the sub-list for method output_type
+	23, // [23:34] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_lactate_v1_lactate_proto_init() }

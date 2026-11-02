@@ -647,7 +647,10 @@ const Reading: React.FC<ReadingProps> = ({
         {done ? (
           <p>
             Your lactate is past every definition of your aerobic threshold, so
-            the test is done. Cool down easy.
+            the test is done. Cool down easy
+            {test.anaerobicThresholdHeartRateBpm === 0 &&
+              ", or run more stages until your lactate passes 4 mmol/L to find your anaerobic threshold too"}
+            .
           </p>
         ) : (
           <p>Next, raise your heart rate to {next} bpm.</p>
@@ -655,6 +658,11 @@ const Reading: React.FC<ReadingProps> = ({
         {test.aerobicThresholdHeartRateBpm > 0 && (
           <p className="font-medium text-gray-900">
             Your aerobic threshold: {test.aerobicThresholdHeartRateBpm} bpm.
+          </p>
+        )}
+        {test.anaerobicThresholdHeartRateBpm > 0 && (
+          <p className="font-medium text-gray-900">
+            Your anaerobic threshold: {test.anaerobicThresholdHeartRateBpm} bpm.
           </p>
         )}
         <div className="flex flex-wrap gap-2">

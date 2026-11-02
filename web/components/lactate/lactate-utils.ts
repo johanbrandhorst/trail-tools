@@ -44,7 +44,7 @@ const LOWEST_PLUS_MMOL = 1;
 export const formatMmol = (mmolPerLiter: number): string =>
   `${mmolPerLiter.toFixed(1)} mmol/L`;
 
-// DefinitionLabel names a definition of the aerobic threshold.
+// DefinitionLabel names a definition of the aerobic or anaerobic threshold.
 export const definitionLabel = (definition: ThresholdDefinition): string => {
   switch (definition) {
     case ThresholdDefinition.FIXED_2_MMOL: {
@@ -55,6 +55,12 @@ export const definitionLabel = (definition: ThresholdDefinition): string => {
     }
     case ThresholdDefinition.LOWEST_PLUS_1_MMOL: {
       return "Lowest + 1 mmol/L";
+    }
+    case ThresholdDefinition.FIXED_4_MMOL: {
+      return "4 mmol/L";
+    }
+    case ThresholdDefinition.DMAX: {
+      return "Dmax";
     }
     default: {
       return "Unknown";
