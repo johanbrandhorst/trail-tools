@@ -26,10 +26,13 @@ import (
 
 func encodeTestImage(t *testing.T, w, h int, asPNG bool) []byte {
 	t.Helper()
+	// The pixels are written directly, as setting them one by one through
+	// the image.Image interface is slow under the race detector.
 	img := image.NewNRGBA(image.Rect(0, 0, w, h))
 	for y := range h {
 		for x := range w {
-			img.Set(x, y, color.NRGBA{R: uint8(x), G: uint8(y), B: 100, A: 255})
+			i := img.PixOffset(x, y)
+			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = uint8(x), uint8(y), 100, 255
 		}
 	}
 	// A transparent corner, which must become white rather than black.
@@ -56,7 +59,9 @@ func TestProcess(t *testing.T) {
 		wantW, wantH        int
 		wantThumbW, wantThW int
 	}{
-		{name: "large landscape JPEG", w: 4000, h: 3000, wantW: 2048, wantH: 1536, wantThumbW: 480, wantThW: 360},
+		// Just over the large size, as scaling is slow under the race
+		// detector.
+		{name: "large landscape JPEG", w: 2100, h: 1575, wantW: 2048, wantH: 1536, wantThumbW: 480, wantThW: 360},
 		{name: "portrait PNG", w: 600, h: 1200, png: true, wantW: 600, wantH: 1200, wantThumbW: 240, wantThW: 480},
 		{name: "small", w: 300, h: 200, wantW: 300, wantH: 200, wantThumbW: 300, wantThW: 200},
 	}
