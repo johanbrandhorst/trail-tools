@@ -1,5 +1,5 @@
 import Loading from "@components/loading";
-import { FitBounds, useViewport } from "@components/map/layers";
+import { useViewport } from "@components/map/layers";
 import MapView, { useMap } from "@components/map/map-view";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
@@ -30,7 +30,7 @@ import { formatBytes, formatList, formatTimestamp } from "helpers/format";
 import { invalidateServices } from "helpers/query";
 import type { LatLngTuple } from "leaflet";
 import * as leaflet from "leaflet";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // The storage of Neon's free plan, which the database should stay within.
 const STORAGE_LIMIT_BYTES = 500_000_000;
@@ -88,6 +88,121 @@ const squareKm = (bounds: Bounds): number => {
 const tooLarge = (bounds: Bounds): boolean =>
   bounds.north - bounds.south > MAX_AREA_DEGREES ||
   bounds.east - bounds.west > MAX_AREA_DEGREES;
+
+/**
+ * Areas closer than this, in degrees, are shown together, as one place to
+ * run. Areas further apart, like ones in different countries, are shown one
+ * group at a time, as fitting them all would zoom out to the whole world.
+ */
+const NEARBY_DEGREES = 1;
+
+interface RegionArea {
+  region: Region;
+  bounds: Bounds;
+}
+
+const nearby = (first: Bounds, second: Bounds): boolean =>
+  first.south - NEARBY_DEGREES <= second.north &&
+  second.south - NEARBY_DEGREES <= first.north &&
+  first.west - NEARBY_DEGREES <= second.east &&
+  second.west - NEARBY_DEGREES <= first.east;
+
+// GroupNearby groups the areas that are near each other, directly or not.
+const groupNearby = (areas: RegionArea[]): RegionArea[][] => {
+  const groups: RegionArea[][] = [];
+  for (const area of areas) {
+    const near = groups.filter((group) =>
+      group.some((other) => nearby(other.bounds, area.bounds))
+    );
+    const merged = [area, ...near.flat()];
+    for (const group of near) {
+      groups.splice(groups.indexOf(group), 1);
+    }
+    groups.push(merged);
+  }
+  return groups;
+};
+
+const groupSize = (group: RegionArea[]): number =>
+  group.reduce((total, area) => total + Number(area.region.sizeBytes), 0);
+
+/**
+ * FocusGroup returns the areas to show: the group with a changed area, so
+ * that a new import is shown, or else the group with the most areas, then
+ * the most data.
+ */
+const focusGroup = (
+  areas: RegionArea[],
+  changed: Set<string>
+): RegionArea[] => {
+  const groups = groupNearby(areas);
+  const withChange = groups.find((group) =>
+    group.some((area) => changed.has(area.region.name))
+  );
+  if (withChange !== undefined) {
+    return withChange;
+  }
+  let best: RegionArea[] = [];
+  for (const group of groups) {
+    if (
+      group.length > best.length ||
+      (group.length === best.length && groupSize(group) > groupSize(best))
+    ) {
+      best = group;
+    }
+  }
+  return best;
+};
+
+const boundsKey = (bounds: Bounds): string =>
+  [bounds.south, bounds.west, bounds.north, bounds.east].join(",");
+
+interface FitAreasProps {
+  areas: RegionArea[];
+}
+
+/**
+ * FitAreas fits the map to the imported areas, a group of nearby ones at a
+ * time, whenever an area is added, replaced or deleted.
+ */
+const FitAreas: React.FC<FitAreasProps> = ({ areas }) => {
+  const map = useMap();
+  // The bounds of each area last fitted, or null before the first fit.
+  const fitted = useRef<Map<string, string> | null>(null);
+  useEffect(() => {
+    const current = new Map(
+      areas.map((area) => [area.region.name, boundsKey(area.bounds)])
+    );
+    const previous = fitted.current;
+    if (
+      previous !== null &&
+      previous.size === current.size &&
+      [...current].every(([name, key]) => previous.get(name) === key)
+    ) {
+      return;
+    }
+    fitted.current = current;
+    const changed = new Set<string>();
+    if (previous !== null) {
+      for (const [name, key] of current) {
+        if (previous.get(name) !== key) {
+          changed.add(name);
+        }
+      }
+    }
+    const group = focusGroup(areas, changed);
+    if (group.length === 0) {
+      return;
+    }
+    map.fitBounds(
+      leaflet.latLngBounds(
+        group.flatMap(({ bounds }) => toLatLngBounds(bounds))
+      ),
+      { maxZoom: 15, padding: [24, 24] }
+    );
+  }, [map, areas]);
+  return null;
+};
 
 interface AreaLayerProps {
   bounds: Bounds;
@@ -216,23 +331,39 @@ const RegionsTable: React.FC<RegionsTableProps> = ({ regions }) => {
           <thead>
             <tr>
               <th className={thClass}>Area</th>
-              <th className={`${thClass} text-right`}>Size</th>
-              <th className={`${thClass} text-right`}>Paths</th>
-              <th className={thClass}>Imported</th>
+              <th className={`${thClass} hidden text-right sm:table-cell`}>
+                Size
+              </th>
+              <th className={`${thClass} hidden text-right sm:table-cell`}>
+                Paths
+              </th>
+              <th className={`${thClass} hidden sm:table-cell`}>Imported</th>
               <th className={thClass} />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {regions.map((region) => (
               <tr key={region.name}>
-                <td className={`${tdClass} font-medium`}>{region.name}</td>
-                <td className={`${tdClass} text-right tabular-nums`}>
+                <td className={tdClass}>
+                  <span className="font-medium">{region.name}</span>
+                  {/* Phones have no room for the columns, so show a line. */}
+                  <span className="block text-xs text-gray-500 tabular-nums sm:hidden">
+                    {formatBytes(Number(region.sizeBytes))} ·{" "}
+                    {region.edgeCount.toLocaleString()} paths · imported{" "}
+                    {formatTimestamp(region.importTime)}
+                  </span>
+                </td>
+                <td
+                  className={`${tdClass} hidden text-right tabular-nums sm:table-cell`}
+                >
                   {formatBytes(Number(region.sizeBytes))}
                 </td>
-                <td className={`${tdClass} text-right tabular-nums`}>
+                <td
+                  className={`${tdClass} hidden text-right tabular-nums sm:table-cell`}
+                >
                   {region.edgeCount.toLocaleString()}
                 </td>
-                <td className={tdClass}>
+                <td className={`${tdClass} hidden sm:table-cell`}>
                   {formatTimestamp(region.importTime)}
                 </td>
                 <td className={`${tdClass} text-right`}>
@@ -376,7 +507,7 @@ const ImportForm: React.FC<ImportFormProps> = ({
             onSelect(visible);
           }}
         >
-          Select the area in the middle of the map
+          Select the middle of the map
         </button>
         {selected !== null && (
           <button
@@ -463,7 +594,7 @@ const MapDataPage: React.FC = () => {
       />
     );
   } else {
-    const regionAreas: { region: Region; bounds: Bounds }[] = [];
+    const regionAreas: RegionArea[] = [];
     for (const region of data.regions) {
       const bounds = boundsOfArea(region.area);
       if (bounds !== null) {
@@ -475,10 +606,15 @@ const MapDataPage: React.FC = () => {
       (total, region) => total + Number(region.sizeBytes),
       0
     );
+    /*
+     * On phones the cards are one column, with importing right below the map
+     * it works on. On wider screens the columns' contents are laid out on
+     * their own, and the order classes no longer apply.
+     */
     content = (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="overflow-hidden rounded-lg border border-gray-200">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+          <div className="order-1 overflow-hidden rounded-lg border border-gray-200 lg:order-none">
             <MapView className="h-[55vh] min-h-80" rememberView>
               {regionAreas.map(({ region, bounds }) => (
                 <AreaLayer
@@ -497,20 +633,23 @@ const MapDataPage: React.FC = () => {
                 />
               )}
               <VisibleArea onChange={setVisible} />
-              <FitBounds
-                positions={regionAreas.flatMap(({ bounds }) =>
-                  toLatLngBounds(bounds)
-                )}
-                fitKey="regions"
-              />
+              <FitAreas areas={regionAreas} />
             </MapView>
           </div>
-          <Card title="Imported areas">
+          <Card title="Imported areas" className="order-3 lg:order-none">
             <RegionsTable regions={data.regions} />
           </Card>
         </div>
-        <div className="flex flex-col gap-4">
-          <Card title="Storage">
+        <div className="contents lg:flex lg:flex-col lg:gap-4">
+          <Card title="Import an area" className="order-2 lg:order-none">
+            <ImportForm
+              selected={selected}
+              visible={visible}
+              importing={data.imports.some(isActive)}
+              onSelect={setSelected}
+            />
+          </Card>
+          <Card title="Storage" className="order-4 lg:order-none">
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
                 <Stat
@@ -527,15 +666,7 @@ const MapDataPage: React.FC = () => {
               </p>
             </div>
           </Card>
-          <Card title="Import an area">
-            <ImportForm
-              selected={selected}
-              visible={visible}
-              importing={data.imports.some(isActive)}
-              onSelect={setSelected}
-            />
-          </Card>
-          <Card title="Recent imports">
+          <Card title="Recent imports" className="order-5 lg:order-none">
             <ImportsList imports={data.imports} />
           </Card>
         </div>
