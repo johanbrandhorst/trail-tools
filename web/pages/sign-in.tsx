@@ -1,6 +1,7 @@
 import { LogoMark, Wordmark } from "@components/header/logo";
 import SignInForm from "@components/header/sign-in-form";
 import React from "react";
+import { Link } from "react-router";
 
 /**
  * SignInPage is shown instead of the pages that need a user: the app's mark
@@ -44,8 +45,11 @@ const SignInPage: React.FC = () => (
         />
       </svg>
     </section>
-    <section className="flex items-center justify-center px-6 py-10 md:flex-1">
+    <section className="flex flex-col items-center justify-center gap-6 px-6 py-10 md:flex-1">
       <SignInForm />
+      <Link to="/privacy" className="text-sm text-stone-500 hover:underline">
+        Privacy policy
+      </Link>
     </section>
   </div>
 );
