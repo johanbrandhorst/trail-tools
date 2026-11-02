@@ -2,7 +2,7 @@ import Loading from "@components/loading";
 import { MuscleChips } from "@components/strength/body-map";
 import { EmptyState, PageHeader } from "@components/ui/misc";
 import QueryError from "@components/ui/query-error";
-import { cardClass } from "@components/ui/styles";
+import { cardClass, secondaryButton } from "@components/ui/styles";
 import { useQuery } from "@connectrpc/connect-query";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { listExercises } from "gen/plans/v1/exercises-ExerciseService_connectquery";
@@ -65,6 +65,11 @@ const ExercisesPage: React.FC = () => {
       <PageHeader
         title="Exercises"
         subtitle="Your strength and mobility exercises, and what you did in each."
+        actions={
+          <Link to="/equipment" className={secondaryButton}>
+            Home equipment
+          </Link>
+        }
       />
       {content}
     </div>

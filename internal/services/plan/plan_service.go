@@ -452,6 +452,9 @@ func workoutFromProto(w *plansv1.Workout, plan *plans.TrainingPlan) (*plans.Work
 	if err := workoutDetailsFromProto(w, workout); err != nil {
 		return nil, err
 	}
+	if err := startWindowFromProto(w, workout); err != nil {
+		return nil, err
+	}
 	if w.GetCompletedActivityId() != "" {
 		if workout.CompletedActivityID, err = store.StringToUUID(w.GetCompletedActivityId()); err != nil {
 			return nil, invalidArgument("invalid completed_activity_id: %v", err)

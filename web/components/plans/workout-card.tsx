@@ -4,7 +4,7 @@ import type { Workout, WorkoutWeather } from "gen/plans/v1/plans_pb";
 import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { formatHoursMinutes } from "helpers/format";
 import { workoutStyle } from "helpers/labels";
-import { isCompleted, workoutTargets } from "helpers/workouts";
+import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React from "react";
 
 import { WeatherBadge } from "./workout-weather";
@@ -52,7 +52,14 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
 }) => {
   const style = workoutStyle(workout.type);
   const threshold = useAerobicThreshold();
-  const detail = targets(workout, threshold?.heartRateBpm);
+  const detail = [
+    startWindow(workout),
+    targets(workout, threshold?.heartRateBpm),
+  ]
+    .filter((part) => part !== "")
+    .join(" · ");
+  // The weather during the workout, if it has a start time.
+  const forecastDay = weather?.workout ?? weather?.day;
   const content = (
     <>
       <span className="flex items-start justify-between gap-1">
@@ -74,7 +81,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
       {detail !== "" && (
         <span className="tabular-nums opacity-80">{detail}</span>
       )}
-      {weather?.day !== undefined && <WeatherBadge day={weather.day} />}
+      {forecastDay !== undefined && <WeatherBadge day={forecastDay} />}
     </>
   );
   const className = `flex w-full flex-col rounded border-l-4 border px-1.5 py-1 text-left text-[11px] leading-tight ${style.cardClass}`;

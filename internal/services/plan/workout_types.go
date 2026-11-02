@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
@@ -135,42 +136,46 @@ func plannedExerciseFromProto(e *plansv1.PlannedExercise) (*plans.PlannedExercis
 	if e.GetSets() < 1 || e.GetSets() > maxSets {
 		return nil, fmt.Errorf("sets must be between 1 and %d", maxSets)
 	}
-	if e.GetReps() < 0 || e.GetHoldSeconds() < 0 || e.GetWeightKilograms() < 0 || e.GetRestSeconds() < 0 {
-		return nil, errors.New("reps, hold_seconds, weight_kilograms and rest_seconds must not be negative")
+	if e.GetReps() < 0 || e.GetHoldSeconds() < 0 || e.GetRestSeconds() < 0 {
+		return nil, errors.New("reps, hold_seconds and rest_seconds must not be negative")
 	}
 	if (e.GetReps() > 0) == (e.GetHoldSeconds() > 0) {
 		return nil, errors.New("set one of reps and hold_seconds")
+	}
+	weight, err := weightFromProto("weight", e.GetWeight())
+	if err != nil {
+		return nil, err
 	}
 	if e.GetTargetEffort() < 0 || e.GetTargetEffort() > maxTargetEffort {
 		return nil, fmt.Errorf("target_effort must be between 1 and %d, or 0 if not set", maxTargetEffort)
 	}
 	return &plans.PlannedExercise{
-		ExerciseID:      id,
-		Group:           strings.TrimSpace(e.GetGroup()),
-		Sets:            e.GetSets(),
-		Reps:            e.GetReps(),
-		HoldSeconds:     e.GetHoldSeconds(),
-		WeightKilograms: e.GetWeightKilograms(),
-		RestSeconds:     e.GetRestSeconds(),
-		Tempo:           strings.TrimSpace(e.GetTempo()),
-		TargetEffort:    e.GetTargetEffort(),
-		Notes:           strings.TrimSpace(e.GetNotes()),
+		ExerciseID:   id,
+		Group:        strings.TrimSpace(e.GetGroup()),
+		Sets:         e.GetSets(),
+		Reps:         e.GetReps(),
+		HoldSeconds:  e.GetHoldSeconds(),
+		Weight:       weight,
+		RestSeconds:  e.GetRestSeconds(),
+		Tempo:        strings.TrimSpace(e.GetTempo()),
+		TargetEffort: e.GetTargetEffort(),
+		Notes:        strings.TrimSpace(e.GetNotes()),
 	}, nil
 }
 
 func plannedExerciseToProto(e *plans.PlannedExercise) *plansv1.PlannedExercise {
 	return plansv1.PlannedExercise_builder{
-		ExerciseId:      store.UUIDToString(e.ExerciseID),
-		ExerciseName:    e.ExerciseName,
-		Group:           e.Group,
-		Sets:            e.Sets,
-		Reps:            e.Reps,
-		HoldSeconds:     e.HoldSeconds,
-		WeightKilograms: e.WeightKilograms,
-		RestSeconds:     e.RestSeconds,
-		Tempo:           e.Tempo,
-		TargetEffort:    e.TargetEffort,
-		Notes:           e.Notes,
+		ExerciseId:   store.UUIDToString(e.ExerciseID),
+		ExerciseName: e.ExerciseName,
+		Group:        e.Group,
+		Sets:         e.Sets,
+		Reps:         e.Reps,
+		HoldSeconds:  e.HoldSeconds,
+		Weight:       weightToProto(e.Weight),
+		RestSeconds:  e.RestSeconds,
+		Tempo:        e.Tempo,
+		TargetEffort: e.TargetEffort,
+		Notes:        e.Notes,
 	}.Build()
 }
 
@@ -183,6 +188,8 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 		Title:               w.Title,
 		Description:         w.Description,
 		CompletedActivityId: store.UUIDToString(w.CompletedActivityID),
+		StartTime:           w.StartTime,
+		StartWindowMinutes:  w.StartWindowMinutes,
 	}
 	switch w.Type {
 	case plans.WorkoutTypeBase, plans.WorkoutTypeIntensity:
@@ -212,6 +219,7 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 		st := plansv1.StrengthWorkout_builder{
 			Exercises:             exercises,
 			TargetDurationSeconds: w.TargetDurationSeconds,
+			EquipmentIssues:       equipmentIssuesToProto(w.EquipmentIssues),
 		}
 		if w.Log != nil {
 			st.Log = strengthLogToProto(w.Log)
@@ -310,10 +318,14 @@ func loggedExerciseFromProto(e *plansv1.LoggedExercise) (*plans.LoggedExercise, 
 	}
 	logged := &plans.LoggedExercise{ExerciseID: id, Effort: effort, Volume: volume, Notes: strings.TrimSpace(e.GetNotes())}
 	for j, s := range e.GetSets() {
-		if s.GetReps() < 0 || s.GetHoldSeconds() < 0 || s.GetWeightKilograms() < 0 {
-			return nil, fmt.Errorf("sets[%d]: reps, hold_seconds and weight_kilograms must not be negative", j)
+		if s.GetReps() < 0 || s.GetHoldSeconds() < 0 {
+			return nil, fmt.Errorf("sets[%d]: reps and hold_seconds must not be negative", j)
 		}
-		logged.Sets = append(logged.Sets, plans.LoggedSet{Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), WeightKilograms: s.GetWeightKilograms()})
+		weight, err := weightFromProto(fmt.Sprintf("sets[%d].weight", j), s.GetWeight())
+		if err != nil {
+			return nil, err
+		}
+		logged.Sets = append(logged.Sets, plans.LoggedSet{Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), Weight: weight})
 	}
 	return logged, nil
 }
@@ -334,7 +346,7 @@ func strengthLogToProto(l *plans.StrengthLog) *plansv1.StrengthLog {
 func loggedExerciseToProto(e *plans.LoggedExercise) *plansv1.LoggedExercise {
 	sets := make([]*plansv1.LoggedSet, len(e.Sets))
 	for i, s := range e.Sets {
-		sets[i] = plansv1.LoggedSet_builder{Reps: s.Reps, HoldSeconds: s.HoldSeconds, WeightKilograms: s.WeightKilograms}.Build()
+		sets[i] = plansv1.LoggedSet_builder{Reps: s.Reps, HoldSeconds: s.HoldSeconds, Weight: weightToProto(s.Weight)}.Build()
 	}
 	return plansv1.LoggedExercise_builder{
 		ExerciseId:   store.UUIDToString(e.ExerciseID),
@@ -355,4 +367,37 @@ func exerciseIDs(workouts []*plans.Workout) []pgtype.UUID {
 		}
 	}
 	return ids
+}
+
+const (
+	// defaultStartWindowMinutes is the start window of workouts with a start
+	// time but no window.
+	defaultStartWindowMinutes = 60
+	minStartWindowMinutes     = 15
+	maxStartWindowMinutes     = 360
+)
+
+// startWindowFromProto sets when a workout can start.
+func startWindowFromProto(w *plansv1.Workout, workout *plans.Workout) error {
+	start := strings.TrimSpace(w.GetStartTime())
+	if start == "" {
+		if w.GetStartWindowMinutes() != 0 {
+			return invalidArgument("start_window_minutes needs a start_time")
+		}
+		return nil
+	}
+	parsed, err := time.Parse("15:04", start)
+	if err != nil {
+		return invalidArgument("start_time must be HH:MM, e.g. 07:00")
+	}
+	window := w.GetStartWindowMinutes()
+	if window == 0 {
+		window = defaultStartWindowMinutes
+	}
+	if window < minStartWindowMinutes || window > maxStartWindowMinutes {
+		return invalidArgument("start_window_minutes must be between %d and %d", minStartWindowMinutes, maxStartWindowMinutes)
+	}
+	workout.StartTime = parsed.Format("15:04")
+	workout.StartWindowMinutes = window
+	return nil
 }

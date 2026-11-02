@@ -7,6 +7,8 @@ import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_field_mask, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_mcp_v1_options } from "../../mcp/v1/options_pb";
+import type { Equipment, OwnedEquipment } from "./equipment_pb";
+import { file_plans_v1_equipment } from "./equipment_pb";
 import type { LoggedExercise, PlannedExercise, SessionEffort } from "./plans_pb";
 import { file_plans_v1_plans } from "./plans_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -15,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file plans/v1/exercises.proto.
  */
 export const file_plans_v1_exercises: GenFile = /*@__PURE__*/
-  fileDesc("ChhwbGFucy92MS9leGVyY2lzZXMucHJvdG8SCHBsYW5zLnYxIrgCCghFeGVyY2lzZRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhQKDGluc3RydWN0aW9ucxgDIAMoCRIMCgRmZWVsGAQgASgJEikKD3ByaW1hcnlfbXVzY2xlcxgFIAMoDjIQLnBsYW5zLnYxLk11c2NsZRIrChFzZWNvbmRhcnlfbXVzY2xlcxgGIAMoDjIQLnBsYW5zLnYxLk11c2NsZRIRCgllcXVpcG1lbnQYByABKAkSEQoJZWFjaF9zaWRlGAggASgIEjcKC2NyZWF0ZV90aW1lGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIGqp8ZAggBEjcKC3VwZGF0ZV90aW1lGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIGqp8ZAggBItYBChRFeGVyY2lzZUhpc3RvcnlFbnRyeRIMCgRkYXRlGAEgASgJEhIKCndvcmtvdXRfaWQYAiABKAkSFQoNd29ya291dF90aXRsZRgDIAEoCRIqCgdwbGFubmVkGAQgASgLMhkucGxhbnMudjEuUGxhbm5lZEV4ZXJjaXNlEigKBmxvZ2dlZBgFIAEoCzIYLnBsYW5zLnYxLkxvZ2dlZEV4ZXJjaXNlEi8KDnNlc3Npb25fZWZmb3J0GAYgASgOMhcucGxhbnMudjEuU2Vzc2lvbkVmZm9ydCI/ChZDcmVhdGVFeGVyY2lzZXNSZXF1ZXN0EiUKCWV4ZXJjaXNlcxgBIAMoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIkAKF0NyZWF0ZUV4ZXJjaXNlc1Jlc3BvbnNlEiUKCWV4ZXJjaXNlcxgBIAMoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIhYKFExpc3RFeGVyY2lzZXNSZXF1ZXN0Ij4KFUxpc3RFeGVyY2lzZXNSZXNwb25zZRIlCglleGVyY2lzZXMYASADKAsyEi5wbGFucy52MS5FeGVyY2lzZSIgChJHZXRFeGVyY2lzZVJlcXVlc3QSCgoCaWQYASABKAkiOwoTR2V0RXhlcmNpc2VSZXNwb25zZRIkCghleGVyY2lzZRgBIAEoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIm4KFVVwZGF0ZUV4ZXJjaXNlUmVxdWVzdBIkCghleGVyY2lzZRgBIAEoCzISLnBsYW5zLnYxLkV4ZXJjaXNlEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayI+ChZVcGRhdGVFeGVyY2lzZVJlc3BvbnNlEiQKCGV4ZXJjaXNlGAEgASgLMhIucGxhbnMudjEuRXhlcmNpc2UiIwoVRGVsZXRlRXhlcmNpc2VSZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkRlbGV0ZUV4ZXJjaXNlUmVzcG9uc2UiWAoaTGlzdEV4ZXJjaXNlSGlzdG9yeVJlcXVlc3QSFAoMZXhlcmNpc2VfaWRzGAEgAygJEhIKCnN0YXJ0X2RhdGUYAiABKAkSEAoIZW5kX2RhdGUYAyABKAkiTgobTGlzdEV4ZXJjaXNlSGlzdG9yeVJlc3BvbnNlEi8KB2VudHJpZXMYASADKAsyHi5wbGFucy52MS5FeGVyY2lzZUhpc3RvcnlFbnRyeSqzAwoGTXVzY2xlEhYKEk1VU0NMRV9VTlNQRUNJRklFRBAAEg8KC01VU0NMRV9ORUNLEAESFQoRTVVTQ0xFX1VQUEVSX0JBQ0sQAhIPCgtNVVNDTEVfTEFUUxADEhUKEU1VU0NMRV9MT1dFUl9CQUNLEAQSFAoQTVVTQ0xFX1NIT1VMREVSUxAFEhAKDE1VU0NMRV9DSEVTVBAGEhEKDU1VU0NMRV9CSUNFUFMQBxISCg5NVVNDTEVfVFJJQ0VQUxAIEhMKD01VU0NMRV9GT1JFQVJNUxAJEg4KCk1VU0NMRV9BQlMQChITCg9NVVNDTEVfT0JMSVFVRVMQCxIWChJNVVNDTEVfSElQX0ZMRVhPUlMQDBIRCg1NVVNDTEVfR0xVVEVTEA0SGAoUTVVTQ0xFX0hJUF9BQkRVQ1RPUlMQDhIUChBNVVNDTEVfQUREVUNUT1JTEA8SEAoMTVVTQ0xFX1FVQURTEBASFQoRTVVTQ0xFX0hBTVNUUklOR1MQERIRCg1NVVNDTEVfQ0FMVkVTEBISEAoMTVVTQ0xFX1NISU5TEBMSDwoLTVVTQ0xFX0ZFRVQQFDKVBAoPRXhlcmNpc2VTZXJ2aWNlElYKD0NyZWF0ZUV4ZXJjaXNlcxIgLnBsYW5zLnYxLkNyZWF0ZUV4ZXJjaXNlc1JlcXVlc3QaIS5wbGFucy52MS5DcmVhdGVFeGVyY2lzZXNSZXNwb25zZRJQCg1MaXN0RXhlcmNpc2VzEh4ucGxhbnMudjEuTGlzdEV4ZXJjaXNlc1JlcXVlc3QaHy5wbGFucy52MS5MaXN0RXhlcmNpc2VzUmVzcG9uc2USSgoLR2V0RXhlcmNpc2USHC5wbGFucy52MS5HZXRFeGVyY2lzZVJlcXVlc3QaHS5wbGFucy52MS5HZXRFeGVyY2lzZVJlc3BvbnNlElMKDlVwZGF0ZUV4ZXJjaXNlEh8ucGxhbnMudjEuVXBkYXRlRXhlcmNpc2VSZXF1ZXN0GiAucGxhbnMudjEuVXBkYXRlRXhlcmNpc2VSZXNwb25zZRJTCg5EZWxldGVFeGVyY2lzZRIfLnBsYW5zLnYxLkRlbGV0ZUV4ZXJjaXNlUmVxdWVzdBogLnBsYW5zLnYxLkRlbGV0ZUV4ZXJjaXNlUmVzcG9uc2USYgoTTGlzdEV4ZXJjaXNlSGlzdG9yeRIkLnBsYW5zLnYxLkxpc3RFeGVyY2lzZUhpc3RvcnlSZXF1ZXN0GiUucGxhbnMudjEuTGlzdEV4ZXJjaXNlSGlzdG9yeVJlc3BvbnNlQqUBCgxjb20ucGxhbnMudjFCDkV4ZXJjaXNlc1Byb3RvUAFaRGdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9wbGFucy92MTtwbGFuc3YxogIDUFhYqgIIUGxhbnMuVjHKAghQbGFuc1xWMeICFFBsYW5zXFYxXEdQQk1ldGFkYXRh6gIJUGxhbnM6OlYxYgZwcm90bzM", [file_google_protobuf_field_mask, file_google_protobuf_timestamp, file_mcp_v1_options, file_plans_v1_plans]);
+  fileDesc("ChhwbGFucy92MS9leGVyY2lzZXMucHJvdG8SCHBsYW5zLnYxIpcDCghFeGVyY2lzZRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhQKDGluc3RydWN0aW9ucxgDIAMoCRIMCgRmZWVsGAQgASgJEikKD3ByaW1hcnlfbXVzY2xlcxgFIAMoDjIQLnBsYW5zLnYxLk11c2NsZRIrChFzZWNvbmRhcnlfbXVzY2xlcxgGIAMoDjIQLnBsYW5zLnYxLk11c2NsZRImCgllcXVpcG1lbnQYByADKA4yEy5wbGFucy52MS5FcXVpcG1lbnQSEQoJZWFjaF9zaWRlGAggASgIEjcKC2NyZWF0ZV90aW1lGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIGqp8ZAggBEjcKC3VwZGF0ZV90aW1lGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIGqp8ZAggBEhcKD2VxdWlwbWVudF9ub3RlcxgLIAEoCRIvCgphbmltYXRpb25zGAwgAygLMhsucGxhbnMudjEuRXhlcmNpc2VBbmltYXRpb24ixQEKEUV4ZXJjaXNlQW5pbWF0aW9uEg0KBXRpdGxlGAEgASgJEiMKBmFuY2hvchgCIAEoDjITLnBsYW5zLnYxLkJvZHlQb2ludBIkCgdwbGFudGVkGAMgAygOMhMucGxhbnMudjEuQm9keVBvaW50EiYKBXByb3BzGAQgAygLMhcucGxhbnMudjEuQW5pbWF0aW9uUHJvcBIuCglrZXlmcmFtZXMYBSADKAsyGy5wbGFucy52MS5BbmltYXRpb25LZXlmcmFtZSJeCg1BbmltYXRpb25Qcm9wEikKBGtpbmQYASABKA4yGy5wbGFucy52MS5BbmltYXRpb25Qcm9wS2luZBIiCgVwb2ludBgCIAEoDjITLnBsYW5zLnYxLkJvZHlQb2ludCKcAQoRQW5pbWF0aW9uS2V5ZnJhbWUSHAoEcG9zZRgBIAEoCzIOLnBsYW5zLnYxLlBvc2USGQoRbW92ZV9taWxsaXNlY29uZHMYAiABKAUSGQoRaG9sZF9taWxsaXNlY29uZHMYAyABKAUSCwoDY3VlGAQgASgJEiYKCWhpZ2hsaWdodBgFIAEoDjITLnBsYW5zLnYxLkJvZHlQb2ludCKZAgoEUG9zZRIVCg10b3Jzb19kZWdyZWVzGAEgASgBEhQKDGhlYWRfZGVncmVlcxgCIAEoARIaChJuZWFyX3RoaWdoX2RlZ3JlZXMYAyABKAESGQoRbmVhcl9zaGluX2RlZ3JlZXMYBCABKAESGQoRZmFyX3RoaWdoX2RlZ3JlZXMYBSABKAESGAoQZmFyX3NoaW5fZGVncmVlcxgGIAEoARIeChZuZWFyX3VwcGVyX2FybV9kZWdyZWVzGAcgASgBEhwKFG5lYXJfZm9yZWFybV9kZWdyZWVzGAggASgBEh0KFWZhcl91cHBlcl9hcm1fZGVncmVlcxgJIAEoARIbChNmYXJfZm9yZWFybV9kZWdyZWVzGAogASgBItYBChRFeGVyY2lzZUhpc3RvcnlFbnRyeRIMCgRkYXRlGAEgASgJEhIKCndvcmtvdXRfaWQYAiABKAkSFQoNd29ya291dF90aXRsZRgDIAEoCRIqCgdwbGFubmVkGAQgASgLMhkucGxhbnMudjEuUGxhbm5lZEV4ZXJjaXNlEigKBmxvZ2dlZBgFIAEoCzIYLnBsYW5zLnYxLkxvZ2dlZEV4ZXJjaXNlEi8KDnNlc3Npb25fZWZmb3J0GAYgASgOMhcucGxhbnMudjEuU2Vzc2lvbkVmZm9ydCI/ChZDcmVhdGVFeGVyY2lzZXNSZXF1ZXN0EiUKCWV4ZXJjaXNlcxgBIAMoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIkAKF0NyZWF0ZUV4ZXJjaXNlc1Jlc3BvbnNlEiUKCWV4ZXJjaXNlcxgBIAMoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIhYKFExpc3RFeGVyY2lzZXNSZXF1ZXN0Ij4KFUxpc3RFeGVyY2lzZXNSZXNwb25zZRIlCglleGVyY2lzZXMYASADKAsyEi5wbGFucy52MS5FeGVyY2lzZSIgChJHZXRFeGVyY2lzZVJlcXVlc3QSCgoCaWQYASABKAkiOwoTR2V0RXhlcmNpc2VSZXNwb25zZRIkCghleGVyY2lzZRgBIAEoCzISLnBsYW5zLnYxLkV4ZXJjaXNlIm4KFVVwZGF0ZUV4ZXJjaXNlUmVxdWVzdBIkCghleGVyY2lzZRgBIAEoCzISLnBsYW5zLnYxLkV4ZXJjaXNlEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayI+ChZVcGRhdGVFeGVyY2lzZVJlc3BvbnNlEiQKCGV4ZXJjaXNlGAEgASgLMhIucGxhbnMudjEuRXhlcmNpc2UiIwoVRGVsZXRlRXhlcmNpc2VSZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkRlbGV0ZUV4ZXJjaXNlUmVzcG9uc2UiWAoaTGlzdEV4ZXJjaXNlSGlzdG9yeVJlcXVlc3QSFAoMZXhlcmNpc2VfaWRzGAEgAygJEhIKCnN0YXJ0X2RhdGUYAiABKAkSEAoIZW5kX2RhdGUYAyABKAkiTgobTGlzdEV4ZXJjaXNlSGlzdG9yeVJlc3BvbnNlEi8KB2VudHJpZXMYASADKAsyHi5wbGFucy52MS5FeGVyY2lzZUhpc3RvcnlFbnRyeSIZChdHZXRIb21lRXF1aXBtZW50UmVxdWVzdCJ4ChhHZXRIb21lRXF1aXBtZW50UmVzcG9uc2USKwoJZXF1aXBtZW50GAEgAygLMhgucGxhbnMudjEuT3duZWRFcXVpcG1lbnQSLwoLdXBkYXRlX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkYKF1NldEhvbWVFcXVpcG1lbnRSZXF1ZXN0EisKCWVxdWlwbWVudBgBIAMoCzIYLnBsYW5zLnYxLk93bmVkRXF1aXBtZW50IngKGFNldEhvbWVFcXVpcG1lbnRSZXNwb25zZRIrCgllcXVpcG1lbnQYASADKAsyGC5wbGFucy52MS5Pd25lZEVxdWlwbWVudBIvCgt1cGRhdGVfdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAqswMKBk11c2NsZRIWChJNVVNDTEVfVU5TUEVDSUZJRUQQABIPCgtNVVNDTEVfTkVDSxABEhUKEU1VU0NMRV9VUFBFUl9CQUNLEAISDwoLTVVTQ0xFX0xBVFMQAxIVChFNVVNDTEVfTE9XRVJfQkFDSxAEEhQKEE1VU0NMRV9TSE9VTERFUlMQBRIQCgxNVVNDTEVfQ0hFU1QQBhIRCg1NVVNDTEVfQklDRVBTEAcSEgoOTVVTQ0xFX1RSSUNFUFMQCBITCg9NVVNDTEVfRk9SRUFSTVMQCRIOCgpNVVNDTEVfQUJTEAoSEwoPTVVTQ0xFX09CTElRVUVTEAsSFgoSTVVTQ0xFX0hJUF9GTEVYT1JTEAwSEQoNTVVTQ0xFX0dMVVRFUxANEhgKFE1VU0NMRV9ISVBfQUJEVUNUT1JTEA4SFAoQTVVTQ0xFX0FERFVDVE9SUxAPEhAKDE1VU0NMRV9RVUFEUxAQEhUKEU1VU0NMRV9IQU1TVFJJTkdTEBESEQoNTVVTQ0xFX0NBTFZFUxASEhAKDE1VU0NMRV9TSElOUxATEg8KC01VU0NMRV9GRUVUEBQquQIKCUJvZHlQb2ludBIaChZCT0RZX1BPSU5UX1VOU1BFQ0lGSUVEEAASEwoPQk9EWV9QT0lOVF9IRUFEEAESGAoUQk9EWV9QT0lOVF9TSE9VTERFUlMQAhITCg9CT0RZX1BPSU5UX0hJUFMQAxIZChVCT0RZX1BPSU5UX05FQVJfRUxCT1cQBBIYChRCT0RZX1BPSU5UX05FQVJfSEFORBAFEhgKFEJPRFlfUE9JTlRfRkFSX0VMQk9XEAYSFwoTQk9EWV9QT0lOVF9GQVJfSEFORBAHEhgKFEJPRFlfUE9JTlRfTkVBUl9LTkVFEAgSGAoUQk9EWV9QT0lOVF9ORUFSX0ZPT1QQCRIXChNCT0RZX1BPSU5UX0ZBUl9LTkVFEAoSFwoTQk9EWV9QT0lOVF9GQVJfRk9PVBALKvUBChFBbmltYXRpb25Qcm9wS2luZBIjCh9BTklNQVRJT05fUFJPUF9LSU5EX1VOU1BFQ0lGSUVEEAASHQoZQU5JTUFUSU9OX1BST1BfS0lORF9CRU5DSBABEhwKGEFOSU1BVElPTl9QUk9QX0tJTkRfU1RFUBACEiAKHEFOSU1BVElPTl9QUk9QX0tJTkRfRFVNQkJFTEwQAxIiCh5BTklNQVRJT05fUFJPUF9LSU5EX0tFVFRMRUJFTEwQBBIbChdBTklNQVRJT05fUFJPUF9LSU5EX01BVBAFEhsKF0FOSU1BVElPTl9QUk9QX0tJTkRfQkFSEAYyywUKD0V4ZXJjaXNlU2VydmljZRJWCg9DcmVhdGVFeGVyY2lzZXMSIC5wbGFucy52MS5DcmVhdGVFeGVyY2lzZXNSZXF1ZXN0GiEucGxhbnMudjEuQ3JlYXRlRXhlcmNpc2VzUmVzcG9uc2USUAoNTGlzdEV4ZXJjaXNlcxIeLnBsYW5zLnYxLkxpc3RFeGVyY2lzZXNSZXF1ZXN0Gh8ucGxhbnMudjEuTGlzdEV4ZXJjaXNlc1Jlc3BvbnNlEkoKC0dldEV4ZXJjaXNlEhwucGxhbnMudjEuR2V0RXhlcmNpc2VSZXF1ZXN0Gh0ucGxhbnMudjEuR2V0RXhlcmNpc2VSZXNwb25zZRJTCg5VcGRhdGVFeGVyY2lzZRIfLnBsYW5zLnYxLlVwZGF0ZUV4ZXJjaXNlUmVxdWVzdBogLnBsYW5zLnYxLlVwZGF0ZUV4ZXJjaXNlUmVzcG9uc2USUwoORGVsZXRlRXhlcmNpc2USHy5wbGFucy52MS5EZWxldGVFeGVyY2lzZVJlcXVlc3QaIC5wbGFucy52MS5EZWxldGVFeGVyY2lzZVJlc3BvbnNlEmIKE0xpc3RFeGVyY2lzZUhpc3RvcnkSJC5wbGFucy52MS5MaXN0RXhlcmNpc2VIaXN0b3J5UmVxdWVzdBolLnBsYW5zLnYxLkxpc3RFeGVyY2lzZUhpc3RvcnlSZXNwb25zZRJZChBHZXRIb21lRXF1aXBtZW50EiEucGxhbnMudjEuR2V0SG9tZUVxdWlwbWVudFJlcXVlc3QaIi5wbGFucy52MS5HZXRIb21lRXF1aXBtZW50UmVzcG9uc2USWQoQU2V0SG9tZUVxdWlwbWVudBIhLnBsYW5zLnYxLlNldEhvbWVFcXVpcG1lbnRSZXF1ZXN0GiIucGxhbnMudjEuU2V0SG9tZUVxdWlwbWVudFJlc3BvbnNlQqUBCgxjb20ucGxhbnMudjFCDkV4ZXJjaXNlc1Byb3RvUAFaRGdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9wbGFucy92MTtwbGFuc3YxogIDUFhYqgIIUGxhbnMuVjHKAghQbGFuc1xWMeICFFBsYW5zXFYxXEdQQk1ldGFkYXRh6gIJUGxhbnM6OlYxYgZwcm90bzM", [file_google_protobuf_field_mask, file_google_protobuf_timestamp, file_mcp_v1_options, file_plans_v1_equipment, file_plans_v1_plans]);
 
 /**
  * An exercise in the user's library.
@@ -70,11 +72,13 @@ export type Exercise = Message<"plans.v1.Exercise"> & {
   secondaryMuscles: Muscle[];
 
   /**
-   * The equipment needed, e.g. "Two dumbbells and a bench". Empty for none.
+   * The equipment needed. Empty for bodyweight exercises. An exercise that
+   * can be done with dumbbells or a kettlebell lists the one it's usually
+   * done with; planning chooses the weight.
    *
-   * @generated from field: string equipment = 7;
+   * @generated from field: repeated plans.v1.Equipment equipment = 7;
    */
-  equipment: string;
+  equipment: Equipment[];
 
   /**
    * Whether the exercise is done on each side in turn, like a lunge, so
@@ -97,6 +101,23 @@ export type Exercise = Message<"plans.v1.Exercise"> & {
    * @generated from field: google.protobuf.Timestamp update_time = 10;
    */
   updateTime?: Timestamp | undefined;
+
+  /**
+   * More about the equipment, e.g. "A bench at about knee height". Empty if
+   * none.
+   *
+   * @generated from field: string equipment_notes = 11;
+   */
+  equipmentNotes: string;
+
+  /**
+   * Short looping animations of a stick figure doing the exercise, shown to
+   * the user as they do it: usually one of the movement, and maybe one of
+   * setting up. At most 3.
+   *
+   * @generated from field: repeated plans.v1.ExerciseAnimation animations = 12;
+   */
+  animations: ExerciseAnimation[];
 };
 
 /**
@@ -105,6 +126,237 @@ export type Exercise = Message<"plans.v1.Exercise"> & {
  */
 export const ExerciseSchema: GenMessage<Exercise> = /*@__PURE__*/
   messageDesc(file_plans_v1_exercises, 0);
+
+/**
+ * A short looping animation of a stick figure doing an exercise, seen from
+ * the side, facing right. It's a few key poses the figure moves between,
+ * back to the first after the last. One point of the body, the anchor,
+ * stays where it is, and the figure moves around it; planted hands and feet
+ * stay where they are in the first pose too, their knee or elbow bending to
+ * keep them there. The floor is under the lowest point of the first pose
+ * that no prop supports.
+ *
+ * @generated from message plans.v1.ExerciseAnimation
+ */
+export type ExerciseAnimation = Message<"plans.v1.ExerciseAnimation"> & {
+  /**
+   * What the animation shows, e.g. "The movement" or "Setting up".
+   * Required.
+   *
+   * @generated from field: string title = 1;
+   */
+  title: string;
+
+  /**
+   * The point of the body that stays where it is, e.g. the front foot of a
+   * split squat. Required.
+   *
+   * @generated from field: plans.v1.BodyPoint anchor = 2;
+   */
+  anchor: BodyPoint;
+
+  /**
+   * Other hands and feet that stay where they are in the first pose, e.g.
+   * the back foot on the bench of a split squat.
+   *
+   * @generated from field: repeated plans.v1.BodyPoint planted = 3;
+   */
+  planted: BodyPoint[];
+
+  /**
+   * The equipment shown, e.g. a bench under the back foot and dumbbells in
+   * the hands. At most 6.
+   *
+   * @generated from field: repeated plans.v1.AnimationProp props = 4;
+   */
+  props: AnimationProp[];
+
+  /**
+   * The key poses, in order. Between 2 and 8.
+   *
+   * @generated from field: repeated plans.v1.AnimationKeyframe keyframes = 5;
+   */
+  keyframes: AnimationKeyframe[];
+};
+
+/**
+ * Describes the message plans.v1.ExerciseAnimation.
+ * Use `create(ExerciseAnimationSchema)` to create a new message.
+ */
+export const ExerciseAnimationSchema: GenMessage<ExerciseAnimation> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 1);
+
+/**
+ * A piece of equipment in an animation, where it is in the first pose.
+ *
+ * @generated from message plans.v1.AnimationProp
+ */
+export type AnimationProp = Message<"plans.v1.AnimationProp"> & {
+  /**
+   * What it is. Required.
+   *
+   * @generated from field: plans.v1.AnimationPropKind kind = 1;
+   */
+  kind: AnimationPropKind;
+
+  /**
+   * The point it's at: under the point for benches and steps, in the hand
+   * for weights, or held by the hand for bars. Unset for mats.
+   *
+   * @generated from field: plans.v1.BodyPoint point = 2;
+   */
+  point: BodyPoint;
+};
+
+/**
+ * Describes the message plans.v1.AnimationProp.
+ * Use `create(AnimationPropSchema)` to create a new message.
+ */
+export const AnimationPropSchema: GenMessage<AnimationProp> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 2);
+
+/**
+ * A key pose of an animation.
+ *
+ * @generated from message plans.v1.AnimationKeyframe
+ */
+export type AnimationKeyframe = Message<"plans.v1.AnimationKeyframe"> & {
+  /**
+   * The pose. Required.
+   *
+   * @generated from field: plans.v1.Pose pose = 1;
+   */
+  pose?: Pose | undefined;
+
+  /**
+   * How long the figure takes to move into this pose from the previous one,
+   * or from the last for the first, in milliseconds, e.g. 3000 for three
+   * seconds down. At most 10000.
+   *
+   * @generated from field: int32 move_milliseconds = 2;
+   */
+  moveMilliseconds: number;
+
+  /**
+   * How long the figure holds the pose, in milliseconds. At most 10000.
+   *
+   * @generated from field: int32 hold_milliseconds = 3;
+   */
+  holdMilliseconds: number;
+
+  /**
+   * A short cue shown during the move and hold, e.g. "Lower for 3 s".
+   * Empty if none.
+   *
+   * @generated from field: string cue = 4;
+   */
+  cue: string;
+
+  /**
+   * A point to circle while the pose is held, to draw the eye to it, e.g.
+   * the front knee staying over the foot. Unspecified for none.
+   *
+   * @generated from field: plans.v1.BodyPoint highlight = 5;
+   */
+  highlight: BodyPoint;
+};
+
+/**
+ * Describes the message plans.v1.AnimationKeyframe.
+ * Use `create(AnimationKeyframeSchema)` to create a new message.
+ */
+export const AnimationKeyframeSchema: GenMessage<AnimationKeyframe> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 3);
+
+/**
+ * A pose of the stick figure, as the direction of each body segment from
+ * the joint it starts at, in degrees, seen from the side with the figure
+ * facing right: 0 points straight down, 90 straight forward, 180 straight
+ * up and -90 straight back. Standing tall is a torso and head of 180, and
+ * thighs, shins and arms of 0; a thigh parallel to the floor in front is 90.
+ * The segments are the same length in every pose, so the figure keeps its
+ * proportions.
+ *
+ * @generated from message plans.v1.Pose
+ */
+export type Pose = Message<"plans.v1.Pose"> & {
+  /**
+   * From the hips to the shoulders.
+   *
+   * @generated from field: double torso_degrees = 1;
+   */
+  torsoDegrees: number;
+
+  /**
+   * From the shoulders to the head.
+   *
+   * @generated from field: double head_degrees = 2;
+   */
+  headDegrees: number;
+
+  /**
+   * From the hip to the knee of the near leg.
+   *
+   * @generated from field: double near_thigh_degrees = 3;
+   */
+  nearThighDegrees: number;
+
+  /**
+   * From the knee to the ankle of the near leg.
+   *
+   * @generated from field: double near_shin_degrees = 4;
+   */
+  nearShinDegrees: number;
+
+  /**
+   * From the hip to the knee of the far leg.
+   *
+   * @generated from field: double far_thigh_degrees = 5;
+   */
+  farThighDegrees: number;
+
+  /**
+   * From the knee to the ankle of the far leg.
+   *
+   * @generated from field: double far_shin_degrees = 6;
+   */
+  farShinDegrees: number;
+
+  /**
+   * From the shoulder to the elbow of the near arm.
+   *
+   * @generated from field: double near_upper_arm_degrees = 7;
+   */
+  nearUpperArmDegrees: number;
+
+  /**
+   * From the elbow to the hand of the near arm.
+   *
+   * @generated from field: double near_forearm_degrees = 8;
+   */
+  nearForearmDegrees: number;
+
+  /**
+   * From the shoulder to the elbow of the far arm.
+   *
+   * @generated from field: double far_upper_arm_degrees = 9;
+   */
+  farUpperArmDegrees: number;
+
+  /**
+   * From the elbow to the hand of the far arm.
+   *
+   * @generated from field: double far_forearm_degrees = 10;
+   */
+  farForearmDegrees: number;
+};
+
+/**
+ * Describes the message plans.v1.Pose.
+ * Use `create(PoseSchema)` to create a new message.
+ */
+export const PoseSchema: GenMessage<Pose> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 4);
 
 /**
  * What the user did in an exercise in one strength workout.
@@ -161,7 +413,7 @@ export type ExerciseHistoryEntry = Message<"plans.v1.ExerciseHistoryEntry"> & {
  * Use `create(ExerciseHistoryEntrySchema)` to create a new message.
  */
 export const ExerciseHistoryEntrySchema: GenMessage<ExerciseHistoryEntry> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 1);
+  messageDesc(file_plans_v1_exercises, 5);
 
 /**
  * @generated from message plans.v1.CreateExercisesRequest
@@ -180,7 +432,7 @@ export type CreateExercisesRequest = Message<"plans.v1.CreateExercisesRequest"> 
  * Use `create(CreateExercisesRequestSchema)` to create a new message.
  */
 export const CreateExercisesRequestSchema: GenMessage<CreateExercisesRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 2);
+  messageDesc(file_plans_v1_exercises, 6);
 
 /**
  * @generated from message plans.v1.CreateExercisesResponse
@@ -199,7 +451,7 @@ export type CreateExercisesResponse = Message<"plans.v1.CreateExercisesResponse"
  * Use `create(CreateExercisesResponseSchema)` to create a new message.
  */
 export const CreateExercisesResponseSchema: GenMessage<CreateExercisesResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 3);
+  messageDesc(file_plans_v1_exercises, 7);
 
 /**
  * @generated from message plans.v1.ListExercisesRequest
@@ -212,7 +464,7 @@ export type ListExercisesRequest = Message<"plans.v1.ListExercisesRequest"> & {
  * Use `create(ListExercisesRequestSchema)` to create a new message.
  */
 export const ListExercisesRequestSchema: GenMessage<ListExercisesRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 4);
+  messageDesc(file_plans_v1_exercises, 8);
 
 /**
  * @generated from message plans.v1.ListExercisesResponse
@@ -231,7 +483,7 @@ export type ListExercisesResponse = Message<"plans.v1.ListExercisesResponse"> & 
  * Use `create(ListExercisesResponseSchema)` to create a new message.
  */
 export const ListExercisesResponseSchema: GenMessage<ListExercisesResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 5);
+  messageDesc(file_plans_v1_exercises, 9);
 
 /**
  * @generated from message plans.v1.GetExerciseRequest
@@ -250,7 +502,7 @@ export type GetExerciseRequest = Message<"plans.v1.GetExerciseRequest"> & {
  * Use `create(GetExerciseRequestSchema)` to create a new message.
  */
 export const GetExerciseRequestSchema: GenMessage<GetExerciseRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 6);
+  messageDesc(file_plans_v1_exercises, 10);
 
 /**
  * @generated from message plans.v1.GetExerciseResponse
@@ -269,7 +521,7 @@ export type GetExerciseResponse = Message<"plans.v1.GetExerciseResponse"> & {
  * Use `create(GetExerciseResponseSchema)` to create a new message.
  */
 export const GetExerciseResponseSchema: GenMessage<GetExerciseResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 7);
+  messageDesc(file_plans_v1_exercises, 11);
 
 /**
  * @generated from message plans.v1.UpdateExerciseRequest
@@ -296,7 +548,7 @@ export type UpdateExerciseRequest = Message<"plans.v1.UpdateExerciseRequest"> & 
  * Use `create(UpdateExerciseRequestSchema)` to create a new message.
  */
 export const UpdateExerciseRequestSchema: GenMessage<UpdateExerciseRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 8);
+  messageDesc(file_plans_v1_exercises, 12);
 
 /**
  * @generated from message plans.v1.UpdateExerciseResponse
@@ -315,7 +567,7 @@ export type UpdateExerciseResponse = Message<"plans.v1.UpdateExerciseResponse"> 
  * Use `create(UpdateExerciseResponseSchema)` to create a new message.
  */
 export const UpdateExerciseResponseSchema: GenMessage<UpdateExerciseResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 9);
+  messageDesc(file_plans_v1_exercises, 13);
 
 /**
  * @generated from message plans.v1.DeleteExerciseRequest
@@ -334,7 +586,7 @@ export type DeleteExerciseRequest = Message<"plans.v1.DeleteExerciseRequest"> & 
  * Use `create(DeleteExerciseRequestSchema)` to create a new message.
  */
 export const DeleteExerciseRequestSchema: GenMessage<DeleteExerciseRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 10);
+  messageDesc(file_plans_v1_exercises, 14);
 
 /**
  * @generated from message plans.v1.DeleteExerciseResponse
@@ -347,7 +599,7 @@ export type DeleteExerciseResponse = Message<"plans.v1.DeleteExerciseResponse"> 
  * Use `create(DeleteExerciseResponseSchema)` to create a new message.
  */
 export const DeleteExerciseResponseSchema: GenMessage<DeleteExerciseResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 11);
+  messageDesc(file_plans_v1_exercises, 15);
 
 /**
  * @generated from message plans.v1.ListExerciseHistoryRequest
@@ -381,7 +633,7 @@ export type ListExerciseHistoryRequest = Message<"plans.v1.ListExerciseHistoryRe
  * Use `create(ListExerciseHistoryRequestSchema)` to create a new message.
  */
 export const ListExerciseHistoryRequestSchema: GenMessage<ListExerciseHistoryRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 12);
+  messageDesc(file_plans_v1_exercises, 16);
 
 /**
  * @generated from message plans.v1.ListExerciseHistoryResponse
@@ -400,7 +652,93 @@ export type ListExerciseHistoryResponse = Message<"plans.v1.ListExerciseHistoryR
  * Use `create(ListExerciseHistoryResponseSchema)` to create a new message.
  */
 export const ListExerciseHistoryResponseSchema: GenMessage<ListExerciseHistoryResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_exercises, 13);
+  messageDesc(file_plans_v1_exercises, 17);
+
+/**
+ * @generated from message plans.v1.GetHomeEquipmentRequest
+ */
+export type GetHomeEquipmentRequest = Message<"plans.v1.GetHomeEquipmentRequest"> & {
+};
+
+/**
+ * Describes the message plans.v1.GetHomeEquipmentRequest.
+ * Use `create(GetHomeEquipmentRequestSchema)` to create a new message.
+ */
+export const GetHomeEquipmentRequestSchema: GenMessage<GetHomeEquipmentRequest> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 18);
+
+/**
+ * @generated from message plans.v1.GetHomeEquipmentResponse
+ */
+export type GetHomeEquipmentResponse = Message<"plans.v1.GetHomeEquipmentResponse"> & {
+  /**
+   * The equipment the user has at home, in the order of the Equipment
+   * enum. Empty if they have none, or haven't said yet.
+   *
+   * @generated from field: repeated plans.v1.OwnedEquipment equipment = 1;
+   */
+  equipment: OwnedEquipment[];
+
+  /**
+   * When the list was last set. Unset if the user hasn't said what they
+   * have yet: then don't assume they have no equipment, ask them.
+   *
+   * @generated from field: google.protobuf.Timestamp update_time = 2;
+   */
+  updateTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message plans.v1.GetHomeEquipmentResponse.
+ * Use `create(GetHomeEquipmentResponseSchema)` to create a new message.
+ */
+export const GetHomeEquipmentResponseSchema: GenMessage<GetHomeEquipmentResponse> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 19);
+
+/**
+ * @generated from message plans.v1.SetHomeEquipmentRequest
+ */
+export type SetHomeEquipmentRequest = Message<"plans.v1.SetHomeEquipmentRequest"> & {
+  /**
+   * The equipment the user has at home, replacing the earlier list.
+   *
+   * @generated from field: repeated plans.v1.OwnedEquipment equipment = 1;
+   */
+  equipment: OwnedEquipment[];
+};
+
+/**
+ * Describes the message plans.v1.SetHomeEquipmentRequest.
+ * Use `create(SetHomeEquipmentRequestSchema)` to create a new message.
+ */
+export const SetHomeEquipmentRequestSchema: GenMessage<SetHomeEquipmentRequest> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 20);
+
+/**
+ * @generated from message plans.v1.SetHomeEquipmentResponse
+ */
+export type SetHomeEquipmentResponse = Message<"plans.v1.SetHomeEquipmentResponse"> & {
+  /**
+   * The equipment the user has at home.
+   *
+   * @generated from field: repeated plans.v1.OwnedEquipment equipment = 1;
+   */
+  equipment: OwnedEquipment[];
+
+  /**
+   * When the list was set.
+   *
+   * @generated from field: google.protobuf.Timestamp update_time = 2;
+   */
+  updateTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message plans.v1.SetHomeEquipmentResponse.
+ * Use `create(SetHomeEquipmentResponseSchema)` to create a new message.
+ */
+export const SetHomeEquipmentResponseSchema: GenMessage<SetHomeEquipmentResponse> = /*@__PURE__*/
+  messageDesc(file_plans_v1_exercises, 21);
 
 /**
  * Muscle is a muscle or muscle group an exercise works.
@@ -546,6 +884,140 @@ export const MuscleSchema: GenEnum<Muscle> = /*@__PURE__*/
   enumDesc(file_plans_v1_exercises, 0);
 
 /**
+ * BodyPoint is a point of the stick figure. Near limbs are on the viewer's
+ * side, and far limbs behind them.
+ *
+ * @generated from enum plans.v1.BodyPoint
+ */
+export enum BodyPoint {
+  /**
+   * @generated from enum value: BODY_POINT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: BODY_POINT_HEAD = 1;
+   */
+  HEAD = 1,
+
+  /**
+   * @generated from enum value: BODY_POINT_SHOULDERS = 2;
+   */
+  SHOULDERS = 2,
+
+  /**
+   * @generated from enum value: BODY_POINT_HIPS = 3;
+   */
+  HIPS = 3,
+
+  /**
+   * @generated from enum value: BODY_POINT_NEAR_ELBOW = 4;
+   */
+  NEAR_ELBOW = 4,
+
+  /**
+   * @generated from enum value: BODY_POINT_NEAR_HAND = 5;
+   */
+  NEAR_HAND = 5,
+
+  /**
+   * @generated from enum value: BODY_POINT_FAR_ELBOW = 6;
+   */
+  FAR_ELBOW = 6,
+
+  /**
+   * @generated from enum value: BODY_POINT_FAR_HAND = 7;
+   */
+  FAR_HAND = 7,
+
+  /**
+   * @generated from enum value: BODY_POINT_NEAR_KNEE = 8;
+   */
+  NEAR_KNEE = 8,
+
+  /**
+   * @generated from enum value: BODY_POINT_NEAR_FOOT = 9;
+   */
+  NEAR_FOOT = 9,
+
+  /**
+   * @generated from enum value: BODY_POINT_FAR_KNEE = 10;
+   */
+  FAR_KNEE = 10,
+
+  /**
+   * @generated from enum value: BODY_POINT_FAR_FOOT = 11;
+   */
+  FAR_FOOT = 11,
+}
+
+/**
+ * Describes the enum plans.v1.BodyPoint.
+ */
+export const BodyPointSchema: GenEnum<BodyPoint> = /*@__PURE__*/
+  enumDesc(file_plans_v1_exercises, 1);
+
+/**
+ * AnimationPropKind is a piece of equipment in an animation.
+ *
+ * @generated from enum plans.v1.AnimationPropKind
+ */
+export enum AnimationPropKind {
+  /**
+   * @generated from enum value: ANIMATION_PROP_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * A bench under the point, e.g. a foot or the shoulders.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_BENCH = 1;
+   */
+  BENCH = 1,
+
+  /**
+   * A low step or box under the point.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_STEP = 2;
+   */
+  STEP = 2,
+
+  /**
+   * A dumbbell in the hand at the point.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_DUMBBELL = 3;
+   */
+  DUMBBELL = 3,
+
+  /**
+   * A kettlebell in the hand at the point.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_KETTLEBELL = 4;
+   */
+  KETTLEBELL = 4,
+
+  /**
+   * A mat on the floor under the whole figure; it takes no point.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_MAT = 5;
+   */
+  MAT = 5,
+
+  /**
+   * A bar held by the hand at the point, like a pull-up bar.
+   *
+   * @generated from enum value: ANIMATION_PROP_KIND_BAR = 6;
+   */
+  BAR = 6,
+}
+
+/**
+ * Describes the enum plans.v1.AnimationPropKind.
+ */
+export const AnimationPropKindSchema: GenEnum<AnimationPropKind> = /*@__PURE__*/
+  enumDesc(file_plans_v1_exercises, 2);
+
+/**
  * ExerciseService manages the user's exercise library: the strength and
  * mobility exercises their strength workouts are made of, with how to do
  * them, how they should feel and the muscles they work. Each exercise is
@@ -553,6 +1025,11 @@ export const MuscleSchema: GenEnum<Muscle> = /*@__PURE__*/
  * TrainingPlanService.CreateWorkouts), so its history is kept: what the user
  * did each time, with how it felt. Look an exercise up with ListExercises
  * before creating it, and reuse it rather than creating a duplicate.
+ *
+ * The user does most strength workouts at home, so plan them with the
+ * equipment they have: see GetHomeEquipment. Exercises list the equipment
+ * they need, and strength workouts report the exercises the user lacks the
+ * equipment or weights for.
  *
  * @generated from service plans.v1.ExerciseService
  */
@@ -622,6 +1099,29 @@ export const ExerciseService: GenService<{
     methodKind: "unary";
     input: typeof ListExerciseHistoryRequestSchema;
     output: typeof ListExerciseHistoryResponseSchema;
+  },
+  /**
+   * Get the equipment the user has at home, with the weights of their
+   * dumbbells and kettlebells. Plan strength workouts with it.
+   *
+   * @generated from rpc plans.v1.ExerciseService.GetHomeEquipment
+   */
+  getHomeEquipment: {
+    methodKind: "unary";
+    input: typeof GetHomeEquipmentRequestSchema;
+    output: typeof GetHomeEquipmentResponseSchema;
+  },
+  /**
+   * Replace the list of equipment the user has at home. The user usually
+   * does this in the web app's settings; only change it when they say what
+   * they have.
+   *
+   * @generated from rpc plans.v1.ExerciseService.SetHomeEquipment
+   */
+  setHomeEquipment: {
+    methodKind: "unary";
+    input: typeof SetHomeEquipmentRequestSchema;
+    output: typeof SetHomeEquipmentResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_plans_v1_exercises, 0);

@@ -5,6 +5,7 @@ package plans.v1;
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "mcp/v1/options.proto";
+import "plans/v1/equipment.proto";
 import "plans/v1/plans.proto";
 
 // ExerciseService manages the user's exercise library: the strength and
@@ -14,6 +15,11 @@ import "plans/v1/plans.proto";
 // TrainingPlanService.CreateWorkouts), so its history is kept: what the user
 // did each time, with how it felt. Look an exercise up with ListExercises
 // before creating it, and reuse it rather than creating a duplicate.
+//
+// The user does most strength workouts at home, so plan them with the
+// equipment they have: see GetHomeEquipment. Exercises list the equipment
+// they need, and strength workouts report the exercises the user lacks the
+// equipment or weights for.
 service ExerciseService {
   // Create one or more exercises. Fails with ALREADY_EXISTS if the user has
   // an exercise with the same name, ignoring case.
@@ -33,6 +39,13 @@ service ExerciseService {
   // planned, and how it felt. Use it to progress the weights and reps of
   // the next workouts, and to analyze training over time.
   rpc ListExerciseHistory(ListExerciseHistoryRequest) returns (ListExerciseHistoryResponse);
+  // Get the equipment the user has at home, with the weights of their
+  // dumbbells and kettlebells. Plan strength workouts with it.
+  rpc GetHomeEquipment(GetHomeEquipmentRequest) returns (GetHomeEquipmentResponse);
+  // Replace the list of equipment the user has at home. The user usually
+  // does this in the web app's settings; only change it when they say what
+  // they have.
+  rpc SetHomeEquipment(SetHomeEquipmentRequest) returns (SetHomeEquipmentResponse);
 }
 
 // Muscle is a muscle or muscle group an exercise works.
@@ -91,8 +104,10 @@ message Exercise {
   repeated Muscle primary_muscles = 5;
   // The muscles the exercise also works.
   repeated Muscle secondary_muscles = 6;
-  // The equipment needed, e.g. "Two dumbbells and a bench". Empty for none.
-  string equipment = 7;
+  // The equipment needed. Empty for bodyweight exercises. An exercise that
+  // can be done with dumbbells or a kettlebell lists the one it's usually
+  // done with; planning chooses the weight.
+  repeated Equipment equipment = 7;
   // Whether the exercise is done on each side in turn, like a lunge, so
   // planned and logged reps and hold times are per side.
   bool each_side = 8;
@@ -100,6 +115,128 @@ message Exercise {
   google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];
   // When the exercise was last updated.
   google.protobuf.Timestamp update_time = 10 [(mcp.v1.field).output_only = true];
+  // More about the equipment, e.g. "A bench at about knee height". Empty if
+  // none.
+  string equipment_notes = 11;
+  // Short looping animations of a stick figure doing the exercise, shown to
+  // the user as they do it: usually one of the movement, and maybe one of
+  // setting up. At most 3.
+  repeated ExerciseAnimation animations = 12;
+}
+
+// A short looping animation of a stick figure doing an exercise, seen from
+// the side, facing right. It's a few key poses the figure moves between,
+// back to the first after the last. One point of the body, the anchor,
+// stays where it is, and the figure moves around it; planted hands and feet
+// stay where they are in the first pose too, their knee or elbow bending to
+// keep them there. The floor is under the lowest point of the first pose
+// that no prop supports.
+message ExerciseAnimation {
+  // What the animation shows, e.g. "The movement" or "Setting up".
+  // Required.
+  string title = 1;
+  // The point of the body that stays where it is, e.g. the front foot of a
+  // split squat. Required.
+  BodyPoint anchor = 2;
+  // Other hands and feet that stay where they are in the first pose, e.g.
+  // the back foot on the bench of a split squat.
+  repeated BodyPoint planted = 3;
+  // The equipment shown, e.g. a bench under the back foot and dumbbells in
+  // the hands. At most 6.
+  repeated AnimationProp props = 4;
+  // The key poses, in order. Between 2 and 8.
+  repeated AnimationKeyframe keyframes = 5;
+}
+
+// BodyPoint is a point of the stick figure. Near limbs are on the viewer's
+// side, and far limbs behind them.
+enum BodyPoint {
+  BODY_POINT_UNSPECIFIED = 0;
+  BODY_POINT_HEAD = 1;
+  BODY_POINT_SHOULDERS = 2;
+  BODY_POINT_HIPS = 3;
+  BODY_POINT_NEAR_ELBOW = 4;
+  BODY_POINT_NEAR_HAND = 5;
+  BODY_POINT_FAR_ELBOW = 6;
+  BODY_POINT_FAR_HAND = 7;
+  BODY_POINT_NEAR_KNEE = 8;
+  BODY_POINT_NEAR_FOOT = 9;
+  BODY_POINT_FAR_KNEE = 10;
+  BODY_POINT_FAR_FOOT = 11;
+}
+
+// AnimationPropKind is a piece of equipment in an animation.
+enum AnimationPropKind {
+  ANIMATION_PROP_KIND_UNSPECIFIED = 0;
+  // A bench under the point, e.g. a foot or the shoulders.
+  ANIMATION_PROP_KIND_BENCH = 1;
+  // A low step or box under the point.
+  ANIMATION_PROP_KIND_STEP = 2;
+  // A dumbbell in the hand at the point.
+  ANIMATION_PROP_KIND_DUMBBELL = 3;
+  // A kettlebell in the hand at the point.
+  ANIMATION_PROP_KIND_KETTLEBELL = 4;
+  // A mat on the floor under the whole figure; it takes no point.
+  ANIMATION_PROP_KIND_MAT = 5;
+  // A bar held by the hand at the point, like a pull-up bar.
+  ANIMATION_PROP_KIND_BAR = 6;
+}
+
+// A piece of equipment in an animation, where it is in the first pose.
+message AnimationProp {
+  // What it is. Required.
+  AnimationPropKind kind = 1;
+  // The point it's at: under the point for benches and steps, in the hand
+  // for weights, or held by the hand for bars. Unset for mats.
+  BodyPoint point = 2;
+}
+
+// A key pose of an animation.
+message AnimationKeyframe {
+  // The pose. Required.
+  Pose pose = 1;
+  // How long the figure takes to move into this pose from the previous one,
+  // or from the last for the first, in milliseconds, e.g. 3000 for three
+  // seconds down. At most 10000.
+  int32 move_milliseconds = 2;
+  // How long the figure holds the pose, in milliseconds. At most 10000.
+  int32 hold_milliseconds = 3;
+  // A short cue shown during the move and hold, e.g. "Lower for 3 s".
+  // Empty if none.
+  string cue = 4;
+  // A point to circle while the pose is held, to draw the eye to it, e.g.
+  // the front knee staying over the foot. Unspecified for none.
+  BodyPoint highlight = 5;
+}
+
+// A pose of the stick figure, as the direction of each body segment from
+// the joint it starts at, in degrees, seen from the side with the figure
+// facing right: 0 points straight down, 90 straight forward, 180 straight
+// up and -90 straight back. Standing tall is a torso and head of 180, and
+// thighs, shins and arms of 0; a thigh parallel to the floor in front is 90.
+// The segments are the same length in every pose, so the figure keeps its
+// proportions.
+message Pose {
+  // From the hips to the shoulders.
+  double torso_degrees = 1;
+  // From the shoulders to the head.
+  double head_degrees = 2;
+  // From the hip to the knee of the near leg.
+  double near_thigh_degrees = 3;
+  // From the knee to the ankle of the near leg.
+  double near_shin_degrees = 4;
+  // From the hip to the knee of the far leg.
+  double far_thigh_degrees = 5;
+  // From the knee to the ankle of the far leg.
+  double far_shin_degrees = 6;
+  // From the shoulder to the elbow of the near arm.
+  double near_upper_arm_degrees = 7;
+  // From the elbow to the hand of the near arm.
+  double near_forearm_degrees = 8;
+  // From the shoulder to the elbow of the far arm.
+  double far_upper_arm_degrees = 9;
+  // From the elbow to the hand of the far arm.
+  double far_forearm_degrees = 10;
 }
 
 // What the user did in an exercise in one strength workout.
@@ -179,4 +316,27 @@ message ListExerciseHistoryRequest {
 message ListExerciseHistoryResponse {
   // The entries in date order, then in the order the exercises were done.
   repeated ExerciseHistoryEntry entries = 1;
+}
+
+message GetHomeEquipmentRequest {}
+
+message GetHomeEquipmentResponse {
+  // The equipment the user has at home, in the order of the Equipment
+  // enum. Empty if they have none, or haven't said yet.
+  repeated OwnedEquipment equipment = 1;
+  // When the list was last set. Unset if the user hasn't said what they
+  // have yet: then don't assume they have no equipment, ask them.
+  google.protobuf.Timestamp update_time = 2;
+}
+
+message SetHomeEquipmentRequest {
+  // The equipment the user has at home, replacing the earlier list.
+  repeated OwnedEquipment equipment = 1;
+}
+
+message SetHomeEquipmentResponse {
+  // The equipment the user has at home.
+  repeated OwnedEquipment equipment = 1;
+  // When the list was set.
+  google.protobuf.Timestamp update_time = 2;
 }

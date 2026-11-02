@@ -1,10 +1,12 @@
 package plan
 
 import (
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/johanbrandhorst/trail-tools/internal/mapdata"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
 func TestDaytimeByLocalDay(t *testing.T) {
@@ -54,7 +56,13 @@ func TestDaytimeByLocalDay(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			byLocalDay := daytimeByLocalDay(tt.hours)
+			daytime := map[string][]mapdata.Weather{}
+			for day, hours := range byLocalDay(tt.hours) {
+				if hours = slices.DeleteFunc(hours, func(h mapdata.Weather) bool { return !isDaytime(h) }); len(hours) > 0 {
+					daytime[day] = hours
+				}
+			}
+			byLocalDay := daytime
 			if len(byLocalDay) != len(tt.wantFirst) {
 				t.Errorf("got %d days, want %d", len(byLocalDay), len(tt.wantFirst))
 			}
@@ -73,6 +81,57 @@ func TestDaytimeByLocalDay(t *testing.T) {
 				if wantLast := wantFirst.Add(time.Duration(wantCount-1) * time.Hour); !hours[len(hours)-1].Time.Equal(wantLast) {
 					t.Errorf("%s: got last hour %v, want %v", day, hours[len(hours)-1].Time, wantLast)
 				}
+			}
+		})
+	}
+}
+
+func TestDuringWorkout(t *testing.T) {
+	t.Parallel()
+	zone := time.FixedZone("Europe/Zurich", 3600)
+	var hours []mapdata.Weather
+	for h := range 24 {
+		hours = append(hours, mapdata.Weather{Time: time.Date(2026, 11, 5, h, 0, 0, 0, zone), UTCOffset: time.Hour})
+	}
+	date := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC)
+	tests := map[string]struct {
+		workout            *plans.Workout
+		wantFirst          int
+		wantCount          int
+		wantStart, wantEnd time.Time
+	}{
+		// From 07:00 to 08:00 plus a 90 minute run: until 09:30.
+		"window and duration": {
+			workout:   &plans.Workout{Date: date, StartTime: "07:00", StartWindowMinutes: 60, TargetDurationSeconds: 5400},
+			wantFirst: 7, wantCount: 3,
+			wantStart: time.Date(2026, 11, 5, 7, 0, 0, 0, zone),
+			wantEnd:   time.Date(2026, 11, 5, 9, 30, 0, 0, zone),
+		},
+		// Without a duration, the workout takes an hour; a start within
+		// an hour counts that hour.
+		"no duration": {
+			workout:   &plans.Workout{Date: date, StartTime: "05:30", StartWindowMinutes: 30},
+			wantFirst: 5, wantCount: 2,
+			wantStart: time.Date(2026, 11, 5, 5, 30, 0, 0, zone),
+			wantEnd:   time.Date(2026, 11, 5, 7, 0, 0, 0, zone),
+		},
+		"no start time": {workout: &plans.Workout{Date: date}},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			during, start, end := duringWorkout(tt.workout, hours)
+			if len(during) != tt.wantCount {
+				t.Fatalf("got %d hours, want %d", len(during), tt.wantCount)
+			}
+			if tt.wantCount == 0 {
+				return
+			}
+			if got := during[0].Time.In(zone).Hour(); got != tt.wantFirst {
+				t.Errorf("got first hour %d, want %d", got, tt.wantFirst)
+			}
+			if !start.Equal(tt.wantStart) || !end.Equal(tt.wantEnd) {
+				t.Errorf("got %v to %v, want %v to %v", start, end, tt.wantStart, tt.wantEnd)
 			}
 		})
 	}

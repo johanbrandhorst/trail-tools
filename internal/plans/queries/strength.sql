@@ -7,13 +7,16 @@ insert into exercises (
   primary_muscles,
   secondary_muscles,
   equipment,
-  each_side
+  equipment_notes,
+  each_side,
+  animations
 ) values (
   $1, $2, $3, $4,
-  -- Muscles are sent as text, as the enum array can't be encoded.
+  -- Enum arrays are sent as text, as they can't be encoded.
   sqlc.arg(primary_muscles)::text[]::muscle[],
   sqlc.arg(secondary_muscles)::text[]::muscle[],
-  $5, $6
+  sqlc.arg(equipment)::text[]::equipment[],
+  $5, $6, $7
 )
 returning *;
 
@@ -38,8 +41,10 @@ update exercises set
   feel = $5,
   primary_muscles = sqlc.arg(primary_muscles)::text[]::muscle[],
   secondary_muscles = sqlc.arg(secondary_muscles)::text[]::muscle[],
-  equipment = $6,
+  equipment = sqlc.arg(equipment)::text[]::equipment[],
+  equipment_notes = $6,
   each_side = $7,
+  animations = $8,
   update_time = now()
 where id = $1 and user_id = $2
 returning *;
@@ -51,7 +56,7 @@ where id = $1 and user_id = $2;
 -- name: ListWorkoutExercises :many
 -- Lists the exercises of the user's workouts, optionally of a plan, of
 -- some workouts or within dates, by workout and position.
-select we.*, e.name as exercise_name
+select we.*, e.name as exercise_name, e.equipment::text[] as exercise_equipment
 from workout_exercises we
 join workouts w on w.id = we.workout_id
 join training_plans p on p.id = w.plan_id
@@ -76,25 +81,34 @@ insert into workout_exercises (
   sets,
   reps,
   hold_seconds,
-  weight_kilograms,
+  weight_value,
+  weight_unit,
   rest_seconds,
   tempo,
   target_effort,
   notes
 )
 select
-  unnest(sqlc.arg(workout_ids)::uuid[]),
-  unnest(sqlc.arg(positions)::integer[]),
-  unnest(sqlc.arg(exercise_ids)::uuid[]),
-  unnest(sqlc.arg(group_names)::text[]),
-  unnest(sqlc.arg(sets)::integer[]),
-  unnest(sqlc.arg(reps)::integer[]),
-  unnest(sqlc.arg(hold_seconds)::integer[]),
-  unnest(sqlc.arg(weights_kilograms)::double precision[]),
-  unnest(sqlc.arg(rest_seconds)::integer[]),
-  unnest(sqlc.arg(tempos)::text[]),
-  unnest(sqlc.arg(target_efforts)::integer[]),
-  unnest(sqlc.arg(notes)::text[]);
+  e.workout_id, e.position, e.exercise_id, e.group_name, e.sets, e.reps, e.hold_seconds,
+  e.weight_value, nullif(e.weight_unit, '')::weight_unit,
+  e.rest_seconds, e.tempo, e.target_effort, e.notes
+from (
+  select
+    unnest(sqlc.arg(workout_ids)::uuid[]) as workout_id,
+    unnest(sqlc.arg(positions)::integer[]) as position,
+    unnest(sqlc.arg(exercise_ids)::uuid[]) as exercise_id,
+    unnest(sqlc.arg(group_names)::text[]) as group_name,
+    unnest(sqlc.arg(sets)::integer[]) as sets,
+    unnest(sqlc.arg(reps)::integer[]) as reps,
+    unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,
+    unnest(sqlc.arg(weight_values)::double precision[]) as weight_value,
+    -- Empty for bodyweight.
+    unnest(sqlc.arg(weight_units)::text[]) as weight_unit,
+    unnest(sqlc.arg(rest_seconds)::integer[]) as rest_seconds,
+    unnest(sqlc.arg(tempos)::text[]) as tempo,
+    unnest(sqlc.arg(target_efforts)::integer[]) as target_effort,
+    unnest(sqlc.arg(notes)::text[]) as notes
+) e;
 
 -- name: ListStrengthLogs :many
 -- Lists the logs of the user's workouts, with the same filters as
@@ -172,7 +186,8 @@ insert into strength_log_exercises (
   planned_sets,
   planned_reps,
   planned_hold_seconds,
-  planned_weight_kilograms,
+  planned_weight_value,
+  planned_weight_unit,
   planned_rest_seconds,
   planned_tempo,
   planned_target_effort,
@@ -189,7 +204,8 @@ select
   case when e.planned then e.planned_sets end,
   case when e.planned then e.planned_reps end,
   case when e.planned then e.planned_hold_seconds end,
-  case when e.planned then e.planned_weight_kilograms end,
+  case when e.planned then e.planned_weight_value end,
+  case when e.planned then nullif(e.planned_weight_unit, '')::weight_unit end,
   case when e.planned then e.planned_rest_seconds end,
   case when e.planned then e.planned_tempo end,
   case when e.planned then e.planned_target_effort end,
@@ -207,7 +223,8 @@ from (
     unnest(sqlc.arg(planned_sets)::integer[]) as planned_sets,
     unnest(sqlc.arg(planned_reps)::integer[]) as planned_reps,
     unnest(sqlc.arg(planned_hold_seconds)::integer[]) as planned_hold_seconds,
-    unnest(sqlc.arg(planned_weights_kilograms)::double precision[]) as planned_weight_kilograms,
+    unnest(sqlc.arg(planned_weight_values)::double precision[]) as planned_weight_value,
+    unnest(sqlc.arg(planned_weight_units)::text[]) as planned_weight_unit,
     unnest(sqlc.arg(planned_rest_seconds)::integer[]) as planned_rest_seconds,
     unnest(sqlc.arg(planned_tempos)::text[]) as planned_tempo,
     unnest(sqlc.arg(planned_target_efforts)::integer[]) as planned_target_effort,
@@ -221,15 +238,22 @@ insert into strength_log_sets (
   set_number,
   reps,
   hold_seconds,
-  weight_kilograms
+  weight_value,
+  weight_unit
 )
 select
-  sqlc.arg(log_id)::uuid,
-  unnest(sqlc.arg(positions)::integer[]),
-  unnest(sqlc.arg(set_numbers)::integer[]),
-  unnest(sqlc.arg(reps)::integer[]),
-  unnest(sqlc.arg(hold_seconds)::integer[]),
-  unnest(sqlc.arg(weights_kilograms)::double precision[]);
+  sqlc.arg(log_id)::uuid, s.position, s.set_number, s.reps, s.hold_seconds,
+  s.weight_value, nullif(s.weight_unit, '')::weight_unit
+from (
+  select
+    unnest(sqlc.arg(positions)::integer[]) as position,
+    unnest(sqlc.arg(set_numbers)::integer[]) as set_number,
+    unnest(sqlc.arg(reps)::integer[]) as reps,
+    unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,
+    unnest(sqlc.arg(weight_values)::double precision[]) as weight_value,
+    -- Empty for bodyweight.
+    unnest(sqlc.arg(weight_units)::text[]) as weight_unit
+) s;
 
 -- name: DeleteStrengthLog :execrows
 delete from strength_logs
@@ -267,3 +291,17 @@ where l.user_id = sqlc.arg(user_id)::uuid
   and (sqlc.narg(start_date)::date is null or l.date >= sqlc.narg(start_date)::date)
   and (sqlc.narg(end_date)::date is null or l.date <= sqlc.narg(end_date)::date)
 order by s.log_id, s.position, s.set_number;
+
+-- name: GetHomeEquipment :many
+-- Gets the user's home equipment: no rows if they haven't said what they
+-- have. It's a :many query so a batch can read it without failing.
+select * from home_equipment
+where user_id = $1;
+
+-- name: SetHomeEquipment :one
+insert into home_equipment (user_id, equipment)
+values ($1, $2)
+on conflict (user_id) do update set
+  equipment = excluded.equipment,
+  update_time = now()
+returning *;

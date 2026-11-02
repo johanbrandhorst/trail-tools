@@ -25,6 +25,33 @@ create type muscle as enum (
   'feet'
 );
 
+-- The kinds of equipment exercises use.
+create type equipment as enum (
+  'dumbbells',
+  'kettlebell',
+  'barbell',
+  'squat_rack',
+  'medicine_ball',
+  'bench',
+  'step',
+  'mat',
+  'resistance_band',
+  'mini_band',
+  'pull_up_bar',
+  'suspension_trainer',
+  'foam_roller',
+  'sliders',
+  'balance_board',
+  'jump_rope'
+);
+
+-- Weights keep the unit they're marked in, as dumbbells and kettlebells
+-- come in kilograms or pounds.
+create type weight_unit as enum (
+  'kilograms',
+  'pounds'
+);
+
 -- How hard a whole strength session felt.
 create type session_effort as enum (
   'very_easy',
@@ -59,10 +86,14 @@ create table exercises (
   feel text not null default '',
   primary_muscles muscle[] not null default '{}',
   secondary_muscles muscle[] not null default '{}',
-  equipment text not null default '',
+  equipment equipment[] not null default '{}',
+  equipment_notes text not null default '',
   -- Whether the exercise is done on each side in turn, so its reps and
   -- hold times are per side.
   each_side boolean not null default false,
+  -- The stick figure animations of the exercise: a JSON array of
+  -- plans.v1.ExerciseAnimation messages in their JSON form.
+  animations jsonb not null default '[]',
   create_time timestamptz not null default current_timestamp,
   update_time timestamptz not null default current_timestamp
 );
@@ -85,16 +116,18 @@ create table workout_exercises (
   reps integer not null default 0,
   -- 0 for exercises done for reps.
   hold_seconds integer not null default 0,
-  -- Of each dumbbell or kettlebell for exercises with two. 0 for
-  -- bodyweight.
-  weight_kilograms double precision not null default 0,
+  -- Of each dumbbell for exercises with two, in the unit. 0, with no unit,
+  -- for bodyweight.
+  weight_value double precision not null default 0,
+  weight_unit weight_unit,
   rest_seconds integer not null default 0,
   tempo text not null default '',
   -- From 1 to 10, 0 if not set.
   target_effort integer not null default 0,
   notes text not null default '',
   primary key (workout_id, position),
-  check (sets > 0 and reps >= 0 and hold_seconds >= 0 and weight_kilograms >= 0 and rest_seconds >= 0),
+  check (sets > 0 and reps >= 0 and hold_seconds >= 0 and weight_value >= 0 and rest_seconds >= 0),
+  check (weight_value = 0 or weight_unit is not null),
   check (target_effort between 0 and 10)
 );
 
@@ -134,7 +167,8 @@ create table strength_log_exercises (
   planned_sets integer,
   planned_reps integer,
   planned_hold_seconds integer,
-  planned_weight_kilograms double precision,
+  planned_weight_value double precision,
+  planned_weight_unit weight_unit,
   planned_rest_seconds integer,
   planned_tempo text,
   planned_target_effort integer,
@@ -155,12 +189,29 @@ create table strength_log_sets (
   reps integer not null default 0,
   -- 0 for exercises done for reps.
   hold_seconds integer not null default 0,
-  -- 0 for bodyweight.
-  weight_kilograms double precision not null default 0,
+  -- 0, with no unit, for bodyweight.
+  weight_value double precision not null default 0,
+  weight_unit weight_unit,
   primary key (log_id, position, set_number),
   foreign key (log_id, position) references strength_log_exercises (log_id, position) on delete cascade,
-  check (reps >= 0 and hold_seconds >= 0 and weight_kilograms >= 0)
+  check (reps >= 0 and hold_seconds >= 0 and weight_value >= 0),
+  check (weight_value = 0 or weight_unit is not null)
 );
+
+-- The equipment each user has at home, to plan strength workouts with: a
+-- JSON array of plans.v1.OwnedEquipment messages in their JSON form. Users
+-- without a row haven't said what they have.
+create table home_equipment (
+  user_id uuid primary key references users(id) on delete cascade,
+  equipment jsonb not null,
+  update_time timestamptz not null default current_timestamp
+);
+
+-- When workouts can start: from start_time, for start_window_minutes.
+-- Workouts without a start time can be done any time of the day.
+alter table workouts
+  add column start_time time,
+  add column start_window_minutes integer not null default 0;
 
 -- Strength workouts are linked to the strength activity synced from Strava
 -- on their day.

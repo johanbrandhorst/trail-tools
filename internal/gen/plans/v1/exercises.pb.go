@@ -135,6 +135,142 @@ func (x Muscle) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// BodyPoint is a point of the stick figure. Near limbs are on the viewer's
+// side, and far limbs behind them.
+type BodyPoint int32
+
+const (
+	BodyPoint_BODY_POINT_UNSPECIFIED BodyPoint = 0
+	BodyPoint_BODY_POINT_HEAD        BodyPoint = 1
+	BodyPoint_BODY_POINT_SHOULDERS   BodyPoint = 2
+	BodyPoint_BODY_POINT_HIPS        BodyPoint = 3
+	BodyPoint_BODY_POINT_NEAR_ELBOW  BodyPoint = 4
+	BodyPoint_BODY_POINT_NEAR_HAND   BodyPoint = 5
+	BodyPoint_BODY_POINT_FAR_ELBOW   BodyPoint = 6
+	BodyPoint_BODY_POINT_FAR_HAND    BodyPoint = 7
+	BodyPoint_BODY_POINT_NEAR_KNEE   BodyPoint = 8
+	BodyPoint_BODY_POINT_NEAR_FOOT   BodyPoint = 9
+	BodyPoint_BODY_POINT_FAR_KNEE    BodyPoint = 10
+	BodyPoint_BODY_POINT_FAR_FOOT    BodyPoint = 11
+)
+
+// Enum value maps for BodyPoint.
+var (
+	BodyPoint_name = map[int32]string{
+		0:  "BODY_POINT_UNSPECIFIED",
+		1:  "BODY_POINT_HEAD",
+		2:  "BODY_POINT_SHOULDERS",
+		3:  "BODY_POINT_HIPS",
+		4:  "BODY_POINT_NEAR_ELBOW",
+		5:  "BODY_POINT_NEAR_HAND",
+		6:  "BODY_POINT_FAR_ELBOW",
+		7:  "BODY_POINT_FAR_HAND",
+		8:  "BODY_POINT_NEAR_KNEE",
+		9:  "BODY_POINT_NEAR_FOOT",
+		10: "BODY_POINT_FAR_KNEE",
+		11: "BODY_POINT_FAR_FOOT",
+	}
+	BodyPoint_value = map[string]int32{
+		"BODY_POINT_UNSPECIFIED": 0,
+		"BODY_POINT_HEAD":        1,
+		"BODY_POINT_SHOULDERS":   2,
+		"BODY_POINT_HIPS":        3,
+		"BODY_POINT_NEAR_ELBOW":  4,
+		"BODY_POINT_NEAR_HAND":   5,
+		"BODY_POINT_FAR_ELBOW":   6,
+		"BODY_POINT_FAR_HAND":    7,
+		"BODY_POINT_NEAR_KNEE":   8,
+		"BODY_POINT_NEAR_FOOT":   9,
+		"BODY_POINT_FAR_KNEE":    10,
+		"BODY_POINT_FAR_FOOT":    11,
+	}
+)
+
+func (x BodyPoint) Enum() *BodyPoint {
+	p := new(BodyPoint)
+	*p = x
+	return p
+}
+
+func (x BodyPoint) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BodyPoint) Descriptor() protoreflect.EnumDescriptor {
+	return file_plans_v1_exercises_proto_enumTypes[1].Descriptor()
+}
+
+func (BodyPoint) Type() protoreflect.EnumType {
+	return &file_plans_v1_exercises_proto_enumTypes[1]
+}
+
+func (x BodyPoint) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// AnimationPropKind is a piece of equipment in an animation.
+type AnimationPropKind int32
+
+const (
+	AnimationPropKind_ANIMATION_PROP_KIND_UNSPECIFIED AnimationPropKind = 0
+	// A bench under the point, e.g. a foot or the shoulders.
+	AnimationPropKind_ANIMATION_PROP_KIND_BENCH AnimationPropKind = 1
+	// A low step or box under the point.
+	AnimationPropKind_ANIMATION_PROP_KIND_STEP AnimationPropKind = 2
+	// A dumbbell in the hand at the point.
+	AnimationPropKind_ANIMATION_PROP_KIND_DUMBBELL AnimationPropKind = 3
+	// A kettlebell in the hand at the point.
+	AnimationPropKind_ANIMATION_PROP_KIND_KETTLEBELL AnimationPropKind = 4
+	// A mat on the floor under the whole figure; it takes no point.
+	AnimationPropKind_ANIMATION_PROP_KIND_MAT AnimationPropKind = 5
+	// A bar held by the hand at the point, like a pull-up bar.
+	AnimationPropKind_ANIMATION_PROP_KIND_BAR AnimationPropKind = 6
+)
+
+// Enum value maps for AnimationPropKind.
+var (
+	AnimationPropKind_name = map[int32]string{
+		0: "ANIMATION_PROP_KIND_UNSPECIFIED",
+		1: "ANIMATION_PROP_KIND_BENCH",
+		2: "ANIMATION_PROP_KIND_STEP",
+		3: "ANIMATION_PROP_KIND_DUMBBELL",
+		4: "ANIMATION_PROP_KIND_KETTLEBELL",
+		5: "ANIMATION_PROP_KIND_MAT",
+		6: "ANIMATION_PROP_KIND_BAR",
+	}
+	AnimationPropKind_value = map[string]int32{
+		"ANIMATION_PROP_KIND_UNSPECIFIED": 0,
+		"ANIMATION_PROP_KIND_BENCH":       1,
+		"ANIMATION_PROP_KIND_STEP":        2,
+		"ANIMATION_PROP_KIND_DUMBBELL":    3,
+		"ANIMATION_PROP_KIND_KETTLEBELL":  4,
+		"ANIMATION_PROP_KIND_MAT":         5,
+		"ANIMATION_PROP_KIND_BAR":         6,
+	}
+)
+
+func (x AnimationPropKind) Enum() *AnimationPropKind {
+	p := new(AnimationPropKind)
+	*p = x
+	return p
+}
+
+func (x AnimationPropKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AnimationPropKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_plans_v1_exercises_proto_enumTypes[2].Descriptor()
+}
+
+func (AnimationPropKind) Type() protoreflect.EnumType {
+	return &file_plans_v1_exercises_proto_enumTypes[2]
+}
+
+func (x AnimationPropKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // An exercise in the user's library.
 type Exercise struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
@@ -144,10 +280,12 @@ type Exercise struct {
 	xxx_hidden_Feel             string                 `protobuf:"bytes,4,opt,name=feel,proto3"`
 	xxx_hidden_PrimaryMuscles   []Muscle               `protobuf:"varint,5,rep,packed,name=primary_muscles,json=primaryMuscles,proto3,enum=plans.v1.Muscle"`
 	xxx_hidden_SecondaryMuscles []Muscle               `protobuf:"varint,6,rep,packed,name=secondary_muscles,json=secondaryMuscles,proto3,enum=plans.v1.Muscle"`
-	xxx_hidden_Equipment        string                 `protobuf:"bytes,7,opt,name=equipment,proto3"`
+	xxx_hidden_Equipment        []Equipment            `protobuf:"varint,7,rep,packed,name=equipment,proto3,enum=plans.v1.Equipment"`
 	xxx_hidden_EachSide         bool                   `protobuf:"varint,8,opt,name=each_side,json=eachSide,proto3"`
 	xxx_hidden_CreateTime       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3"`
 	xxx_hidden_UpdateTime       *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
+	xxx_hidden_EquipmentNotes   string                 `protobuf:"bytes,11,opt,name=equipment_notes,json=equipmentNotes,proto3"`
+	xxx_hidden_Animations       *[]*ExerciseAnimation  `protobuf:"bytes,12,rep,name=animations,proto3"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -219,11 +357,11 @@ func (x *Exercise) GetSecondaryMuscles() []Muscle {
 	return nil
 }
 
-func (x *Exercise) GetEquipment() string {
+func (x *Exercise) GetEquipment() []Equipment {
 	if x != nil {
 		return x.xxx_hidden_Equipment
 	}
-	return ""
+	return nil
 }
 
 func (x *Exercise) GetEachSide() bool {
@@ -243,6 +381,22 @@ func (x *Exercise) GetCreateTime() *timestamppb.Timestamp {
 func (x *Exercise) GetUpdateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_UpdateTime
+	}
+	return nil
+}
+
+func (x *Exercise) GetEquipmentNotes() string {
+	if x != nil {
+		return x.xxx_hidden_EquipmentNotes
+	}
+	return ""
+}
+
+func (x *Exercise) GetAnimations() []*ExerciseAnimation {
+	if x != nil {
+		if x.xxx_hidden_Animations != nil {
+			return *x.xxx_hidden_Animations
+		}
 	}
 	return nil
 }
@@ -271,7 +425,7 @@ func (x *Exercise) SetSecondaryMuscles(v []Muscle) {
 	x.xxx_hidden_SecondaryMuscles = v
 }
 
-func (x *Exercise) SetEquipment(v string) {
+func (x *Exercise) SetEquipment(v []Equipment) {
 	x.xxx_hidden_Equipment = v
 }
 
@@ -285,6 +439,14 @@ func (x *Exercise) SetCreateTime(v *timestamppb.Timestamp) {
 
 func (x *Exercise) SetUpdateTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_UpdateTime = v
+}
+
+func (x *Exercise) SetEquipmentNotes(v string) {
+	x.xxx_hidden_EquipmentNotes = v
+}
+
+func (x *Exercise) SetAnimations(v []*ExerciseAnimation) {
+	x.xxx_hidden_Animations = &v
 }
 
 func (x *Exercise) HasCreateTime() bool {
@@ -328,8 +490,10 @@ type Exercise_builder struct {
 	PrimaryMuscles []Muscle
 	// The muscles the exercise also works.
 	SecondaryMuscles []Muscle
-	// The equipment needed, e.g. "Two dumbbells and a bench". Empty for none.
-	Equipment string
+	// The equipment needed. Empty for bodyweight exercises. An exercise that
+	// can be done with dumbbells or a kettlebell lists the one it's usually
+	// done with; planning chooses the weight.
+	Equipment []Equipment
 	// Whether the exercise is done on each side in turn, like a lunge, so
 	// planned and logged reps and hold times are per side.
 	EachSide bool
@@ -337,6 +501,13 @@ type Exercise_builder struct {
 	CreateTime *timestamppb.Timestamp
 	// When the exercise was last updated.
 	UpdateTime *timestamppb.Timestamp
+	// More about the equipment, e.g. "A bench at about knee height". Empty if
+	// none.
+	EquipmentNotes string
+	// Short looping animations of a stick figure doing the exercise, shown to
+	// the user as they do it: usually one of the movement, and maybe one of
+	// setting up. At most 3.
+	Animations []*ExerciseAnimation
 }
 
 func (b0 Exercise_builder) Build() *Exercise {
@@ -353,6 +524,550 @@ func (b0 Exercise_builder) Build() *Exercise {
 	x.xxx_hidden_EachSide = b.EachSide
 	x.xxx_hidden_CreateTime = b.CreateTime
 	x.xxx_hidden_UpdateTime = b.UpdateTime
+	x.xxx_hidden_EquipmentNotes = b.EquipmentNotes
+	x.xxx_hidden_Animations = &b.Animations
+	return m0
+}
+
+// A short looping animation of a stick figure doing an exercise, seen from
+// the side, facing right. It's a few key poses the figure moves between,
+// back to the first after the last. One point of the body, the anchor,
+// stays where it is, and the figure moves around it; planted hands and feet
+// stay where they are in the first pose too, their knee or elbow bending to
+// keep them there. The floor is under the lowest point of the first pose
+// that no prop supports.
+type ExerciseAnimation struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Title     string                 `protobuf:"bytes,1,opt,name=title,proto3"`
+	xxx_hidden_Anchor    BodyPoint              `protobuf:"varint,2,opt,name=anchor,proto3,enum=plans.v1.BodyPoint"`
+	xxx_hidden_Planted   []BodyPoint            `protobuf:"varint,3,rep,packed,name=planted,proto3,enum=plans.v1.BodyPoint"`
+	xxx_hidden_Props     *[]*AnimationProp      `protobuf:"bytes,4,rep,name=props,proto3"`
+	xxx_hidden_Keyframes *[]*AnimationKeyframe  `protobuf:"bytes,5,rep,name=keyframes,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ExerciseAnimation) Reset() {
+	*x = ExerciseAnimation{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExerciseAnimation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExerciseAnimation) ProtoMessage() {}
+
+func (x *ExerciseAnimation) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ExerciseAnimation) GetTitle() string {
+	if x != nil {
+		return x.xxx_hidden_Title
+	}
+	return ""
+}
+
+func (x *ExerciseAnimation) GetAnchor() BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Anchor
+	}
+	return BodyPoint_BODY_POINT_UNSPECIFIED
+}
+
+func (x *ExerciseAnimation) GetPlanted() []BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Planted
+	}
+	return nil
+}
+
+func (x *ExerciseAnimation) GetProps() []*AnimationProp {
+	if x != nil {
+		if x.xxx_hidden_Props != nil {
+			return *x.xxx_hidden_Props
+		}
+	}
+	return nil
+}
+
+func (x *ExerciseAnimation) GetKeyframes() []*AnimationKeyframe {
+	if x != nil {
+		if x.xxx_hidden_Keyframes != nil {
+			return *x.xxx_hidden_Keyframes
+		}
+	}
+	return nil
+}
+
+func (x *ExerciseAnimation) SetTitle(v string) {
+	x.xxx_hidden_Title = v
+}
+
+func (x *ExerciseAnimation) SetAnchor(v BodyPoint) {
+	x.xxx_hidden_Anchor = v
+}
+
+func (x *ExerciseAnimation) SetPlanted(v []BodyPoint) {
+	x.xxx_hidden_Planted = v
+}
+
+func (x *ExerciseAnimation) SetProps(v []*AnimationProp) {
+	x.xxx_hidden_Props = &v
+}
+
+func (x *ExerciseAnimation) SetKeyframes(v []*AnimationKeyframe) {
+	x.xxx_hidden_Keyframes = &v
+}
+
+type ExerciseAnimation_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the animation shows, e.g. "The movement" or "Setting up".
+	// Required.
+	Title string
+	// The point of the body that stays where it is, e.g. the front foot of a
+	// split squat. Required.
+	Anchor BodyPoint
+	// Other hands and feet that stay where they are in the first pose, e.g.
+	// the back foot on the bench of a split squat.
+	Planted []BodyPoint
+	// The equipment shown, e.g. a bench under the back foot and dumbbells in
+	// the hands. At most 6.
+	Props []*AnimationProp
+	// The key poses, in order. Between 2 and 8.
+	Keyframes []*AnimationKeyframe
+}
+
+func (b0 ExerciseAnimation_builder) Build() *ExerciseAnimation {
+	m0 := &ExerciseAnimation{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Title = b.Title
+	x.xxx_hidden_Anchor = b.Anchor
+	x.xxx_hidden_Planted = b.Planted
+	x.xxx_hidden_Props = &b.Props
+	x.xxx_hidden_Keyframes = &b.Keyframes
+	return m0
+}
+
+// A piece of equipment in an animation, where it is in the first pose.
+type AnimationProp struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind  AnimationPropKind      `protobuf:"varint,1,opt,name=kind,proto3,enum=plans.v1.AnimationPropKind"`
+	xxx_hidden_Point BodyPoint              `protobuf:"varint,2,opt,name=point,proto3,enum=plans.v1.BodyPoint"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AnimationProp) Reset() {
+	*x = AnimationProp{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnimationProp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnimationProp) ProtoMessage() {}
+
+func (x *AnimationProp) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AnimationProp) GetKind() AnimationPropKind {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return AnimationPropKind_ANIMATION_PROP_KIND_UNSPECIFIED
+}
+
+func (x *AnimationProp) GetPoint() BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Point
+	}
+	return BodyPoint_BODY_POINT_UNSPECIFIED
+}
+
+func (x *AnimationProp) SetKind(v AnimationPropKind) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *AnimationProp) SetPoint(v BodyPoint) {
+	x.xxx_hidden_Point = v
+}
+
+type AnimationProp_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What it is. Required.
+	Kind AnimationPropKind
+	// The point it's at: under the point for benches and steps, in the hand
+	// for weights, or held by the hand for bars. Unset for mats.
+	Point BodyPoint
+}
+
+func (b0 AnimationProp_builder) Build() *AnimationProp {
+	m0 := &AnimationProp{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Point = b.Point
+	return m0
+}
+
+// A key pose of an animation.
+type AnimationKeyframe struct {
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Pose             *Pose                  `protobuf:"bytes,1,opt,name=pose,proto3"`
+	xxx_hidden_MoveMilliseconds int32                  `protobuf:"varint,2,opt,name=move_milliseconds,json=moveMilliseconds,proto3"`
+	xxx_hidden_HoldMilliseconds int32                  `protobuf:"varint,3,opt,name=hold_milliseconds,json=holdMilliseconds,proto3"`
+	xxx_hidden_Cue              string                 `protobuf:"bytes,4,opt,name=cue,proto3"`
+	xxx_hidden_Highlight        BodyPoint              `protobuf:"varint,5,opt,name=highlight,proto3,enum=plans.v1.BodyPoint"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *AnimationKeyframe) Reset() {
+	*x = AnimationKeyframe{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnimationKeyframe) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnimationKeyframe) ProtoMessage() {}
+
+func (x *AnimationKeyframe) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AnimationKeyframe) GetPose() *Pose {
+	if x != nil {
+		return x.xxx_hidden_Pose
+	}
+	return nil
+}
+
+func (x *AnimationKeyframe) GetMoveMilliseconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_MoveMilliseconds
+	}
+	return 0
+}
+
+func (x *AnimationKeyframe) GetHoldMilliseconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_HoldMilliseconds
+	}
+	return 0
+}
+
+func (x *AnimationKeyframe) GetCue() string {
+	if x != nil {
+		return x.xxx_hidden_Cue
+	}
+	return ""
+}
+
+func (x *AnimationKeyframe) GetHighlight() BodyPoint {
+	if x != nil {
+		return x.xxx_hidden_Highlight
+	}
+	return BodyPoint_BODY_POINT_UNSPECIFIED
+}
+
+func (x *AnimationKeyframe) SetPose(v *Pose) {
+	x.xxx_hidden_Pose = v
+}
+
+func (x *AnimationKeyframe) SetMoveMilliseconds(v int32) {
+	x.xxx_hidden_MoveMilliseconds = v
+}
+
+func (x *AnimationKeyframe) SetHoldMilliseconds(v int32) {
+	x.xxx_hidden_HoldMilliseconds = v
+}
+
+func (x *AnimationKeyframe) SetCue(v string) {
+	x.xxx_hidden_Cue = v
+}
+
+func (x *AnimationKeyframe) SetHighlight(v BodyPoint) {
+	x.xxx_hidden_Highlight = v
+}
+
+func (x *AnimationKeyframe) HasPose() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Pose != nil
+}
+
+func (x *AnimationKeyframe) ClearPose() {
+	x.xxx_hidden_Pose = nil
+}
+
+type AnimationKeyframe_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The pose. Required.
+	Pose *Pose
+	// How long the figure takes to move into this pose from the previous one,
+	// or from the last for the first, in milliseconds, e.g. 3000 for three
+	// seconds down. At most 10000.
+	MoveMilliseconds int32
+	// How long the figure holds the pose, in milliseconds. At most 10000.
+	HoldMilliseconds int32
+	// A short cue shown during the move and hold, e.g. "Lower for 3 s".
+	// Empty if none.
+	Cue string
+	// A point to circle while the pose is held, to draw the eye to it, e.g.
+	// the front knee staying over the foot. Unspecified for none.
+	Highlight BodyPoint
+}
+
+func (b0 AnimationKeyframe_builder) Build() *AnimationKeyframe {
+	m0 := &AnimationKeyframe{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Pose = b.Pose
+	x.xxx_hidden_MoveMilliseconds = b.MoveMilliseconds
+	x.xxx_hidden_HoldMilliseconds = b.HoldMilliseconds
+	x.xxx_hidden_Cue = b.Cue
+	x.xxx_hidden_Highlight = b.Highlight
+	return m0
+}
+
+// A pose of the stick figure, as the direction of each body segment from
+// the joint it starts at, in degrees, seen from the side with the figure
+// facing right: 0 points straight down, 90 straight forward, 180 straight
+// up and -90 straight back. Standing tall is a torso and head of 180, and
+// thighs, shins and arms of 0; a thigh parallel to the floor in front is 90.
+// The segments are the same length in every pose, so the figure keeps its
+// proportions.
+type Pose struct {
+	state                          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TorsoDegrees        float64                `protobuf:"fixed64,1,opt,name=torso_degrees,json=torsoDegrees,proto3"`
+	xxx_hidden_HeadDegrees         float64                `protobuf:"fixed64,2,opt,name=head_degrees,json=headDegrees,proto3"`
+	xxx_hidden_NearThighDegrees    float64                `protobuf:"fixed64,3,opt,name=near_thigh_degrees,json=nearThighDegrees,proto3"`
+	xxx_hidden_NearShinDegrees     float64                `protobuf:"fixed64,4,opt,name=near_shin_degrees,json=nearShinDegrees,proto3"`
+	xxx_hidden_FarThighDegrees     float64                `protobuf:"fixed64,5,opt,name=far_thigh_degrees,json=farThighDegrees,proto3"`
+	xxx_hidden_FarShinDegrees      float64                `protobuf:"fixed64,6,opt,name=far_shin_degrees,json=farShinDegrees,proto3"`
+	xxx_hidden_NearUpperArmDegrees float64                `protobuf:"fixed64,7,opt,name=near_upper_arm_degrees,json=nearUpperArmDegrees,proto3"`
+	xxx_hidden_NearForearmDegrees  float64                `protobuf:"fixed64,8,opt,name=near_forearm_degrees,json=nearForearmDegrees,proto3"`
+	xxx_hidden_FarUpperArmDegrees  float64                `protobuf:"fixed64,9,opt,name=far_upper_arm_degrees,json=farUpperArmDegrees,proto3"`
+	xxx_hidden_FarForearmDegrees   float64                `protobuf:"fixed64,10,opt,name=far_forearm_degrees,json=farForearmDegrees,proto3"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
+}
+
+func (x *Pose) Reset() {
+	*x = Pose{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Pose) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Pose) ProtoMessage() {}
+
+func (x *Pose) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Pose) GetTorsoDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_TorsoDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetHeadDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_HeadDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetNearThighDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_NearThighDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetNearShinDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_NearShinDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetFarThighDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_FarThighDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetFarShinDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_FarShinDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetNearUpperArmDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_NearUpperArmDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetNearForearmDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_NearForearmDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetFarUpperArmDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_FarUpperArmDegrees
+	}
+	return 0
+}
+
+func (x *Pose) GetFarForearmDegrees() float64 {
+	if x != nil {
+		return x.xxx_hidden_FarForearmDegrees
+	}
+	return 0
+}
+
+func (x *Pose) SetTorsoDegrees(v float64) {
+	x.xxx_hidden_TorsoDegrees = v
+}
+
+func (x *Pose) SetHeadDegrees(v float64) {
+	x.xxx_hidden_HeadDegrees = v
+}
+
+func (x *Pose) SetNearThighDegrees(v float64) {
+	x.xxx_hidden_NearThighDegrees = v
+}
+
+func (x *Pose) SetNearShinDegrees(v float64) {
+	x.xxx_hidden_NearShinDegrees = v
+}
+
+func (x *Pose) SetFarThighDegrees(v float64) {
+	x.xxx_hidden_FarThighDegrees = v
+}
+
+func (x *Pose) SetFarShinDegrees(v float64) {
+	x.xxx_hidden_FarShinDegrees = v
+}
+
+func (x *Pose) SetNearUpperArmDegrees(v float64) {
+	x.xxx_hidden_NearUpperArmDegrees = v
+}
+
+func (x *Pose) SetNearForearmDegrees(v float64) {
+	x.xxx_hidden_NearForearmDegrees = v
+}
+
+func (x *Pose) SetFarUpperArmDegrees(v float64) {
+	x.xxx_hidden_FarUpperArmDegrees = v
+}
+
+func (x *Pose) SetFarForearmDegrees(v float64) {
+	x.xxx_hidden_FarForearmDegrees = v
+}
+
+type Pose_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// From the hips to the shoulders.
+	TorsoDegrees float64
+	// From the shoulders to the head.
+	HeadDegrees float64
+	// From the hip to the knee of the near leg.
+	NearThighDegrees float64
+	// From the knee to the ankle of the near leg.
+	NearShinDegrees float64
+	// From the hip to the knee of the far leg.
+	FarThighDegrees float64
+	// From the knee to the ankle of the far leg.
+	FarShinDegrees float64
+	// From the shoulder to the elbow of the near arm.
+	NearUpperArmDegrees float64
+	// From the elbow to the hand of the near arm.
+	NearForearmDegrees float64
+	// From the shoulder to the elbow of the far arm.
+	FarUpperArmDegrees float64
+	// From the elbow to the hand of the far arm.
+	FarForearmDegrees float64
+}
+
+func (b0 Pose_builder) Build() *Pose {
+	m0 := &Pose{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_TorsoDegrees = b.TorsoDegrees
+	x.xxx_hidden_HeadDegrees = b.HeadDegrees
+	x.xxx_hidden_NearThighDegrees = b.NearThighDegrees
+	x.xxx_hidden_NearShinDegrees = b.NearShinDegrees
+	x.xxx_hidden_FarThighDegrees = b.FarThighDegrees
+	x.xxx_hidden_FarShinDegrees = b.FarShinDegrees
+	x.xxx_hidden_NearUpperArmDegrees = b.NearUpperArmDegrees
+	x.xxx_hidden_NearForearmDegrees = b.NearForearmDegrees
+	x.xxx_hidden_FarUpperArmDegrees = b.FarUpperArmDegrees
+	x.xxx_hidden_FarForearmDegrees = b.FarForearmDegrees
 	return m0
 }
 
@@ -371,7 +1086,7 @@ type ExerciseHistoryEntry struct {
 
 func (x *ExerciseHistoryEntry) Reset() {
 	*x = ExerciseHistoryEntry{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[1]
+	mi := &file_plans_v1_exercises_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -383,7 +1098,7 @@ func (x *ExerciseHistoryEntry) String() string {
 func (*ExerciseHistoryEntry) ProtoMessage() {}
 
 func (x *ExerciseHistoryEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[1]
+	mi := &file_plans_v1_exercises_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -522,7 +1237,7 @@ type CreateExercisesRequest struct {
 
 func (x *CreateExercisesRequest) Reset() {
 	*x = CreateExercisesRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[2]
+	mi := &file_plans_v1_exercises_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -534,7 +1249,7 @@ func (x *CreateExercisesRequest) String() string {
 func (*CreateExercisesRequest) ProtoMessage() {}
 
 func (x *CreateExercisesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[2]
+	mi := &file_plans_v1_exercises_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -582,7 +1297,7 @@ type CreateExercisesResponse struct {
 
 func (x *CreateExercisesResponse) Reset() {
 	*x = CreateExercisesResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[3]
+	mi := &file_plans_v1_exercises_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -594,7 +1309,7 @@ func (x *CreateExercisesResponse) String() string {
 func (*CreateExercisesResponse) ProtoMessage() {}
 
 func (x *CreateExercisesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[3]
+	mi := &file_plans_v1_exercises_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -641,7 +1356,7 @@ type ListExercisesRequest struct {
 
 func (x *ListExercisesRequest) Reset() {
 	*x = ListExercisesRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[4]
+	mi := &file_plans_v1_exercises_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -653,7 +1368,7 @@ func (x *ListExercisesRequest) String() string {
 func (*ListExercisesRequest) ProtoMessage() {}
 
 func (x *ListExercisesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[4]
+	mi := &file_plans_v1_exercises_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -685,7 +1400,7 @@ type ListExercisesResponse struct {
 
 func (x *ListExercisesResponse) Reset() {
 	*x = ListExercisesResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[5]
+	mi := &file_plans_v1_exercises_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +1412,7 @@ func (x *ListExercisesResponse) String() string {
 func (*ListExercisesResponse) ProtoMessage() {}
 
 func (x *ListExercisesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[5]
+	mi := &file_plans_v1_exercises_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -745,7 +1460,7 @@ type GetExerciseRequest struct {
 
 func (x *GetExerciseRequest) Reset() {
 	*x = GetExerciseRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[6]
+	mi := &file_plans_v1_exercises_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -757,7 +1472,7 @@ func (x *GetExerciseRequest) String() string {
 func (*GetExerciseRequest) ProtoMessage() {}
 
 func (x *GetExerciseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[6]
+	mi := &file_plans_v1_exercises_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -803,7 +1518,7 @@ type GetExerciseResponse struct {
 
 func (x *GetExerciseResponse) Reset() {
 	*x = GetExerciseResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[7]
+	mi := &file_plans_v1_exercises_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -815,7 +1530,7 @@ func (x *GetExerciseResponse) String() string {
 func (*GetExerciseResponse) ProtoMessage() {}
 
 func (x *GetExerciseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[7]
+	mi := &file_plans_v1_exercises_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -873,7 +1588,7 @@ type UpdateExerciseRequest struct {
 
 func (x *UpdateExerciseRequest) Reset() {
 	*x = UpdateExerciseRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[8]
+	mi := &file_plans_v1_exercises_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -885,7 +1600,7 @@ func (x *UpdateExerciseRequest) String() string {
 func (*UpdateExerciseRequest) ProtoMessage() {}
 
 func (x *UpdateExerciseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[8]
+	mi := &file_plans_v1_exercises_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -968,7 +1683,7 @@ type UpdateExerciseResponse struct {
 
 func (x *UpdateExerciseResponse) Reset() {
 	*x = UpdateExerciseResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[9]
+	mi := &file_plans_v1_exercises_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -980,7 +1695,7 @@ func (x *UpdateExerciseResponse) String() string {
 func (*UpdateExerciseResponse) ProtoMessage() {}
 
 func (x *UpdateExerciseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[9]
+	mi := &file_plans_v1_exercises_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1037,7 +1752,7 @@ type DeleteExerciseRequest struct {
 
 func (x *DeleteExerciseRequest) Reset() {
 	*x = DeleteExerciseRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[10]
+	mi := &file_plans_v1_exercises_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1049,7 +1764,7 @@ func (x *DeleteExerciseRequest) String() string {
 func (*DeleteExerciseRequest) ProtoMessage() {}
 
 func (x *DeleteExerciseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[10]
+	mi := &file_plans_v1_exercises_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1094,7 +1809,7 @@ type DeleteExerciseResponse struct {
 
 func (x *DeleteExerciseResponse) Reset() {
 	*x = DeleteExerciseResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[11]
+	mi := &file_plans_v1_exercises_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1106,7 +1821,7 @@ func (x *DeleteExerciseResponse) String() string {
 func (*DeleteExerciseResponse) ProtoMessage() {}
 
 func (x *DeleteExerciseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[11]
+	mi := &file_plans_v1_exercises_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1140,7 +1855,7 @@ type ListExerciseHistoryRequest struct {
 
 func (x *ListExerciseHistoryRequest) Reset() {
 	*x = ListExerciseHistoryRequest{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[12]
+	mi := &file_plans_v1_exercises_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1152,7 +1867,7 @@ func (x *ListExerciseHistoryRequest) String() string {
 func (*ListExerciseHistoryRequest) ProtoMessage() {}
 
 func (x *ListExerciseHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[12]
+	mi := &file_plans_v1_exercises_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1227,7 +1942,7 @@ type ListExerciseHistoryResponse struct {
 
 func (x *ListExerciseHistoryResponse) Reset() {
 	*x = ListExerciseHistoryResponse{}
-	mi := &file_plans_v1_exercises_proto_msgTypes[13]
+	mi := &file_plans_v1_exercises_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1239,7 +1954,7 @@ func (x *ListExerciseHistoryResponse) String() string {
 func (*ListExerciseHistoryResponse) ProtoMessage() {}
 
 func (x *ListExerciseHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_exercises_proto_msgTypes[13]
+	mi := &file_plans_v1_exercises_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,25 +1993,333 @@ func (b0 ListExerciseHistoryResponse_builder) Build() *ListExerciseHistoryRespon
 	return m0
 }
 
+type GetHomeEquipmentRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHomeEquipmentRequest) Reset() {
+	*x = GetHomeEquipmentRequest{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHomeEquipmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHomeEquipmentRequest) ProtoMessage() {}
+
+func (x *GetHomeEquipmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type GetHomeEquipmentRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetHomeEquipmentRequest_builder) Build() *GetHomeEquipmentRequest {
+	m0 := &GetHomeEquipmentRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetHomeEquipmentResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Equipment  *[]*OwnedEquipment     `protobuf:"bytes,1,rep,name=equipment,proto3"`
+	xxx_hidden_UpdateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=update_time,json=updateTime,proto3"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *GetHomeEquipmentResponse) Reset() {
+	*x = GetHomeEquipmentResponse{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHomeEquipmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHomeEquipmentResponse) ProtoMessage() {}
+
+func (x *GetHomeEquipmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetHomeEquipmentResponse) GetEquipment() []*OwnedEquipment {
+	if x != nil {
+		if x.xxx_hidden_Equipment != nil {
+			return *x.xxx_hidden_Equipment
+		}
+	}
+	return nil
+}
+
+func (x *GetHomeEquipmentResponse) GetUpdateTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_UpdateTime
+	}
+	return nil
+}
+
+func (x *GetHomeEquipmentResponse) SetEquipment(v []*OwnedEquipment) {
+	x.xxx_hidden_Equipment = &v
+}
+
+func (x *GetHomeEquipmentResponse) SetUpdateTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_UpdateTime = v
+}
+
+func (x *GetHomeEquipmentResponse) HasUpdateTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_UpdateTime != nil
+}
+
+func (x *GetHomeEquipmentResponse) ClearUpdateTime() {
+	x.xxx_hidden_UpdateTime = nil
+}
+
+type GetHomeEquipmentResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The equipment the user has at home, in the order of the Equipment
+	// enum. Empty if they have none, or haven't said yet.
+	Equipment []*OwnedEquipment
+	// When the list was last set. Unset if the user hasn't said what they
+	// have yet: then don't assume they have no equipment, ask them.
+	UpdateTime *timestamppb.Timestamp
+}
+
+func (b0 GetHomeEquipmentResponse_builder) Build() *GetHomeEquipmentResponse {
+	m0 := &GetHomeEquipmentResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Equipment = &b.Equipment
+	x.xxx_hidden_UpdateTime = b.UpdateTime
+	return m0
+}
+
+type SetHomeEquipmentRequest struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Equipment *[]*OwnedEquipment     `protobuf:"bytes,1,rep,name=equipment,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *SetHomeEquipmentRequest) Reset() {
+	*x = SetHomeEquipmentRequest{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetHomeEquipmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetHomeEquipmentRequest) ProtoMessage() {}
+
+func (x *SetHomeEquipmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetHomeEquipmentRequest) GetEquipment() []*OwnedEquipment {
+	if x != nil {
+		if x.xxx_hidden_Equipment != nil {
+			return *x.xxx_hidden_Equipment
+		}
+	}
+	return nil
+}
+
+func (x *SetHomeEquipmentRequest) SetEquipment(v []*OwnedEquipment) {
+	x.xxx_hidden_Equipment = &v
+}
+
+type SetHomeEquipmentRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The equipment the user has at home, replacing the earlier list.
+	Equipment []*OwnedEquipment
+}
+
+func (b0 SetHomeEquipmentRequest_builder) Build() *SetHomeEquipmentRequest {
+	m0 := &SetHomeEquipmentRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Equipment = &b.Equipment
+	return m0
+}
+
+type SetHomeEquipmentResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Equipment  *[]*OwnedEquipment     `protobuf:"bytes,1,rep,name=equipment,proto3"`
+	xxx_hidden_UpdateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=update_time,json=updateTime,proto3"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SetHomeEquipmentResponse) Reset() {
+	*x = SetHomeEquipmentResponse{}
+	mi := &file_plans_v1_exercises_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetHomeEquipmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetHomeEquipmentResponse) ProtoMessage() {}
+
+func (x *SetHomeEquipmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_exercises_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetHomeEquipmentResponse) GetEquipment() []*OwnedEquipment {
+	if x != nil {
+		if x.xxx_hidden_Equipment != nil {
+			return *x.xxx_hidden_Equipment
+		}
+	}
+	return nil
+}
+
+func (x *SetHomeEquipmentResponse) GetUpdateTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_UpdateTime
+	}
+	return nil
+}
+
+func (x *SetHomeEquipmentResponse) SetEquipment(v []*OwnedEquipment) {
+	x.xxx_hidden_Equipment = &v
+}
+
+func (x *SetHomeEquipmentResponse) SetUpdateTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_UpdateTime = v
+}
+
+func (x *SetHomeEquipmentResponse) HasUpdateTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_UpdateTime != nil
+}
+
+func (x *SetHomeEquipmentResponse) ClearUpdateTime() {
+	x.xxx_hidden_UpdateTime = nil
+}
+
+type SetHomeEquipmentResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The equipment the user has at home.
+	Equipment []*OwnedEquipment
+	// When the list was set.
+	UpdateTime *timestamppb.Timestamp
+}
+
+func (b0 SetHomeEquipmentResponse_builder) Build() *SetHomeEquipmentResponse {
+	m0 := &SetHomeEquipmentResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Equipment = &b.Equipment
+	x.xxx_hidden_UpdateTime = b.UpdateTime
+	return m0
+}
+
 var File_plans_v1_exercises_proto protoreflect.FileDescriptor
 
 const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\n" +
-	"\x18plans/v1/exercises.proto\x12\bplans.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\x1a\x14plans/v1/plans.proto\"\xa5\x03\n" +
+	"\x18plans/v1/exercises.proto\x12\bplans.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\x1a\x18plans/v1/equipment.proto\x1a\x14plans/v1/plans.proto\"\xa0\x04\n" +
 	"\bExercise\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\"\n" +
 	"\finstructions\x18\x03 \x03(\tR\finstructions\x12\x12\n" +
 	"\x04feel\x18\x04 \x01(\tR\x04feel\x129\n" +
 	"\x0fprimary_muscles\x18\x05 \x03(\x0e2\x10.plans.v1.MuscleR\x0eprimaryMuscles\x12=\n" +
-	"\x11secondary_muscles\x18\x06 \x03(\x0e2\x10.plans.v1.MuscleR\x10secondaryMuscles\x12\x1c\n" +
-	"\tequipment\x18\a \x01(\tR\tequipment\x12\x1b\n" +
+	"\x11secondary_muscles\x18\x06 \x03(\x0e2\x10.plans.v1.MuscleR\x10secondaryMuscles\x121\n" +
+	"\tequipment\x18\a \x03(\x0e2\x13.plans.v1.EquipmentR\tequipment\x12\x1b\n" +
 	"\teach_side\x18\b \x01(\bR\beachSide\x12C\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
 	"createTime\x12C\n" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
-	"updateTime\"\x95\x02\n" +
+	"updateTime\x12'\n" +
+	"\x0fequipment_notes\x18\v \x01(\tR\x0eequipmentNotes\x12;\n" +
+	"\n" +
+	"animations\x18\f \x03(\v2\x1b.plans.v1.ExerciseAnimationR\n" +
+	"animations\"\xef\x01\n" +
+	"\x11ExerciseAnimation\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12+\n" +
+	"\x06anchor\x18\x02 \x01(\x0e2\x13.plans.v1.BodyPointR\x06anchor\x12-\n" +
+	"\aplanted\x18\x03 \x03(\x0e2\x13.plans.v1.BodyPointR\aplanted\x12-\n" +
+	"\x05props\x18\x04 \x03(\v2\x17.plans.v1.AnimationPropR\x05props\x129\n" +
+	"\tkeyframes\x18\x05 \x03(\v2\x1b.plans.v1.AnimationKeyframeR\tkeyframes\"k\n" +
+	"\rAnimationProp\x12/\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1b.plans.v1.AnimationPropKindR\x04kind\x12)\n" +
+	"\x05point\x18\x02 \x01(\x0e2\x13.plans.v1.BodyPointR\x05point\"\xd6\x01\n" +
+	"\x11AnimationKeyframe\x12\"\n" +
+	"\x04pose\x18\x01 \x01(\v2\x0e.plans.v1.PoseR\x04pose\x12+\n" +
+	"\x11move_milliseconds\x18\x02 \x01(\x05R\x10moveMilliseconds\x12+\n" +
+	"\x11hold_milliseconds\x18\x03 \x01(\x05R\x10holdMilliseconds\x12\x10\n" +
+	"\x03cue\x18\x04 \x01(\tR\x03cue\x121\n" +
+	"\thighlight\x18\x05 \x01(\x0e2\x13.plans.v1.BodyPointR\thighlight\"\xc8\x03\n" +
+	"\x04Pose\x12#\n" +
+	"\rtorso_degrees\x18\x01 \x01(\x01R\ftorsoDegrees\x12!\n" +
+	"\fhead_degrees\x18\x02 \x01(\x01R\vheadDegrees\x12,\n" +
+	"\x12near_thigh_degrees\x18\x03 \x01(\x01R\x10nearThighDegrees\x12*\n" +
+	"\x11near_shin_degrees\x18\x04 \x01(\x01R\x0fnearShinDegrees\x12*\n" +
+	"\x11far_thigh_degrees\x18\x05 \x01(\x01R\x0ffarThighDegrees\x12(\n" +
+	"\x10far_shin_degrees\x18\x06 \x01(\x01R\x0efarShinDegrees\x123\n" +
+	"\x16near_upper_arm_degrees\x18\a \x01(\x01R\x13nearUpperArmDegrees\x120\n" +
+	"\x14near_forearm_degrees\x18\b \x01(\x01R\x12nearForearmDegrees\x121\n" +
+	"\x15far_upper_arm_degrees\x18\t \x01(\x01R\x12farUpperArmDegrees\x12.\n" +
+	"\x13far_forearm_degrees\x18\n" +
+	" \x01(\x01R\x11farForearmDegrees\"\x95\x02\n" +
 	"\x14ExerciseHistoryEntry\x12\x12\n" +
 	"\x04date\x18\x01 \x01(\tR\x04date\x12\x1d\n" +
 	"\n" +
@@ -1331,7 +2354,18 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"start_date\x18\x02 \x01(\tR\tstartDate\x12\x19\n" +
 	"\bend_date\x18\x03 \x01(\tR\aendDate\"W\n" +
 	"\x1bListExerciseHistoryResponse\x128\n" +
-	"\aentries\x18\x01 \x03(\v2\x1e.plans.v1.ExerciseHistoryEntryR\aentries*\xb3\x03\n" +
+	"\aentries\x18\x01 \x03(\v2\x1e.plans.v1.ExerciseHistoryEntryR\aentries\"\x19\n" +
+	"\x17GetHomeEquipmentRequest\"\x8f\x01\n" +
+	"\x18GetHomeEquipmentResponse\x126\n" +
+	"\tequipment\x18\x01 \x03(\v2\x18.plans.v1.OwnedEquipmentR\tequipment\x12;\n" +
+	"\vupdate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"updateTime\"Q\n" +
+	"\x17SetHomeEquipmentRequest\x126\n" +
+	"\tequipment\x18\x01 \x03(\v2\x18.plans.v1.OwnedEquipmentR\tequipment\"\x8f\x01\n" +
+	"\x18SetHomeEquipmentResponse\x126\n" +
+	"\tequipment\x18\x01 \x03(\v2\x18.plans.v1.OwnedEquipmentR\tequipment\x12;\n" +
+	"\vupdate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"updateTime*\xb3\x03\n" +
 	"\x06Muscle\x12\x16\n" +
 	"\x12MUSCLE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vMUSCLE_NECK\x10\x01\x12\x15\n" +
@@ -1355,73 +2389,128 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x11MUSCLE_HAMSTRINGS\x10\x11\x12\x11\n" +
 	"\rMUSCLE_CALVES\x10\x12\x12\x10\n" +
 	"\fMUSCLE_SHINS\x10\x13\x12\x0f\n" +
-	"\vMUSCLE_FEET\x10\x142\x95\x04\n" +
+	"\vMUSCLE_FEET\x10\x14*\xb9\x02\n" +
+	"\tBodyPoint\x12\x1a\n" +
+	"\x16BODY_POINT_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fBODY_POINT_HEAD\x10\x01\x12\x18\n" +
+	"\x14BODY_POINT_SHOULDERS\x10\x02\x12\x13\n" +
+	"\x0fBODY_POINT_HIPS\x10\x03\x12\x19\n" +
+	"\x15BODY_POINT_NEAR_ELBOW\x10\x04\x12\x18\n" +
+	"\x14BODY_POINT_NEAR_HAND\x10\x05\x12\x18\n" +
+	"\x14BODY_POINT_FAR_ELBOW\x10\x06\x12\x17\n" +
+	"\x13BODY_POINT_FAR_HAND\x10\a\x12\x18\n" +
+	"\x14BODY_POINT_NEAR_KNEE\x10\b\x12\x18\n" +
+	"\x14BODY_POINT_NEAR_FOOT\x10\t\x12\x17\n" +
+	"\x13BODY_POINT_FAR_KNEE\x10\n" +
+	"\x12\x17\n" +
+	"\x13BODY_POINT_FAR_FOOT\x10\v*\xf5\x01\n" +
+	"\x11AnimationPropKind\x12#\n" +
+	"\x1fANIMATION_PROP_KIND_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19ANIMATION_PROP_KIND_BENCH\x10\x01\x12\x1c\n" +
+	"\x18ANIMATION_PROP_KIND_STEP\x10\x02\x12 \n" +
+	"\x1cANIMATION_PROP_KIND_DUMBBELL\x10\x03\x12\"\n" +
+	"\x1eANIMATION_PROP_KIND_KETTLEBELL\x10\x04\x12\x1b\n" +
+	"\x17ANIMATION_PROP_KIND_MAT\x10\x05\x12\x1b\n" +
+	"\x17ANIMATION_PROP_KIND_BAR\x10\x062\xcb\x05\n" +
 	"\x0fExerciseService\x12V\n" +
 	"\x0fCreateExercises\x12 .plans.v1.CreateExercisesRequest\x1a!.plans.v1.CreateExercisesResponse\x12P\n" +
 	"\rListExercises\x12\x1e.plans.v1.ListExercisesRequest\x1a\x1f.plans.v1.ListExercisesResponse\x12J\n" +
 	"\vGetExercise\x12\x1c.plans.v1.GetExerciseRequest\x1a\x1d.plans.v1.GetExerciseResponse\x12S\n" +
 	"\x0eUpdateExercise\x12\x1f.plans.v1.UpdateExerciseRequest\x1a .plans.v1.UpdateExerciseResponse\x12S\n" +
 	"\x0eDeleteExercise\x12\x1f.plans.v1.DeleteExerciseRequest\x1a .plans.v1.DeleteExerciseResponse\x12b\n" +
-	"\x13ListExerciseHistory\x12$.plans.v1.ListExerciseHistoryRequest\x1a%.plans.v1.ListExerciseHistoryResponseB\xa5\x01\n" +
+	"\x13ListExerciseHistory\x12$.plans.v1.ListExerciseHistoryRequest\x1a%.plans.v1.ListExerciseHistoryResponse\x12Y\n" +
+	"\x10GetHomeEquipment\x12!.plans.v1.GetHomeEquipmentRequest\x1a\".plans.v1.GetHomeEquipmentResponse\x12Y\n" +
+	"\x10SetHomeEquipment\x12!.plans.v1.SetHomeEquipmentRequest\x1a\".plans.v1.SetHomeEquipmentResponseB\xa5\x01\n" +
 	"\fcom.plans.v1B\x0eExercisesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
-var file_plans_v1_exercises_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_plans_v1_exercises_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_plans_v1_exercises_proto_goTypes = []any{
 	(Muscle)(0),                         // 0: plans.v1.Muscle
-	(*Exercise)(nil),                    // 1: plans.v1.Exercise
-	(*ExerciseHistoryEntry)(nil),        // 2: plans.v1.ExerciseHistoryEntry
-	(*CreateExercisesRequest)(nil),      // 3: plans.v1.CreateExercisesRequest
-	(*CreateExercisesResponse)(nil),     // 4: plans.v1.CreateExercisesResponse
-	(*ListExercisesRequest)(nil),        // 5: plans.v1.ListExercisesRequest
-	(*ListExercisesResponse)(nil),       // 6: plans.v1.ListExercisesResponse
-	(*GetExerciseRequest)(nil),          // 7: plans.v1.GetExerciseRequest
-	(*GetExerciseResponse)(nil),         // 8: plans.v1.GetExerciseResponse
-	(*UpdateExerciseRequest)(nil),       // 9: plans.v1.UpdateExerciseRequest
-	(*UpdateExerciseResponse)(nil),      // 10: plans.v1.UpdateExerciseResponse
-	(*DeleteExerciseRequest)(nil),       // 11: plans.v1.DeleteExerciseRequest
-	(*DeleteExerciseResponse)(nil),      // 12: plans.v1.DeleteExerciseResponse
-	(*ListExerciseHistoryRequest)(nil),  // 13: plans.v1.ListExerciseHistoryRequest
-	(*ListExerciseHistoryResponse)(nil), // 14: plans.v1.ListExerciseHistoryResponse
-	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
-	(*PlannedExercise)(nil),             // 16: plans.v1.PlannedExercise
-	(*LoggedExercise)(nil),              // 17: plans.v1.LoggedExercise
-	(SessionEffort)(0),                  // 18: plans.v1.SessionEffort
-	(*fieldmaskpb.FieldMask)(nil),       // 19: google.protobuf.FieldMask
+	(BodyPoint)(0),                      // 1: plans.v1.BodyPoint
+	(AnimationPropKind)(0),              // 2: plans.v1.AnimationPropKind
+	(*Exercise)(nil),                    // 3: plans.v1.Exercise
+	(*ExerciseAnimation)(nil),           // 4: plans.v1.ExerciseAnimation
+	(*AnimationProp)(nil),               // 5: plans.v1.AnimationProp
+	(*AnimationKeyframe)(nil),           // 6: plans.v1.AnimationKeyframe
+	(*Pose)(nil),                        // 7: plans.v1.Pose
+	(*ExerciseHistoryEntry)(nil),        // 8: plans.v1.ExerciseHistoryEntry
+	(*CreateExercisesRequest)(nil),      // 9: plans.v1.CreateExercisesRequest
+	(*CreateExercisesResponse)(nil),     // 10: plans.v1.CreateExercisesResponse
+	(*ListExercisesRequest)(nil),        // 11: plans.v1.ListExercisesRequest
+	(*ListExercisesResponse)(nil),       // 12: plans.v1.ListExercisesResponse
+	(*GetExerciseRequest)(nil),          // 13: plans.v1.GetExerciseRequest
+	(*GetExerciseResponse)(nil),         // 14: plans.v1.GetExerciseResponse
+	(*UpdateExerciseRequest)(nil),       // 15: plans.v1.UpdateExerciseRequest
+	(*UpdateExerciseResponse)(nil),      // 16: plans.v1.UpdateExerciseResponse
+	(*DeleteExerciseRequest)(nil),       // 17: plans.v1.DeleteExerciseRequest
+	(*DeleteExerciseResponse)(nil),      // 18: plans.v1.DeleteExerciseResponse
+	(*ListExerciseHistoryRequest)(nil),  // 19: plans.v1.ListExerciseHistoryRequest
+	(*ListExerciseHistoryResponse)(nil), // 20: plans.v1.ListExerciseHistoryResponse
+	(*GetHomeEquipmentRequest)(nil),     // 21: plans.v1.GetHomeEquipmentRequest
+	(*GetHomeEquipmentResponse)(nil),    // 22: plans.v1.GetHomeEquipmentResponse
+	(*SetHomeEquipmentRequest)(nil),     // 23: plans.v1.SetHomeEquipmentRequest
+	(*SetHomeEquipmentResponse)(nil),    // 24: plans.v1.SetHomeEquipmentResponse
+	(Equipment)(0),                      // 25: plans.v1.Equipment
+	(*timestamppb.Timestamp)(nil),       // 26: google.protobuf.Timestamp
+	(*PlannedExercise)(nil),             // 27: plans.v1.PlannedExercise
+	(*LoggedExercise)(nil),              // 28: plans.v1.LoggedExercise
+	(SessionEffort)(0),                  // 29: plans.v1.SessionEffort
+	(*fieldmaskpb.FieldMask)(nil),       // 30: google.protobuf.FieldMask
+	(*OwnedEquipment)(nil),              // 31: plans.v1.OwnedEquipment
 }
 var file_plans_v1_exercises_proto_depIdxs = []int32{
 	0,  // 0: plans.v1.Exercise.primary_muscles:type_name -> plans.v1.Muscle
 	0,  // 1: plans.v1.Exercise.secondary_muscles:type_name -> plans.v1.Muscle
-	15, // 2: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
-	15, // 3: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
-	16, // 4: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
-	17, // 5: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
-	18, // 6: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
-	1,  // 7: plans.v1.CreateExercisesRequest.exercises:type_name -> plans.v1.Exercise
-	1,  // 8: plans.v1.CreateExercisesResponse.exercises:type_name -> plans.v1.Exercise
-	1,  // 9: plans.v1.ListExercisesResponse.exercises:type_name -> plans.v1.Exercise
-	1,  // 10: plans.v1.GetExerciseResponse.exercise:type_name -> plans.v1.Exercise
-	1,  // 11: plans.v1.UpdateExerciseRequest.exercise:type_name -> plans.v1.Exercise
-	19, // 12: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 13: plans.v1.UpdateExerciseResponse.exercise:type_name -> plans.v1.Exercise
-	2,  // 14: plans.v1.ListExerciseHistoryResponse.entries:type_name -> plans.v1.ExerciseHistoryEntry
-	3,  // 15: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
-	5,  // 16: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
-	7,  // 17: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
-	9,  // 18: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
-	11, // 19: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
-	13, // 20: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
-	4,  // 21: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
-	6,  // 22: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
-	8,  // 23: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
-	10, // 24: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
-	12, // 25: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
-	14, // 26: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	25, // 2: plans.v1.Exercise.equipment:type_name -> plans.v1.Equipment
+	26, // 3: plans.v1.Exercise.create_time:type_name -> google.protobuf.Timestamp
+	26, // 4: plans.v1.Exercise.update_time:type_name -> google.protobuf.Timestamp
+	4,  // 5: plans.v1.Exercise.animations:type_name -> plans.v1.ExerciseAnimation
+	1,  // 6: plans.v1.ExerciseAnimation.anchor:type_name -> plans.v1.BodyPoint
+	1,  // 7: plans.v1.ExerciseAnimation.planted:type_name -> plans.v1.BodyPoint
+	5,  // 8: plans.v1.ExerciseAnimation.props:type_name -> plans.v1.AnimationProp
+	6,  // 9: plans.v1.ExerciseAnimation.keyframes:type_name -> plans.v1.AnimationKeyframe
+	2,  // 10: plans.v1.AnimationProp.kind:type_name -> plans.v1.AnimationPropKind
+	1,  // 11: plans.v1.AnimationProp.point:type_name -> plans.v1.BodyPoint
+	7,  // 12: plans.v1.AnimationKeyframe.pose:type_name -> plans.v1.Pose
+	1,  // 13: plans.v1.AnimationKeyframe.highlight:type_name -> plans.v1.BodyPoint
+	27, // 14: plans.v1.ExerciseHistoryEntry.planned:type_name -> plans.v1.PlannedExercise
+	28, // 15: plans.v1.ExerciseHistoryEntry.logged:type_name -> plans.v1.LoggedExercise
+	29, // 16: plans.v1.ExerciseHistoryEntry.session_effort:type_name -> plans.v1.SessionEffort
+	3,  // 17: plans.v1.CreateExercisesRequest.exercises:type_name -> plans.v1.Exercise
+	3,  // 18: plans.v1.CreateExercisesResponse.exercises:type_name -> plans.v1.Exercise
+	3,  // 19: plans.v1.ListExercisesResponse.exercises:type_name -> plans.v1.Exercise
+	3,  // 20: plans.v1.GetExerciseResponse.exercise:type_name -> plans.v1.Exercise
+	3,  // 21: plans.v1.UpdateExerciseRequest.exercise:type_name -> plans.v1.Exercise
+	30, // 22: plans.v1.UpdateExerciseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	3,  // 23: plans.v1.UpdateExerciseResponse.exercise:type_name -> plans.v1.Exercise
+	8,  // 24: plans.v1.ListExerciseHistoryResponse.entries:type_name -> plans.v1.ExerciseHistoryEntry
+	31, // 25: plans.v1.GetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	26, // 26: plans.v1.GetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	31, // 27: plans.v1.SetHomeEquipmentRequest.equipment:type_name -> plans.v1.OwnedEquipment
+	31, // 28: plans.v1.SetHomeEquipmentResponse.equipment:type_name -> plans.v1.OwnedEquipment
+	26, // 29: plans.v1.SetHomeEquipmentResponse.update_time:type_name -> google.protobuf.Timestamp
+	9,  // 30: plans.v1.ExerciseService.CreateExercises:input_type -> plans.v1.CreateExercisesRequest
+	11, // 31: plans.v1.ExerciseService.ListExercises:input_type -> plans.v1.ListExercisesRequest
+	13, // 32: plans.v1.ExerciseService.GetExercise:input_type -> plans.v1.GetExerciseRequest
+	15, // 33: plans.v1.ExerciseService.UpdateExercise:input_type -> plans.v1.UpdateExerciseRequest
+	17, // 34: plans.v1.ExerciseService.DeleteExercise:input_type -> plans.v1.DeleteExerciseRequest
+	19, // 35: plans.v1.ExerciseService.ListExerciseHistory:input_type -> plans.v1.ListExerciseHistoryRequest
+	21, // 36: plans.v1.ExerciseService.GetHomeEquipment:input_type -> plans.v1.GetHomeEquipmentRequest
+	23, // 37: plans.v1.ExerciseService.SetHomeEquipment:input_type -> plans.v1.SetHomeEquipmentRequest
+	10, // 38: plans.v1.ExerciseService.CreateExercises:output_type -> plans.v1.CreateExercisesResponse
+	12, // 39: plans.v1.ExerciseService.ListExercises:output_type -> plans.v1.ListExercisesResponse
+	14, // 40: plans.v1.ExerciseService.GetExercise:output_type -> plans.v1.GetExerciseResponse
+	16, // 41: plans.v1.ExerciseService.UpdateExercise:output_type -> plans.v1.UpdateExerciseResponse
+	18, // 42: plans.v1.ExerciseService.DeleteExercise:output_type -> plans.v1.DeleteExerciseResponse
+	20, // 43: plans.v1.ExerciseService.ListExerciseHistory:output_type -> plans.v1.ListExerciseHistoryResponse
+	22, // 44: plans.v1.ExerciseService.GetHomeEquipment:output_type -> plans.v1.GetHomeEquipmentResponse
+	24, // 45: plans.v1.ExerciseService.SetHomeEquipment:output_type -> plans.v1.SetHomeEquipmentResponse
+	38, // [38:46] is the sub-list for method output_type
+	30, // [30:38] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_exercises_proto_init() }
@@ -1429,14 +2518,15 @@ func file_plans_v1_exercises_proto_init() {
 	if File_plans_v1_exercises_proto != nil {
 		return
 	}
+	file_plans_v1_equipment_proto_init()
 	file_plans_v1_plans_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_exercises_proto_rawDesc), len(file_plans_v1_exercises_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   14,
+			NumEnums:      3,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

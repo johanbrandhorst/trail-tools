@@ -62,6 +62,17 @@ const TYPE_OPTIONS: SelectOption[] = WORKOUT_STYLES.map((style) => ({
   value: String(style.type),
 }));
 
+// WINDOW_OPTIONS are the lengths of start windows to choose from.
+const WINDOW_OPTIONS: SelectOption[] = [15, 30, 45, 60, 90, 120, 180, 240].map(
+  (minutes) => ({
+    label:
+      minutes < 60
+        ? `${minutes} minutes`
+        : `${minutes / 60} ${minutes === 60 ? "hour" : "hours"}`,
+    value: String(minutes),
+  })
+);
+
 const TERRAIN_OPTIONS: SelectOption[] = TERRAIN_STYLES.map((style) => ({
   label: style.terrain === Terrain.UNSPECIFIED ? "Any terrain" : style.label,
   value: String(style.terrain),
@@ -98,6 +109,14 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
   const [routeId, setRouteId] = useState(stored?.routeId ?? "");
   const [completedId, setCompletedId] = useState(
     workout?.completedActivityId ?? ""
+  );
+  const [startTime, setStartTime] = useState(workout?.startTime ?? "");
+  const [windowMinutes, setWindowMinutes] = useState(
+    String(
+      workout === undefined || workout.startWindowMinutes === 0
+        ? 60
+        : workout.startWindowMinutes
+    )
   );
   const [validation, setValidation] = useState("");
 
@@ -164,6 +183,8 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       date,
       description,
       details,
+      startTime,
+      startWindowMinutes: startTime === "" ? 0 : Number(windowMinutes),
       title,
     };
     if (workout === undefined) {
@@ -197,6 +218,12 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     }
     if (fields.completedActivityId !== workout.completedActivityId) {
       paths.push("completed_activity_id");
+    }
+    if (
+      fields.startTime !== workout.startTime ||
+      fields.startWindowMinutes !== workout.startWindowMinutes
+    ) {
+      paths.push("start_time", "start_window_minutes");
     }
     if (paths.length === 0) {
       onClose();
@@ -281,6 +308,23 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
               value={terrain}
               onChange={setTerrain}
               options={TERRAIN_OPTIONS}
+            />
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField
+            label="Start from"
+            type="time"
+            value={startTime}
+            onChange={setStartTime}
+            hint="Empty for any time of the day."
+          />
+          {startTime !== "" && (
+            <SelectField
+              label="Start within"
+              value={windowMinutes}
+              onChange={setWindowMinutes}
+              options={WINDOW_OPTIONS}
             />
           )}
         </div>

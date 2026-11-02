@@ -42,6 +42,12 @@ const (
 	// ExerciseServiceListExerciseHistoryProcedure is the procedure name of the ExerciseService's
 	// ListExerciseHistory RPC.
 	ExerciseServiceListExerciseHistoryProcedure = "/plans.v1.ExerciseService/ListExerciseHistory"
+	// ExerciseServiceGetHomeEquipmentProcedure is the procedure name of the ExerciseService's
+	// GetHomeEquipment RPC.
+	ExerciseServiceGetHomeEquipmentProcedure = "/plans.v1.ExerciseService/GetHomeEquipment"
+	// ExerciseServiceSetHomeEquipmentProcedure is the procedure name of the ExerciseService's
+	// SetHomeEquipment RPC.
+	ExerciseServiceSetHomeEquipmentProcedure = "/plans.v1.ExerciseService/SetHomeEquipment"
 )
 
 var (
@@ -87,6 +93,20 @@ var (
 			Procedure:  ExerciseServiceListExerciseHistoryProcedure,
 		}
 	})
+	exerciseServiceGetHomeEquipmentSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_exercises_proto.Services().ByName("ExerciseService").Methods().ByName("GetHomeEquipment"),
+			Procedure:  ExerciseServiceGetHomeEquipmentProcedure,
+		}
+	})
+	exerciseServiceSetHomeEquipmentSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_exercises_proto.Services().ByName("ExerciseService").Methods().ByName("SetHomeEquipment"),
+			Procedure:  ExerciseServiceSetHomeEquipmentProcedure,
+		}
+	})
 )
 
 // ExerciseServiceClient is a client for the plans.v1.ExerciseService service.
@@ -109,6 +129,13 @@ type ExerciseServiceClient interface {
 	// planned, and how it felt. Use it to progress the weights and reps of
 	// the next workouts, and to analyze training over time.
 	ListExerciseHistory(context.Context, *v1.ListExerciseHistoryRequest) (*v1.ListExerciseHistoryResponse, error)
+	// Get the equipment the user has at home, with the weights of their
+	// dumbbells and kettlebells. Plan strength workouts with it.
+	GetHomeEquipment(context.Context, *v1.GetHomeEquipmentRequest) (*v1.GetHomeEquipmentResponse, error)
+	// Replace the list of equipment the user has at home. The user usually
+	// does this in the web app's settings; only change it when they say what
+	// they have.
+	SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error)
 }
 
 // NewExerciseServiceClient constructs a client for the plans.v1.ExerciseService service. Multiple
@@ -137,6 +164,13 @@ type ExerciseServiceHandler interface {
 	// planned, and how it felt. Use it to progress the weights and reps of
 	// the next workouts, and to analyze training over time.
 	ListExerciseHistory(context.Context, *v1.ListExerciseHistoryRequest) (*v1.ListExerciseHistoryResponse, error)
+	// Get the equipment the user has at home, with the weights of their
+	// dumbbells and kettlebells. Plan strength workouts with it.
+	GetHomeEquipment(context.Context, *v1.GetHomeEquipmentRequest) (*v1.GetHomeEquipmentResponse, error)
+	// Replace the list of equipment the user has at home. The user usually
+	// does this in the web app's settings; only change it when they say what
+	// they have.
+	SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error)
 }
 
 // RegisterExerciseServiceHandler registers svc as the plans.v1.ExerciseService implementation on
@@ -150,6 +184,8 @@ func RegisterExerciseServiceHandler(server *connect.Server, svc ExerciseServiceH
 		connect.Method{Spec: exerciseServiceUpdateExerciseSpec(), Handler: adapter.updateExercise},
 		connect.Method{Spec: exerciseServiceDeleteExerciseSpec(), Handler: adapter.deleteExercise},
 		connect.Method{Spec: exerciseServiceListExerciseHistorySpec(), Handler: adapter.listExerciseHistory},
+		connect.Method{Spec: exerciseServiceGetHomeEquipmentSpec(), Handler: adapter.getHomeEquipment},
+		connect.Method{Spec: exerciseServiceSetHomeEquipmentSpec(), Handler: adapter.setHomeEquipment},
 	)
 }
 
@@ -178,6 +214,14 @@ func (UnimplementedExerciseServiceHandler) DeleteExercise(context.Context, *v1.D
 
 func (UnimplementedExerciseServiceHandler) ListExerciseHistory(context.Context, *v1.ListExerciseHistoryRequest) (*v1.ListExerciseHistoryResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.ListExerciseHistory is not implemented")
+}
+
+func (UnimplementedExerciseServiceHandler) GetHomeEquipment(context.Context, *v1.GetHomeEquipmentRequest) (*v1.GetHomeEquipmentResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.GetHomeEquipment is not implemented")
+}
+
+func (UnimplementedExerciseServiceHandler) SetHomeEquipment(context.Context, *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.ExerciseService.SetHomeEquipment is not implemented")
 }
 
 type exerciseServiceClient struct {
@@ -227,6 +271,22 @@ func (c *exerciseServiceClient) DeleteExercise(ctx context.Context, req *v1.Dele
 func (c *exerciseServiceClient) ListExerciseHistory(ctx context.Context, req *v1.ListExerciseHistoryRequest) (*v1.ListExerciseHistoryResponse, error) {
 	var res v1.ListExerciseHistoryResponse
 	if err := c.client.CallUnary(ctx, exerciseServiceListExerciseHistorySpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *exerciseServiceClient) GetHomeEquipment(ctx context.Context, req *v1.GetHomeEquipmentRequest) (*v1.GetHomeEquipmentResponse, error) {
+	var res v1.GetHomeEquipmentResponse
+	if err := c.client.CallUnary(ctx, exerciseServiceGetHomeEquipmentSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *exerciseServiceClient) SetHomeEquipment(ctx context.Context, req *v1.SetHomeEquipmentRequest) (*v1.SetHomeEquipmentResponse, error) {
+	var res v1.SetHomeEquipmentResponse
+	if err := c.client.CallUnary(ctx, exerciseServiceSetHomeEquipmentSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -300,6 +360,30 @@ func (h exerciseServiceHandler) listExerciseHistory(ctx context.Context, _ conne
 		return err
 	}
 	res, err := h.svc.ListExerciseHistory(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h exerciseServiceHandler) getHomeEquipment(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetHomeEquipmentRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetHomeEquipment(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h exerciseServiceHandler) setHomeEquipment(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetHomeEquipmentRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetHomeEquipment(ctx, &req)
 	if err != nil {
 		return err
 	}

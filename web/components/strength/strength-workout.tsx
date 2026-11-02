@@ -25,6 +25,7 @@ import React from "react";
 import { Link } from "react-router";
 
 import BodyMap, { MuscleChips } from "./body-map";
+import EquipmentCheck from "./equipment-check";
 
 interface StrengthWorkoutViewProps {
   workout: Workout;
@@ -73,6 +74,11 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
         <PlayIcon className="size-5" />
         {log === undefined ? "Start workout" : "Edit the log"}
       </Link>
+      <EquipmentCheck
+        workout={workout}
+        strength={strength}
+        exercises={exercises}
+      />
       {log !== undefined && (
         <Card
           title="Workout log"

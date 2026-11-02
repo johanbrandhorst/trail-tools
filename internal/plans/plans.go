@@ -98,8 +98,15 @@ type Workout struct {
 	RouteID pgtype.UUID
 	// Invalid if the workout has not been completed.
 	CompletedActivityID pgtype.UUID
+	// The earliest local time to start, "HH:MM". Empty for any time of the
+	// day.
+	StartTime string
+	// How long the start window is, 0 if there's no start time.
+	StartWindowMinutes int32
 	// The exercises of a strength workout, in order. Nil for other types.
 	Exercises []*PlannedExercise
+	// The exercises the user lacks equipment for, computed when reading.
+	EquipmentIssues []EquipmentIssue
 	// The log of a completed strength workout. Nil if it has none.
 	Log *StrengthLog
 }
@@ -358,6 +365,8 @@ func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.U
 		params.TargetTerrains = append(params.TargetTerrains, string(terrainToDB(w.TargetTerrain).Terrain))
 		params.RouteIds = append(params.RouteIds, w.RouteID)
 		params.CompletedActivityIds = append(params.CompletedActivityIds, w.CompletedActivityID)
+		params.StartTimes = append(params.StartTimes, startTimeToDB(w.StartTime))
+		params.StartWindowsMinutes = append(params.StartWindowsMinutes, w.StartWindowMinutes)
 	}
 	var wr workoutReader
 	err := r.db.Transact(ctx, func(b *store.Batch) error {
@@ -472,6 +481,8 @@ func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *W
 				TargetTerrain:             terrainToDB(w.TargetTerrain),
 				RouteID:                   w.RouteID,
 				CompletedActivityID:       w.CompletedActivityID,
+				StartTime:                 startTimeToDB(w.StartTime),
+				StartWindowMinutes:        w.StartWindowMinutes,
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
 				return store.ErrNotFound
@@ -600,9 +611,29 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		TargetDurationSeconds:     w.TargetDurationSeconds,
 		RouteID:                   w.RouteID,
 		CompletedActivityID:       w.CompletedActivityID,
+		StartTime:                 startTimeFromDB(w.StartTime),
+		StartWindowMinutes:        w.StartWindowMinutes,
 	}
 	if w.TargetTerrain.Valid {
 		workout.TargetTerrain = geo.Terrain(w.TargetTerrain.Terrain)
 	}
 	return workout
+}
+
+// startTimeToDB converts a local time "HH:MM", which the caller has
+// validated, to the database's, invalid if it's empty.
+func startTimeToDB(t string) pgtype.Time {
+	parsed, err := time.Parse("15:04", t)
+	if err != nil {
+		return pgtype.Time{}
+	}
+	return pgtype.Time{Microseconds: int64(parsed.Hour()*60+parsed.Minute()) * int64(time.Minute/time.Microsecond), Valid: true}
+}
+
+func startTimeFromDB(t pgtype.Time) string {
+	if !t.Valid {
+		return ""
+	}
+	minutes := t.Microseconds / int64(time.Minute/time.Microsecond)
+	return fmt.Sprintf("%02d:%02d", minutes/60, minutes%60)
 }

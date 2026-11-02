@@ -31,6 +31,8 @@ type ExerciseRepository interface {
 	UpdateExercise(ctx context.Context, e *plans.Exercise) (*plans.Exercise, error)
 	DeleteExercise(ctx context.Context, userID, id pgtype.UUID) error
 	ListExerciseHistory(ctx context.Context, userID pgtype.UUID, exerciseIDs []pgtype.UUID, startDate, endDate time.Time) ([]*plans.HistoryEntry, error)
+	GetHomeEquipment(ctx context.Context, userID pgtype.UUID) (*plans.HomeEquipment, error)
+	SetHomeEquipment(ctx context.Context, userID pgtype.UUID, equipment []plans.OwnedEquipment) (*plans.HomeEquipment, error)
 }
 
 // ExerciseService implements API handlers for the exercise service.
@@ -81,9 +83,9 @@ func (s *ExerciseService) CreateExercises(ctx context.Context, req *plansv1.Crea
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to create exercises")
 	}
-	result := make([]*plansv1.Exercise, len(created))
-	for i, e := range created {
-		result[i] = exerciseToProto(e)
+	result, err := s.exercisesToProto(ctx, created)
+	if err != nil {
+		return nil, err
 	}
 	return plansv1.CreateExercisesResponse_builder{Exercises: result}.Build(), nil
 }
@@ -115,9 +117,9 @@ func (s *ExerciseService) ListExercises(ctx context.Context, _ *plansv1.ListExer
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to list exercises")
 	}
-	result := make([]*plansv1.Exercise, len(exercises))
-	for i, e := range exercises {
-		result[i] = exerciseToProto(e)
+	result, err := s.exercisesToProto(ctx, exercises)
+	if err != nil {
+		return nil, err
 	}
 	return plansv1.ListExercisesResponse_builder{Exercises: result}.Build(), nil
 }
@@ -131,7 +133,11 @@ func (s *ExerciseService) GetExercise(ctx context.Context, req *plansv1.GetExerc
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get exercise")
 	}
-	return plansv1.GetExerciseResponse_builder{Exercise: exerciseToProto(exercise)}.Build(), nil
+	result, err := s.exercisesToProto(ctx, []*plans.Exercise{exercise})
+	if err != nil {
+		return nil, err
+	}
+	return plansv1.GetExerciseResponse_builder{Exercise: result[0]}.Build(), nil
 }
 
 func (s *ExerciseService) UpdateExercise(ctx context.Context, req *plansv1.UpdateExerciseRequest) (*plansv1.UpdateExerciseResponse, error) {
@@ -143,7 +149,11 @@ func (s *ExerciseService) UpdateExercise(ctx context.Context, req *plansv1.Updat
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get exercise")
 	}
-	merged := exerciseToProto(existing)
+	stored, err := s.exercisesToProto(ctx, []*plans.Exercise{existing})
+	if err != nil {
+		return nil, err
+	}
+	merged := stored[0]
 	if err := protomask.Apply(merged, req.GetExercise(), req.GetUpdateMask(), "id", "create_time", "update_time"); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
@@ -160,7 +170,11 @@ func (s *ExerciseService) UpdateExercise(ctx context.Context, req *plansv1.Updat
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to update exercise")
 	}
-	return plansv1.UpdateExerciseResponse_builder{Exercise: exerciseToProto(updated)}.Build(), nil
+	result, err := s.exercisesToProto(ctx, []*plans.Exercise{updated})
+	if err != nil {
+		return nil, err
+	}
+	return plansv1.UpdateExerciseResponse_builder{Exercise: result[0]}.Build(), nil
 }
 
 func (s *ExerciseService) DeleteExercise(ctx context.Context, req *plansv1.DeleteExerciseRequest) (*plansv1.DeleteExerciseResponse, error) {
@@ -285,18 +299,42 @@ func exerciseFromProto(e *plansv1.Exercise) (*plans.Exercise, error) {
 	}
 	// A muscle is either worked hardest or also worked, not both.
 	secondary = slices.DeleteFunc(secondary, func(m plans.Muscle) bool { return slices.Contains(primary, m) })
+	equipment, err := equipmentListFromProto("equipment", e.GetEquipment())
+	if err != nil {
+		return nil, err
+	}
+	animations, err := animationsFromProto(e.GetAnimations())
+	if err != nil {
+		return nil, err
+	}
 	return &plans.Exercise{
 		Name:             name,
 		Instructions:     instructions,
 		Feel:             strings.TrimSpace(e.GetFeel()),
 		PrimaryMuscles:   primary,
 		SecondaryMuscles: secondary,
-		Equipment:        strings.TrimSpace(e.GetEquipment()),
+		Equipment:        equipment,
+		EquipmentNotes:   strings.TrimSpace(e.GetEquipmentNotes()),
 		EachSide:         e.GetEachSide(),
+		Animations:       animations,
 	}, nil
 }
 
-func exerciseToProto(e *plans.Exercise) *plansv1.Exercise {
+// exercisesToProto converts exercises, reporting stored animations that
+// don't decode.
+func (s *ExerciseService) exercisesToProto(ctx context.Context, exercises []*plans.Exercise) ([]*plansv1.Exercise, error) {
+	result := make([]*plansv1.Exercise, len(exercises))
+	for i, e := range exercises {
+		animations, err := animationsToProto(e.Animations)
+		if err != nil {
+			return nil, s.toConnectError(ctx, err, "failed to read exercise")
+		}
+		result[i] = exerciseToProto(e, animations)
+	}
+	return result, nil
+}
+
+func exerciseToProto(e *plans.Exercise, animations []*plansv1.ExerciseAnimation) *plansv1.Exercise {
 	toProto := func(ms []plans.Muscle) []plansv1.Muscle {
 		result := make([]plansv1.Muscle, len(ms))
 		for i, m := range ms {
@@ -311,8 +349,10 @@ func exerciseToProto(e *plans.Exercise) *plansv1.Exercise {
 		Feel:             e.Feel,
 		PrimaryMuscles:   toProto(e.PrimaryMuscles),
 		SecondaryMuscles: toProto(e.SecondaryMuscles),
-		Equipment:        e.Equipment,
+		Equipment:        equipmentListToProto(e.Equipment),
+		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
+		Animations:       animations,
 		CreateTime:       timestamppb.New(e.CreateTime),
 		UpdateTime:       timestamppb.New(e.UpdateTime),
 	}.Build()

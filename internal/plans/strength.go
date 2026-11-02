@@ -2,8 +2,11 @@ package plans
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,6 +28,95 @@ var Muscles = []Muscle{
 	"feet",
 }
 
+// Equipment is a kind of equipment, e.g. "dumbbells".
+type Equipment string
+
+// Kinds of equipment whose weights matter, as they come in fixed weights.
+const (
+	EquipmentDumbbells    Equipment = "dumbbells"
+	EquipmentKettlebell   Equipment = "kettlebell"
+	EquipmentMedicineBall Equipment = "medicine_ball"
+)
+
+// Equipments are the kinds of equipment, in the order of the API's enum.
+var Equipments = []Equipment{
+	"dumbbells", "kettlebell", "barbell", "squat_rack", "medicine_ball",
+	"bench", "step", "mat", "resistance_band", "mini_band", "pull_up_bar",
+	"suspension_trainer", "foam_roller", "sliders", "balance_board",
+	"jump_rope",
+}
+
+// Weighted reports whether equipment comes in fixed weights, which
+// planned weights must match.
+func (e Equipment) Weighted() bool {
+	return e == EquipmentDumbbells || e == EquipmentKettlebell || e == EquipmentMedicineBall
+}
+
+// WeightUnit is the unit of a weight.
+type WeightUnit string
+
+// Weight units.
+const (
+	Kilograms WeightUnit = "kilograms"
+	Pounds    WeightUnit = "pounds"
+)
+
+// kilogramsPerPound is the exact definition of the pound.
+const kilogramsPerPound = 0.45359237
+
+// Weight is a weight in the unit it's marked in. The zero value is none.
+type Weight struct {
+	Value float64
+	// Empty if the value is 0.
+	Unit WeightUnit
+}
+
+// Kilograms returns the weight in kilograms.
+func (w Weight) Kilograms() float64 {
+	if w.Unit == Pounds {
+		return w.Value * kilogramsPerPound
+	}
+	return w.Value
+}
+
+// Same reports whether two weights are the same, within the rounding of
+// converting between units.
+func (w Weight) Same(other Weight) bool {
+	return math.Abs(w.Kilograms()-other.Kilograms()) < 0.05
+}
+
+// String formats the weight, e.g. "10 kg" or "25 lb".
+func (w Weight) String() string {
+	unit := "kg"
+	if w.Unit == Pounds {
+		unit = "lb"
+	}
+	return strconv.FormatFloat(w.Value, 'f', -1, 64) + " " + unit
+}
+
+func weightFromDB(value float64, unit gen.NullWeightUnit) Weight {
+	if value == 0 || !unit.Valid {
+		return Weight{}
+	}
+	return Weight{Value: value, Unit: WeightUnit(unit.WeightUnit)}
+}
+
+// OwnedEquipment is equipment a user has at home.
+type OwnedEquipment struct {
+	Equipment Equipment `json:"equipment"`
+	// The weights of weighted equipment, in increasing order.
+	Weights []Weight `json:"weights,omitempty"`
+	Notes   string   `json:"notes,omitempty"`
+}
+
+// HomeEquipment is the equipment a user has at home.
+type HomeEquipment struct {
+	Equipment []OwnedEquipment
+	// When the list was last set. Zero if the user hasn't said what they
+	// have.
+	UpdateTime time.Time
+}
+
 // Exercise is an exercise in a user's library.
 type Exercise struct {
 	ID     pgtype.UUID
@@ -36,10 +128,14 @@ type Exercise struct {
 	Feel             string
 	PrimaryMuscles   []Muscle
 	SecondaryMuscles []Muscle
-	// Empty for none.
-	Equipment string
+	// Empty for bodyweight exercises.
+	Equipment      []Equipment
+	EquipmentNotes string
 	// Whether reps and hold times are per side.
-	EachSide   bool
+	EachSide bool
+	// The animations as a JSON array of plans.v1.ExerciseAnimation
+	// messages, which the service validates.
+	Animations json.RawMessage
 	CreateTime time.Time
 	UpdateTime time.Time
 }
@@ -49,6 +145,8 @@ type PlannedExercise struct {
 	ExerciseID pgtype.UUID
 	// The name of the exercise, set when reading.
 	ExerciseName string
+	// The equipment of the exercise, set when reading.
+	ExerciseEquipment []Equipment
 	// The part of the workout, e.g. "Warm-up". Empty if none.
 	Group string
 	Sets  int32
@@ -57,11 +155,10 @@ type PlannedExercise struct {
 	Reps int32
 	// 0 for exercises done for reps.
 	HoldSeconds int32
-	// Of each dumbbell or kettlebell for exercises with two. 0 for
-	// bodyweight.
-	WeightKilograms float64
-	RestSeconds     int32
-	Tempo           string
+	// Of each dumbbell for exercises with two. Zero for bodyweight.
+	Weight      Weight
+	RestSeconds int32
+	Tempo       string
 	// From 1 to 10, 0 if not set.
 	TargetEffort int32
 	Notes        string
@@ -112,8 +209,8 @@ type LoggedSet struct {
 	Reps int32
 	// 0 for exercises done for reps.
 	HoldSeconds int32
-	// 0 for bodyweight.
-	WeightKilograms float64
+	// Zero for bodyweight.
+	Weight Weight
 }
 
 // HistoryEntry is what the user did in an exercise in one strength workout.
@@ -151,8 +248,10 @@ func (r *Repository) CreateExercises(ctx context.Context, userID pgtype.UUID, ex
 					Feel:             e.Feel,
 					PrimaryMuscles:   musclesToDB(e.PrimaryMuscles),
 					SecondaryMuscles: musclesToDB(e.SecondaryMuscles),
-					Equipment:        e.Equipment,
+					Equipment:        equipmentToDB(e.Equipment),
+					EquipmentNotes:   e.EquipmentNotes,
 					EachSide:         e.EachSide,
+					Animations:       nonNilJSON(e.Animations),
 				})
 				return err
 			})
@@ -222,8 +321,10 @@ func (r *Repository) UpdateExercise(ctx context.Context, e *Exercise) (*Exercise
 		Feel:             e.Feel,
 		PrimaryMuscles:   musclesToDB(e.PrimaryMuscles),
 		SecondaryMuscles: musclesToDB(e.SecondaryMuscles),
-		Equipment:        e.Equipment,
+		Equipment:        equipmentToDB(e.Equipment),
+		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
+		Animations:       nonNilJSON(e.Animations),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, store.ErrNotFound
@@ -307,7 +408,8 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 			exercises.PlannedSets = append(exercises.PlannedSets, p.Sets)
 			exercises.PlannedReps = append(exercises.PlannedReps, p.Reps)
 			exercises.PlannedHoldSeconds = append(exercises.PlannedHoldSeconds, p.HoldSeconds)
-			exercises.PlannedWeightsKilograms = append(exercises.PlannedWeightsKilograms, p.WeightKilograms)
+			exercises.PlannedWeightValues = append(exercises.PlannedWeightValues, p.Weight.Value)
+			exercises.PlannedWeightUnits = append(exercises.PlannedWeightUnits, string(p.Weight.Unit))
 			exercises.PlannedRestSeconds = append(exercises.PlannedRestSeconds, p.RestSeconds)
 			exercises.PlannedTempos = append(exercises.PlannedTempos, p.Tempo)
 			exercises.PlannedTargetEfforts = append(exercises.PlannedTargetEfforts, p.TargetEffort)
@@ -317,7 +419,8 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 				sets.SetNumbers = append(sets.SetNumbers, int32(n+1))
 				sets.Reps = append(sets.Reps, s.Reps)
 				sets.HoldSeconds = append(sets.HoldSeconds, s.HoldSeconds)
-				sets.WeightsKilograms = append(sets.WeightsKilograms, s.WeightKilograms)
+				sets.WeightValues = append(sets.WeightValues, s.Weight.Value)
+				sets.WeightUnits = append(sets.WeightUnits, string(s.Weight.Unit))
 			}
 		}
 		if len(log.Exercises) > 0 {
@@ -405,21 +508,22 @@ func (r *Repository) ListExerciseHistory(ctx context.Context, userID pgtype.UUID
 			WorkoutTitle:  row.WorkoutTitle,
 			SessionEffort: SessionEffort(row.SessionEffort.SessionEffort),
 			Exercise: loggedExerciseFromDB(&gen.StrengthLogExercise{
-				LogID:                  row.LogID,
-				Position:               row.Position,
-				ExerciseID:             row.ExerciseID,
-				Effort:                 row.Effort,
-				Volume:                 row.Volume,
-				Notes:                  row.Notes,
-				PlannedGroupName:       row.PlannedGroupName,
-				PlannedSets:            row.PlannedSets,
-				PlannedReps:            row.PlannedReps,
-				PlannedHoldSeconds:     row.PlannedHoldSeconds,
-				PlannedWeightKilograms: row.PlannedWeightKilograms,
-				PlannedRestSeconds:     row.PlannedRestSeconds,
-				PlannedTempo:           row.PlannedTempo,
-				PlannedTargetEffort:    row.PlannedTargetEffort,
-				PlannedNotes:           row.PlannedNotes,
+				LogID:               row.LogID,
+				Position:            row.Position,
+				ExerciseID:          row.ExerciseID,
+				Effort:              row.Effort,
+				Volume:              row.Volume,
+				Notes:               row.Notes,
+				PlannedGroupName:    row.PlannedGroupName,
+				PlannedSets:         row.PlannedSets,
+				PlannedReps:         row.PlannedReps,
+				PlannedHoldSeconds:  row.PlannedHoldSeconds,
+				PlannedWeightValue:  row.PlannedWeightValue,
+				PlannedWeightUnit:   row.PlannedWeightUnit,
+				PlannedRestSeconds:  row.PlannedRestSeconds,
+				PlannedTempo:        row.PlannedTempo,
+				PlannedTargetEffort: row.PlannedTargetEffort,
+				PlannedNotes:        row.PlannedNotes,
 			}, row.ExerciseName, setsByExercise[setKey{row.LogID, row.Position}]),
 		}
 	}
@@ -438,19 +542,21 @@ type workoutFilter struct {
 	startDate, endDate time.Time
 }
 
-// workoutReader reads workouts with their strength exercises and logs, in
-// the same batch.
+// workoutReader reads workouts with their strength exercises and logs, and
+// the user's home equipment to check them against, in the same batch.
 type workoutReader struct {
 	rows         []*gen.Workout
 	exercises    []*gen.ListWorkoutExercisesRow
 	logs         []*gen.StrengthLog
 	logExercises []*gen.ListStrengthLogExercisesRow
 	logSets      []*gen.StrengthLogSet
+	home         *HomeEquipment
 }
 
 // queue queues the queries of the strength exercises and logs of the
 // workouts f selects. The caller queues the query of the workouts.
 func (wr *workoutReader) queue(ctx context.Context, b *store.Batch, f workoutFilter) {
+	queueHomeEquipment(ctx, b, f.userID, &wr.home)
 	b.Read(func(db store.Querier) error {
 		var err error
 		wr.exercises, err = gen.New(db).ListWorkoutExercises(ctx, &gen.ListWorkoutExercisesParams{
@@ -502,38 +608,40 @@ func (wr *workoutReader) workouts() []*Workout {
 	exercises := map[pgtype.UUID][]*PlannedExercise{}
 	for _, row := range wr.exercises {
 		exercises[row.WorkoutID] = append(exercises[row.WorkoutID], &PlannedExercise{
-			ExerciseID:      row.ExerciseID,
-			ExerciseName:    row.ExerciseName,
-			Group:           row.GroupName,
-			Sets:            row.Sets,
-			Reps:            row.Reps,
-			HoldSeconds:     row.HoldSeconds,
-			WeightKilograms: row.WeightKilograms,
-			RestSeconds:     row.RestSeconds,
-			Tempo:           row.Tempo,
-			TargetEffort:    row.TargetEffort,
-			Notes:           row.Notes,
+			ExerciseID:        row.ExerciseID,
+			ExerciseName:      row.ExerciseName,
+			ExerciseEquipment: equipmentFromDB(row.ExerciseEquipment),
+			Group:             row.GroupName,
+			Sets:              row.Sets,
+			Reps:              row.Reps,
+			HoldSeconds:       row.HoldSeconds,
+			Weight:            weightFromDB(row.WeightValue, row.WeightUnit),
+			RestSeconds:       row.RestSeconds,
+			Tempo:             row.Tempo,
+			TargetEffort:      row.TargetEffort,
+			Notes:             row.Notes,
 		})
 	}
 	sets := groupSets(wr.logSets)
 	logExercises := map[pgtype.UUID][]*LoggedExercise{}
 	for _, row := range wr.logExercises {
 		logExercises[row.LogID] = append(logExercises[row.LogID], loggedExerciseFromDB(&gen.StrengthLogExercise{
-			LogID:                  row.LogID,
-			Position:               row.Position,
-			ExerciseID:             row.ExerciseID,
-			Effort:                 row.Effort,
-			Volume:                 row.Volume,
-			Notes:                  row.Notes,
-			PlannedGroupName:       row.PlannedGroupName,
-			PlannedSets:            row.PlannedSets,
-			PlannedReps:            row.PlannedReps,
-			PlannedHoldSeconds:     row.PlannedHoldSeconds,
-			PlannedWeightKilograms: row.PlannedWeightKilograms,
-			PlannedRestSeconds:     row.PlannedRestSeconds,
-			PlannedTempo:           row.PlannedTempo,
-			PlannedTargetEffort:    row.PlannedTargetEffort,
-			PlannedNotes:           row.PlannedNotes,
+			LogID:               row.LogID,
+			Position:            row.Position,
+			ExerciseID:          row.ExerciseID,
+			Effort:              row.Effort,
+			Volume:              row.Volume,
+			Notes:               row.Notes,
+			PlannedGroupName:    row.PlannedGroupName,
+			PlannedSets:         row.PlannedSets,
+			PlannedReps:         row.PlannedReps,
+			PlannedHoldSeconds:  row.PlannedHoldSeconds,
+			PlannedWeightValue:  row.PlannedWeightValue,
+			PlannedWeightUnit:   row.PlannedWeightUnit,
+			PlannedRestSeconds:  row.PlannedRestSeconds,
+			PlannedTempo:        row.PlannedTempo,
+			PlannedTargetEffort: row.PlannedTargetEffort,
+			PlannedNotes:        row.PlannedNotes,
 		}, row.ExerciseName, sets[setKey{row.LogID, row.Position}]))
 	}
 	logs := map[pgtype.UUID]*StrengthLog{}
@@ -553,6 +661,9 @@ func (wr *workoutReader) workouts() []*Workout {
 		w := workoutFromDB(row)
 		w.Exercises = exercises[w.ID]
 		w.Log = logs[w.ID]
+		if w.Type == WorkoutTypeStrength {
+			w.EquipmentIssues = EquipmentIssues(w.Exercises, wr.home)
+		}
 		result[i] = w
 	}
 	return result
@@ -569,7 +680,7 @@ func groupSets(rows []*gen.StrengthLogSet) map[setKey][]LoggedSet {
 	result := map[setKey][]LoggedSet{}
 	for _, s := range rows {
 		k := setKey{s.LogID, s.Position}
-		result[k] = append(result[k], LoggedSet{Reps: s.Reps, HoldSeconds: s.HoldSeconds, WeightKilograms: s.WeightKilograms})
+		result[k] = append(result[k], LoggedSet{Reps: s.Reps, HoldSeconds: s.HoldSeconds, Weight: weightFromDB(s.WeightValue, s.WeightUnit)})
 	}
 	return result
 }
@@ -596,7 +707,8 @@ func queueReplaceExercises(ctx context.Context, q *gen.Queries, workouts []*Work
 			params.Sets = append(params.Sets, e.Sets)
 			params.Reps = append(params.Reps, e.Reps)
 			params.HoldSeconds = append(params.HoldSeconds, e.HoldSeconds)
-			params.WeightsKilograms = append(params.WeightsKilograms, e.WeightKilograms)
+			params.WeightValues = append(params.WeightValues, e.Weight.Value)
+			params.WeightUnits = append(params.WeightUnits, string(e.Weight.Unit))
 			params.RestSeconds = append(params.RestSeconds, e.RestSeconds)
 			params.Tempos = append(params.Tempos, e.Tempo)
 			params.TargetEfforts = append(params.TargetEfforts, e.TargetEffort)
@@ -620,17 +732,17 @@ func loggedExerciseFromDB(row *gen.StrengthLogExercise, name string, sets []Logg
 	}
 	if row.PlannedSets.Valid {
 		e.Planned = &PlannedExercise{
-			ExerciseID:      row.ExerciseID,
-			ExerciseName:    name,
-			Group:           row.PlannedGroupName.String,
-			Sets:            row.PlannedSets.Int32,
-			Reps:            row.PlannedReps.Int32,
-			HoldSeconds:     row.PlannedHoldSeconds.Int32,
-			WeightKilograms: row.PlannedWeightKilograms.Float64,
-			RestSeconds:     row.PlannedRestSeconds.Int32,
-			Tempo:           row.PlannedTempo.String,
-			TargetEffort:    row.PlannedTargetEffort.Int32,
-			Notes:           row.PlannedNotes.String,
+			ExerciseID:   row.ExerciseID,
+			ExerciseName: name,
+			Group:        row.PlannedGroupName.String,
+			Sets:         row.PlannedSets.Int32,
+			Reps:         row.PlannedReps.Int32,
+			HoldSeconds:  row.PlannedHoldSeconds.Int32,
+			Weight:       weightFromDB(row.PlannedWeightValue.Float64, row.PlannedWeightUnit),
+			RestSeconds:  row.PlannedRestSeconds.Int32,
+			Tempo:        row.PlannedTempo.String,
+			TargetEffort: row.PlannedTargetEffort.Int32,
+			Notes:        row.PlannedNotes.String,
 		}
 	}
 	return e
@@ -645,8 +757,10 @@ func exerciseFromDB(e *gen.Exercise) *Exercise {
 		Feel:             e.Feel,
 		PrimaryMuscles:   musclesFromDB(e.PrimaryMuscles),
 		SecondaryMuscles: musclesFromDB(e.SecondaryMuscles),
-		Equipment:        e.Equipment,
+		Equipment:        equipmentFromDB(e.Equipment),
+		EquipmentNotes:   e.EquipmentNotes,
 		EachSide:         e.EachSide,
+		Animations:       e.Animations,
 		CreateTime:       e.CreateTime.Time,
 		UpdateTime:       e.UpdateTime.Time,
 	}
@@ -667,6 +781,30 @@ func musclesFromDB(muscles []gen.Muscle) []Muscle {
 		result[i] = Muscle(m)
 	}
 	return result
+}
+
+// equipmentToDB returns equipment as text, as queries send it.
+func equipmentToDB(equipment []Equipment) []string {
+	result := make([]string, len(equipment))
+	for i, e := range equipment {
+		result[i] = string(e)
+	}
+	return result
+}
+
+func equipmentFromDB[E ~string](equipment []E) []Equipment {
+	result := make([]Equipment, len(equipment))
+	for i, e := range equipment {
+		result[i] = Equipment(e)
+	}
+	return result
+}
+
+func nonNilJSON(raw json.RawMessage) json.RawMessage {
+	if len(raw) == 0 {
+		return json.RawMessage("[]")
+	}
+	return raw
 }
 
 func nonNilStrings(s []string) []string {

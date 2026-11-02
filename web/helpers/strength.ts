@@ -1,3 +1,5 @@
+import type { Weight } from "gen/plans/v1/equipment_pb";
+import { Equipment, WeightUnit } from "gen/plans/v1/equipment_pb";
 import type { Exercise } from "gen/plans/v1/exercises_pb";
 import { Muscle } from "gen/plans/v1/exercises_pb";
 import type { LoggedSet, PlannedExercise } from "gen/plans/v1/plans_pb";
@@ -75,9 +77,79 @@ export const workoutMuscles = (exercises: Exercise[]): MuscleSet => {
 // PerSide returns " each side" for exercises done on each side.
 const perSide = (eachSide: boolean): string => (eachSide ? " each side" : "");
 
-// FormatKilograms formats a weight, which may have a fraction.
-export const formatKilograms = (kilograms: number): string =>
-  `${Number.isInteger(kilograms) ? kilograms : kilograms.toFixed(1)} kg`;
+// FormatWeight formats a weight in its unit, e.g. "10 kg" or "25 lb".
+export const formatWeight = (
+  weight: Pick<Weight, "value" | "unit"> | undefined
+): string => {
+  if (weight === undefined || weight.value === 0) {
+    return "Bodyweight";
+  }
+  const value = Number.isInteger(weight.value)
+    ? String(weight.value)
+    : weight.value.toFixed(1);
+  return `${value} ${weight.unit === WeightUnit.POUNDS ? "lb" : "kg"}`;
+};
+
+// HasWeight reports whether a weight is set, rather than bodyweight.
+export const hasWeight = (weight: Weight | undefined): weight is Weight =>
+  weight !== undefined && weight.value > 0;
+
+/*
+ * EQUIPMENT_LABELS are the names of the kinds of equipment, in the order of
+ * the enum.
+ */
+export const EQUIPMENT_LABELS: {
+  equipment: Equipment;
+  label: string;
+  // Whether it comes in fixed weights.
+  weighted: boolean;
+}[] = [
+  { equipment: Equipment.DUMBBELLS, label: "Dumbbells", weighted: true },
+  { equipment: Equipment.KETTLEBELL, label: "Kettlebells", weighted: true },
+  {
+    equipment: Equipment.BARBELL,
+    label: "Barbell and plates",
+    weighted: false,
+  },
+  { equipment: Equipment.SQUAT_RACK, label: "Squat rack", weighted: false },
+  {
+    equipment: Equipment.MEDICINE_BALL,
+    label: "Medicine balls",
+    weighted: true,
+  },
+  { equipment: Equipment.BENCH, label: "Bench", weighted: false },
+  { equipment: Equipment.STEP, label: "Step or box", weighted: false },
+  { equipment: Equipment.MAT, label: "Mat", weighted: false },
+  {
+    equipment: Equipment.RESISTANCE_BAND,
+    label: "Resistance bands",
+    weighted: false,
+  },
+  { equipment: Equipment.MINI_BAND, label: "Mini bands", weighted: false },
+  { equipment: Equipment.PULL_UP_BAR, label: "Pull-up bar", weighted: false },
+  {
+    equipment: Equipment.SUSPENSION_TRAINER,
+    label: "Suspension trainer or rings",
+    weighted: false,
+  },
+  { equipment: Equipment.FOAM_ROLLER, label: "Foam roller", weighted: false },
+  { equipment: Equipment.SLIDERS, label: "Sliders", weighted: false },
+  {
+    equipment: Equipment.BALANCE_BOARD,
+    label: "Balance board",
+    weighted: false,
+  },
+  { equipment: Equipment.JUMP_ROPE, label: "Jump rope", weighted: false },
+];
+
+// IsWeighted reports whether equipment comes in fixed weights.
+export const isWeighted = (equipment: Equipment): boolean =>
+  EQUIPMENT_LABELS.find((entry) => entry.equipment === equipment)?.weighted ??
+  false;
+
+export const equipmentLabel = (equipment: Equipment): string =>
+  EQUIPMENT_LABELS.find((entry) => entry.equipment === equipment)?.label ??
+  "Other";
 
 // FormatSeconds formats a short duration, like rest, as seconds or minutes.
 export const formatSeconds = (seconds: number): string => {
@@ -108,8 +180,8 @@ export const formatDose = (
   const parts = [
     `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, eachSide)}`,
   ];
-  if (planned.weightKilograms > 0) {
-    parts.push(formatKilograms(planned.weightKilograms));
+  if (hasWeight(planned.weight)) {
+    parts.push(formatWeight(planned.weight));
   }
   if (planned.tempo !== "") {
     parts.push(planned.tempo);
@@ -124,9 +196,7 @@ export const formatDose = (
 export const formatSet = (set: LoggedSet): string => {
   const reps =
     set.holdSeconds > 0 ? formatSeconds(set.holdSeconds) : `${set.reps}`;
-  return set.weightKilograms > 0
-    ? `${reps} × ${formatKilograms(set.weightKilograms)}`
-    : reps;
+  return hasWeight(set.weight) ? `${reps} × ${formatWeight(set.weight)}` : reps;
 };
 
 // FeedbackStyle is how a rating is shown.

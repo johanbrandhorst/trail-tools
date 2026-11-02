@@ -77,6 +77,85 @@ func (e ContingencyScenario) Valid() bool {
 	return false
 }
 
+type Equipment string
+
+const (
+	EquipmentDumbbells         Equipment = "dumbbells"
+	EquipmentKettlebell        Equipment = "kettlebell"
+	EquipmentBarbell           Equipment = "barbell"
+	EquipmentSquatRack         Equipment = "squat_rack"
+	EquipmentMedicineBall      Equipment = "medicine_ball"
+	EquipmentBench             Equipment = "bench"
+	EquipmentStep              Equipment = "step"
+	EquipmentMat               Equipment = "mat"
+	EquipmentResistanceBand    Equipment = "resistance_band"
+	EquipmentMiniBand          Equipment = "mini_band"
+	EquipmentPullUpBar         Equipment = "pull_up_bar"
+	EquipmentSuspensionTrainer Equipment = "suspension_trainer"
+	EquipmentFoamRoller        Equipment = "foam_roller"
+	EquipmentSliders           Equipment = "sliders"
+	EquipmentBalanceBoard      Equipment = "balance_board"
+	EquipmentJumpRope          Equipment = "jump_rope"
+)
+
+func (e *Equipment) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Equipment(s)
+	case string:
+		*e = Equipment(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Equipment: %T", src)
+	}
+	return nil
+}
+
+type NullEquipment struct {
+	Equipment Equipment
+	Valid     bool // Valid is true if Equipment is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEquipment) Scan(value interface{}) error {
+	if value == nil {
+		ns.Equipment, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Equipment.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEquipment) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Equipment), nil
+}
+
+func (e Equipment) Valid() bool {
+	switch e {
+	case EquipmentDumbbells,
+		EquipmentKettlebell,
+		EquipmentBarbell,
+		EquipmentSquatRack,
+		EquipmentMedicineBall,
+		EquipmentBench,
+		EquipmentStep,
+		EquipmentMat,
+		EquipmentResistanceBand,
+		EquipmentMiniBand,
+		EquipmentPullUpBar,
+		EquipmentSuspensionTrainer,
+		EquipmentFoamRoller,
+		EquipmentSliders,
+		EquipmentBalanceBoard,
+		EquipmentJumpRope:
+		return true
+	}
+	return false
+}
+
 type ExerciseEffort string
 
 const (
@@ -859,6 +938,57 @@ func (e Terrain) Valid() bool {
 	return false
 }
 
+type WeightUnit string
+
+const (
+	WeightUnitKilograms WeightUnit = "kilograms"
+	WeightUnitPounds    WeightUnit = "pounds"
+)
+
+func (e *WeightUnit) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = WeightUnit(s)
+	case string:
+		*e = WeightUnit(s)
+	default:
+		return fmt.Errorf("unsupported scan type for WeightUnit: %T", src)
+	}
+	return nil
+}
+
+type NullWeightUnit struct {
+	WeightUnit WeightUnit
+	Valid      bool // Valid is true if WeightUnit is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullWeightUnit) Scan(value interface{}) error {
+	if value == nil {
+		ns.WeightUnit, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.WeightUnit.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullWeightUnit) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.WeightUnit), nil
+}
+
+func (e WeightUnit) Valid() bool {
+	switch e {
+	case WeightUnitKilograms,
+		WeightUnitPounds:
+		return true
+	}
+	return false
+}
+
 type WorkoutType string
 
 const (
@@ -937,10 +1067,18 @@ type Exercise struct {
 	Feel             string
 	PrimaryMuscles   []Muscle
 	SecondaryMuscles []Muscle
-	Equipment        string
+	Equipment        []Equipment
+	EquipmentNotes   string
 	EachSide         bool
+	Animations       json.RawMessage
 	CreateTime       pgtype.Timestamptz
 	UpdateTime       pgtype.Timestamptz
+}
+
+type HomeEquipment struct {
+	UserID     pgtype.UUID
+	Equipment  json.RawMessage
+	UpdateTime pgtype.Timestamptz
 }
 
 type Invitation struct {
@@ -1426,30 +1564,32 @@ type StrengthLog struct {
 }
 
 type StrengthLogExercise struct {
-	LogID                  pgtype.UUID
-	Position               int32
-	ExerciseID             pgtype.UUID
-	Effort                 NullExerciseEffort
-	Volume                 NullExerciseVolume
-	Notes                  string
-	PlannedGroupName       pgtype.Text
-	PlannedSets            pgtype.Int4
-	PlannedReps            pgtype.Int4
-	PlannedHoldSeconds     pgtype.Int4
-	PlannedWeightKilograms pgtype.Float8
-	PlannedRestSeconds     pgtype.Int4
-	PlannedTempo           pgtype.Text
-	PlannedTargetEffort    pgtype.Int4
-	PlannedNotes           pgtype.Text
+	LogID               pgtype.UUID
+	Position            int32
+	ExerciseID          pgtype.UUID
+	Effort              NullExerciseEffort
+	Volume              NullExerciseVolume
+	Notes               string
+	PlannedGroupName    pgtype.Text
+	PlannedSets         pgtype.Int4
+	PlannedReps         pgtype.Int4
+	PlannedHoldSeconds  pgtype.Int4
+	PlannedWeightValue  pgtype.Float8
+	PlannedWeightUnit   NullWeightUnit
+	PlannedRestSeconds  pgtype.Int4
+	PlannedTempo        pgtype.Text
+	PlannedTargetEffort pgtype.Int4
+	PlannedNotes        pgtype.Text
 }
 
 type StrengthLogSet struct {
-	LogID           pgtype.UUID
-	Position        int32
-	SetNumber       int32
-	Reps            int32
-	HoldSeconds     int32
-	WeightKilograms float64
+	LogID       pgtype.UUID
+	Position    int32
+	SetNumber   int32
+	Reps        int32
+	HoldSeconds int32
+	WeightValue float64
+	WeightUnit  NullWeightUnit
 }
 
 type TrainingPlan struct {
@@ -1539,19 +1679,22 @@ type Workout struct {
 	RouteID                   pgtype.UUID
 	CompletedActivityID       pgtype.UUID
 	CreateTime                pgtype.Timestamptz
+	StartTime                 pgtype.Time
+	StartWindowMinutes        int32
 }
 
 type WorkoutExercise struct {
-	WorkoutID       pgtype.UUID
-	Position        int32
-	ExerciseID      pgtype.UUID
-	GroupName       string
-	Sets            int32
-	Reps            int32
-	HoldSeconds     int32
-	WeightKilograms float64
-	RestSeconds     int32
-	Tempo           string
-	TargetEffort    int32
-	Notes           string
+	WorkoutID    pgtype.UUID
+	Position     int32
+	ExerciseID   pgtype.UUID
+	GroupName    string
+	Sets         int32
+	Reps         int32
+	HoldSeconds  int32
+	WeightValue  float64
+	WeightUnit   NullWeightUnit
+	RestSeconds  int32
+	Tempo        string
+	TargetEffort int32
+	Notes        string
 }

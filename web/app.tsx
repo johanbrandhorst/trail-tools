@@ -8,6 +8,7 @@ import ActivitiesPage from "pages/activities";
 import ActivityPage from "pages/activity";
 import CalendarPage from "pages/calendar";
 import DashboardPage from "pages/dashboard";
+import EquipmentPage from "pages/equipment";
 import ExercisePage from "pages/exercise";
 import ExercisesPage from "pages/exercises";
 import ForecastPage from "pages/forecast";
@@ -138,6 +139,7 @@ const App: React.FC = () => {
             <Route path="/plans/:id" element={<PlanPage />} />
             <Route path="/workouts/:id" element={<WorkoutPage />} />
             <Route path="/exercises" element={<ExercisesPage />} />
+            <Route path="/equipment" element={<EquipmentPage />} />
             <Route path="/exercises/:id" element={<ExercisePage />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/routes/new" element={<RoutePage isNew />} />

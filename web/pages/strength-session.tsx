@@ -1,9 +1,12 @@
 import Loading from "@components/loading";
+import AnimationPlayer from "@components/strength/animation-player";
 import BodyMap, { MuscleChips } from "@components/strength/body-map";
 import Card from "@components/ui/card";
 import { Badge } from "@components/ui/misc";
 import QueryError, { ErrorText } from "@components/ui/query-error";
 import { inputClass, labelClass } from "@components/ui/styles";
+import type { ConnectError } from "@connectrpc/connect";
+import { Code } from "@connectrpc/connect";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
 import {
   CheckIcon,
@@ -12,6 +15,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useQueryClient } from "@tanstack/react-query";
+import { WeightUnit } from "gen/plans/v1/equipment_pb";
 import { listExercises } from "gen/plans/v1/exercises-ExerciseService_connectquery";
 import type { Exercise } from "gen/plans/v1/exercises_pb";
 import {
@@ -32,12 +36,13 @@ import {
   EXERCISE_VOLUMES,
   SESSION_EFFORTS,
   feedbackStyles,
-  formatKilograms,
+  equipmentLabel,
+  formatWeight,
   formatReps,
   formatSeconds,
   workoutMuscles,
 } from "helpers/strength";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 // DraftSet is a set of the workout being done.
@@ -45,7 +50,8 @@ interface DraftSet {
   done: boolean;
   reps: number;
   holdSeconds: number;
-  weightKilograms: number;
+  // The weight in its unit; a value of 0 is bodyweight.
+  weight: { value: number; unit: WeightUnit };
 }
 
 // DraftExercise is what the user did of a planned exercise so far.
@@ -67,6 +73,54 @@ interface Draft {
   notes: string;
 }
 
+/**
+ * UseWakeLock keeps the screen on while the page is shown, so the phone
+ * doesn't lock between sets. Browsers without the Screen Wake Lock API just
+ * lock as usual.
+ */
+const useWakeLock = (): void => {
+  useEffect(() => {
+    let lock: WakeLockSentinel | undefined = undefined;
+    let released = false;
+    const acquire = async () => {
+      if (
+        document.visibilityState !== "visible" ||
+        !("wakeLock" in navigator)
+      ) {
+        return;
+      }
+      try {
+        lock = await navigator.wakeLock.request("screen");
+        if (released) {
+          await lock.release();
+        }
+      } catch {
+        // Low battery modes refuse the lock; the screen locks as usual.
+      }
+    };
+    /*
+     * The lock is released when the page is hidden, so it's taken again
+     * when it's shown.
+     */
+    const onVisibility = () => {
+      void acquire();
+    };
+    void acquire();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      released = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      void lock?.release();
+    };
+  }, []);
+};
+
+// IsNetworkError reports whether a request failed for want of a connection.
+const isNetworkError = (error: ConnectError): boolean =>
+  error.code === Code.Unavailable ||
+  error.code === Code.Unknown ||
+  !navigator.onLine;
+
 // EFFORT_SCALE is the levels of effort, from very easy to maximal.
 const EFFORT_SCALE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -79,7 +133,10 @@ const plannedSets = (planned: PlannedExercise): DraftSet[] =>
     done: false,
     holdSeconds: planned.holdSeconds,
     reps: planned.reps,
-    weightKilograms: planned.weightKilograms,
+    weight: {
+      unit: planned.weight?.unit ?? WeightUnit.KILOGRAMS,
+      value: planned.weight?.value ?? 0,
+    },
   }));
 
 // IsDraft checks that a draft read back from the browser has its shape.
@@ -149,7 +206,10 @@ const initialDraft = (workoutId: string, strength: StrengthWorkout): Draft => {
       done: true,
       holdSeconds: set.holdSeconds,
       reps: set.reps,
-      weightKilograms: set.weightKilograms,
+      weight: {
+        unit: set.weight?.unit ?? WeightUnit.KILOGRAMS,
+        value: set.weight?.value ?? 0,
+      },
     }));
     // Sets that weren't done are still there to do.
     sets.push(...plannedSets(item).slice(sets.length));
@@ -261,6 +321,7 @@ const Session: React.FC<SessionProps> = ({
     writeStorage(draftKey(workoutId), JSON.stringify(draft));
   }, [workoutId, draft]);
 
+  useWakeLock();
   const save = useMutation(setStrengthLog, {
     onSuccess: async () => {
       writeStorage(draftKey(workoutId), "");
@@ -268,6 +329,24 @@ const Session: React.FC<SessionProps> = ({
       void navigate(`/workouts/${workoutId}`);
     },
   });
+  /*
+   * Without a connection, like in a basement gym, the save is retried once
+   * the phone is back online; the draft is kept on the phone meanwhile.
+   */
+  const offline = save.isError && isNetworkError(save.error);
+  const retry = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    if (!offline) {
+      return undefined;
+    }
+    const onOnline = () => {
+      retry.current();
+    };
+    globalThis.addEventListener("online", onOnline);
+    return () => {
+      globalThis.removeEventListener("online", onOnline);
+    };
+  }, [offline]);
 
   const goTo = (next: number) => {
     setSearchParams({ step: String(next) });
@@ -281,6 +360,30 @@ const Session: React.FC<SessionProps> = ({
         position === index ? { ...exercise, ...change } : exercise
       ),
     }));
+  };
+
+  // Submit saves the debrief.
+  const submit = (): void => {
+    save.mutate({
+      log: {
+        effort: draft.effort,
+        exercises: draft.exercises.filter(started).map((exercise) => ({
+          effort: exercise.effort,
+          exerciseId: exercise.exerciseId,
+          notes: exercise.notes.trim(),
+          sets: exercise.sets
+            .filter((set) => set.done)
+            .map((set) => ({
+              holdSeconds: set.holdSeconds,
+              reps: set.reps,
+              weight: set.weight.value > 0 ? set.weight : undefined,
+            })),
+          volume: exercise.volume,
+        })),
+        notes: draft.notes.trim(),
+      },
+      workoutId,
+    });
   };
 
   const current = planned[step];
@@ -314,7 +417,15 @@ const Session: React.FC<SessionProps> = ({
             onStep={goTo}
           />
         )}
-        {step === finishStep && <ErrorText error={save.error} />}
+        {step === finishStep &&
+          (offline ? (
+            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset">
+              You're offline. The debrief is kept on this phone, and saved as
+              soon as you're back online.
+            </p>
+          ) : (
+            <ErrorText error={save.error} />
+          ))}
         <nav className="flex gap-2 pt-1">
           {step > 0 && (
             <button
@@ -349,28 +460,10 @@ const Session: React.FC<SessionProps> = ({
               className="flex h-13 grow items-center justify-center rounded-lg bg-ink px-4 font-medium text-white disabled:opacity-50"
               disabled={save.isPending}
               onClick={() => {
-                save.mutate({
-                  log: {
-                    effort: draft.effort,
-                    exercises: draft.exercises
-                      .filter(started)
-                      .map((exercise) => ({
-                        effort: exercise.effort,
-                        exerciseId: exercise.exerciseId,
-                        notes: exercise.notes.trim(),
-                        sets: exercise.sets
-                          .filter((set) => set.done)
-                          .map((set) => ({
-                            holdSeconds: set.holdSeconds,
-                            reps: set.reps,
-                            weightKilograms: set.weightKilograms,
-                          })),
-                        volume: exercise.volume,
-                      })),
-                    notes: draft.notes.trim(),
-                  },
-                  workoutId,
-                });
+                retry.current = () => {
+                  submit();
+                };
+                submit();
               }}
             >
               {save.isPending ? "Saving…" : "Save debrief"}
@@ -489,11 +582,16 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
   }
   stats.push({
     label: "Weight",
-    sub: exercise?.equipment ?? "",
-    value:
-      planned.weightKilograms > 0
-        ? formatKilograms(planned.weightKilograms)
-        : "Bodyweight",
+    sub:
+      exercise === undefined
+        ? ""
+        : [
+            exercise.equipment.map(equipmentLabel).join(", "),
+            exercise.equipmentNotes,
+          ]
+            .filter((part) => part !== "")
+            .join(" · "),
+    value: formatWeight(planned.weight),
   });
   if (planned.tempo !== "") {
     stats.push({ label: "Tempo", sub: "", value: planned.tempo });
@@ -518,6 +616,10 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
           {planned.exerciseName}
         </h1>
       </div>
+
+      {exercise !== undefined && exercise.animations.length > 0 && (
+        <AnimationPlayer animations={exercise.animations} />
+      )}
 
       <dl className="grid grid-cols-2 gap-2">
         {stats.map((stat) => (
@@ -561,8 +663,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
               </span>
               <span className="text-xs font-normal tabular-nums">
                 {formatReps(set.reps, set.holdSeconds, false)}
-                {set.weightKilograms > 0 &&
-                  ` · ${formatKilograms(set.weightKilograms)}`}
+                {set.weight.value > 0 && ` · ${formatWeight(set.weight)}`}
               </span>
             </button>
           ))}
@@ -676,25 +777,48 @@ const AdjustSets: React.FC<AdjustSetsProps> = ({ sets, byTime, onChange }) => (
         <span className="pb-2 text-sm font-medium">Set {index + 1}</span>
         <label className={labelClass}>
           {byTime ? "Seconds" : "Reps"}
-          <NumberInput
-            value={byTime ? set.holdSeconds : set.reps}
-            onChange={(value) => {
-              onChange(
-                index,
-                byTime ? { holdSeconds: value } : { reps: value }
-              );
-            }}
-          />
+          <span className="mt-1 flex">
+            <NumberInput
+              value={byTime ? set.holdSeconds : set.reps}
+              onChange={(value) => {
+                onChange(
+                  index,
+                  byTime ? { holdSeconds: value } : { reps: value }
+                );
+              }}
+            />
+          </span>
         </label>
         <label className={labelClass}>
-          Weight (kg)
-          <NumberInput
-            value={set.weightKilograms}
-            decimal
-            onChange={(value) => {
-              onChange(index, { weightKilograms: value });
-            }}
-          />
+          Weight ({set.weight.unit === WeightUnit.POUNDS ? "lb" : "kg"})
+          <span className="mt-1 flex gap-1">
+            <NumberInput
+              value={set.weight.value}
+              decimal
+              onChange={(value) => {
+                onChange(index, { weight: { ...set.weight, value } });
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Switch between kilograms and pounds"
+              title="kg or lb"
+              className="shrink-0 rounded-md px-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 ring-inset"
+              onClick={() => {
+                onChange(index, {
+                  weight: {
+                    ...set.weight,
+                    unit:
+                      set.weight.unit === WeightUnit.POUNDS
+                        ? WeightUnit.KILOGRAMS
+                        : WeightUnit.POUNDS,
+                  },
+                });
+              }}
+            >
+              {set.weight.unit === WeightUnit.POUNDS ? "lb" : "kg"}
+            </button>
+          </span>
         </label>
       </div>
     ))}
@@ -719,7 +843,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const [text, setText] = useState(String(value));
   return (
     <input
-      className={`${inputClass} mt-1 text-base tabular-nums`}
+      className={`${inputClass} text-base tabular-nums`}
       inputMode={decimal ? "decimal" : "numeric"}
       value={text}
       onChange={(event) => {

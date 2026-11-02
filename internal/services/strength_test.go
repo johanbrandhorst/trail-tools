@@ -27,10 +27,14 @@ func TestStrengthWorkouts(t *testing.T) {
 				Feel:             "In the front leg's glute.",
 				PrimaryMuscles:   []plansv1.Muscle{plansv1.Muscle_MUSCLE_GLUTES, plansv1.Muscle_MUSCLE_QUADS},
 				SecondaryMuscles: []plansv1.Muscle{plansv1.Muscle_MUSCLE_ADDUCTORS, plansv1.Muscle_MUSCLE_GLUTES},
-				Equipment:        "Two dumbbells and a bench",
+				Equipment:        []plansv1.Equipment{plansv1.Equipment_EQUIPMENT_DUMBBELLS, plansv1.Equipment_EQUIPMENT_BENCH},
 				EachSide:         true,
+				Animations:       []*plansv1.ExerciseAnimation{splitSquatAnimation()},
 			}.Build(),
-			plansv1.Exercise_builder{Name: "Copenhagen plank", PrimaryMuscles: []plansv1.Muscle{plansv1.Muscle_MUSCLE_ADDUCTORS}}.Build(),
+			plansv1.Exercise_builder{
+				Name: "Copenhagen plank", PrimaryMuscles: []plansv1.Muscle{plansv1.Muscle_MUSCLE_ADDUCTORS},
+				Equipment: []plansv1.Equipment{plansv1.Equipment_EQUIPMENT_BENCH, plansv1.Equipment_EQUIPMENT_MAT},
+			}.Build(),
 		},
 	}.Build())
 	if err != nil {
@@ -44,6 +48,16 @@ func TestStrengthWorkouts(t *testing.T) {
 	if got := squat.GetSecondaryMuscles(); len(got) != 1 || got[0] != plansv1.Muscle_MUSCLE_ADDUCTORS {
 		t.Errorf("got secondary muscles %v, want adductors", got)
 	}
+	if got := squat.GetAnimations(); len(got) != 1 || len(got[0].GetKeyframes()) != 2 || got[0].GetKeyframes()[1].GetPose().GetNearThighDegrees() != 85 {
+		t.Errorf("got animations %v", got)
+	}
+	// Animations need at least two poses.
+	broken := splitSquatAnimation()
+	broken.SetKeyframes(broken.GetKeyframes()[:1])
+	_, err = e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{
+		Exercises: []*plansv1.Exercise{plansv1.Exercise_builder{Name: "Broken", Animations: []*plansv1.ExerciseAnimation{broken}}.Build()},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
 	// Names are unique, ignoring case, and the error names the existing
 	// exercise.
 	_, err = e.exercises.CreateExercises(ctx, plansv1.CreateExercisesRequest_builder{
@@ -77,13 +91,13 @@ func TestStrengthWorkouts(t *testing.T) {
 		return plansv1.StrengthWorkout_builder{Exercises: exercises, TargetDurationSeconds: 2700}.Build()
 	}
 	squats := plansv1.PlannedExercise_builder{
-		ExerciseId: squat.GetId(), Group: "Main", Sets: 3, Reps: 8, WeightKilograms: 10, RestSeconds: 90, TargetEffort: 7,
+		ExerciseId: squat.GetId(), Group: "Main", Sets: 3, Reps: 8, Weight: kilograms(10), RestSeconds: 90, TargetEffort: 7,
 	}.Build()
 	planks := plansv1.PlannedExercise_builder{ExerciseId: plank.GetId(), Group: "Superset A", Sets: 3, HoldSeconds: 20}.Build()
 	workouts, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: planID,
 		Workouts: []*plansv1.Workout{
-			plansv1.Workout_builder{Date: "2026-11-05", Title: "Hips and legs", Strength: strength(squats, planks)}.Build(),
+			plansv1.Workout_builder{Date: "2026-11-05", Title: "Hips and legs", StartTime: "7:00", Strength: strength(squats, planks)}.Build(),
 			plansv1.Workout_builder{Date: "2026-11-12", Title: "Hips and legs again", Strength: strength(squats)}.Build(),
 			plansv1.Workout_builder{Date: "2026-11-06", Title: "Easy", Run: baseRun()}.Build(),
 		},
@@ -98,6 +112,69 @@ func TestStrengthWorkouts(t *testing.T) {
 	if got := first.GetStrength().GetExercises(); len(got) != 2 || got[0].GetExerciseName() != "Bulgarian split squat" || got[1].GetHoldSeconds() != 20 {
 		t.Errorf("unexpected exercises %v", got)
 	}
+	// The start window defaults to an hour.
+	if first.GetStartTime() != "07:00" || first.GetStartWindowMinutes() != 60 {
+		t.Errorf("got start %q for %d minutes, want 07:00 for 60", first.GetStartTime(), first.GetStartWindowMinutes())
+	}
+	// Until the user says what equipment they have, nothing is missing.
+	if got := first.GetStrength().GetEquipmentIssues(); len(got) != 0 {
+		t.Errorf("got equipment issues %v before the user said what they have", got)
+	}
+	// At home there are dumbbells in pounds and kilograms, and a bench but
+	// no mat.
+	home, err := e.exercises.SetHomeEquipment(ctx, plansv1.SetHomeEquipmentRequest_builder{
+		Equipment: []*plansv1.OwnedEquipment{
+			plansv1.OwnedEquipment_builder{Equipment: plansv1.Equipment_EQUIPMENT_BENCH}.Build(),
+			plansv1.OwnedEquipment_builder{Equipment: plansv1.Equipment_EQUIPMENT_DUMBBELLS, Weights: []*plansv1.Weight{
+				pounds(25), kilograms(8), kilograms(12),
+			}}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		t.Fatalf("SetHomeEquipment: %v", err)
+	}
+	// Listed in the order of the enum, and weights from the lightest.
+	if got := home.GetEquipment(); len(got) != 2 || got[0].GetEquipment() != plansv1.Equipment_EQUIPMENT_DUMBBELLS ||
+		got[0].GetWeights()[1].GetUnit() != plansv1.WeightUnit_WEIGHT_UNIT_POUNDS || got[0].GetWeights()[1].GetKilograms() != 11.34 {
+		t.Errorf("unexpected home equipment %v", got)
+	}
+	_, err = e.exercises.SetHomeEquipment(ctx, plansv1.SetHomeEquipmentRequest_builder{
+		Equipment: []*plansv1.OwnedEquipment{plansv1.OwnedEquipment_builder{Equipment: plansv1.Equipment_EQUIPMENT_BENCH, Weights: []*plansv1.Weight{kilograms(5)}}.Build()},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	got, err := e.plans.GetWorkout(ctx, plansv1.GetWorkoutRequest_builder{Id: first.GetId()}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	issues := got.GetWorkout().GetStrength().GetEquipmentIssues()
+	if len(issues) != 2 {
+		t.Fatalf("got equipment issues %v, want the 10 kg dumbbells and the mat", issues)
+	}
+	if issue := issues[0]; issue.GetExerciseIndex() != 0 || issue.GetEquipment() != plansv1.Equipment_EQUIPMENT_DUMBBELLS ||
+		len(issue.GetClosestWeights()) != 2 || issue.GetClosestWeights()[0].GetValue() != 8 || issue.GetClosestWeights()[1].GetValue() != 25 {
+		t.Errorf("unexpected dumbbell issue %v", issue)
+	}
+	if issue := issues[1]; issue.GetExerciseIndex() != 1 || issue.GetEquipment() != plansv1.Equipment_EQUIPMENT_MAT || len(issue.GetClosestWeights()) != 0 {
+		t.Errorf("unexpected mat issue %v", issue)
+	}
+	// Planning the dumbbells the user has, in pounds, leaves only the mat.
+	squats.SetWeight(pounds(25))
+	replannedWeights, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: first.GetId(), Strength: strength(squats, planks)}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"strength"}},
+	}.Build())
+	if err != nil {
+		t.Fatalf("UpdateWorkout: %v", err)
+	}
+	if got := replannedWeights.GetWorkout().GetStrength().GetEquipmentIssues(); len(got) != 1 || got[0].GetEquipment() != plansv1.Equipment_EQUIPMENT_MAT {
+		t.Errorf("got equipment issues %v, want the mat", got)
+	}
+	// A start window needs a start time.
+	_, err = e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: first.GetId(), StartWindowMinutes: 30}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"start_time", "start_window_minutes"}},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
 	// Exercises must be in the user's library, and be done for reps or for
 	// a time.
 	for name, planned := range map[string]*plansv1.PlannedExercise{
@@ -141,7 +218,7 @@ func TestStrengthWorkouts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := e.plans.GetWorkout(ctx, plansv1.GetWorkoutRequest_builder{Id: first.GetId()}.Build())
+	got, err = e.plans.GetWorkout(ctx, plansv1.GetWorkoutRequest_builder{Id: first.GetId()}.Build())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,9 +237,9 @@ func TestStrengthWorkouts(t *testing.T) {
 				plansv1.LoggedExercise_builder{
 					ExerciseId: squat.GetId(),
 					Sets: []*plansv1.LoggedSet{
-						plansv1.LoggedSet_builder{Reps: 8, WeightKilograms: 10}.Build(),
-						plansv1.LoggedSet_builder{Reps: 8, WeightKilograms: 10}.Build(),
-						plansv1.LoggedSet_builder{Reps: 6, WeightKilograms: 12}.Build(),
+						plansv1.LoggedSet_builder{Reps: 8, Weight: kilograms(10)}.Build(),
+						plansv1.LoggedSet_builder{Reps: 8, Weight: kilograms(10)}.Build(),
+						plansv1.LoggedSet_builder{Reps: 6, Weight: kilograms(12)}.Build(),
 					},
 					Effort: plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_HARD,
 					Volume: plansv1.ExerciseVolume_EXERCISE_VOLUME_TOO_MANY,
@@ -186,7 +263,7 @@ func TestStrengthWorkouts(t *testing.T) {
 	if log == nil || log.GetCompleteTime() == nil || log.GetEffort() != plansv1.SessionEffort_SESSION_EFFORT_HARD {
 		t.Fatalf("unexpected log %v", log)
 	}
-	if got := log.GetExercises(); len(got) != 2 || len(got[0].GetSets()) != 3 || got[0].GetSets()[2].GetWeightKilograms() != 12 || got[1].GetExerciseName() != "Copenhagen plank" {
+	if got := log.GetExercises(); len(got) != 2 || len(got[0].GetSets()) != 3 || got[0].GetSets()[2].GetWeight().GetValue() != 12 || got[1].GetExerciseName() != "Copenhagen plank" {
 		t.Errorf("unexpected logged exercises %v", got)
 	}
 	// Replanning the workout keeps its log.
@@ -229,7 +306,7 @@ func TestStrengthWorkouts(t *testing.T) {
 		WorkoutId: second.GetId(),
 		Log: plansv1.StrengthLog_builder{Exercises: []*plansv1.LoggedExercise{
 			plansv1.LoggedExercise_builder{ExerciseId: squat.GetId(), Sets: []*plansv1.LoggedSet{
-				plansv1.LoggedSet_builder{Reps: 8, WeightKilograms: 12}.Build(),
+				plansv1.LoggedSet_builder{Reps: 8, Weight: pounds(25)}.Build(),
 			}}.Build(),
 		}}.Build(),
 	}.Build())
@@ -264,11 +341,11 @@ func TestStrengthWorkouts(t *testing.T) {
 		t.Fatalf("got %d history entries, want 2", len(entries))
 	}
 	if got := entries[0]; got.GetDate() != "2026-11-05" || got.GetWorkoutId() != "" || got.GetSessionEffort() != plansv1.SessionEffort_SESSION_EFFORT_HARD ||
-		got.GetPlanned().GetReps() != 8 || got.GetPlanned().GetWeightKilograms() != 10 || len(got.GetLogged().GetSets()) != 3 ||
+		got.GetPlanned().GetReps() != 8 || got.GetPlanned().GetWeight().GetValue() != 25 || len(got.GetLogged().GetSets()) != 3 ||
 		got.GetLogged().GetVolume() != plansv1.ExerciseVolume_EXERCISE_VOLUME_TOO_MANY {
 		t.Errorf("unexpected first entry %v", got)
 	}
-	if got := entries[1]; got.GetDate() != "2026-11-13" || got.GetWorkoutTitle() != "Hips and legs again" || got.GetLogged().GetSets()[0].GetWeightKilograms() != 12 {
+	if got := entries[1]; got.GetDate() != "2026-11-13" || got.GetWorkoutTitle() != "Hips and legs again" || got.GetLogged().GetSets()[0].GetWeight().GetUnit() != plansv1.WeightUnit_WEIGHT_UNIT_POUNDS {
 		t.Errorf("unexpected second entry %v", got)
 	}
 	all, err := e.exercises.ListExerciseHistory(ctx, plansv1.ListExerciseHistoryRequest_builder{EndDate: "2026-11-05"}.Build())
@@ -306,4 +383,31 @@ func TestStrengthWorkouts(t *testing.T) {
 	}
 	_, err = e.otherExercises.GetExercise(ctx, plansv1.GetExerciseRequest_builder{Id: plank.GetId()}.Build())
 	wantCode(t, err, connect.CodeNotFound)
+}
+
+func kilograms(value float64) *plansv1.Weight {
+	return plansv1.Weight_builder{Value: value, Unit: plansv1.WeightUnit_WEIGHT_UNIT_KILOGRAMS}.Build()
+}
+
+func pounds(value float64) *plansv1.Weight {
+	return plansv1.Weight_builder{Value: value, Unit: plansv1.WeightUnit_WEIGHT_UNIT_POUNDS}.Build()
+}
+
+// splitSquatAnimation is a split squat with the back foot on a bench.
+func splitSquatAnimation() *plansv1.ExerciseAnimation {
+	pose := func(thigh, shin float64) *plansv1.Pose {
+		return plansv1.Pose_builder{TorsoDegrees: 170, HeadDegrees: 175, NearThighDegrees: thigh, NearShinDegrees: shin, FarThighDegrees: -20, FarShinDegrees: -80}.Build()
+	}
+	return plansv1.ExerciseAnimation_builder{
+		Title:   "The movement",
+		Anchor:  plansv1.BodyPoint_BODY_POINT_NEAR_FOOT,
+		Planted: []plansv1.BodyPoint{plansv1.BodyPoint_BODY_POINT_FAR_FOOT},
+		Props: []*plansv1.AnimationProp{
+			plansv1.AnimationProp_builder{Kind: plansv1.AnimationPropKind_ANIMATION_PROP_KIND_BENCH, Point: plansv1.BodyPoint_BODY_POINT_FAR_FOOT}.Build(),
+		},
+		Keyframes: []*plansv1.AnimationKeyframe{
+			plansv1.AnimationKeyframe_builder{Pose: pose(15, -5), HoldMilliseconds: 500, Cue: "Stand tall"}.Build(),
+			plansv1.AnimationKeyframe_builder{Pose: pose(85, -20), MoveMilliseconds: 3000, HoldMilliseconds: 300, Cue: "Lower for 3 s"}.Build(),
+		},
+	}.Build()
 }

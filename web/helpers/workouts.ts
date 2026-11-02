@@ -172,3 +172,28 @@ export const hasRoute = (type: WorkoutType): boolean =>
   type === WorkoutType.BASE ||
   type === WorkoutType.INTENSITY ||
   type === WorkoutType.RACE;
+
+// DEFAULT_START_WINDOW_MINUTES is the window of a start time without one.
+const DEFAULT_START_WINDOW_MINUTES = 60;
+
+// AddMinutes adds minutes to a local time "HH:MM", wrapping at midnight.
+const addMinutes = (time: string, minutes: number): string => {
+  const [hours = 0, mins = 0] = time.split(":").map(Number);
+  const total = (((hours * 60 + mins + minutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
+/**
+ * StartWindow formats when a workout can start, e.g. "07:00–08:00", or ""
+ * for any time of the day.
+ */
+export const startWindow = (workout: Workout): string => {
+  if (workout.startTime === "") {
+    return "";
+  }
+  const minutes =
+    workout.startWindowMinutes === 0
+      ? DEFAULT_START_WINDOW_MINUTES
+      : workout.startWindowMinutes;
+  return `${workout.startTime}–${addMinutes(workout.startTime, minutes)}`;
+};

@@ -33,7 +33,7 @@ import type { Route } from "gen/routes/v1/routes_pb";
 import { addDays, today } from "helpers/dates";
 import { formatDate, formatHoursMinutes, formatKm } from "helpers/format";
 import { terrainStyle, workoutStyle } from "helpers/labels";
-import { isCompleted, workoutTargets } from "helpers/workouts";
+import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -361,6 +361,7 @@ const WorkoutPage: React.FC = () => {
               className={`inline-block size-2.5 rounded-sm ${style.dotClass}`}
             />
             {style.label} · {formatDate(workout.date)}
+            {startWindow(workout) !== "" && ` · Start ${startWindow(workout)}`}
           </p>
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           {workout.completedActivityId !== "" && (

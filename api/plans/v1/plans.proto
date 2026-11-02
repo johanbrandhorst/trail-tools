@@ -6,6 +6,7 @@ import "geo/v1/geo.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "mcp/v1/options.proto";
+import "plans/v1/equipment.proto";
 
 // TrainingPlanService manages training plans of up to a year leading to one or
 // more goal races. A plan is organised at three levels:
@@ -187,6 +188,13 @@ message Workout {
   // activity of the same day when it's synced from Strava or the workout's
   // log is saved, unless one is already set.
   string completed_activity_id = 12;
+  // The earliest local time to start the workout (HH:MM, 24 hour clock).
+  // Empty if it can be done any time of the day. The weather forecast of
+  // runs covers the start window and the time the run takes.
+  string start_time = 18;
+  // How long the start window is in minutes, e.g. 60 to start between 07:00
+  // and 08:00. Between 15 and 360 if start_time is set; 0 means 60.
+  int32 start_window_minutes = 19;
 
   // What the workout is. Exactly one must be set.
   oneof details {
@@ -271,6 +279,27 @@ message StrengthWorkout {
   // What the user did, saved when they finish the workout with
   // SetStrengthLog. Unset until then. A workout with a log is complete.
   StrengthLog log = 3 [(mcp.v1.field).output_only = true];
+  // The exercises the user lacks the equipment or the weights for at home,
+  // see ExerciseService.GetHomeEquipment. Empty if they have everything, or
+  // haven't said what they have. Change the exercises or weights so there
+  // are none.
+  repeated EquipmentIssue equipment_issues = 4 [(mcp.v1.field).output_only = true];
+}
+
+// Equipment an exercise of a strength workout needs that the user doesn't
+// have at home.
+message EquipmentIssue {
+  // The index of the exercise in the workout's exercises.
+  int32 exercise_index = 1;
+  // The equipment the user lacks, or lacks the planned weight of.
+  Equipment equipment = 2;
+  // For a weight the user doesn't have, the closest weights of the
+  // equipment they do have, lighter and heavier. Empty if they don't have
+  // the equipment at all.
+  repeated Weight closest_weights = 3;
+  // What's missing, e.g. "Single-leg Romanian deadlift is planned with a
+  // 14 kg kettlebell, and you have 12 kg and 16 kg ones".
+  string description = 4;
 }
 
 // An exercise of a strength workout, with what to do: the sets, reps or
@@ -296,11 +325,12 @@ message PlannedExercise {
   // each side, e.g. 30 for a plank. 0 for exercises done for reps. One of
   // reps and hold_seconds must be set.
   int32 hold_seconds = 6;
-  // The weight in kilograms, of each dumbbell or kettlebell for exercises
-  // with two, e.g. 10 for two 10 kg dumbbells. 0 for bodyweight. Choose it
-  // when planning: the user uses this weight rather than picking one on the
-  // day.
-  double weight_kilograms = 7;
+  // The weight of the exercise's dumbbells (each), kettlebell or medicine
+  // ball, in the unit of the user's equipment, e.g. 25 pounds for 25 lb
+  // dumbbells. Unset for bodyweight. Choose one the user has (see
+  // ExerciseService.GetHomeEquipment): they use this weight rather than
+  // picking one on the day.
+  Weight weight = 7;
   // The rest after each set in seconds. 0 if none.
   int32 rest_seconds = 8;
   // The tempo, e.g. "3 s down, 1 s pause". Empty if none.
@@ -382,8 +412,8 @@ message LoggedSet {
   int32 reps = 1;
   // How long the set was held in seconds. 0 for exercises done for reps.
   int32 hold_seconds = 2;
-  // The weight used in kilograms, as in PlannedExercise. 0 for bodyweight.
-  double weight_kilograms = 3;
+  // The weight used, as in PlannedExercise. Unset for bodyweight.
+  Weight weight = 3;
 }
 
 message CreateTrainingPlanRequest {
@@ -503,9 +533,16 @@ message WorkoutWeather {
   WeatherLocationSource location_source = 4;
   // The weather during the daytime, from 06:00 to 21:00 local time.
   DayWeather day = 5;
-  // The forecast for each hour of the daytime. Only set by
-  // GetWorkoutWeather.
+  // The forecast for each hour of the daytime, and of the workout if it's
+  // outside it. Only set by GetWorkoutWeather.
   repeated HourWeather hours = 6;
+  // The weather during the workout: from the start of its start window to
+  // the end of the window plus the workout's target duration, or an hour if
+  // it has none. Unset for workouts without a start time.
+  DayWeather workout = 7;
+  // When that period starts and ends.
+  google.protobuf.Timestamp workout_start_time = 8;
+  google.protobuf.Timestamp workout_end_time = 9;
 }
 
 // The weather of a day.

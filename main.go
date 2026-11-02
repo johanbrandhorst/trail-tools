@@ -768,8 +768,17 @@ func run(
 		})
 	}
 
-	// Serve index.js, index.js.map, index.css, favicon.svg, img/ and fonts/ directly
+	// Serve index.js, index.js.map, index.css, favicon.svg, img/ and fonts/
+	// directly, and the web app manifest and service worker, which make the
+	// app installable and must be at the root to control all its pages.
 	mux.Handle("/index.js", fileServer)
+	mux.Handle("/sw.js", fileServer)
+	mux.Handle("/manifest.webmanifest", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Browsers only take a manifest with its media type, which Go
+		// doesn't know the extension of.
+		w.Header().Set("Content-Type", "application/manifest+json")
+		fileServer.ServeHTTP(w, r)
+	}))
 	mux.Handle("/index.js.map", fileServer)
 	mux.Handle("/index.css", fileServer)
 	mux.Handle("/favicon.svg", fileServer)

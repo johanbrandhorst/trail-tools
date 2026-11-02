@@ -51,3 +51,20 @@ export const deleteExercise = ExerciseService.method.deleteExercise;
  * @generated from rpc plans.v1.ExerciseService.ListExerciseHistory
  */
 export const listExerciseHistory = ExerciseService.method.listExerciseHistory;
+
+/**
+ * Get the equipment the user has at home, with the weights of their
+ * dumbbells and kettlebells. Plan strength workouts with it.
+ *
+ * @generated from rpc plans.v1.ExerciseService.GetHomeEquipment
+ */
+export const getHomeEquipment = ExerciseService.method.getHomeEquipment;
+
+/**
+ * Replace the list of equipment the user has at home. The user usually
+ * does this in the web app's settings; only change it when they say what
+ * they have.
+ *
+ * @generated from rpc plans.v1.ExerciseService.SetHomeEquipment
+ */
+export const setHomeEquipment = ExerciseService.method.setHomeEquipment;

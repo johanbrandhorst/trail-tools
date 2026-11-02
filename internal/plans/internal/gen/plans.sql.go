@@ -105,7 +105,9 @@ insert into workouts (
   target_duration_seconds,
   target_terrain,
   route_id,
-  completed_activity_id
+  completed_activity_id,
+  start_time,
+  start_window_minutes
 )
 select
   w.id,
@@ -119,7 +121,9 @@ select
   w.target_duration_seconds,
   nullif(w.target_terrain, '')::terrain,
   w.route_id,
-  w.completed_activity_id
+  w.completed_activity_id,
+  w.start_time,
+  w.start_window_minutes
 from (
   select
     unnest($2::uuid[]) as id,
@@ -133,9 +137,12 @@ from (
     -- Empty if the workout has no target terrain.
     unnest($10::text[]) as target_terrain,
     unnest($11::uuid[]) as route_id,
-    unnest($12::uuid[]) as completed_activity_id
+    unnest($12::uuid[]) as completed_activity_id,
+    -- Null if the workout can be done any time of the day.
+    unnest($13::time[]) as start_time,
+    unnest($14::integer[]) as start_window_minutes
 ) w
-returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time
+returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes
 `
 
 type CreateWorkoutsParams struct {
@@ -151,6 +158,8 @@ type CreateWorkoutsParams struct {
 	TargetTerrains             []string
 	RouteIds                   []pgtype.UUID
 	CompletedActivityIds       []pgtype.UUID
+	StartTimes                 []pgtype.Time
+	StartWindowsMinutes        []int32
 }
 
 func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams) ([]*Workout, error) {
@@ -167,6 +176,8 @@ func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams)
 		arg.TargetTerrains,
 		arg.RouteIds,
 		arg.CompletedActivityIds,
+		arg.StartTimes,
+		arg.StartWindowsMinutes,
 	)
 	if err != nil {
 		return nil, err
@@ -189,6 +200,8 @@ func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams)
 			&i.RouteID,
 			&i.CompletedActivityID,
 			&i.CreateTime,
+			&i.StartTime,
+			&i.StartWindowMinutes,
 		); err != nil {
 			return nil, err
 		}
@@ -313,7 +326,7 @@ func (q *Queries) GetTrainingPlan(ctx context.Context, arg *GetTrainingPlanParam
 }
 
 const getWorkout = `-- name: GetWorkout :one
-select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time from workouts w
+select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes from workouts w
 join training_plans p on p.id = w.plan_id
 where w.id = $1 and p.user_id = $2
 `
@@ -340,6 +353,8 @@ func (q *Queries) GetWorkout(ctx context.Context, arg *GetWorkoutParams) (*Worko
 		&i.RouteID,
 		&i.CompletedActivityID,
 		&i.CreateTime,
+		&i.StartTime,
+		&i.StartWindowMinutes,
 	)
 	return &i, err
 }
@@ -468,7 +483,7 @@ func (q *Queries) ListTrainingPlans(ctx context.Context, userID pgtype.UUID) ([]
 }
 
 const listUserWorkouts = `-- name: ListUserWorkouts :many
-select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time from workouts w
+select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes from workouts w
 join training_plans p on p.id = w.plan_id
 where p.user_id = $1
   and ($2::date is null or w.date >= $2::date)
@@ -505,6 +520,8 @@ func (q *Queries) ListUserWorkouts(ctx context.Context, arg *ListUserWorkoutsPar
 			&i.RouteID,
 			&i.CompletedActivityID,
 			&i.CreateTime,
+			&i.StartTime,
+			&i.StartWindowMinutes,
 		); err != nil {
 			return nil, err
 		}
@@ -517,7 +534,7 @@ func (q *Queries) ListUserWorkouts(ctx context.Context, arg *ListUserWorkoutsPar
 }
 
 const listWorkouts = `-- name: ListWorkouts :many
-select id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time from workouts
+select id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes from workouts
 where plan_id = $1
   and ($2::date is null or date >= $2::date)
   and ($3::date is null or date <= $3::date)
@@ -553,6 +570,8 @@ func (q *Queries) ListWorkouts(ctx context.Context, arg *ListWorkoutsParams) ([]
 			&i.RouteID,
 			&i.CompletedActivityID,
 			&i.CreateTime,
+			&i.StartTime,
+			&i.StartWindowMinutes,
 		); err != nil {
 			return nil, err
 		}
@@ -622,9 +641,11 @@ update workouts set
   target_duration_seconds = $8,
   target_terrain = $9,
   route_id = $10,
-  completed_activity_id = $11
+  completed_activity_id = $11,
+  start_time = $12,
+  start_window_minutes = $13
 where id = $1
-returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time
+returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes
 `
 
 type UpdateWorkoutParams struct {
@@ -639,6 +660,8 @@ type UpdateWorkoutParams struct {
 	TargetTerrain             NullTerrain
 	RouteID                   pgtype.UUID
 	CompletedActivityID       pgtype.UUID
+	StartTime                 pgtype.Time
+	StartWindowMinutes        int32
 }
 
 func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (*Workout, error) {
@@ -654,6 +677,8 @@ func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (
 		arg.TargetTerrain,
 		arg.RouteID,
 		arg.CompletedActivityID,
+		arg.StartTime,
+		arg.StartWindowMinutes,
 	)
 	var i Workout
 	err := row.Scan(
@@ -670,6 +695,8 @@ func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (
 		&i.RouteID,
 		&i.CompletedActivityID,
 		&i.CreateTime,
+		&i.StartTime,
+		&i.StartWindowMinutes,
 	)
 	return &i, err
 }

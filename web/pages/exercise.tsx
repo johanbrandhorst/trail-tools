@@ -1,4 +1,5 @@
 import Loading from "@components/loading";
+import AnimationPlayer from "@components/strength/animation-player";
 import BodyMap, { MuscleChips } from "@components/strength/body-map";
 import Card from "@components/ui/card";
 import { Badge, EmptyState } from "@components/ui/misc";
@@ -14,6 +15,7 @@ import {
 import type { ExerciseHistoryEntry } from "gen/plans/v1/exercises_pb";
 import { formatDate } from "helpers/format";
 import {
+  equipmentLabel,
   feedbackStyles,
   formatDose,
   formatSet,
@@ -79,7 +81,10 @@ const ExercisePage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">{ex.name}</h1>
         <p className="text-sm text-gray-600">
           {[
-            ex.equipment === "" ? "No equipment" : ex.equipment,
+            ex.equipment.length === 0
+              ? "No equipment"
+              : ex.equipment.map(equipmentLabel).join(", "),
+            ex.equipmentNotes,
             ex.eachSide ? "Each side" : "",
           ]
             .filter((part) => part !== "")
@@ -88,6 +93,9 @@ const ExercisePage: React.FC = () => {
       </header>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="flex min-w-0 flex-col gap-4">
+          {ex.animations.length > 0 && (
+            <AnimationPlayer animations={ex.animations} />
+          )}
           {ex.instructions.length > 0 && (
             <Card title="How to do it">
               <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm leading-relaxed text-gray-700">
