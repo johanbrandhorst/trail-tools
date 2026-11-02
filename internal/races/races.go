@@ -60,9 +60,11 @@ type Race struct {
 	// Whether the user is running the race, rather than considering it.
 	OnCalendar bool
 	// Invalid if the race isn't part of an event.
-	EventID    pgtype.UUID
-	CreateTime time.Time
-	UpdateTime time.Time
+	EventID pgtype.UUID
+	// Whether the date is a guess, not yet announced.
+	DateUnconfirmed bool
+	CreateTime      time.Time
+	UpdateTime      time.Time
 }
 
 // CreateRace stores a new race.
@@ -82,6 +84,7 @@ func (r *Repository) CreateRace(ctx context.Context, race *Race) (*Race, error) 
 		Notes:               race.Notes,
 		OnCalendar:          race.OnCalendar,
 		EventID:             race.EventID,
+		DateUnconfirmed:     race.DateUnconfirmed,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create race: %w", err)
@@ -133,6 +136,7 @@ func (r *Repository) UpdateRace(ctx context.Context, race *Race) (*Race, error) 
 		Notes:               race.Notes,
 		OnCalendar:          race.OnCalendar,
 		EventID:             race.EventID,
+		DateUnconfirmed:     race.DateUnconfirmed,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -191,6 +195,7 @@ func raceFromDB(r *gen.Race) *Race {
 		Notes:               r.Notes,
 		OnCalendar:          r.OnCalendar,
 		EventID:             r.EventID,
+		DateUnconfirmed:     r.DateUnconfirmed,
 		CreateTime:          r.CreateTime.Time,
 		UpdateTime:          r.UpdateTime.Time,
 	}

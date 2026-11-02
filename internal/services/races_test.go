@@ -72,6 +72,20 @@ func TestRacesAndRacePlans(t *testing.T) {
 		t.Errorf("unexpected race %v", updated.GetRace())
 	}
 
+	// A date can be marked as not confirmed yet, and confirmed later.
+	for _, unconfirmed := range []bool{true, false} {
+		got, err := e.races.UpdateRace(ctx, racesv1.UpdateRaceRequest_builder{
+			Race:       racesv1.Race_builder{Id: raceID, DateUnconfirmed: unconfirmed}.Build(),
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"date_unconfirmed"}},
+		}.Build())
+		if err != nil {
+			t.Fatalf("UpdateRace: %v", err)
+		}
+		if got.GetRace().GetDateUnconfirmed() != unconfirmed || got.GetRace().GetNotes() != "Bring poles" {
+			t.Errorf("got race %v, want the date unconfirmed %v", got.GetRace(), unconfirmed)
+		}
+	}
+
 	// Races start off the calendar, and only races on it can be planned.
 	if created.GetRace().GetOnCalendar() {
 		t.Error("a new race is on the calendar")

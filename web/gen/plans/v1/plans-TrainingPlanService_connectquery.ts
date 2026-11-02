@@ -54,7 +54,8 @@ export const deleteTrainingPlan = TrainingPlanService.method.deleteTrainingPlan;
 export const setPlanPeriods = TrainingPlanService.method.setPlanPeriods;
 
 /**
- * Delete month or week periods.
+ * Delete month or week periods: those with the given IDs, or all those of
+ * a granularity, a date range, or both, e.g. every week to replan them.
  *
  * @generated from rpc plans.v1.TrainingPlanService.DeletePlanPeriods
  */

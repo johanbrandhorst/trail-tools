@@ -214,7 +214,8 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, periods, races }) => {
               {goalRaces.map((race) => (
                 <Badge key={race.id} className={priorityClass(race.priority)}>
                   <TrophyIcon className="size-3.5" />
-                  {race.name} · {formatShortDate(race.date)} ·{" "}
+                  {race.name} · {formatShortDate(race.date)}
+                  {race.dateUnconfirmed && " (date TBC)"} ·{" "}
                   {formatDaysUntil(race.date)}
                 </Badge>
               ))}

@@ -32,7 +32,7 @@ type PlanRepository interface {
 	DeleteTrainingPlan(ctx context.Context, userID, planID pgtype.UUID) error
 	SetPeriods(ctx context.Context, planID pgtype.UUID, periods []*plans.Period) ([]*plans.Period, error)
 	ListPeriods(ctx context.Context, planID pgtype.UUID) ([]*plans.Period, error)
-	DeletePeriods(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) error
+	DeletePeriods(ctx context.Context, planID pgtype.UUID, ids []pgtype.UUID) (int, error)
 	CreateWorkouts(ctx context.Context, userID, planID pgtype.UUID, workouts []*plans.Workout) ([]*plans.Workout, error)
 	ListWorkouts(ctx context.Context, userID, planID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
 	ListUserWorkouts(ctx context.Context, userID pgtype.UUID, startDate, endDate time.Time) ([]*plans.Workout, error)
@@ -215,14 +215,71 @@ func (s *Service) DeletePlanPeriods(ctx context.Context, req *plansv1.DeletePlan
 	if err != nil {
 		return nil, err
 	}
-	ids, err := store.UUIDsToPG(req.GetIds())
+	filtered := req.GetGranularity() != plansv1.PeriodGranularity_PERIOD_GRANULARITY_UNSPECIFIED ||
+		req.GetStartDate() != "" || req.GetEndDate() != ""
+	var ids []pgtype.UUID
+	switch {
+	case len(req.GetIds()) > 0 && filtered:
+		return nil, invalidArgument("set either ids, or granularity, start_date and end_date, not both")
+	case len(req.GetIds()) > 0:
+		if ids, err = store.UUIDsToPG(req.GetIds()); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+		}
+	case filtered:
+		if ids, err = s.matchingPeriods(ctx, plan, req); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, invalidArgument("set the ids of the periods to delete, or a granularity or date range")
+	}
+	var deleted int
+	if len(ids) > 0 {
+		if deleted, err = s.plans.DeletePeriods(ctx, plan.ID, ids); err != nil {
+			return nil, s.toConnectError(ctx, err, "failed to delete periods")
+		}
+	}
+	return plansv1.DeletePlanPeriodsResponse_builder{DeletedCount: int32(deleted)}.Build(), nil
+}
+
+// matchingPeriods returns the IDs of a plan's periods matching a delete
+// request's granularity and date range.
+func (s *Service) matchingPeriods(ctx context.Context, plan *plans.TrainingPlan, req *plansv1.DeletePlanPeriodsRequest) ([]pgtype.UUID, error) {
+	var granularity plans.Granularity
+	switch req.GetGranularity() {
+	case plansv1.PeriodGranularity_PERIOD_GRANULARITY_UNSPECIFIED:
+	case plansv1.PeriodGranularity_PERIOD_GRANULARITY_MONTH:
+		granularity = plans.GranularityMonth
+	case plansv1.PeriodGranularity_PERIOD_GRANULARITY_WEEK:
+		granularity = plans.GranularityWeek
+	default:
+		return nil, invalidArgument("granularity must be MONTH or WEEK")
+	}
+	var startDate, endDate time.Time
+	var err error
+	if req.GetStartDate() != "" {
+		if startDate, err = store.ParseDate(req.GetStartDate()); err != nil {
+			return nil, invalidArgument("invalid start_date: %v", err)
+		}
+	}
+	if req.GetEndDate() != "" {
+		if endDate, err = store.ParseDate(req.GetEndDate()); err != nil {
+			return nil, invalidArgument("invalid end_date: %v", err)
+		}
+	}
+	periods, err := s.plans.ListPeriods(ctx, plan.ID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
+		return nil, s.toConnectError(ctx, err, "failed to list periods")
 	}
-	if err := s.plans.DeletePeriods(ctx, plan.ID, ids); err != nil {
-		return nil, s.toConnectError(ctx, err, "failed to delete periods")
+	var ids []pgtype.UUID
+	for _, p := range periods {
+		if granularity != "" && p.Granularity != granularity ||
+			!startDate.IsZero() && p.StartDate.Before(startDate) ||
+			!endDate.IsZero() && p.StartDate.After(endDate) {
+			continue
+		}
+		ids = append(ids, p.ID)
 	}
-	return plansv1.DeletePlanPeriodsResponse_builder{}.Build(), nil
+	return ids, nil
 }
 
 func (s *Service) ListWorkouts(ctx context.Context, req *plansv1.ListWorkoutsRequest) (*plansv1.ListWorkoutsResponse, error) {

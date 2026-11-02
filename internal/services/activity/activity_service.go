@@ -109,6 +109,9 @@ func (s *Service) ListActivities(ctx context.Context, req *activitiesv1.ListActi
 	protoActivities := make([]*activitiesv1.Activity, len(list))
 	for i, a := range list {
 		protoActivities[i] = s.activityToProto(a)
+		if req.GetOmitSummaryPolyline() {
+			protoActivities[i].SetSummaryPolyline("")
+		}
 	}
 	return activitiesv1.ListActivitiesResponse_builder{
 		Activities:    protoActivities,
@@ -287,7 +290,7 @@ func (s *Service) activityToProto(a *activities.Activity) *activitiesv1.Activity
 	if a.DataSource == activities.DataSourceGarmin {
 		source = activitiesv1.ActivitySource_ACTIVITY_SOURCE_GARMIN
 	}
-	return activitiesv1.Activity_builder{
+	b := activitiesv1.Activity_builder{
 		Id:                  store.UUIDToString(a.ID),
 		StravaId:            stravaID,
 		StravaUrl:           stravaURL,
@@ -314,7 +317,15 @@ func (s *Service) activityToProto(a *activities.Activity) *activitiesv1.Activity
 		DeviceName:          a.DeviceName,
 		RelativeEffort:      a.RelativeEffort,
 		PhotoCount:          a.PhotoCount,
-	}.Build()
+	}
+	// A polyline that doesn't decode is Strava's, and is still returned, but
+	// gives no locations.
+	if points, err := geo.DecodePolyline(a.SummaryPolyline); err == nil && len(points) > 0 {
+		start, end := points[0], points[len(points)-1]
+		b.StartLocation = activitiesv1.LatLng_builder{Lat: start.Lat, Lng: start.Lng}.Build()
+		b.EndLocation = activitiesv1.LatLng_builder{Lat: end.Lat, Lng: end.Lng}.Build()
+	}
+	return b.Build()
 }
 
 // DownsampleStreams returns the streams with at most limit points.

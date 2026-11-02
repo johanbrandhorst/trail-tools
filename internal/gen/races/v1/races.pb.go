@@ -91,6 +91,7 @@ type Race struct {
 	xxx_hidden_Notes               string                 `protobuf:"bytes,12,opt,name=notes,proto3"`
 	xxx_hidden_OnCalendar          bool                   `protobuf:"varint,15,opt,name=on_calendar,json=onCalendar,proto3"`
 	xxx_hidden_EventId             string                 `protobuf:"bytes,16,opt,name=event_id,json=eventId,proto3"`
+	xxx_hidden_DateUnconfirmed     bool                   `protobuf:"varint,17,opt,name=date_unconfirmed,json=dateUnconfirmed,proto3"`
 	xxx_hidden_CreateTime          *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=create_time,json=createTime,proto3"`
 	xxx_hidden_UpdateTime          *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=update_time,json=updateTime,proto3"`
 	unknownFields                  protoimpl.UnknownFields
@@ -220,6 +221,13 @@ func (x *Race) GetEventId() string {
 	return ""
 }
 
+func (x *Race) GetDateUnconfirmed() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUnconfirmed
+	}
+	return false
+}
+
 func (x *Race) GetCreateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_CreateTime
@@ -290,6 +298,10 @@ func (x *Race) SetEventId(v string) {
 	x.xxx_hidden_EventId = v
 }
 
+func (x *Race) SetDateUnconfirmed(v bool) {
+	x.xxx_hidden_DateUnconfirmed = v
+}
+
 func (x *Race) SetCreateTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_CreateTime = v
 }
@@ -327,7 +339,7 @@ type Race_builder struct {
 	Id string
 	// The name of the race.
 	Name string
-	// The date of the race (YYYY-MM-DD).
+	// The date of the race (YYYY-MM-DD). See date_unconfirmed.
 	Date string
 	// The local start time (HH:MM, 24 hour clock).
 	StartTime string
@@ -356,6 +368,11 @@ type Race_builder struct {
 	// together, like the days of a multi-day event, share an event. Name each
 	// race in full, e.g. "Squamish 50 Mile" and "Squamish 50K".
 	EventId string
+	// Whether the date is a guess the organizers haven't confirmed, like last
+	// year's date before this year's is announced. The app shows the date as
+	// tentative. Set it to false once the date is announced, and move the
+	// race, and its training plan, if the date changed.
+	DateUnconfirmed bool
 	// When the race was created.
 	CreateTime *timestamppb.Timestamp
 	// When the race was last updated.
@@ -380,6 +397,7 @@ func (b0 Race_builder) Build() *Race {
 	x.xxx_hidden_Notes = b.Notes
 	x.xxx_hidden_OnCalendar = b.OnCalendar
 	x.xxx_hidden_EventId = b.EventId
+	x.xxx_hidden_DateUnconfirmed = b.DateUnconfirmed
 	x.xxx_hidden_CreateTime = b.CreateTime
 	x.xxx_hidden_UpdateTime = b.UpdateTime
 	return m0
@@ -1890,7 +1908,7 @@ var File_races_v1_races_proto protoreflect.FileDescriptor
 
 const file_races_v1_races_proto_rawDesc = "" +
 	"\n" +
-	"\x14races/v1/races.proto\x12\braces.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xd6\x04\n" +
+	"\x14races/v1/races.proto\x12\braces.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\x81\x05\n" +
 	"\x04Race\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1909,7 +1927,8 @@ const file_races_v1_races_proto_rawDesc = "" +
 	"\x05notes\x18\f \x01(\tR\x05notes\x12\x1f\n" +
 	"\von_calendar\x18\x0f \x01(\bR\n" +
 	"onCalendar\x12\x19\n" +
-	"\bevent_id\x18\x10 \x01(\tR\aeventId\x12C\n" +
+	"\bevent_id\x18\x10 \x01(\tR\aeventId\x12)\n" +
+	"\x10date_unconfirmed\x18\x11 \x01(\bR\x0fdateUnconfirmed\x12C\n" +
 	"\vcreate_time\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
 	"createTime\x12C\n" +
 	"\vupdate_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +

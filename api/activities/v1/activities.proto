@@ -56,6 +56,8 @@ message Activity {
   // Average cadence in steps per minute, 0 if not recorded.
   double average_cadence_spm = 17;
   // The Google encoded polyline of the activity's route at low resolution.
+  // Most of a listed activity's size; ListActivities leaves it out with
+  // omit_summary_polyline.
   string summary_polyline = 18;
   // Whether detailed data streams have been synced for this activity.
   bool has_streams = 19;
@@ -79,6 +81,12 @@ message Activity {
   // Strava and Garmin keeps those of the first to have its samples, and
   // Strava's name and description.
   ActivitySource data_source = 26;
+  // Where the activity started, from its route at low resolution. Unset if
+  // it has no route, like activities recorded indoors.
+  LatLng start_location = 27;
+  // Where the activity ended, from its route at low resolution. Unset if it
+  // has no route.
+  LatLng end_location = 28;
 }
 
 // Where an activity's data comes from.
@@ -156,6 +164,11 @@ message ListActivitiesRequest {
   // How to order the activities. Defaults to the most recent first. Use the
   // others to find the biggest days, e.g. by elevation gain.
   ActivitySort sort = 6;
+  // Leave out the activities' summary_polyline, which is most of a listing's
+  // size. Their start_location and end_location are still set. Use it unless
+  // the routes' shapes are needed, then get the few activities with
+  // GetActivity.
+  bool omit_summary_polyline = 7;
 }
 
 // ActivitySort is the order to list activities in.

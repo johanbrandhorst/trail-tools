@@ -294,6 +294,23 @@ func TestStravaSyncAndActivities(t *testing.T) {
 		t.Fatalf("unexpected second page %v", page2)
 	}
 	run0 := page2.GetActivities()[0]
+	// Activities have where they started and ended, from their polylines,
+	// and listings can leave the polylines out. The manual entry has
+	// neither.
+	if run0.GetSummaryPolyline() == "" || !run0.HasStartLocation() ||
+		run0.GetStartLocation().GetLat() != 0 || run0.GetEndLocation().GetLat() != 0.01 {
+		t.Errorf("got polyline %q from %v to %v, want the route from 0 to 0.01", run0.GetSummaryPolyline(), run0.GetStartLocation(), run0.GetEndLocation())
+	}
+	if manual := page1.GetActivities()[0]; manual.HasStartLocation() || manual.HasEndLocation() {
+		t.Errorf("got the manual entry from %v to %v, want no locations", manual.GetStartLocation(), manual.GetEndLocation())
+	}
+	omitted, err := e.activity.ListActivities(ctx, activitiesv1.ListActivitiesRequest_builder{OmitSummaryPolyline: true}.Build())
+	if err != nil {
+		t.Fatalf("ListActivities: %v", err)
+	}
+	if last := omitted.GetActivities()[2]; last.GetSummaryPolyline() != "" || last.GetEndLocation().GetLat() != 0.01 {
+		t.Errorf("got polyline %q ending at %v, want none, ending at 0.01", last.GetSummaryPolyline(), last.GetEndLocation())
+	}
 	if run0.GetDescription() != "Felt good" || !run0.GetHasStreams() || run0.GetAverageCadenceSpm() != 170 ||
 		run0.GetStartDateLocal() != "2026-09-07" || run0.GetTimezone() != "Europe/London" {
 		t.Errorf("unexpected activity %v", run0)

@@ -367,8 +367,31 @@ func TestTrainingPlanDates(t *testing.T) {
 			periodIDs = append(periodIDs, p.GetId())
 		}
 	}
-	if _, err := e.plans.DeletePlanPeriods(ctx, plansv1.DeletePlanPeriodsRequest_builder{PlanId: planID, Ids: periodIDs}.Build()); err != nil {
+	// Periods are deleted by their IDs, or by granularity and date range,
+	// but not both.
+	week := plansv1.PeriodGranularity_PERIOD_GRANULARITY_WEEK
+	_, err = e.plans.DeletePlanPeriods(ctx, plansv1.DeletePlanPeriodsRequest_builder{PlanId: planID, Ids: periodIDs, Granularity: week}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	_, err = e.plans.DeletePlanPeriods(ctx, plansv1.DeletePlanPeriodsRequest_builder{PlanId: planID}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	// No week starts after the plan ends.
+	deleted, err := e.plans.DeletePlanPeriods(ctx, plansv1.DeletePlanPeriodsRequest_builder{PlanId: planID, Granularity: week, StartDate: "2027-03-29"}.Build())
+	if err != nil || deleted.GetDeletedCount() != 0 {
+		t.Fatalf("DeletePlanPeriods after the plan: %v, %v", deleted, err)
+	}
+	deleted, err = e.plans.DeletePlanPeriods(ctx, plansv1.DeletePlanPeriodsRequest_builder{PlanId: planID, Granularity: week, EndDate: "2027-03-28"}.Build())
+	if err != nil {
 		t.Fatal(err)
+	}
+	if got := int(deleted.GetDeletedCount()); got != len(periodIDs) {
+		t.Errorf("deleted %d periods, want the %d weeks", got, len(periodIDs))
+	}
+	after, err := e.plans.GetTrainingPlan(ctx, plansv1.GetTrainingPlanRequest_builder{Id: planID}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := len(after.GetPeriods()), len(got.GetPeriods())-len(periodIDs); got != want {
+		t.Errorf("got %d periods after deleting the weeks, want the %d months", got, want)
 	}
 	if err := shorten("2027-03-20"); err != nil {
 		t.Fatalf("UpdateTrainingPlan after deleting the workouts and week: %v", err)

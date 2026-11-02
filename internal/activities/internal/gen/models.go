@@ -1294,6 +1294,7 @@ type Race struct {
 	UpdateTime          pgtype.Timestamptz
 	OnCalendar          bool
 	EventID             pgtype.UUID
+	DateUnconfirmed     bool
 }
 
 type RaceEvent struct {

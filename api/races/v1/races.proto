@@ -57,7 +57,7 @@ message Race {
   string id = 1;
   // The name of the race.
   string name = 2;
-  // The date of the race (YYYY-MM-DD).
+  // The date of the race (YYYY-MM-DD). See date_unconfirmed.
   string date = 3;
   // The local start time (HH:MM, 24 hour clock).
   string start_time = 4;
@@ -86,6 +86,11 @@ message Race {
   // together, like the days of a multi-day event, share an event. Name each
   // race in full, e.g. "Squamish 50 Mile" and "Squamish 50K".
   string event_id = 16;
+  // Whether the date is a guess the organizers haven't confirmed, like last
+  // year's date before this year's is announced. The app shows the date as
+  // tentative. Set it to false once the date is announced, and move the
+  // race, and its training plan, if the date changed.
+  bool date_unconfirmed = 17;
   // When the race was created.
   google.protobuf.Timestamp create_time = 13 [(mcp.v1.field).output_only = true];
   // When the race was last updated.
