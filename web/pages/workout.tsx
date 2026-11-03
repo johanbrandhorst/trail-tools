@@ -370,6 +370,22 @@ const WorkoutPage: React.FC = () => {
                   · Start {startWindow(workout)}
                 </span>
               )}
+              {workout.location !== undefined && (
+                <span className="whitespace-nowrap">
+                  ·{" "}
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${workout.location.lat}&mlon=${workout.location.lng}#map=16/${workout.location.lat}/${workout.location.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline"
+                  >
+                    At{" "}
+                    {workout.locationName === ""
+                      ? "the meeting point"
+                      : workout.locationName}
+                  </a>
+                </span>
+              )}
             </span>
           </p>
           <h1 className="text-2xl font-bold text-balance text-gray-900">

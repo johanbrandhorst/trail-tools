@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func TestWorkoutWeather(t *testing.T) {
@@ -46,12 +48,20 @@ func TestWorkoutWeather(t *testing.T) {
 			plansv1.Workout_builder{Date: day(5), StartTime: "05:00", Title: "Early", Run: plansv1.RunWorkout_builder{
 				Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetDurationSeconds: 5400,
 			}.Build()}.Build(),
+			// A group run without a route, from a meeting point.
+			plansv1.Workout_builder{
+				Date: day(6), Run: baseRun(), Title: "Group run",
+				Location: geov1.LatLng_builder{Lat: 0.3, Lng: 0.01}.Build(), LocationName: " Café ",
+			}.Build(),
 		},
 	}.Build())
 	if err != nil {
 		t.Fatalf("CreateWorkouts: %v", err)
 	}
-	easy, hills, rest, strength, later, early := created.GetWorkouts()[0], created.GetWorkouts()[1], created.GetWorkouts()[2], created.GetWorkouts()[3], created.GetWorkouts()[4], created.GetWorkouts()[5]
+	easy, hills, rest, strength, later, early, group := created.GetWorkouts()[0], created.GetWorkouts()[1], created.GetWorkouts()[2], created.GetWorkouts()[3], created.GetWorkouts()[4], created.GetWorkouts()[5], created.GetWorkouts()[6]
+	if group.GetLocation().GetLat() != 0.3 || group.GetLocationName() != "Café" {
+		t.Errorf("got group run at %v, %q, want its location and trimmed name", group.GetLocation(), group.GetLocationName())
+	}
 	list := func() map[string]*plansv1.WorkoutWeather {
 		t.Helper()
 		resp, err := e.plans.ListWorkoutWeather(ctx, plansv1.ListWorkoutWeatherRequest_builder{StartDate: day(-30), EndDate: day(30)}.Build())
@@ -65,10 +75,15 @@ func TestWorkoutWeather(t *testing.T) {
 		return byWorkout
 	}
 
-	// Without activities, only workouts with a route have a location.
+	// Without activities, only workouts with a location or a route have
+	// one.
 	weather := list()
-	if len(weather) != 1 || weather[hills.GetId()] == nil {
-		t.Fatalf("weather without activities %v, want only the workout with a route", weather)
+	if len(weather) != 2 || weather[hills.GetId()] == nil || weather[group.GetId()] == nil {
+		t.Fatalf("weather without activities %v, want only the workouts with a location or route", weather)
+	}
+	if w := weather[group.GetId()]; w.GetLocationSource() != plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_WORKOUT_LOCATION ||
+		w.GetLocation().GetLat() != 0.3 || w.GetLocation().GetLng() != 0.01 {
+		t.Errorf("unexpected group run weather %v", w)
 	}
 	if w := weather[hills.GetId()]; w.GetLocationSource() != plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_ROUTE_START ||
 		!approx(w.GetLocation().GetLat(), 0.1, 1e-6) || w.GetDate() != day(2) || len(w.GetHours()) != 0 {
@@ -80,10 +95,10 @@ func TestWorkoutWeather(t *testing.T) {
 	e.createActivity()
 	calls := len(e.mapData.hourlyForecasts)
 	weather = list()
-	if len(weather) != 3 || weather[rest.GetId()] != nil || weather[strength.GetId()] != nil || weather[later.GetId()] != nil {
-		t.Fatalf("got weather for %d workouts, want 3: %v", len(weather), weather)
+	if len(weather) != 4 || weather[rest.GetId()] != nil || weather[strength.GetId()] != nil || weather[later.GetId()] != nil {
+		t.Fatalf("got weather for %d workouts, want 4: %v", len(weather), weather)
 	}
-	if n := len(e.mapData.hourlyForecasts) - calls; n != 2 {
+	if n := len(e.mapData.hourlyForecasts) - calls; n != 3 {
 		t.Errorf("%d forecasts, want one for each location", n)
 	}
 	w := weather[easy.GetId()]
@@ -128,6 +143,35 @@ func TestWorkoutWeather(t *testing.T) {
 			t.Errorf("GetWorkoutWeather of a workout without a forecast: %v, %v", got, err)
 		}
 	}
+
+	// A location takes the place of the route's start, and can be cleared.
+	updated, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: hills.GetId(), Location: geov1.LatLng_builder{Lat: 0.5, Lng: 0}.Build()}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"location"}},
+	}.Build())
+	if err != nil {
+		t.Fatalf("UpdateWorkout: %v", err)
+	}
+	if w := list()[hills.GetId()]; w.GetLocationSource() != plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_WORKOUT_LOCATION || w.GetLocation().GetLat() != 0.5 {
+		t.Errorf("got weather %v after setting the location, want it there", w)
+	}
+	if updated.GetWorkout().GetRun().GetRouteId() != route.GetRoute().GetId() {
+		t.Errorf("setting the location changed the route to %q", updated.GetWorkout().GetRun().GetRouteId())
+	}
+	if _, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: hills.GetId()}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"location"}},
+	}.Build()); err != nil {
+		t.Fatalf("UpdateWorkout: %v", err)
+	}
+	if w := list()[hills.GetId()]; w.GetLocationSource() != plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_ROUTE_START {
+		t.Errorf("got weather %v after clearing the location, want the route's start", w)
+	}
+	_, err = e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: hills.GetId(), Location: geov1.LatLng_builder{Lat: 91}.Build()}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"location"}},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
 
 	_, err = e.plans.ListWorkoutWeather(ctx, plansv1.ListWorkoutWeatherRequest_builder{StartDate: day(2), EndDate: day(1)}.Build())
 	wantCode(t, err, connect.CodeInvalidArgument)

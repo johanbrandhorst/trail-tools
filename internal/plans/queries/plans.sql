@@ -80,7 +80,10 @@ insert into workouts (
   route_id,
   completed_activity_id,
   start_time,
-  start_window_minutes
+  start_window_minutes,
+  location_lat,
+  location_lng,
+  location_name
 )
 select
   w.id,
@@ -96,7 +99,10 @@ select
   w.route_id,
   w.completed_activity_id,
   w.start_time,
-  w.start_window_minutes
+  w.start_window_minutes,
+  case when w.has_location then w.location_lat end,
+  case when w.has_location then w.location_lng end,
+  w.location_name
 from (
   select
     unnest(sqlc.arg(ids)::uuid[]) as id,
@@ -113,7 +119,12 @@ from (
     unnest(sqlc.arg(completed_activity_ids)::uuid[]) as completed_activity_id,
     -- Null if the workout can be done any time of the day.
     unnest(sqlc.arg(start_times)::time[]) as start_time,
-    unnest(sqlc.arg(start_windows_minutes)::integer[]) as start_window_minutes
+    unnest(sqlc.arg(start_windows_minutes)::integer[]) as start_window_minutes,
+    -- The location is null unless has_location is set.
+    unnest(sqlc.arg(has_locations)::boolean[]) as has_location,
+    unnest(sqlc.arg(location_lats)::double precision[]) as location_lat,
+    unnest(sqlc.arg(location_lngs)::double precision[]) as location_lng,
+    unnest(sqlc.arg(location_names)::text[]) as location_name
 ) w
 returning *;
 
@@ -156,7 +167,10 @@ update workouts set
   route_id = $10,
   completed_activity_id = $11,
   start_time = $12,
-  start_window_minutes = $13
+  start_window_minutes = $13,
+  location_lat = sqlc.narg(location_lat),
+  location_lng = sqlc.narg(location_lng),
+  location_name = sqlc.arg(location_name)
 where id = $1
 returning *;
 

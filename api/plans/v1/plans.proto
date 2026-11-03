@@ -196,6 +196,12 @@ message Workout {
   // How long the start window is in minutes, e.g. 60 to start between 07:00
   // and 08:00. Between 15 and 360 if start_time is set; 0 means 60.
   int32 start_window_minutes = 19;
+  // Where the workout starts, for workouts without a route, like a group
+  // run's meeting point or the gym of a strength session. The weather
+  // forecast is for it, before the start of the route. Unset if not given.
+  geo.v1.LatLng location = 20;
+  // A short name for the location, e.g. "Trailhead parking". Empty if none.
+  string location_name = 21;
 
   // What the workout is. Exactly one must be set.
   oneof details {
@@ -528,10 +534,12 @@ message GetWorkoutResponse {
 // WeatherLocationSource is where a workout's forecast is for.
 enum WeatherLocationSource {
   WEATHER_LOCATION_SOURCE_UNSPECIFIED = 0;
+  // The workout's location.
+  WEATHER_LOCATION_SOURCE_WORKOUT_LOCATION = 3;
   // The start of the workout's route.
   WEATHER_LOCATION_SOURCE_ROUTE_START = 1;
   // Where the user's most recent activity started, for workouts without a
-  // route.
+  // location or route.
   WEATHER_LOCATION_SOURCE_LATEST_ACTIVITY = 2;
 }
 

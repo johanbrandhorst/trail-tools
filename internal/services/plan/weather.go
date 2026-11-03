@@ -210,11 +210,14 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 	return result, nil
 }
 
-// workoutLocation returns where a workout's forecast is for: the start of
-// its route, or else where the user's most recent activity started, which
-// is looked up once and kept in fallback. It returns false if there is
-// neither.
+// workoutLocation returns where a workout's forecast is for: its location,
+// the start of its route, or else where the user's most recent activity
+// started, which is looked up once and kept in fallback. It returns false if
+// there is none of them.
 func (s *Service) workoutLocation(ctx context.Context, userID pgtype.UUID, w *plans.Workout, fallback **weatherLocation) (weatherLocation, bool, error) {
+	if w.Location != nil {
+		return weatherLocation{point: *w.Location, source: plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_WORKOUT_LOCATION}, true, nil
+	}
 	if w.RouteID.Valid {
 		route, err := s.routes.GetRoute(ctx, userID, w.RouteID)
 		switch {

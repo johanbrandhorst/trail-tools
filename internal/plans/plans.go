@@ -103,6 +103,10 @@ type Workout struct {
 	StartTime string
 	// How long the start window is, 0 if there's no start time.
 	StartWindowMinutes int32
+	// Where the workout starts, if set, like a group run's meeting point,
+	// without elevation.
+	Location     *geo.Point
+	LocationName string
 	// The exercises of a strength workout, in order. Nil for other types.
 	Exercises []*PlannedExercise
 	// The exercises the user lacks equipment for, computed when reading.
@@ -368,6 +372,14 @@ func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.U
 		params.CompletedActivityIds = append(params.CompletedActivityIds, w.CompletedActivityID)
 		params.StartTimes = append(params.StartTimes, startTimeToDB(w.StartTime))
 		params.StartWindowsMinutes = append(params.StartWindowsMinutes, w.StartWindowMinutes)
+		var location geo.Point
+		if w.Location != nil {
+			location = *w.Location
+		}
+		params.HasLocations = append(params.HasLocations, w.Location != nil)
+		params.LocationLats = append(params.LocationLats, location.Lat)
+		params.LocationLngs = append(params.LocationLngs, location.Lng)
+		params.LocationNames = append(params.LocationNames, w.LocationName)
 	}
 	var wr workoutReader
 	err := r.db.Transact(ctx, func(b *store.Batch) error {
@@ -484,6 +496,9 @@ func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *W
 				CompletedActivityID:       w.CompletedActivityID,
 				StartTime:                 startTimeToDB(w.StartTime),
 				StartWindowMinutes:        w.StartWindowMinutes,
+				LocationLat:               locationToDB(w.Location, func(p geo.Point) float64 { return p.Lat }),
+				LocationLng:               locationToDB(w.Location, func(p geo.Point) float64 { return p.Lng }),
+				LocationName:              w.LocationName,
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
 				return store.ErrNotFound
@@ -614,11 +629,24 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		CompletedActivityID:       w.CompletedActivityID,
 		StartTime:                 startTimeFromDB(w.StartTime),
 		StartWindowMinutes:        w.StartWindowMinutes,
+		LocationName:              w.LocationName,
+	}
+	if w.LocationLat.Valid && w.LocationLng.Valid {
+		workout.Location = &geo.Point{Lat: w.LocationLat.Float64, Lng: w.LocationLng.Float64}
 	}
 	if w.TargetTerrain.Valid {
 		workout.TargetTerrain = geo.Terrain(w.TargetTerrain.Terrain)
 	}
 	return workout
+}
+
+// locationToDB returns a coordinate of a workout's location, invalid if it
+// has none.
+func locationToDB(location *geo.Point, coordinate func(geo.Point) float64) pgtype.Float8 {
+	if location == nil {
+		return pgtype.Float8{}
+	}
+	return pgtype.Float8{Float64: coordinate(*location), Valid: true}
 }
 
 // startTimeToDB converts a local time "HH:MM", which the caller has
