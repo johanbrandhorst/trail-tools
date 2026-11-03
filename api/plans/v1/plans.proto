@@ -47,7 +47,7 @@ service TrainingPlanService {
   // a granularity, a date range, or both, e.g. every week to replan them.
   rpc DeletePlanPeriods(DeletePlanPeriodsRequest) returns (DeletePlanPeriodsResponse);
   // List a plan's workouts, or those of all the user's plans, in date order,
-  // optionally within a date range.
+  // each day's by start time, optionally within a date range.
   rpc ListWorkouts(ListWorkoutsRequest) returns (ListWorkoutsResponse);
   // Get a workout by ID.
   rpc GetWorkout(GetWorkoutRequest) returns (GetWorkoutResponse);
@@ -606,7 +606,8 @@ message ListWorkoutsRequest {
 }
 
 message ListWorkoutsResponse {
-  // The workouts in date order.
+  // The workouts in date order, each day's by start time, those without one
+  // last.
   repeated Workout workouts = 1;
 }
 

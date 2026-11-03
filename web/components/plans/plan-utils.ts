@@ -8,6 +8,27 @@ import type { Race } from "gen/races/v1/races_pb";
 import { isWithin, today } from "helpers/dates";
 import { workoutTargets } from "helpers/workouts";
 
+/**
+ * CompareStartTimes orders workouts of a day by their start time, "HH:MM",
+ * those without one last.
+ */
+const compareStartTimes = (first: Workout, second: Workout): number => {
+  if (first.startTime === second.startTime) {
+    return 0;
+  }
+  if (first.startTime === "") {
+    return 1;
+  }
+  if (second.startTime === "") {
+    return -1;
+  }
+  return first.startTime < second.startTime ? -1 : 1;
+};
+
+/**
+ * GroupWorkoutsByDate groups workouts by their date, each day's in the
+ * order of their start times, those without one last in the order given.
+ */
 export const groupWorkoutsByDate = (
   workouts: Workout[]
 ): Map<string, Workout[]> => {
@@ -19,6 +40,13 @@ export const groupWorkoutsByDate = (
     } else {
       group.push(workout);
     }
+  }
+  /*
+   * The groups are this function's own, so they're sorted in place. The
+   * sort is stable, keeping the order given for equal start times.
+   */
+  for (const group of groups.values()) {
+    group.sort(compareStartTimes);
   }
   return groups;
 };

@@ -137,7 +137,7 @@ select * from workouts
 where plan_id = $1
   and (sqlc.narg(start_date)::date is null or date >= sqlc.narg(start_date)::date)
   and (sqlc.narg(end_date)::date is null or date <= sqlc.narg(end_date)::date)
-order by date, create_time;
+order by date, start_time nulls last, create_time;
 
 -- name: ListUserWorkouts :many
 select w.* from workouts w
@@ -145,7 +145,7 @@ join training_plans p on p.id = w.plan_id
 where p.user_id = $1
   and (sqlc.narg(start_date)::date is null or w.date >= sqlc.narg(start_date)::date)
   and (sqlc.narg(end_date)::date is null or w.date <= sqlc.narg(end_date)::date)
-order by w.date, w.create_time;
+order by w.date, w.start_time nulls last, w.create_time;
 
 -- name: AddRacesToCalendar :exec
 update races set

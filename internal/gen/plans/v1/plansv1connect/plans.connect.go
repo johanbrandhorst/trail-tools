@@ -214,7 +214,7 @@ type TrainingPlanServiceClient interface {
 	// a granularity, a date range, or both, e.g. every week to replan them.
 	DeletePlanPeriods(context.Context, *v1.DeletePlanPeriodsRequest) (*v1.DeletePlanPeriodsResponse, error)
 	// List a plan's workouts, or those of all the user's plans, in date order,
-	// optionally within a date range.
+	// each day's by start time, optionally within a date range.
 	ListWorkouts(context.Context, *v1.ListWorkoutsRequest) (*v1.ListWorkoutsResponse, error)
 	// Get a workout by ID.
 	GetWorkout(context.Context, *v1.GetWorkoutRequest) (*v1.GetWorkoutResponse, error)
@@ -275,7 +275,7 @@ type TrainingPlanServiceHandler interface {
 	// a granularity, a date range, or both, e.g. every week to replan them.
 	DeletePlanPeriods(context.Context, *v1.DeletePlanPeriodsRequest) (*v1.DeletePlanPeriodsResponse, error)
 	// List a plan's workouts, or those of all the user's plans, in date order,
-	// optionally within a date range.
+	// each day's by start time, optionally within a date range.
 	ListWorkouts(context.Context, *v1.ListWorkoutsRequest) (*v1.ListWorkoutsResponse, error)
 	// Get a workout by ID.
 	GetWorkout(context.Context, *v1.GetWorkoutRequest) (*v1.GetWorkoutResponse, error)
