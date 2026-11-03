@@ -20,6 +20,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/garmin"
 	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/lactate"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"gitlab.com/greyxor/slogor"
@@ -114,6 +115,8 @@ type Syncer struct {
 	client     Client
 	activities ActivityRepository
 	plans      PlanRepository
+	// The user's lactate tests, or nil without them.
+	thresholds ThresholdRepository
 	nowFn      func() time.Time
 	// A *sync.Mutex per user, held while putting their workouts on the
 	// calendar, so a change and the scheduled sync don't both send a
@@ -128,8 +131,38 @@ type Syncer struct {
 
 // NewSyncer creates a Syncer. trigger starts the scheduled sync, which
 // handles queued notifications; if nil, they're handled in the background.
-func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository, routeRepo RouteRepository, trigger Trigger) *Syncer {
-	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, routes: routeRepo, nowFn: time.Now, trigger: trigger}
+func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, activityRepo ActivityRepository, planRepo PlanRepository, routeRepo RouteRepository, thresholdRepo ThresholdRepository, trigger Trigger) *Syncer {
+	return &Syncer{log: log, report: report, client: client, activities: activityRepo, plans: planRepo, routes: routeRepo, thresholds: thresholdRepo, nowFn: time.Now, trigger: trigger}
+}
+
+// ThresholdRepository lists the user's lactate tests, for the heart rates of
+// structured runs' targets relative to their thresholds.
+type ThresholdRepository interface {
+	ListTests(ctx context.Context, userID pgtype.UUID) ([]*lactate.Test, error)
+}
+
+// userThresholds returns the heart rates of the user's aerobic and
+// anaerobic thresholds, from their latest lactate tests that found them, 0
+// if unknown.
+func (s *Syncer) userThresholds(ctx context.Context, userID pgtype.UUID) (thresholds, error) {
+	var t thresholds
+	if s.thresholds == nil {
+		return t, nil
+	}
+	tests, err := s.thresholds.ListTests(ctx, userID)
+	if err != nil {
+		return t, err
+	}
+	// The tests are listed with the latest first.
+	for _, test := range tests {
+		if t.aerobic == 0 {
+			t.aerobic = test.HeartRateAt(lactate.AerobicThresholdMmolPerLiter)
+		}
+		if t.anaerobic == 0 {
+			t.anaerobic = test.HeartRateAt(lactate.AnaerobicThresholdMmolPerLiter)
+		}
+	}
+	return t, nil
 }
 
 // token returns a fresh access token of a connection, refreshing it if it
@@ -467,10 +500,14 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 			byWorkout[g.WorkoutID] = g
 		}
 	}
+	t, err := s.userThresholds(ctx, conn.UserID)
+	if err != nil {
+		return "", err
+	}
 	added, removed := 0, 0
 	keep := map[pgtype.UUID]bool{}
 	for _, w := range workouts {
-		gw, ok := trainingWorkout(w)
+		gw, ok := trainingWorkout(w, t)
 		if !ok || w.Log != nil || w.CompletedActivityID.Valid {
 			continue
 		}
@@ -506,7 +543,7 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 	for id, g := range byWorkout {
 		if !keep[id] {
 			stillPlanned := slices.ContainsFunc(workouts, func(w *plans.Workout) bool {
-				_, ok := trainingWorkout(w)
+				_, ok := trainingWorkout(w, t)
 				return w.ID == id && ok && w.Log == nil && !w.CompletedActivityID.Valid
 			})
 			if !stillPlanned {

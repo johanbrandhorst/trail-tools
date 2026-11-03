@@ -316,10 +316,17 @@ func weightIn(kilograms float64, unit plans.WeightUnit) plans.Weight {
 // Garmin also takes as the source ID.
 const workoutProvider = "trailrunn.ing"
 
+// thresholds are the heart rates of the user's aerobic and anaerobic
+// thresholds, 0 if unknown.
+type thresholds struct {
+	aerobic, anaerobic int32
+}
+
 // trainingWorkout returns a workout as a Training API workout, if it's a
-// kind Garmin takes: a run, or a strength workout with exercises of at most
-// garmin.MaxWorkoutSteps steps.
-func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
+// kind Garmin takes: a run, or a strength workout with exercises, of at most
+// garmin.MaxWorkoutSteps steps. Heart rate targets relative to a threshold
+// are converted with t.
+func trainingWorkout(w *plans.Workout, t thresholds) (*garmin.Workout, bool) {
 	gw := &garmin.Workout{
 		WorkoutName:     w.Title,
 		Description:     truncate(w.Description, 1024),
@@ -332,6 +339,10 @@ func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
 		gw.Sport = garmin.SportRunning
 		if gw.WorkoutName == "" {
 			gw.WorkoutName = "Run"
+		}
+		if len(w.RunBlocks) > 0 {
+			steps = runSteps(w.RunBlocks, t)
+			break
 		}
 		step := garmin.WorkoutStep{Type: "WorkoutStep", StepOrder: 1, Intensity: "ACTIVE", DurationType: "OPEN", TargetType: "OPEN"}
 		switch {
@@ -378,6 +389,83 @@ func trainingWorkout(w *plans.Workout) (*garmin.Workout, bool) {
 		return nil, false
 	}
 	return gw, true
+}
+
+// runIntensities are the Garmin intensities of run steps.
+var runIntensities = map[plans.RunStepKind]string{
+	plans.RunStepWarmUp:   "WARMUP",
+	plans.RunStepRun:      "ACTIVE",
+	plans.RunStepRecovery: "RECOVERY",
+	plans.RunStepRest:     "REST",
+	plans.RunStepCoolDown: "COOLDOWN",
+}
+
+// runSteps returns a structured run's blocks as workout steps, each
+// repeated block a repeat step.
+func runSteps(blocks []plans.RunBlock, t thresholds) []garmin.WorkoutStep {
+	order := 0
+	nextOrder := func() int {
+		order++
+		return order
+	}
+	var steps []garmin.WorkoutStep
+	for _, b := range blocks {
+		var repeat *garmin.WorkoutStep
+		if b.Repeats > 1 {
+			repeat = &garmin.WorkoutStep{Type: "WorkoutRepeatStep", StepOrder: nextOrder(), RepeatType: "REPEAT_UNTIL_STEPS_CMPLT", RepeatValue: b.Repeats}
+		}
+		var blockSteps []garmin.WorkoutStep
+		for _, st := range b.Steps {
+			blockSteps = append(blockSteps, runStep(st, nextOrder(), t))
+		}
+		if repeat != nil {
+			repeat.Steps = blockSteps
+			steps = append(steps, *repeat)
+		} else {
+			steps = append(steps, blockSteps...)
+		}
+	}
+	return steps
+}
+
+// runStep returns a step of a structured run as a workout step. A target
+// relative to an unknown threshold is left open, and described instead.
+func runStep(st plans.RunStep, order int, t thresholds) garmin.WorkoutStep {
+	step := garmin.WorkoutStep{
+		Type:         "WorkoutStep",
+		StepOrder:    order,
+		Intensity:    runIntensities[st.Kind],
+		DurationType: "OPEN",
+		TargetType:   "OPEN",
+		Description:  truncate(strings.TrimSpace(st.Notes), 512),
+	}
+	switch {
+	case st.DurationSeconds > 0:
+		step.DurationType, step.DurationValue = "TIME", float64(st.DurationSeconds)
+	case st.DistanceMeters > 0:
+		step.DurationType, step.DurationValue = "DISTANCE", st.DistanceMeters
+	}
+	switch {
+	case st.HeartRate != nil:
+		low, high, ok := st.HeartRate.Resolve(t.aerobic, t.anaerobic)
+		if !ok {
+			missing := "aerobic"
+			if st.HeartRate.Reference == plans.HeartRateAnaerobicThreshold {
+				missing = "anaerobic"
+			}
+			note := fmt.Sprintf("Heart rate %+d to %+d bpm from your %s threshold; do a lactate test to set it", st.HeartRate.LowBPM, st.HeartRate.HighBPM, missing)
+			step.Description = truncate(strings.TrimPrefix(step.Description+". "+note, ". "), 512)
+			break
+		}
+		step.TargetType, step.TargetValueLow, step.TargetValueHigh = "HEART_RATE", float64(low), float64(high)
+	case st.Pace != nil:
+		// Garmin takes paces as speeds in meters per second; the slow pace is
+		// the low speed.
+		step.TargetType = "PACE"
+		step.TargetValueLow = math.Round(1000/float64(st.Pace.SlowSecondsPerKilometer)*1000) / 1000
+		step.TargetValueHigh = math.Round(1000/float64(st.Pace.FastSecondsPerKilometer)*1000) / 1000
+	}
+	return step
 }
 
 // garminExercise returns the exercise of Garmin's catalog a planned

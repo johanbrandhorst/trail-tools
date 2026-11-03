@@ -66,6 +66,11 @@ func workoutDetailsFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 		workout.TargetElevationGainMeters = run.GetTargetElevationGainMeters()
 		workout.TargetDurationSeconds = run.GetTargetDurationSeconds()
 		workout.TargetTerrain = route.TerrainFromProto(run.GetTargetTerrain())
+		blocks, err := runBlocksFromProto(run.GetBlocks())
+		if err != nil {
+			return invalidArgument("run.%v", err)
+		}
+		workout.RunBlocks = blocks
 		return parseRouteID("run.route_id", run.GetRouteId(), workout)
 	case plansv1.Workout_CrossTraining_case:
 		ct := w.GetCrossTraining()
@@ -210,6 +215,7 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 			TargetDurationSeconds:     w.TargetDurationSeconds,
 			TargetTerrain:             route.TerrainToProto(w.TargetTerrain),
 			RouteId:                   store.UUIDToString(w.RouteID),
+			Blocks:                    runBlocksToProto(w.RunBlocks),
 		}.Build()
 	case plans.WorkoutTypeCrossTraining:
 		b.CrossTraining = plansv1.CrossTrainingWorkout_builder{

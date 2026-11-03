@@ -232,6 +232,115 @@ func (x RunIntensity) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// RunStepKind is what a step of a structured run is.
+type RunStepKind int32
+
+const (
+	RunStepKind_RUN_STEP_KIND_UNSPECIFIED RunStepKind = 0
+	// Warming up.
+	RunStepKind_RUN_STEP_KIND_WARM_UP RunStepKind = 1
+	// Running, e.g. an interval or a steady section.
+	RunStepKind_RUN_STEP_KIND_RUN RunStepKind = 2
+	// Easy running or walking between hard steps.
+	RunStepKind_RUN_STEP_KIND_RECOVERY RunStepKind = 3
+	// Standing still.
+	RunStepKind_RUN_STEP_KIND_REST RunStepKind = 4
+	// Cooling down.
+	RunStepKind_RUN_STEP_KIND_COOL_DOWN RunStepKind = 5
+)
+
+// Enum value maps for RunStepKind.
+var (
+	RunStepKind_name = map[int32]string{
+		0: "RUN_STEP_KIND_UNSPECIFIED",
+		1: "RUN_STEP_KIND_WARM_UP",
+		2: "RUN_STEP_KIND_RUN",
+		3: "RUN_STEP_KIND_RECOVERY",
+		4: "RUN_STEP_KIND_REST",
+		5: "RUN_STEP_KIND_COOL_DOWN",
+	}
+	RunStepKind_value = map[string]int32{
+		"RUN_STEP_KIND_UNSPECIFIED": 0,
+		"RUN_STEP_KIND_WARM_UP":     1,
+		"RUN_STEP_KIND_RUN":         2,
+		"RUN_STEP_KIND_RECOVERY":    3,
+		"RUN_STEP_KIND_REST":        4,
+		"RUN_STEP_KIND_COOL_DOWN":   5,
+	}
+)
+
+func (x RunStepKind) Enum() *RunStepKind {
+	p := new(RunStepKind)
+	*p = x
+	return p
+}
+
+func (x RunStepKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RunStepKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_plans_v1_plans_proto_enumTypes[3].Descriptor()
+}
+
+func (RunStepKind) Type() protoreflect.EnumType {
+	return &file_plans_v1_plans_proto_enumTypes[3]
+}
+
+func (x RunStepKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// HeartRateReference is what a heart rate target's range is measured from.
+type HeartRateReference int32
+
+const (
+	// Beats per minute.
+	HeartRateReference_HEART_RATE_REFERENCE_UNSPECIFIED HeartRateReference = 0
+	// Beats per minute from the user's aerobic threshold, from their latest
+	// lactate test that found it. See LactateTestService.
+	HeartRateReference_HEART_RATE_REFERENCE_AEROBIC_THRESHOLD HeartRateReference = 1
+	// Beats per minute from the user's anaerobic threshold, from their
+	// latest lactate test that found it.
+	HeartRateReference_HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD HeartRateReference = 2
+)
+
+// Enum value maps for HeartRateReference.
+var (
+	HeartRateReference_name = map[int32]string{
+		0: "HEART_RATE_REFERENCE_UNSPECIFIED",
+		1: "HEART_RATE_REFERENCE_AEROBIC_THRESHOLD",
+		2: "HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD",
+	}
+	HeartRateReference_value = map[string]int32{
+		"HEART_RATE_REFERENCE_UNSPECIFIED":         0,
+		"HEART_RATE_REFERENCE_AEROBIC_THRESHOLD":   1,
+		"HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD": 2,
+	}
+)
+
+func (x HeartRateReference) Enum() *HeartRateReference {
+	p := new(HeartRateReference)
+	*p = x
+	return p
+}
+
+func (x HeartRateReference) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (HeartRateReference) Descriptor() protoreflect.EnumDescriptor {
+	return file_plans_v1_plans_proto_enumTypes[4].Descriptor()
+}
+
+func (HeartRateReference) Type() protoreflect.EnumType {
+	return &file_plans_v1_plans_proto_enumTypes[4]
+}
+
+func (x HeartRateReference) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // SessionEffort is how hard a whole strength session felt.
 type SessionEffort int32
 
@@ -275,11 +384,11 @@ func (x SessionEffort) String() string {
 }
 
 func (SessionEffort) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[3].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[5].Descriptor()
 }
 
 func (SessionEffort) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[3]
+	return &file_plans_v1_plans_proto_enumTypes[5]
 }
 
 func (x SessionEffort) Number() protoreflect.EnumNumber {
@@ -325,11 +434,11 @@ func (x ExerciseEffort) String() string {
 }
 
 func (ExerciseEffort) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[4].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[6].Descriptor()
 }
 
 func (ExerciseEffort) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[4]
+	return &file_plans_v1_plans_proto_enumTypes[6]
 }
 
 func (x ExerciseEffort) Number() protoreflect.EnumNumber {
@@ -373,11 +482,11 @@ func (x ExerciseVolume) String() string {
 }
 
 func (ExerciseVolume) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[5].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[7].Descriptor()
 }
 
 func (ExerciseVolume) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[5]
+	return &file_plans_v1_plans_proto_enumTypes[7]
 }
 
 func (x ExerciseVolume) Number() protoreflect.EnumNumber {
@@ -425,11 +534,11 @@ func (x WeatherLocationSource) String() string {
 }
 
 func (WeatherLocationSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[6].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[8].Descriptor()
 }
 
 func (WeatherLocationSource) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[6]
+	return &file_plans_v1_plans_proto_enumTypes[8]
 }
 
 func (x WeatherLocationSource) Number() protoreflect.EnumNumber {
@@ -1302,6 +1411,7 @@ type RunWorkout struct {
 	xxx_hidden_TargetDurationSeconds     int32                  `protobuf:"varint,4,opt,name=target_duration_seconds,json=targetDurationSeconds,proto3"`
 	xxx_hidden_TargetTerrain             v1.Terrain             `protobuf:"varint,5,opt,name=target_terrain,json=targetTerrain,proto3,enum=geo.v1.Terrain"`
 	xxx_hidden_RouteId                   string                 `protobuf:"bytes,6,opt,name=route_id,json=routeId,proto3"`
+	xxx_hidden_Blocks                    *[]*RunBlock           `protobuf:"bytes,7,rep,name=blocks,proto3"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -1373,6 +1483,15 @@ func (x *RunWorkout) GetRouteId() string {
 	return ""
 }
 
+func (x *RunWorkout) GetBlocks() []*RunBlock {
+	if x != nil {
+		if x.xxx_hidden_Blocks != nil {
+			return *x.xxx_hidden_Blocks
+		}
+	}
+	return nil
+}
+
 func (x *RunWorkout) SetIntensity(v RunIntensity) {
 	x.xxx_hidden_Intensity = v
 }
@@ -1397,6 +1516,10 @@ func (x *RunWorkout) SetRouteId(v string) {
 	x.xxx_hidden_RouteId = v
 }
 
+func (x *RunWorkout) SetBlocks(v []*RunBlock) {
+	x.xxx_hidden_Blocks = &v
+}
+
 type RunWorkout_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1412,6 +1535,12 @@ type RunWorkout_builder struct {
 	TargetTerrain v1.Terrain
 	// The ID of the route to run, if any. See RouteService.
 	RouteId string
+	// The structure of the run, in order: e.g. a warm-up, 6 x (3 minutes
+	// hard, 2 minutes easy) and a cool-down. Empty for a run without
+	// structure, like an easy run. Garmin watches guide the steps and alert
+	// outside their targets. At most 20 blocks, and 50 steps in all, counting
+	// each block's steps once however often it's repeated.
+	Blocks []*RunBlock
 }
 
 func (b0 RunWorkout_builder) Build() *RunWorkout {
@@ -1424,6 +1553,495 @@ func (b0 RunWorkout_builder) Build() *RunWorkout {
 	x.xxx_hidden_TargetDurationSeconds = b.TargetDurationSeconds
 	x.xxx_hidden_TargetTerrain = b.TargetTerrain
 	x.xxx_hidden_RouteId = b.RouteId
+	x.xxx_hidden_Blocks = &b.Blocks
+	return m0
+}
+
+// A block of a structured run: its steps, done once or repeated.
+type RunBlock struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Repeats int32                  `protobuf:"varint,1,opt,name=repeats,proto3"`
+	xxx_hidden_Steps   *[]*RunStep            `protobuf:"bytes,2,rep,name=steps,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *RunBlock) Reset() {
+	*x = RunBlock{}
+	mi := &file_plans_v1_plans_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunBlock) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunBlock) ProtoMessage() {}
+
+func (x *RunBlock) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RunBlock) GetRepeats() int32 {
+	if x != nil {
+		return x.xxx_hidden_Repeats
+	}
+	return 0
+}
+
+func (x *RunBlock) GetSteps() []*RunStep {
+	if x != nil {
+		if x.xxx_hidden_Steps != nil {
+			return *x.xxx_hidden_Steps
+		}
+	}
+	return nil
+}
+
+func (x *RunBlock) SetRepeats(v int32) {
+	x.xxx_hidden_Repeats = v
+}
+
+func (x *RunBlock) SetSteps(v []*RunStep) {
+	x.xxx_hidden_Steps = &v
+}
+
+type RunBlock_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// How often the steps are done, e.g. 6 for 6 x (3 minutes hard, 2
+	// minutes easy). From 1 to 50; 0 means 1.
+	Repeats int32
+	// The steps, in order. At least one.
+	Steps []*RunStep
+}
+
+func (b0 RunBlock_builder) Build() *RunBlock {
+	m0 := &RunBlock{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Repeats = b.Repeats
+	x.xxx_hidden_Steps = &b.Steps
+	return m0
+}
+
+// A step of a structured run. A step lasts duration_seconds or
+// distance_meters, or until the lap button is pressed if neither is set.
+type RunStep struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind            RunStepKind            `protobuf:"varint,1,opt,name=kind,proto3,enum=plans.v1.RunStepKind"`
+	xxx_hidden_DurationSeconds int32                  `protobuf:"varint,2,opt,name=duration_seconds,json=durationSeconds,proto3"`
+	xxx_hidden_DistanceMeters  float64                `protobuf:"fixed64,3,opt,name=distance_meters,json=distanceMeters,proto3"`
+	xxx_hidden_Target          isRunStep_Target       `protobuf_oneof:"target"`
+	xxx_hidden_Notes           string                 `protobuf:"bytes,6,opt,name=notes,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *RunStep) Reset() {
+	*x = RunStep{}
+	mi := &file_plans_v1_plans_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunStep) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunStep) ProtoMessage() {}
+
+func (x *RunStep) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RunStep) GetKind() RunStepKind {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return RunStepKind_RUN_STEP_KIND_UNSPECIFIED
+}
+
+func (x *RunStep) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_DurationSeconds
+	}
+	return 0
+}
+
+func (x *RunStep) GetDistanceMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_DistanceMeters
+	}
+	return 0
+}
+
+func (x *RunStep) GetHeartRate() *HeartRateTarget {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Target.(*runStep_HeartRate); ok {
+			return x.HeartRate
+		}
+	}
+	return nil
+}
+
+func (x *RunStep) GetPace() *PaceTarget {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Target.(*runStep_Pace); ok {
+			return x.Pace
+		}
+	}
+	return nil
+}
+
+func (x *RunStep) GetNotes() string {
+	if x != nil {
+		return x.xxx_hidden_Notes
+	}
+	return ""
+}
+
+func (x *RunStep) SetKind(v RunStepKind) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *RunStep) SetDurationSeconds(v int32) {
+	x.xxx_hidden_DurationSeconds = v
+}
+
+func (x *RunStep) SetDistanceMeters(v float64) {
+	x.xxx_hidden_DistanceMeters = v
+}
+
+func (x *RunStep) SetHeartRate(v *HeartRateTarget) {
+	if v == nil {
+		x.xxx_hidden_Target = nil
+		return
+	}
+	x.xxx_hidden_Target = &runStep_HeartRate{v}
+}
+
+func (x *RunStep) SetPace(v *PaceTarget) {
+	if v == nil {
+		x.xxx_hidden_Target = nil
+		return
+	}
+	x.xxx_hidden_Target = &runStep_Pace{v}
+}
+
+func (x *RunStep) SetNotes(v string) {
+	x.xxx_hidden_Notes = v
+}
+
+func (x *RunStep) HasTarget() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Target != nil
+}
+
+func (x *RunStep) HasHeartRate() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Target.(*runStep_HeartRate)
+	return ok
+}
+
+func (x *RunStep) HasPace() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Target.(*runStep_Pace)
+	return ok
+}
+
+func (x *RunStep) ClearTarget() {
+	x.xxx_hidden_Target = nil
+}
+
+func (x *RunStep) ClearHeartRate() {
+	if _, ok := x.xxx_hidden_Target.(*runStep_HeartRate); ok {
+		x.xxx_hidden_Target = nil
+	}
+}
+
+func (x *RunStep) ClearPace() {
+	if _, ok := x.xxx_hidden_Target.(*runStep_Pace); ok {
+		x.xxx_hidden_Target = nil
+	}
+}
+
+const RunStep_Target_not_set_case case_RunStep_Target = 0
+const RunStep_HeartRate_case case_RunStep_Target = 4
+const RunStep_Pace_case case_RunStep_Target = 5
+
+func (x *RunStep) WhichTarget() case_RunStep_Target {
+	if x == nil {
+		return RunStep_Target_not_set_case
+	}
+	switch x.xxx_hidden_Target.(type) {
+	case *runStep_HeartRate:
+		return RunStep_HeartRate_case
+	case *runStep_Pace:
+		return RunStep_Pace_case
+	default:
+		return RunStep_Target_not_set_case
+	}
+}
+
+type RunStep_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the step is. Required.
+	Kind RunStepKind
+	// How long the step lasts in seconds. 0 if it's a distance, or until the
+	// lap button.
+	DurationSeconds int32
+	// How far the step goes in meters. 0 if it's a time, or until the lap
+	// button.
+	DistanceMeters float64
+	// The intensity to hold, if any.
+
+	// Fields of oneof xxx_hidden_Target:
+	// A heart rate range.
+	HeartRate *HeartRateTarget
+	// A pace range.
+	Pace *PaceTarget
+	// -- end of xxx_hidden_Target
+	// A short cue for the step, e.g. "Uphill, strong but relaxed". Empty if
+	// none.
+	Notes string
+}
+
+func (b0 RunStep_builder) Build() *RunStep {
+	m0 := &RunStep{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_DurationSeconds = b.DurationSeconds
+	x.xxx_hidden_DistanceMeters = b.DistanceMeters
+	if b.HeartRate != nil {
+		x.xxx_hidden_Target = &runStep_HeartRate{b.HeartRate}
+	}
+	if b.Pace != nil {
+		x.xxx_hidden_Target = &runStep_Pace{b.Pace}
+	}
+	x.xxx_hidden_Notes = b.Notes
+	return m0
+}
+
+type case_RunStep_Target protoreflect.FieldNumber
+
+func (x case_RunStep_Target) String() string {
+	md := file_plans_v1_plans_proto_msgTypes[5].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
+}
+
+type isRunStep_Target interface {
+	isRunStep_Target()
+}
+
+type runStep_HeartRate struct {
+	// A heart rate range.
+	HeartRate *HeartRateTarget `protobuf:"bytes,4,opt,name=heart_rate,json=heartRate,proto3,oneof"`
+}
+
+type runStep_Pace struct {
+	// A pace range.
+	Pace *PaceTarget `protobuf:"bytes,5,opt,name=pace,proto3,oneof"`
+}
+
+func (*runStep_HeartRate) isRunStep_Target() {}
+
+func (*runStep_Pace) isRunStep_Target() {}
+
+// A heart rate range to hold. With a threshold reference, the range is
+// relative to it and follows it as new lactate tests move it, e.g. -15 to 0
+// for easy running below the aerobic threshold, or -5 to 3 for intervals at
+// the anaerobic threshold.
+type HeartRateTarget struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Reference HeartRateReference     `protobuf:"varint,1,opt,name=reference,proto3,enum=plans.v1.HeartRateReference"`
+	xxx_hidden_LowBpm    int32                  `protobuf:"varint,2,opt,name=low_bpm,json=lowBpm,proto3"`
+	xxx_hidden_HighBpm   int32                  `protobuf:"varint,3,opt,name=high_bpm,json=highBpm,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *HeartRateTarget) Reset() {
+	*x = HeartRateTarget{}
+	mi := &file_plans_v1_plans_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeartRateTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartRateTarget) ProtoMessage() {}
+
+func (x *HeartRateTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HeartRateTarget) GetReference() HeartRateReference {
+	if x != nil {
+		return x.xxx_hidden_Reference
+	}
+	return HeartRateReference_HEART_RATE_REFERENCE_UNSPECIFIED
+}
+
+func (x *HeartRateTarget) GetLowBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_LowBpm
+	}
+	return 0
+}
+
+func (x *HeartRateTarget) GetHighBpm() int32 {
+	if x != nil {
+		return x.xxx_hidden_HighBpm
+	}
+	return 0
+}
+
+func (x *HeartRateTarget) SetReference(v HeartRateReference) {
+	x.xxx_hidden_Reference = v
+}
+
+func (x *HeartRateTarget) SetLowBpm(v int32) {
+	x.xxx_hidden_LowBpm = v
+}
+
+func (x *HeartRateTarget) SetHighBpm(v int32) {
+	x.xxx_hidden_HighBpm = v
+}
+
+type HeartRateTarget_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What low_bpm and high_bpm are measured from; unspecified for beats per
+	// minute.
+	Reference HeartRateReference
+	// The bottom of the range, in beats per minute, or from the threshold.
+	LowBpm int32
+	// The top of the range, in beats per minute, or from the threshold. At
+	// least low_bpm.
+	HighBpm int32
+}
+
+func (b0 HeartRateTarget_builder) Build() *HeartRateTarget {
+	m0 := &HeartRateTarget{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Reference = b.Reference
+	x.xxx_hidden_LowBpm = b.LowBpm
+	x.xxx_hidden_HighBpm = b.HighBpm
+	return m0
+}
+
+// A pace range to hold.
+type PaceTarget struct {
+	state                              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_FastSecondsPerKilometer int32                  `protobuf:"varint,1,opt,name=fast_seconds_per_kilometer,json=fastSecondsPerKilometer,proto3"`
+	xxx_hidden_SlowSecondsPerKilometer int32                  `protobuf:"varint,2,opt,name=slow_seconds_per_kilometer,json=slowSecondsPerKilometer,proto3"`
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
+}
+
+func (x *PaceTarget) Reset() {
+	*x = PaceTarget{}
+	mi := &file_plans_v1_plans_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PaceTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PaceTarget) ProtoMessage() {}
+
+func (x *PaceTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *PaceTarget) GetFastSecondsPerKilometer() int32 {
+	if x != nil {
+		return x.xxx_hidden_FastSecondsPerKilometer
+	}
+	return 0
+}
+
+func (x *PaceTarget) GetSlowSecondsPerKilometer() int32 {
+	if x != nil {
+		return x.xxx_hidden_SlowSecondsPerKilometer
+	}
+	return 0
+}
+
+func (x *PaceTarget) SetFastSecondsPerKilometer(v int32) {
+	x.xxx_hidden_FastSecondsPerKilometer = v
+}
+
+func (x *PaceTarget) SetSlowSecondsPerKilometer(v int32) {
+	x.xxx_hidden_SlowSecondsPerKilometer = v
+}
+
+type PaceTarget_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The fastest pace, in seconds per kilometer, e.g. 270 for 4:30/km.
+	FastSecondsPerKilometer int32
+	// The slowest pace, in seconds per kilometer. At least
+	// fast_seconds_per_kilometer.
+	SlowSecondsPerKilometer int32
+}
+
+func (b0 PaceTarget_builder) Build() *PaceTarget {
+	m0 := &PaceTarget{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_FastSecondsPerKilometer = b.FastSecondsPerKilometer
+	x.xxx_hidden_SlowSecondsPerKilometer = b.SlowSecondsPerKilometer
 	return m0
 }
 
@@ -1440,7 +2058,7 @@ type CrossTrainingWorkout struct {
 
 func (x *CrossTrainingWorkout) Reset() {
 	*x = CrossTrainingWorkout{}
-	mi := &file_plans_v1_plans_proto_msgTypes[4]
+	mi := &file_plans_v1_plans_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1452,7 +2070,7 @@ func (x *CrossTrainingWorkout) String() string {
 func (*CrossTrainingWorkout) ProtoMessage() {}
 
 func (x *CrossTrainingWorkout) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[4]
+	mi := &file_plans_v1_plans_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1531,7 +2149,7 @@ type RaceWorkout struct {
 
 func (x *RaceWorkout) Reset() {
 	*x = RaceWorkout{}
-	mi := &file_plans_v1_plans_proto_msgTypes[5]
+	mi := &file_plans_v1_plans_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1543,7 +2161,7 @@ func (x *RaceWorkout) String() string {
 func (*RaceWorkout) ProtoMessage() {}
 
 func (x *RaceWorkout) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[5]
+	mi := &file_plans_v1_plans_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1631,7 +2249,7 @@ type RestDay struct {
 
 func (x *RestDay) Reset() {
 	*x = RestDay{}
-	mi := &file_plans_v1_plans_proto_msgTypes[6]
+	mi := &file_plans_v1_plans_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1643,7 +2261,7 @@ func (x *RestDay) String() string {
 func (*RestDay) ProtoMessage() {}
 
 func (x *RestDay) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[6]
+	mi := &file_plans_v1_plans_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1683,7 +2301,7 @@ type StrengthWorkout struct {
 
 func (x *StrengthWorkout) Reset() {
 	*x = StrengthWorkout{}
-	mi := &file_plans_v1_plans_proto_msgTypes[7]
+	mi := &file_plans_v1_plans_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1695,7 +2313,7 @@ func (x *StrengthWorkout) String() string {
 func (*StrengthWorkout) ProtoMessage() {}
 
 func (x *StrengthWorkout) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[7]
+	mi := &file_plans_v1_plans_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1807,7 +2425,7 @@ type EquipmentIssue struct {
 
 func (x *EquipmentIssue) Reset() {
 	*x = EquipmentIssue{}
-	mi := &file_plans_v1_plans_proto_msgTypes[8]
+	mi := &file_plans_v1_plans_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1819,7 +2437,7 @@ func (x *EquipmentIssue) String() string {
 func (*EquipmentIssue) ProtoMessage() {}
 
 func (x *EquipmentIssue) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[8]
+	mi := &file_plans_v1_plans_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1925,7 +2543,7 @@ type PlannedExercise struct {
 
 func (x *PlannedExercise) Reset() {
 	*x = PlannedExercise{}
-	mi := &file_plans_v1_plans_proto_msgTypes[9]
+	mi := &file_plans_v1_plans_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1937,7 +2555,7 @@ func (x *PlannedExercise) String() string {
 func (*PlannedExercise) ProtoMessage() {}
 
 func (x *PlannedExercise) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[9]
+	mi := &file_plans_v1_plans_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2153,7 +2771,7 @@ type StrengthLog struct {
 
 func (x *StrengthLog) Reset() {
 	*x = StrengthLog{}
-	mi := &file_plans_v1_plans_proto_msgTypes[10]
+	mi := &file_plans_v1_plans_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2165,7 +2783,7 @@ func (x *StrengthLog) String() string {
 func (*StrengthLog) ProtoMessage() {}
 
 func (x *StrengthLog) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[10]
+	mi := &file_plans_v1_plans_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2273,7 +2891,7 @@ type LoggedExercise struct {
 
 func (x *LoggedExercise) Reset() {
 	*x = LoggedExercise{}
-	mi := &file_plans_v1_plans_proto_msgTypes[11]
+	mi := &file_plans_v1_plans_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2285,7 +2903,7 @@ func (x *LoggedExercise) String() string {
 func (*LoggedExercise) ProtoMessage() {}
 
 func (x *LoggedExercise) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[11]
+	mi := &file_plans_v1_plans_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2409,7 +3027,7 @@ type LoggedSet struct {
 
 func (x *LoggedSet) Reset() {
 	*x = LoggedSet{}
-	mi := &file_plans_v1_plans_proto_msgTypes[12]
+	mi := &file_plans_v1_plans_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2421,7 +3039,7 @@ func (x *LoggedSet) String() string {
 func (*LoggedSet) ProtoMessage() {}
 
 func (x *LoggedSet) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[12]
+	mi := &file_plans_v1_plans_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2507,7 +3125,7 @@ type CreateTrainingPlanRequest struct {
 
 func (x *CreateTrainingPlanRequest) Reset() {
 	*x = CreateTrainingPlanRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[13]
+	mi := &file_plans_v1_plans_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2519,7 +3137,7 @@ func (x *CreateTrainingPlanRequest) String() string {
 func (*CreateTrainingPlanRequest) ProtoMessage() {}
 
 func (x *CreateTrainingPlanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[13]
+	mi := &file_plans_v1_plans_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2576,7 +3194,7 @@ type CreateTrainingPlanResponse struct {
 
 func (x *CreateTrainingPlanResponse) Reset() {
 	*x = CreateTrainingPlanResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[14]
+	mi := &file_plans_v1_plans_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2588,7 +3206,7 @@ func (x *CreateTrainingPlanResponse) String() string {
 func (*CreateTrainingPlanResponse) ProtoMessage() {}
 
 func (x *CreateTrainingPlanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[14]
+	mi := &file_plans_v1_plans_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2645,7 +3263,7 @@ type GetTrainingPlanRequest struct {
 
 func (x *GetTrainingPlanRequest) Reset() {
 	*x = GetTrainingPlanRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[15]
+	mi := &file_plans_v1_plans_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2657,7 +3275,7 @@ func (x *GetTrainingPlanRequest) String() string {
 func (*GetTrainingPlanRequest) ProtoMessage() {}
 
 func (x *GetTrainingPlanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[15]
+	mi := &file_plans_v1_plans_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2704,7 +3322,7 @@ type GetTrainingPlanResponse struct {
 
 func (x *GetTrainingPlanResponse) Reset() {
 	*x = GetTrainingPlanResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[16]
+	mi := &file_plans_v1_plans_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2716,7 +3334,7 @@ func (x *GetTrainingPlanResponse) String() string {
 func (*GetTrainingPlanResponse) ProtoMessage() {}
 
 func (x *GetTrainingPlanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[16]
+	mi := &file_plans_v1_plans_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2788,7 +3406,7 @@ type ListTrainingPlansRequest struct {
 
 func (x *ListTrainingPlansRequest) Reset() {
 	*x = ListTrainingPlansRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[17]
+	mi := &file_plans_v1_plans_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2800,7 +3418,7 @@ func (x *ListTrainingPlansRequest) String() string {
 func (*ListTrainingPlansRequest) ProtoMessage() {}
 
 func (x *ListTrainingPlansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[17]
+	mi := &file_plans_v1_plans_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2832,7 +3450,7 @@ type ListTrainingPlansResponse struct {
 
 func (x *ListTrainingPlansResponse) Reset() {
 	*x = ListTrainingPlansResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[18]
+	mi := &file_plans_v1_plans_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2844,7 +3462,7 @@ func (x *ListTrainingPlansResponse) String() string {
 func (*ListTrainingPlansResponse) ProtoMessage() {}
 
 func (x *ListTrainingPlansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[18]
+	mi := &file_plans_v1_plans_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2893,7 +3511,7 @@ type UpdateTrainingPlanRequest struct {
 
 func (x *UpdateTrainingPlanRequest) Reset() {
 	*x = UpdateTrainingPlanRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[19]
+	mi := &file_plans_v1_plans_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2905,7 +3523,7 @@ func (x *UpdateTrainingPlanRequest) String() string {
 func (*UpdateTrainingPlanRequest) ProtoMessage() {}
 
 func (x *UpdateTrainingPlanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[19]
+	mi := &file_plans_v1_plans_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2988,7 +3606,7 @@ type UpdateTrainingPlanResponse struct {
 
 func (x *UpdateTrainingPlanResponse) Reset() {
 	*x = UpdateTrainingPlanResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[20]
+	mi := &file_plans_v1_plans_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3000,7 +3618,7 @@ func (x *UpdateTrainingPlanResponse) String() string {
 func (*UpdateTrainingPlanResponse) ProtoMessage() {}
 
 func (x *UpdateTrainingPlanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[20]
+	mi := &file_plans_v1_plans_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3057,7 +3675,7 @@ type DeleteTrainingPlanRequest struct {
 
 func (x *DeleteTrainingPlanRequest) Reset() {
 	*x = DeleteTrainingPlanRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[21]
+	mi := &file_plans_v1_plans_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3069,7 +3687,7 @@ func (x *DeleteTrainingPlanRequest) String() string {
 func (*DeleteTrainingPlanRequest) ProtoMessage() {}
 
 func (x *DeleteTrainingPlanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[21]
+	mi := &file_plans_v1_plans_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3114,7 +3732,7 @@ type DeleteTrainingPlanResponse struct {
 
 func (x *DeleteTrainingPlanResponse) Reset() {
 	*x = DeleteTrainingPlanResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[22]
+	mi := &file_plans_v1_plans_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3126,7 +3744,7 @@ func (x *DeleteTrainingPlanResponse) String() string {
 func (*DeleteTrainingPlanResponse) ProtoMessage() {}
 
 func (x *DeleteTrainingPlanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[22]
+	mi := &file_plans_v1_plans_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3159,7 +3777,7 @@ type SetPlanPeriodsRequest struct {
 
 func (x *SetPlanPeriodsRequest) Reset() {
 	*x = SetPlanPeriodsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[23]
+	mi := &file_plans_v1_plans_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3171,7 +3789,7 @@ func (x *SetPlanPeriodsRequest) String() string {
 func (*SetPlanPeriodsRequest) ProtoMessage() {}
 
 func (x *SetPlanPeriodsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[23]
+	mi := &file_plans_v1_plans_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3233,7 +3851,7 @@ type SetPlanPeriodsResponse struct {
 
 func (x *SetPlanPeriodsResponse) Reset() {
 	*x = SetPlanPeriodsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[24]
+	mi := &file_plans_v1_plans_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3245,7 +3863,7 @@ func (x *SetPlanPeriodsResponse) String() string {
 func (*SetPlanPeriodsResponse) ProtoMessage() {}
 
 func (x *SetPlanPeriodsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[24]
+	mi := &file_plans_v1_plans_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3297,7 +3915,7 @@ type DeletePlanPeriodsRequest struct {
 
 func (x *DeletePlanPeriodsRequest) Reset() {
 	*x = DeletePlanPeriodsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[25]
+	mi := &file_plans_v1_plans_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3309,7 +3927,7 @@ func (x *DeletePlanPeriodsRequest) String() string {
 func (*DeletePlanPeriodsRequest) ProtoMessage() {}
 
 func (x *DeletePlanPeriodsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[25]
+	mi := &file_plans_v1_plans_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3415,7 +4033,7 @@ type DeletePlanPeriodsResponse struct {
 
 func (x *DeletePlanPeriodsResponse) Reset() {
 	*x = DeletePlanPeriodsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[26]
+	mi := &file_plans_v1_plans_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3427,7 +4045,7 @@ func (x *DeletePlanPeriodsResponse) String() string {
 func (*DeletePlanPeriodsResponse) ProtoMessage() {}
 
 func (x *DeletePlanPeriodsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[26]
+	mi := &file_plans_v1_plans_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3475,7 +4093,7 @@ type ListWorkoutsRequest struct {
 
 func (x *ListWorkoutsRequest) Reset() {
 	*x = ListWorkoutsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[27]
+	mi := &file_plans_v1_plans_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3487,7 +4105,7 @@ func (x *ListWorkoutsRequest) String() string {
 func (*ListWorkoutsRequest) ProtoMessage() {}
 
 func (x *ListWorkoutsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[27]
+	mi := &file_plans_v1_plans_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3562,7 +4180,7 @@ type ListWorkoutsResponse struct {
 
 func (x *ListWorkoutsResponse) Reset() {
 	*x = ListWorkoutsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[28]
+	mi := &file_plans_v1_plans_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3574,7 +4192,7 @@ func (x *ListWorkoutsResponse) String() string {
 func (*ListWorkoutsResponse) ProtoMessage() {}
 
 func (x *ListWorkoutsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[28]
+	mi := &file_plans_v1_plans_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3622,7 +4240,7 @@ type GetWorkoutRequest struct {
 
 func (x *GetWorkoutRequest) Reset() {
 	*x = GetWorkoutRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[29]
+	mi := &file_plans_v1_plans_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3634,7 +4252,7 @@ func (x *GetWorkoutRequest) String() string {
 func (*GetWorkoutRequest) ProtoMessage() {}
 
 func (x *GetWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[29]
+	mi := &file_plans_v1_plans_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3680,7 +4298,7 @@ type GetWorkoutResponse struct {
 
 func (x *GetWorkoutResponse) Reset() {
 	*x = GetWorkoutResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[30]
+	mi := &file_plans_v1_plans_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3692,7 +4310,7 @@ func (x *GetWorkoutResponse) String() string {
 func (*GetWorkoutResponse) ProtoMessage() {}
 
 func (x *GetWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[30]
+	mi := &file_plans_v1_plans_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3758,7 +4376,7 @@ type WorkoutWeather struct {
 
 func (x *WorkoutWeather) Reset() {
 	*x = WorkoutWeather{}
-	mi := &file_plans_v1_plans_proto_msgTypes[31]
+	mi := &file_plans_v1_plans_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3770,7 +4388,7 @@ func (x *WorkoutWeather) String() string {
 func (*WorkoutWeather) ProtoMessage() {}
 
 func (x *WorkoutWeather) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[31]
+	mi := &file_plans_v1_plans_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3996,7 +4614,7 @@ type DayWeather struct {
 
 func (x *DayWeather) Reset() {
 	*x = DayWeather{}
-	mi := &file_plans_v1_plans_proto_msgTypes[32]
+	mi := &file_plans_v1_plans_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4008,7 +4626,7 @@ func (x *DayWeather) String() string {
 func (*DayWeather) ProtoMessage() {}
 
 func (x *DayWeather) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[32]
+	mi := &file_plans_v1_plans_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4174,7 +4792,7 @@ type HourWeather struct {
 
 func (x *HourWeather) Reset() {
 	*x = HourWeather{}
-	mi := &file_plans_v1_plans_proto_msgTypes[33]
+	mi := &file_plans_v1_plans_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4186,7 +4804,7 @@ func (x *HourWeather) String() string {
 func (*HourWeather) ProtoMessage() {}
 
 func (x *HourWeather) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[33]
+	mi := &file_plans_v1_plans_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4369,7 +4987,7 @@ type ListWorkoutWeatherRequest struct {
 
 func (x *ListWorkoutWeatherRequest) Reset() {
 	*x = ListWorkoutWeatherRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[34]
+	mi := &file_plans_v1_plans_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4381,7 +4999,7 @@ func (x *ListWorkoutWeatherRequest) String() string {
 func (*ListWorkoutWeatherRequest) ProtoMessage() {}
 
 func (x *ListWorkoutWeatherRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[34]
+	mi := &file_plans_v1_plans_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4440,7 +5058,7 @@ type ListWorkoutWeatherResponse struct {
 
 func (x *ListWorkoutWeatherResponse) Reset() {
 	*x = ListWorkoutWeatherResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[35]
+	mi := &file_plans_v1_plans_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4452,7 +5070,7 @@ func (x *ListWorkoutWeatherResponse) String() string {
 func (*ListWorkoutWeatherResponse) ProtoMessage() {}
 
 func (x *ListWorkoutWeatherResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[35]
+	mi := &file_plans_v1_plans_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4500,7 +5118,7 @@ type GetWorkoutWeatherRequest struct {
 
 func (x *GetWorkoutWeatherRequest) Reset() {
 	*x = GetWorkoutWeatherRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[36]
+	mi := &file_plans_v1_plans_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4512,7 +5130,7 @@ func (x *GetWorkoutWeatherRequest) String() string {
 func (*GetWorkoutWeatherRequest) ProtoMessage() {}
 
 func (x *GetWorkoutWeatherRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[36]
+	mi := &file_plans_v1_plans_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4558,7 +5176,7 @@ type GetWorkoutWeatherResponse struct {
 
 func (x *GetWorkoutWeatherResponse) Reset() {
 	*x = GetWorkoutWeatherResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[37]
+	mi := &file_plans_v1_plans_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4570,7 +5188,7 @@ func (x *GetWorkoutWeatherResponse) String() string {
 func (*GetWorkoutWeatherResponse) ProtoMessage() {}
 
 func (x *GetWorkoutWeatherResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[37]
+	mi := &file_plans_v1_plans_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4629,7 +5247,7 @@ type CreateWorkoutsRequest struct {
 
 func (x *CreateWorkoutsRequest) Reset() {
 	*x = CreateWorkoutsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[38]
+	mi := &file_plans_v1_plans_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4641,7 +5259,7 @@ func (x *CreateWorkoutsRequest) String() string {
 func (*CreateWorkoutsRequest) ProtoMessage() {}
 
 func (x *CreateWorkoutsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[38]
+	mi := &file_plans_v1_plans_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4703,7 +5321,7 @@ type CreateWorkoutsResponse struct {
 
 func (x *CreateWorkoutsResponse) Reset() {
 	*x = CreateWorkoutsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[39]
+	mi := &file_plans_v1_plans_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4715,7 +5333,7 @@ func (x *CreateWorkoutsResponse) String() string {
 func (*CreateWorkoutsResponse) ProtoMessage() {}
 
 func (x *CreateWorkoutsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[39]
+	mi := &file_plans_v1_plans_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4764,7 +5382,7 @@ type UpdateWorkoutRequest struct {
 
 func (x *UpdateWorkoutRequest) Reset() {
 	*x = UpdateWorkoutRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[40]
+	mi := &file_plans_v1_plans_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4776,7 +5394,7 @@ func (x *UpdateWorkoutRequest) String() string {
 func (*UpdateWorkoutRequest) ProtoMessage() {}
 
 func (x *UpdateWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[40]
+	mi := &file_plans_v1_plans_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4861,7 +5479,7 @@ type UpdateWorkoutResponse struct {
 
 func (x *UpdateWorkoutResponse) Reset() {
 	*x = UpdateWorkoutResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[41]
+	mi := &file_plans_v1_plans_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4873,7 +5491,7 @@ func (x *UpdateWorkoutResponse) String() string {
 func (*UpdateWorkoutResponse) ProtoMessage() {}
 
 func (x *UpdateWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[41]
+	mi := &file_plans_v1_plans_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4931,7 +5549,7 @@ type DeleteWorkoutsRequest struct {
 
 func (x *DeleteWorkoutsRequest) Reset() {
 	*x = DeleteWorkoutsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[42]
+	mi := &file_plans_v1_plans_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4943,7 +5561,7 @@ func (x *DeleteWorkoutsRequest) String() string {
 func (*DeleteWorkoutsRequest) ProtoMessage() {}
 
 func (x *DeleteWorkoutsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[42]
+	mi := &file_plans_v1_plans_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5002,7 +5620,7 @@ type DeleteWorkoutsResponse struct {
 
 func (x *DeleteWorkoutsResponse) Reset() {
 	*x = DeleteWorkoutsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[43]
+	mi := &file_plans_v1_plans_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5014,7 +5632,7 @@ func (x *DeleteWorkoutsResponse) String() string {
 func (*DeleteWorkoutsResponse) ProtoMessage() {}
 
 func (x *DeleteWorkoutsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[43]
+	mi := &file_plans_v1_plans_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5047,7 +5665,7 @@ type SetStrengthLogRequest struct {
 
 func (x *SetStrengthLogRequest) Reset() {
 	*x = SetStrengthLogRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[44]
+	mi := &file_plans_v1_plans_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5059,7 +5677,7 @@ func (x *SetStrengthLogRequest) String() string {
 func (*SetStrengthLogRequest) ProtoMessage() {}
 
 func (x *SetStrengthLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[44]
+	mi := &file_plans_v1_plans_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5130,7 +5748,7 @@ type SetStrengthLogResponse struct {
 
 func (x *SetStrengthLogResponse) Reset() {
 	*x = SetStrengthLogResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[45]
+	mi := &file_plans_v1_plans_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5142,7 +5760,7 @@ func (x *SetStrengthLogResponse) String() string {
 func (*SetStrengthLogResponse) ProtoMessage() {}
 
 func (x *SetStrengthLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[45]
+	mi := &file_plans_v1_plans_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5199,7 +5817,7 @@ type DeleteStrengthLogRequest struct {
 
 func (x *DeleteStrengthLogRequest) Reset() {
 	*x = DeleteStrengthLogRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[46]
+	mi := &file_plans_v1_plans_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5211,7 +5829,7 @@ func (x *DeleteStrengthLogRequest) String() string {
 func (*DeleteStrengthLogRequest) ProtoMessage() {}
 
 func (x *DeleteStrengthLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[46]
+	mi := &file_plans_v1_plans_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5256,7 +5874,7 @@ type DeleteStrengthLogResponse struct {
 
 func (x *DeleteStrengthLogResponse) Reset() {
 	*x = DeleteStrengthLogResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[47]
+	mi := &file_plans_v1_plans_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5268,7 +5886,7 @@ func (x *DeleteStrengthLogResponse) String() string {
 func (*DeleteStrengthLogResponse) ProtoMessage() {}
 
 func (x *DeleteStrengthLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[47]
+	mi := &file_plans_v1_plans_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5339,7 +5957,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x04rest\x18\x11 \x01(\v2\x11.plans.v1.RestDayH\x00R\x04restB\t\n" +
 	"\adetailsJ\x04\b\a\x10\bJ\x04\b\b\x10\tJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
-	"\x10\vJ\x04\b\v\x10\fR\x16target_distance_metersR\x1ctarget_elevation_gain_metersR\x17target_duration_secondsR\x0etarget_terrainR\broute_id\"\xc4\x02\n" +
+	"\x10\vJ\x04\b\v\x10\fR\x16target_distance_metersR\x1ctarget_elevation_gain_metersR\x17target_duration_secondsR\x0etarget_terrainR\broute_id\"\xf0\x02\n" +
 	"\n" +
 	"RunWorkout\x124\n" +
 	"\tintensity\x18\x01 \x01(\x0e2\x16.plans.v1.RunIntensityR\tintensity\x124\n" +
@@ -5347,7 +5965,28 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x1ctarget_elevation_gain_meters\x18\x03 \x01(\x01R\x19targetElevationGainMeters\x126\n" +
 	"\x17target_duration_seconds\x18\x04 \x01(\x05R\x15targetDurationSeconds\x126\n" +
 	"\x0etarget_terrain\x18\x05 \x01(\x0e2\x0f.geo.v1.TerrainR\rtargetTerrain\x12\x19\n" +
-	"\broute_id\x18\x06 \x01(\tR\arouteId\"\xc5\x01\n" +
+	"\broute_id\x18\x06 \x01(\tR\arouteId\x12*\n" +
+	"\x06blocks\x18\a \x03(\v2\x12.plans.v1.RunBlockR\x06blocks\"M\n" +
+	"\bRunBlock\x12\x18\n" +
+	"\arepeats\x18\x01 \x01(\x05R\arepeats\x12'\n" +
+	"\x05steps\x18\x02 \x03(\v2\x11.plans.v1.RunStepR\x05steps\"\x90\x02\n" +
+	"\aRunStep\x12)\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x15.plans.v1.RunStepKindR\x04kind\x12)\n" +
+	"\x10duration_seconds\x18\x02 \x01(\x05R\x0fdurationSeconds\x12'\n" +
+	"\x0fdistance_meters\x18\x03 \x01(\x01R\x0edistanceMeters\x12:\n" +
+	"\n" +
+	"heart_rate\x18\x04 \x01(\v2\x19.plans.v1.HeartRateTargetH\x00R\theartRate\x12*\n" +
+	"\x04pace\x18\x05 \x01(\v2\x14.plans.v1.PaceTargetH\x00R\x04pace\x12\x14\n" +
+	"\x05notes\x18\x06 \x01(\tR\x05notesB\b\n" +
+	"\x06target\"\x81\x01\n" +
+	"\x0fHeartRateTarget\x12:\n" +
+	"\treference\x18\x01 \x01(\x0e2\x1c.plans.v1.HeartRateReferenceR\treference\x12\x17\n" +
+	"\alow_bpm\x18\x02 \x01(\x05R\x06lowBpm\x12\x19\n" +
+	"\bhigh_bpm\x18\x03 \x01(\x05R\ahighBpm\"\x86\x01\n" +
+	"\n" +
+	"PaceTarget\x12;\n" +
+	"\x1afast_seconds_per_kilometer\x18\x01 \x01(\x05R\x17fastSecondsPerKilometer\x12;\n" +
+	"\x1aslow_seconds_per_kilometer\x18\x02 \x01(\x05R\x17slowSecondsPerKilometer\"\xc5\x01\n" +
 	"\x14CrossTrainingWorkout\x124\n" +
 	"\x16target_distance_meters\x18\x01 \x01(\x01R\x14targetDistanceMeters\x12?\n" +
 	"\x1ctarget_elevation_gain_meters\x18\x02 \x01(\x01R\x19targetElevationGainMeters\x126\n" +
@@ -5540,7 +6179,18 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\fRunIntensity\x12\x1d\n" +
 	"\x19RUN_INTENSITY_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12RUN_INTENSITY_BASE\x10\x01\x12\x16\n" +
-	"\x12RUN_INTENSITY_HARD\x10\x02*\xbd\x01\n" +
+	"\x12RUN_INTENSITY_HARD\x10\x02*\xaf\x01\n" +
+	"\vRunStepKind\x12\x1d\n" +
+	"\x19RUN_STEP_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15RUN_STEP_KIND_WARM_UP\x10\x01\x12\x15\n" +
+	"\x11RUN_STEP_KIND_RUN\x10\x02\x12\x1a\n" +
+	"\x16RUN_STEP_KIND_RECOVERY\x10\x03\x12\x16\n" +
+	"\x12RUN_STEP_KIND_REST\x10\x04\x12\x1b\n" +
+	"\x17RUN_STEP_KIND_COOL_DOWN\x10\x05*\x94\x01\n" +
+	"\x12HeartRateReference\x12$\n" +
+	" HEART_RATE_REFERENCE_UNSPECIFIED\x10\x00\x12*\n" +
+	"&HEART_RATE_REFERENCE_AEROBIC_THRESHOLD\x10\x01\x12,\n" +
+	"(HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD\x10\x02*\xbd\x01\n" +
 	"\rSessionEffort\x12\x1e\n" +
 	"\x1aSESSION_EFFORT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18SESSION_EFFORT_VERY_EASY\x10\x01\x12\x17\n" +
@@ -5584,164 +6234,176 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\fcom.plans.v1B\n" +
 	"PlansProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
-var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
+var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
 var file_plans_v1_plans_proto_goTypes = []any{
 	(PeriodGranularity)(0),             // 0: plans.v1.PeriodGranularity
 	(WorkoutType)(0),                   // 1: plans.v1.WorkoutType
 	(RunIntensity)(0),                  // 2: plans.v1.RunIntensity
-	(SessionEffort)(0),                 // 3: plans.v1.SessionEffort
-	(ExerciseEffort)(0),                // 4: plans.v1.ExerciseEffort
-	(ExerciseVolume)(0),                // 5: plans.v1.ExerciseVolume
-	(WeatherLocationSource)(0),         // 6: plans.v1.WeatherLocationSource
-	(*TrainingPlan)(nil),               // 7: plans.v1.TrainingPlan
-	(*PlanPeriod)(nil),                 // 8: plans.v1.PlanPeriod
-	(*Workout)(nil),                    // 9: plans.v1.Workout
-	(*RunWorkout)(nil),                 // 10: plans.v1.RunWorkout
-	(*CrossTrainingWorkout)(nil),       // 11: plans.v1.CrossTrainingWorkout
-	(*RaceWorkout)(nil),                // 12: plans.v1.RaceWorkout
-	(*RestDay)(nil),                    // 13: plans.v1.RestDay
-	(*StrengthWorkout)(nil),            // 14: plans.v1.StrengthWorkout
-	(*EquipmentIssue)(nil),             // 15: plans.v1.EquipmentIssue
-	(*PlannedExercise)(nil),            // 16: plans.v1.PlannedExercise
-	(*StrengthLog)(nil),                // 17: plans.v1.StrengthLog
-	(*LoggedExercise)(nil),             // 18: plans.v1.LoggedExercise
-	(*LoggedSet)(nil),                  // 19: plans.v1.LoggedSet
-	(*CreateTrainingPlanRequest)(nil),  // 20: plans.v1.CreateTrainingPlanRequest
-	(*CreateTrainingPlanResponse)(nil), // 21: plans.v1.CreateTrainingPlanResponse
-	(*GetTrainingPlanRequest)(nil),     // 22: plans.v1.GetTrainingPlanRequest
-	(*GetTrainingPlanResponse)(nil),    // 23: plans.v1.GetTrainingPlanResponse
-	(*ListTrainingPlansRequest)(nil),   // 24: plans.v1.ListTrainingPlansRequest
-	(*ListTrainingPlansResponse)(nil),  // 25: plans.v1.ListTrainingPlansResponse
-	(*UpdateTrainingPlanRequest)(nil),  // 26: plans.v1.UpdateTrainingPlanRequest
-	(*UpdateTrainingPlanResponse)(nil), // 27: plans.v1.UpdateTrainingPlanResponse
-	(*DeleteTrainingPlanRequest)(nil),  // 28: plans.v1.DeleteTrainingPlanRequest
-	(*DeleteTrainingPlanResponse)(nil), // 29: plans.v1.DeleteTrainingPlanResponse
-	(*SetPlanPeriodsRequest)(nil),      // 30: plans.v1.SetPlanPeriodsRequest
-	(*SetPlanPeriodsResponse)(nil),     // 31: plans.v1.SetPlanPeriodsResponse
-	(*DeletePlanPeriodsRequest)(nil),   // 32: plans.v1.DeletePlanPeriodsRequest
-	(*DeletePlanPeriodsResponse)(nil),  // 33: plans.v1.DeletePlanPeriodsResponse
-	(*ListWorkoutsRequest)(nil),        // 34: plans.v1.ListWorkoutsRequest
-	(*ListWorkoutsResponse)(nil),       // 35: plans.v1.ListWorkoutsResponse
-	(*GetWorkoutRequest)(nil),          // 36: plans.v1.GetWorkoutRequest
-	(*GetWorkoutResponse)(nil),         // 37: plans.v1.GetWorkoutResponse
-	(*WorkoutWeather)(nil),             // 38: plans.v1.WorkoutWeather
-	(*DayWeather)(nil),                 // 39: plans.v1.DayWeather
-	(*HourWeather)(nil),                // 40: plans.v1.HourWeather
-	(*ListWorkoutWeatherRequest)(nil),  // 41: plans.v1.ListWorkoutWeatherRequest
-	(*ListWorkoutWeatherResponse)(nil), // 42: plans.v1.ListWorkoutWeatherResponse
-	(*GetWorkoutWeatherRequest)(nil),   // 43: plans.v1.GetWorkoutWeatherRequest
-	(*GetWorkoutWeatherResponse)(nil),  // 44: plans.v1.GetWorkoutWeatherResponse
-	(*CreateWorkoutsRequest)(nil),      // 45: plans.v1.CreateWorkoutsRequest
-	(*CreateWorkoutsResponse)(nil),     // 46: plans.v1.CreateWorkoutsResponse
-	(*UpdateWorkoutRequest)(nil),       // 47: plans.v1.UpdateWorkoutRequest
-	(*UpdateWorkoutResponse)(nil),      // 48: plans.v1.UpdateWorkoutResponse
-	(*DeleteWorkoutsRequest)(nil),      // 49: plans.v1.DeleteWorkoutsRequest
-	(*DeleteWorkoutsResponse)(nil),     // 50: plans.v1.DeleteWorkoutsResponse
-	(*SetStrengthLogRequest)(nil),      // 51: plans.v1.SetStrengthLogRequest
-	(*SetStrengthLogResponse)(nil),     // 52: plans.v1.SetStrengthLogResponse
-	(*DeleteStrengthLogRequest)(nil),   // 53: plans.v1.DeleteStrengthLogRequest
-	(*DeleteStrengthLogResponse)(nil),  // 54: plans.v1.DeleteStrengthLogResponse
-	(*timestamppb.Timestamp)(nil),      // 55: google.protobuf.Timestamp
-	(*v1.LatLng)(nil),                  // 56: geo.v1.LatLng
-	(v1.Terrain)(0),                    // 57: geo.v1.Terrain
-	(Equipment)(0),                     // 58: plans.v1.Equipment
-	(*Weight)(nil),                     // 59: plans.v1.Weight
-	(*fieldmaskpb.FieldMask)(nil),      // 60: google.protobuf.FieldMask
+	(RunStepKind)(0),                   // 3: plans.v1.RunStepKind
+	(HeartRateReference)(0),            // 4: plans.v1.HeartRateReference
+	(SessionEffort)(0),                 // 5: plans.v1.SessionEffort
+	(ExerciseEffort)(0),                // 6: plans.v1.ExerciseEffort
+	(ExerciseVolume)(0),                // 7: plans.v1.ExerciseVolume
+	(WeatherLocationSource)(0),         // 8: plans.v1.WeatherLocationSource
+	(*TrainingPlan)(nil),               // 9: plans.v1.TrainingPlan
+	(*PlanPeriod)(nil),                 // 10: plans.v1.PlanPeriod
+	(*Workout)(nil),                    // 11: plans.v1.Workout
+	(*RunWorkout)(nil),                 // 12: plans.v1.RunWorkout
+	(*RunBlock)(nil),                   // 13: plans.v1.RunBlock
+	(*RunStep)(nil),                    // 14: plans.v1.RunStep
+	(*HeartRateTarget)(nil),            // 15: plans.v1.HeartRateTarget
+	(*PaceTarget)(nil),                 // 16: plans.v1.PaceTarget
+	(*CrossTrainingWorkout)(nil),       // 17: plans.v1.CrossTrainingWorkout
+	(*RaceWorkout)(nil),                // 18: plans.v1.RaceWorkout
+	(*RestDay)(nil),                    // 19: plans.v1.RestDay
+	(*StrengthWorkout)(nil),            // 20: plans.v1.StrengthWorkout
+	(*EquipmentIssue)(nil),             // 21: plans.v1.EquipmentIssue
+	(*PlannedExercise)(nil),            // 22: plans.v1.PlannedExercise
+	(*StrengthLog)(nil),                // 23: plans.v1.StrengthLog
+	(*LoggedExercise)(nil),             // 24: plans.v1.LoggedExercise
+	(*LoggedSet)(nil),                  // 25: plans.v1.LoggedSet
+	(*CreateTrainingPlanRequest)(nil),  // 26: plans.v1.CreateTrainingPlanRequest
+	(*CreateTrainingPlanResponse)(nil), // 27: plans.v1.CreateTrainingPlanResponse
+	(*GetTrainingPlanRequest)(nil),     // 28: plans.v1.GetTrainingPlanRequest
+	(*GetTrainingPlanResponse)(nil),    // 29: plans.v1.GetTrainingPlanResponse
+	(*ListTrainingPlansRequest)(nil),   // 30: plans.v1.ListTrainingPlansRequest
+	(*ListTrainingPlansResponse)(nil),  // 31: plans.v1.ListTrainingPlansResponse
+	(*UpdateTrainingPlanRequest)(nil),  // 32: plans.v1.UpdateTrainingPlanRequest
+	(*UpdateTrainingPlanResponse)(nil), // 33: plans.v1.UpdateTrainingPlanResponse
+	(*DeleteTrainingPlanRequest)(nil),  // 34: plans.v1.DeleteTrainingPlanRequest
+	(*DeleteTrainingPlanResponse)(nil), // 35: plans.v1.DeleteTrainingPlanResponse
+	(*SetPlanPeriodsRequest)(nil),      // 36: plans.v1.SetPlanPeriodsRequest
+	(*SetPlanPeriodsResponse)(nil),     // 37: plans.v1.SetPlanPeriodsResponse
+	(*DeletePlanPeriodsRequest)(nil),   // 38: plans.v1.DeletePlanPeriodsRequest
+	(*DeletePlanPeriodsResponse)(nil),  // 39: plans.v1.DeletePlanPeriodsResponse
+	(*ListWorkoutsRequest)(nil),        // 40: plans.v1.ListWorkoutsRequest
+	(*ListWorkoutsResponse)(nil),       // 41: plans.v1.ListWorkoutsResponse
+	(*GetWorkoutRequest)(nil),          // 42: plans.v1.GetWorkoutRequest
+	(*GetWorkoutResponse)(nil),         // 43: plans.v1.GetWorkoutResponse
+	(*WorkoutWeather)(nil),             // 44: plans.v1.WorkoutWeather
+	(*DayWeather)(nil),                 // 45: plans.v1.DayWeather
+	(*HourWeather)(nil),                // 46: plans.v1.HourWeather
+	(*ListWorkoutWeatherRequest)(nil),  // 47: plans.v1.ListWorkoutWeatherRequest
+	(*ListWorkoutWeatherResponse)(nil), // 48: plans.v1.ListWorkoutWeatherResponse
+	(*GetWorkoutWeatherRequest)(nil),   // 49: plans.v1.GetWorkoutWeatherRequest
+	(*GetWorkoutWeatherResponse)(nil),  // 50: plans.v1.GetWorkoutWeatherResponse
+	(*CreateWorkoutsRequest)(nil),      // 51: plans.v1.CreateWorkoutsRequest
+	(*CreateWorkoutsResponse)(nil),     // 52: plans.v1.CreateWorkoutsResponse
+	(*UpdateWorkoutRequest)(nil),       // 53: plans.v1.UpdateWorkoutRequest
+	(*UpdateWorkoutResponse)(nil),      // 54: plans.v1.UpdateWorkoutResponse
+	(*DeleteWorkoutsRequest)(nil),      // 55: plans.v1.DeleteWorkoutsRequest
+	(*DeleteWorkoutsResponse)(nil),     // 56: plans.v1.DeleteWorkoutsResponse
+	(*SetStrengthLogRequest)(nil),      // 57: plans.v1.SetStrengthLogRequest
+	(*SetStrengthLogResponse)(nil),     // 58: plans.v1.SetStrengthLogResponse
+	(*DeleteStrengthLogRequest)(nil),   // 59: plans.v1.DeleteStrengthLogRequest
+	(*DeleteStrengthLogResponse)(nil),  // 60: plans.v1.DeleteStrengthLogResponse
+	(*timestamppb.Timestamp)(nil),      // 61: google.protobuf.Timestamp
+	(*v1.LatLng)(nil),                  // 62: geo.v1.LatLng
+	(v1.Terrain)(0),                    // 63: geo.v1.Terrain
+	(Equipment)(0),                     // 64: plans.v1.Equipment
+	(*Weight)(nil),                     // 65: plans.v1.Weight
+	(*fieldmaskpb.FieldMask)(nil),      // 66: google.protobuf.FieldMask
 }
 var file_plans_v1_plans_proto_depIdxs = []int32{
-	55, // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
-	55, // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
+	61, // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
+	61, // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
 	0,  // 2: plans.v1.PlanPeriod.granularity:type_name -> plans.v1.PeriodGranularity
 	1,  // 3: plans.v1.Workout.type:type_name -> plans.v1.WorkoutType
-	56, // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
-	10, // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
-	11, // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
-	14, // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
-	12, // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
-	13, // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
+	62, // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
+	12, // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
+	17, // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
+	20, // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
+	18, // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
+	19, // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
 	2,  // 10: plans.v1.RunWorkout.intensity:type_name -> plans.v1.RunIntensity
-	57, // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
-	16, // 12: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
-	17, // 13: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
-	15, // 14: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
-	58, // 15: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
-	59, // 16: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
-	59, // 17: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
-	55, // 18: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
-	3,  // 19: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
-	18, // 20: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
-	19, // 21: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
-	4,  // 22: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
-	5,  // 23: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
-	59, // 24: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
-	7,  // 25: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	7,  // 26: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	7,  // 27: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	8,  // 28: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
-	7,  // 29: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
-	7,  // 30: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	60, // 31: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
-	7,  // 32: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	8,  // 33: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
-	8,  // 34: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
-	0,  // 35: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
-	9,  // 36: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	9,  // 37: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
-	56, // 38: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
-	6,  // 39: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
-	39, // 40: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
-	40, // 41: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
-	39, // 42: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
-	55, // 43: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
-	55, // 44: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
-	55, // 45: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
-	38, // 46: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	38, // 47: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	9,  // 48: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
-	9,  // 49: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	9,  // 50: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
-	60, // 51: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
-	9,  // 52: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
-	17, // 53: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
-	9,  // 54: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
-	20, // 55: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
-	22, // 56: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
-	24, // 57: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
-	26, // 58: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
-	28, // 59: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
-	30, // 60: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
-	32, // 61: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
-	34, // 62: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
-	36, // 63: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
-	45, // 64: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
-	47, // 65: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
-	49, // 66: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
-	51, // 67: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
-	53, // 68: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
-	41, // 69: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
-	43, // 70: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
-	21, // 71: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
-	23, // 72: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
-	25, // 73: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
-	27, // 74: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
-	29, // 75: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
-	31, // 76: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
-	33, // 77: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
-	35, // 78: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
-	37, // 79: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
-	46, // 80: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
-	48, // 81: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
-	50, // 82: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
-	52, // 83: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
-	54, // 84: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
-	42, // 85: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
-	44, // 86: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
-	71, // [71:87] is the sub-list for method output_type
-	55, // [55:71] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	63, // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
+	13, // 12: plans.v1.RunWorkout.blocks:type_name -> plans.v1.RunBlock
+	14, // 13: plans.v1.RunBlock.steps:type_name -> plans.v1.RunStep
+	3,  // 14: plans.v1.RunStep.kind:type_name -> plans.v1.RunStepKind
+	15, // 15: plans.v1.RunStep.heart_rate:type_name -> plans.v1.HeartRateTarget
+	16, // 16: plans.v1.RunStep.pace:type_name -> plans.v1.PaceTarget
+	4,  // 17: plans.v1.HeartRateTarget.reference:type_name -> plans.v1.HeartRateReference
+	22, // 18: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
+	23, // 19: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
+	21, // 20: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
+	64, // 21: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
+	65, // 22: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
+	65, // 23: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
+	61, // 24: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
+	5,  // 25: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
+	24, // 26: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
+	25, // 27: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
+	6,  // 28: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
+	7,  // 29: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
+	65, // 30: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
+	9,  // 31: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	9,  // 32: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	9,  // 33: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	10, // 34: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
+	9,  // 35: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
+	9,  // 36: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	66, // 37: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
+	9,  // 38: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	10, // 39: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
+	10, // 40: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
+	0,  // 41: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
+	11, // 42: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	11, // 43: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
+	62, // 44: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
+	8,  // 45: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
+	45, // 46: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
+	46, // 47: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
+	45, // 48: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
+	61, // 49: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
+	61, // 50: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
+	61, // 51: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
+	44, // 52: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	44, // 53: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	11, // 54: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
+	11, // 55: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	11, // 56: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
+	66, // 57: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
+	11, // 58: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
+	23, // 59: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
+	11, // 60: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
+	26, // 61: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
+	28, // 62: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
+	30, // 63: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
+	32, // 64: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
+	34, // 65: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
+	36, // 66: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
+	38, // 67: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
+	40, // 68: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
+	42, // 69: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
+	51, // 70: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
+	53, // 71: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
+	55, // 72: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
+	57, // 73: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
+	59, // 74: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
+	47, // 75: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
+	49, // 76: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
+	27, // 77: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
+	29, // 78: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
+	31, // 79: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
+	33, // 80: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
+	35, // 81: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
+	37, // 82: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
+	39, // 83: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
+	41, // 84: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
+	43, // 85: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
+	52, // 86: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
+	54, // 87: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
+	56, // 88: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
+	58, // 89: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
+	60, // 90: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
+	48, // 91: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
+	50, // 92: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
+	77, // [77:93] is the sub-list for method output_type
+	61, // [61:77] is the sub-list for method input_type
+	61, // [61:61] is the sub-list for extension type_name
+	61, // [61:61] is the sub-list for extension extendee
+	0,  // [0:61] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_plans_proto_init() }
@@ -5757,13 +6419,17 @@ func file_plans_v1_plans_proto_init() {
 		(*workout_Race)(nil),
 		(*workout_Rest)(nil),
 	}
+	file_plans_v1_plans_proto_msgTypes[5].OneofWrappers = []any{
+		(*runStep_HeartRate)(nil),
+		(*runStep_Pace)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_plans_proto_rawDesc), len(file_plans_v1_plans_proto_rawDesc)),
-			NumEnums:      7,
-			NumMessages:   48,
+			NumEnums:      9,
+			NumMessages:   52,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

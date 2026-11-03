@@ -1739,6 +1739,7 @@ type Workout struct {
 	LocationLat               pgtype.Float8
 	LocationLng               pgtype.Float8
 	LocationName              string
+	RunBlocks                 json.RawMessage
 }
 
 type WorkoutExercise struct {
