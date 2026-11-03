@@ -1735,6 +1735,9 @@ type Workout struct {
 	CreateTime                pgtype.Timestamptz
 	StartTime                 pgtype.Time
 	StartWindowMinutes        int32
+	LocationLat               pgtype.Float8
+	LocationLng               pgtype.Float8
+	LocationName              string
 }
 
 type WorkoutExercise struct {

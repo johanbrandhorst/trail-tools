@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
 	"github.com/johanbrandhorst/trail-tools/internal/services/route"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
@@ -190,6 +192,10 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 		CompletedActivityId: store.UUIDToString(w.CompletedActivityID),
 		StartTime:           w.StartTime,
 		StartWindowMinutes:  w.StartWindowMinutes,
+		LocationName:        w.LocationName,
+	}
+	if w.Location != nil {
+		b.Location = geov1.LatLng_builder{Lat: w.Location.Lat, Lng: w.Location.Lng}.Build()
 	}
 	switch w.Type {
 	case plans.WorkoutTypeBase, plans.WorkoutTypeIntensity:
@@ -399,5 +405,27 @@ func startWindowFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 	}
 	workout.StartTime = parsed.Format("15:04")
 	workout.StartWindowMinutes = window
+	return nil
+}
+
+// maxLocationNameLength is the most characters a workout's location name
+// can have.
+const maxLocationNameLength = 100
+
+// locationFromProto sets where a workout starts.
+func locationFromProto(w *plansv1.Workout, workout *plans.Workout) error {
+	name := strings.TrimSpace(w.GetLocationName())
+	if len([]rune(name)) > maxLocationNameLength {
+		return invalidArgument("location_name must be at most %d characters", maxLocationNameLength)
+	}
+	workout.LocationName = name
+	if !w.HasLocation() {
+		return nil
+	}
+	lat, lng := w.GetLocation().GetLat(), w.GetLocation().GetLng()
+	if lat < -90 || lat > 90 || lng < -180 || lng > 180 || (lat == 0 && lng == 0) {
+		return invalidArgument("location must be a latitude from -90 to 90 and a longitude from -180 to 180")
+	}
+	workout.Location = &geo.Point{Lat: lat, Lng: lng}
 	return nil
 }

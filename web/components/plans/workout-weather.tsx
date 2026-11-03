@@ -74,10 +74,19 @@ export const WeatherBadge: React.FC<{ day: DayWeather }> = ({ day }) => (
   </span>
 );
 
-const locationLabel = (source: WeatherLocationSource): string =>
-  source === WeatherLocationSource.ROUTE_START
-    ? "At the start of the route."
-    : "Where your latest activity started. Add a route for the forecast where you'll run.";
+const locationLabel = (source: WeatherLocationSource): string => {
+  switch (source) {
+    case WeatherLocationSource.WORKOUT_LOCATION: {
+      return "At the workout's location.";
+    }
+    case WeatherLocationSource.ROUTE_START: {
+      return "At the start of the route.";
+    }
+    default: {
+      return "Where your latest activity started. Add a route for the forecast where you'll run.";
+    }
+  }
+};
 
 // FormatHour formats the hour of a time, e.g. "7 AM" or "07".
 const formatHour = (time: Timestamp | undefined): string =>
