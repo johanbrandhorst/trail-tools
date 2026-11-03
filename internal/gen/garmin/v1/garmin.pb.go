@@ -538,6 +538,462 @@ func (b0 DisconnectGarminResponse_builder) Build() *DisconnectGarminResponse {
 	return m0
 }
 
+// Whether a route is on the user's Garmin account as a course.
+type RouteGarminStatus struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_OnGarmin bool                   `protobuf:"varint,1,opt,name=on_garmin,json=onGarmin,proto3"`
+	xxx_hidden_Sent     bool                   `protobuf:"varint,2,opt,name=sent,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *RouteGarminStatus) Reset() {
+	*x = RouteGarminStatus{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RouteGarminStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RouteGarminStatus) ProtoMessage() {}
+
+func (x *RouteGarminStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RouteGarminStatus) GetOnGarmin() bool {
+	if x != nil {
+		return x.xxx_hidden_OnGarmin
+	}
+	return false
+}
+
+func (x *RouteGarminStatus) GetSent() bool {
+	if x != nil {
+		return x.xxx_hidden_Sent
+	}
+	return false
+}
+
+func (x *RouteGarminStatus) SetOnGarmin(v bool) {
+	x.xxx_hidden_OnGarmin = v
+}
+
+func (x *RouteGarminStatus) SetSent(v bool) {
+	x.xxx_hidden_Sent = v
+}
+
+type RouteGarminStatus_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whether the route's course is on Garmin, sent by the user or for an
+	// upcoming workout.
+	OnGarmin bool
+	// Whether the user sent it, so it stays until they remove it.
+	Sent bool
+}
+
+func (b0 RouteGarminStatus_builder) Build() *RouteGarminStatus {
+	m0 := &RouteGarminStatus{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_OnGarmin = b.OnGarmin
+	x.xxx_hidden_Sent = b.Sent
+	return m0
+}
+
+type SendRouteToGarminRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RouteId string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SendRouteToGarminRequest) Reset() {
+	*x = SendRouteToGarminRequest{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendRouteToGarminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendRouteToGarminRequest) ProtoMessage() {}
+
+func (x *SendRouteToGarminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SendRouteToGarminRequest) GetRouteId() string {
+	if x != nil {
+		return x.xxx_hidden_RouteId
+	}
+	return ""
+}
+
+func (x *SendRouteToGarminRequest) SetRouteId(v string) {
+	x.xxx_hidden_RouteId = v
+}
+
+type SendRouteToGarminRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the route.
+	RouteId string
+}
+
+func (b0 SendRouteToGarminRequest_builder) Build() *SendRouteToGarminRequest {
+	m0 := &SendRouteToGarminRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_RouteId = b.RouteId
+	return m0
+}
+
+type SendRouteToGarminResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Status *RouteGarminStatus     `protobuf:"bytes,1,opt,name=status,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SendRouteToGarminResponse) Reset() {
+	*x = SendRouteToGarminResponse{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendRouteToGarminResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendRouteToGarminResponse) ProtoMessage() {}
+
+func (x *SendRouteToGarminResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SendRouteToGarminResponse) GetStatus() *RouteGarminStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *SendRouteToGarminResponse) SetStatus(v *RouteGarminStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *SendRouteToGarminResponse) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *SendRouteToGarminResponse) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type SendRouteToGarminResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The route's status after sending it.
+	Status *RouteGarminStatus
+}
+
+func (b0 SendRouteToGarminResponse_builder) Build() *SendRouteToGarminResponse {
+	m0 := &SendRouteToGarminResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Status = b.Status
+	return m0
+}
+
+type RemoveRouteFromGarminRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RouteId string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *RemoveRouteFromGarminRequest) Reset() {
+	*x = RemoveRouteFromGarminRequest{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveRouteFromGarminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveRouteFromGarminRequest) ProtoMessage() {}
+
+func (x *RemoveRouteFromGarminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RemoveRouteFromGarminRequest) GetRouteId() string {
+	if x != nil {
+		return x.xxx_hidden_RouteId
+	}
+	return ""
+}
+
+func (x *RemoveRouteFromGarminRequest) SetRouteId(v string) {
+	x.xxx_hidden_RouteId = v
+}
+
+type RemoveRouteFromGarminRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the route.
+	RouteId string
+}
+
+func (b0 RemoveRouteFromGarminRequest_builder) Build() *RemoveRouteFromGarminRequest {
+	m0 := &RemoveRouteFromGarminRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_RouteId = b.RouteId
+	return m0
+}
+
+type RemoveRouteFromGarminResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Status *RouteGarminStatus     `protobuf:"bytes,1,opt,name=status,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *RemoveRouteFromGarminResponse) Reset() {
+	*x = RemoveRouteFromGarminResponse{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveRouteFromGarminResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveRouteFromGarminResponse) ProtoMessage() {}
+
+func (x *RemoveRouteFromGarminResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RemoveRouteFromGarminResponse) GetStatus() *RouteGarminStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *RemoveRouteFromGarminResponse) SetStatus(v *RouteGarminStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *RemoveRouteFromGarminResponse) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *RemoveRouteFromGarminResponse) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type RemoveRouteFromGarminResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The route's status after removing it.
+	Status *RouteGarminStatus
+}
+
+func (b0 RemoveRouteFromGarminResponse_builder) Build() *RemoveRouteFromGarminResponse {
+	m0 := &RemoveRouteFromGarminResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Status = b.Status
+	return m0
+}
+
+type GetRouteGarminStatusRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RouteId string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GetRouteGarminStatusRequest) Reset() {
+	*x = GetRouteGarminStatusRequest{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRouteGarminStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRouteGarminStatusRequest) ProtoMessage() {}
+
+func (x *GetRouteGarminStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetRouteGarminStatusRequest) GetRouteId() string {
+	if x != nil {
+		return x.xxx_hidden_RouteId
+	}
+	return ""
+}
+
+func (x *GetRouteGarminStatusRequest) SetRouteId(v string) {
+	x.xxx_hidden_RouteId = v
+}
+
+type GetRouteGarminStatusRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the route.
+	RouteId string
+}
+
+func (b0 GetRouteGarminStatusRequest_builder) Build() *GetRouteGarminStatusRequest {
+	m0 := &GetRouteGarminStatusRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_RouteId = b.RouteId
+	return m0
+}
+
+type GetRouteGarminStatusResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Status *RouteGarminStatus     `protobuf:"bytes,1,opt,name=status,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetRouteGarminStatusResponse) Reset() {
+	*x = GetRouteGarminStatusResponse{}
+	mi := &file_garmin_v1_garmin_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRouteGarminStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRouteGarminStatusResponse) ProtoMessage() {}
+
+func (x *GetRouteGarminStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_garmin_v1_garmin_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetRouteGarminStatusResponse) GetStatus() *RouteGarminStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *GetRouteGarminStatusResponse) SetStatus(v *RouteGarminStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *GetRouteGarminStatusResponse) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *GetRouteGarminStatusResponse) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type GetRouteGarminStatusResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The route's status.
+	Status *RouteGarminStatus
+}
+
+func (b0 GetRouteGarminStatusResponse_builder) Build() *GetRouteGarminStatusResponse {
+	m0 := &GetRouteGarminStatusResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Status = b.Status
+	return m0
+}
+
 var File_garmin_v1_garmin_proto protoreflect.FileDescriptor
 
 const file_garmin_v1_garmin_proto_rawDesc = "" +
@@ -568,41 +1024,75 @@ const file_garmin_v1_garmin_proto_rawDesc = "" +
 	"connection\x18\x01 \x01(\v2\x1b.garmin.v1.GarminConnectionR\n" +
 	"connection\"\x19\n" +
 	"\x17DisconnectGarminRequest\"\x1a\n" +
-	"\x18DisconnectGarminResponse2\xa5\x02\n" +
+	"\x18DisconnectGarminResponse\"D\n" +
+	"\x11RouteGarminStatus\x12\x1b\n" +
+	"\ton_garmin\x18\x01 \x01(\bR\bonGarmin\x12\x12\n" +
+	"\x04sent\x18\x02 \x01(\bR\x04sent\"5\n" +
+	"\x18SendRouteToGarminRequest\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\"Q\n" +
+	"\x19SendRouteToGarminResponse\x124\n" +
+	"\x06status\x18\x01 \x01(\v2\x1c.garmin.v1.RouteGarminStatusR\x06status\"9\n" +
+	"\x1cRemoveRouteFromGarminRequest\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\"U\n" +
+	"\x1dRemoveRouteFromGarminResponse\x124\n" +
+	"\x06status\x18\x01 \x01(\v2\x1c.garmin.v1.RouteGarminStatusR\x06status\"8\n" +
+	"\x1bGetRouteGarminStatusRequest\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\"T\n" +
+	"\x1cGetRouteGarminStatusResponse\x124\n" +
+	"\x06status\x18\x01 \x01(\v2\x1c.garmin.v1.RouteGarminStatusR\x06status2\xda\x04\n" +
 	"\rGarminService\x12d\n" +
 	"\x13GetGarminConnection\x12%.garmin.v1.GetGarminConnectionRequest\x1a&.garmin.v1.GetGarminConnectionResponse\x12I\n" +
 	"\n" +
 	"SyncGarmin\x12\x1c.garmin.v1.SyncGarminRequest\x1a\x1d.garmin.v1.SyncGarminResponse\x12c\n" +
-	"\x10DisconnectGarmin\x12\".garmin.v1.DisconnectGarminRequest\x1a#.garmin.v1.DisconnectGarminResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa9\x01\n" +
+	"\x10DisconnectGarmin\x12\".garmin.v1.DisconnectGarminRequest\x1a#.garmin.v1.DisconnectGarminResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12^\n" +
+	"\x11SendRouteToGarmin\x12#.garmin.v1.SendRouteToGarminRequest\x1a$.garmin.v1.SendRouteToGarminResponse\x12j\n" +
+	"\x15RemoveRouteFromGarmin\x12'.garmin.v1.RemoveRouteFromGarminRequest\x1a(.garmin.v1.RemoveRouteFromGarminResponse\x12g\n" +
+	"\x14GetRouteGarminStatus\x12&.garmin.v1.GetRouteGarminStatusRequest\x1a'.garmin.v1.GetRouteGarminStatusResponseB\xa9\x01\n" +
 	"\rcom.garmin.v1B\vGarminProtoP\x01ZFgithub.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1;garminv1\xa2\x02\x03GXX\xaa\x02\tGarmin.V1\xca\x02\tGarmin\\V1\xe2\x02\x15Garmin\\V1\\GPBMetadata\xea\x02\n" +
 	"Garmin::V1b\x06proto3"
 
-var file_garmin_v1_garmin_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_garmin_v1_garmin_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_garmin_v1_garmin_proto_goTypes = []any{
-	(*GarminConnection)(nil),            // 0: garmin.v1.GarminConnection
-	(*GetGarminConnectionRequest)(nil),  // 1: garmin.v1.GetGarminConnectionRequest
-	(*GetGarminConnectionResponse)(nil), // 2: garmin.v1.GetGarminConnectionResponse
-	(*SyncGarminRequest)(nil),           // 3: garmin.v1.SyncGarminRequest
-	(*SyncGarminResponse)(nil),          // 4: garmin.v1.SyncGarminResponse
-	(*DisconnectGarminRequest)(nil),     // 5: garmin.v1.DisconnectGarminRequest
-	(*DisconnectGarminResponse)(nil),    // 6: garmin.v1.DisconnectGarminResponse
-	(*timestamppb.Timestamp)(nil),       // 7: google.protobuf.Timestamp
+	(*GarminConnection)(nil),              // 0: garmin.v1.GarminConnection
+	(*GetGarminConnectionRequest)(nil),    // 1: garmin.v1.GetGarminConnectionRequest
+	(*GetGarminConnectionResponse)(nil),   // 2: garmin.v1.GetGarminConnectionResponse
+	(*SyncGarminRequest)(nil),             // 3: garmin.v1.SyncGarminRequest
+	(*SyncGarminResponse)(nil),            // 4: garmin.v1.SyncGarminResponse
+	(*DisconnectGarminRequest)(nil),       // 5: garmin.v1.DisconnectGarminRequest
+	(*DisconnectGarminResponse)(nil),      // 6: garmin.v1.DisconnectGarminResponse
+	(*RouteGarminStatus)(nil),             // 7: garmin.v1.RouteGarminStatus
+	(*SendRouteToGarminRequest)(nil),      // 8: garmin.v1.SendRouteToGarminRequest
+	(*SendRouteToGarminResponse)(nil),     // 9: garmin.v1.SendRouteToGarminResponse
+	(*RemoveRouteFromGarminRequest)(nil),  // 10: garmin.v1.RemoveRouteFromGarminRequest
+	(*RemoveRouteFromGarminResponse)(nil), // 11: garmin.v1.RemoveRouteFromGarminResponse
+	(*GetRouteGarminStatusRequest)(nil),   // 12: garmin.v1.GetRouteGarminStatusRequest
+	(*GetRouteGarminStatusResponse)(nil),  // 13: garmin.v1.GetRouteGarminStatusResponse
+	(*timestamppb.Timestamp)(nil),         // 14: google.protobuf.Timestamp
 }
 var file_garmin_v1_garmin_proto_depIdxs = []int32{
-	7, // 0: garmin.v1.GarminConnection.workouts_sync_time:type_name -> google.protobuf.Timestamp
-	0, // 1: garmin.v1.GetGarminConnectionResponse.connection:type_name -> garmin.v1.GarminConnection
-	0, // 2: garmin.v1.SyncGarminResponse.connection:type_name -> garmin.v1.GarminConnection
-	1, // 3: garmin.v1.GarminService.GetGarminConnection:input_type -> garmin.v1.GetGarminConnectionRequest
-	3, // 4: garmin.v1.GarminService.SyncGarmin:input_type -> garmin.v1.SyncGarminRequest
-	5, // 5: garmin.v1.GarminService.DisconnectGarmin:input_type -> garmin.v1.DisconnectGarminRequest
-	2, // 6: garmin.v1.GarminService.GetGarminConnection:output_type -> garmin.v1.GetGarminConnectionResponse
-	4, // 7: garmin.v1.GarminService.SyncGarmin:output_type -> garmin.v1.SyncGarminResponse
-	6, // 8: garmin.v1.GarminService.DisconnectGarmin:output_type -> garmin.v1.DisconnectGarminResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	14, // 0: garmin.v1.GarminConnection.workouts_sync_time:type_name -> google.protobuf.Timestamp
+	0,  // 1: garmin.v1.GetGarminConnectionResponse.connection:type_name -> garmin.v1.GarminConnection
+	0,  // 2: garmin.v1.SyncGarminResponse.connection:type_name -> garmin.v1.GarminConnection
+	7,  // 3: garmin.v1.SendRouteToGarminResponse.status:type_name -> garmin.v1.RouteGarminStatus
+	7,  // 4: garmin.v1.RemoveRouteFromGarminResponse.status:type_name -> garmin.v1.RouteGarminStatus
+	7,  // 5: garmin.v1.GetRouteGarminStatusResponse.status:type_name -> garmin.v1.RouteGarminStatus
+	1,  // 6: garmin.v1.GarminService.GetGarminConnection:input_type -> garmin.v1.GetGarminConnectionRequest
+	3,  // 7: garmin.v1.GarminService.SyncGarmin:input_type -> garmin.v1.SyncGarminRequest
+	5,  // 8: garmin.v1.GarminService.DisconnectGarmin:input_type -> garmin.v1.DisconnectGarminRequest
+	8,  // 9: garmin.v1.GarminService.SendRouteToGarmin:input_type -> garmin.v1.SendRouteToGarminRequest
+	10, // 10: garmin.v1.GarminService.RemoveRouteFromGarmin:input_type -> garmin.v1.RemoveRouteFromGarminRequest
+	12, // 11: garmin.v1.GarminService.GetRouteGarminStatus:input_type -> garmin.v1.GetRouteGarminStatusRequest
+	2,  // 12: garmin.v1.GarminService.GetGarminConnection:output_type -> garmin.v1.GetGarminConnectionResponse
+	4,  // 13: garmin.v1.GarminService.SyncGarmin:output_type -> garmin.v1.SyncGarminResponse
+	6,  // 14: garmin.v1.GarminService.DisconnectGarmin:output_type -> garmin.v1.DisconnectGarminResponse
+	9,  // 15: garmin.v1.GarminService.SendRouteToGarmin:output_type -> garmin.v1.SendRouteToGarminResponse
+	11, // 16: garmin.v1.GarminService.RemoveRouteFromGarmin:output_type -> garmin.v1.RemoveRouteFromGarminResponse
+	13, // 17: garmin.v1.GarminService.GetRouteGarminStatus:output_type -> garmin.v1.GetRouteGarminStatusResponse
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_garmin_v1_garmin_proto_init() }
@@ -616,7 +1106,7 @@ func file_garmin_v1_garmin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_garmin_v1_garmin_proto_rawDesc), len(file_garmin_v1_garmin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

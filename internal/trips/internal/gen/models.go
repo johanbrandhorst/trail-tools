@@ -1105,6 +1105,7 @@ type GarminCourse struct {
 	GarminCourseID int64
 	ContentHash    string
 	CreateTime     pgtype.Timestamptz
+	Sent           bool
 }
 
 type GarminNotification struct {

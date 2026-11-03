@@ -28,3 +28,30 @@ export const syncGarmin = GarminService.method.syncGarmin;
  * @generated from rpc garmin.v1.GarminService.DisconnectGarmin
  */
 export const disconnectGarmin = GarminService.method.disconnectGarmin;
+
+/**
+ * Put a route on the user's Garmin account as a course now, for their
+ * watch to navigate, whether or not a workout runs it. It stays there,
+ * updated when the route changes, until it's removed with
+ * RemoveRouteFromGarmin. Garmin syncs it to the watch. Fails with
+ * FAILED_PRECONDITION without a Garmin connection that allows courses.
+ *
+ * @generated from rpc garmin.v1.GarminService.SendRouteToGarmin
+ */
+export const sendRouteToGarmin = GarminService.method.sendRouteToGarmin;
+
+/**
+ * Remove a route sent with SendRouteToGarmin from the user's Garmin
+ * account. The route of an upcoming workout stays until the workout is
+ * past.
+ *
+ * @generated from rpc garmin.v1.GarminService.RemoveRouteFromGarmin
+ */
+export const removeRouteFromGarmin = GarminService.method.removeRouteFromGarmin;
+
+/**
+ * Get whether a route is on the user's Garmin account as a course.
+ *
+ * @generated from rpc garmin.v1.GarminService.GetRouteGarminStatus
+ */
+export const getRouteGarminStatus = GarminService.method.getRouteGarminStatus;
