@@ -108,7 +108,7 @@ func TestOAuthCallback(t *testing.T) {
 	report := errreport.NewLocal(log)
 	client := &fakeOAuthClient{}
 	repo := &fakeConnectionRepo{}
-	o := NewOAuth(log, report, client, repo, NewSyncer(log, report, client, repo, nil, nil, nil), []byte("secret"))
+	o := NewOAuth(log, report, client, repo, NewSyncer(log, report, client, repo, nil, nil, nil, nil), []byte("secret"))
 	userID, err := store.StringToUUID("8f6c1f54-4b1e-4f4e-9a0e-2f0b0a8f6c1f")
 	if err != nil {
 		t.Fatal(err)

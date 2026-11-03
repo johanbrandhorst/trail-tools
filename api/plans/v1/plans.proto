@@ -244,6 +244,95 @@ message RunWorkout {
   geo.v1.Terrain target_terrain = 5;
   // The ID of the route to run, if any. See RouteService.
   string route_id = 6;
+  // The structure of the run, in order: e.g. a warm-up, 6 x (3 minutes
+  // hard, 2 minutes easy) and a cool-down. Empty for a run without
+  // structure, like an easy run. Garmin watches guide the steps and alert
+  // outside their targets. At most 20 blocks, and 50 steps in all, counting
+  // each block's steps once however often it's repeated.
+  repeated RunBlock blocks = 7;
+}
+
+// A block of a structured run: its steps, done once or repeated.
+message RunBlock {
+  // How often the steps are done, e.g. 6 for 6 x (3 minutes hard, 2
+  // minutes easy). From 1 to 50; 0 means 1.
+  int32 repeats = 1;
+  // The steps, in order. At least one.
+  repeated RunStep steps = 2;
+}
+
+// RunStepKind is what a step of a structured run is.
+enum RunStepKind {
+  RUN_STEP_KIND_UNSPECIFIED = 0;
+  // Warming up.
+  RUN_STEP_KIND_WARM_UP = 1;
+  // Running, e.g. an interval or a steady section.
+  RUN_STEP_KIND_RUN = 2;
+  // Easy running or walking between hard steps.
+  RUN_STEP_KIND_RECOVERY = 3;
+  // Standing still.
+  RUN_STEP_KIND_REST = 4;
+  // Cooling down.
+  RUN_STEP_KIND_COOL_DOWN = 5;
+}
+
+// A step of a structured run. A step lasts duration_seconds or
+// distance_meters, or until the lap button is pressed if neither is set.
+message RunStep {
+  // What the step is. Required.
+  RunStepKind kind = 1;
+  // How long the step lasts in seconds. 0 if it's a distance, or until the
+  // lap button.
+  int32 duration_seconds = 2;
+  // How far the step goes in meters. 0 if it's a time, or until the lap
+  // button.
+  double distance_meters = 3;
+  // The intensity to hold, if any.
+  oneof target {
+    // A heart rate range.
+    HeartRateTarget heart_rate = 4;
+    // A pace range.
+    PaceTarget pace = 5;
+  }
+  // A short cue for the step, e.g. "Uphill, strong but relaxed". Empty if
+  // none.
+  string notes = 6;
+}
+
+// HeartRateReference is what a heart rate target's range is measured from.
+enum HeartRateReference {
+  // Beats per minute.
+  HEART_RATE_REFERENCE_UNSPECIFIED = 0;
+  // Beats per minute from the user's aerobic threshold, from their latest
+  // lactate test that found it. See LactateTestService.
+  HEART_RATE_REFERENCE_AEROBIC_THRESHOLD = 1;
+  // Beats per minute from the user's anaerobic threshold, from their
+  // latest lactate test that found it.
+  HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD = 2;
+}
+
+// A heart rate range to hold. With a threshold reference, the range is
+// relative to it and follows it as new lactate tests move it, e.g. -15 to 0
+// for easy running below the aerobic threshold, or -5 to 3 for intervals at
+// the anaerobic threshold.
+message HeartRateTarget {
+  // What low_bpm and high_bpm are measured from; unspecified for beats per
+  // minute.
+  HeartRateReference reference = 1;
+  // The bottom of the range, in beats per minute, or from the threshold.
+  int32 low_bpm = 2;
+  // The top of the range, in beats per minute, or from the threshold. At
+  // least low_bpm.
+  int32 high_bpm = 3;
+}
+
+// A pace range to hold.
+message PaceTarget {
+  // The fastest pace, in seconds per kilometer, e.g. 270 for 4:30/km.
+  int32 fast_seconds_per_kilometer = 1;
+  // The slowest pace, in seconds per kilometer. At least
+  // fast_seconds_per_kilometer.
+  int32 slow_seconds_per_kilometer = 2;
 }
 
 // Cycling, swimming, skiing or other non-running cardio. The workout's title

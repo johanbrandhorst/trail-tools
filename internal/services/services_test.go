@@ -211,7 +211,7 @@ func newEnv(t *testing.T) *env {
 	// Notifications are handled when tests say, as by the scheduled
 	// sync the trigger runs.
 	e.garminTrigger = &fakeTrigger{}
-	e.garminSyncer = garminsvc.NewSyncer(log, report, e.garmin, activityRepo, planRepo, routeRepo, e.garminTrigger)
+	e.garminSyncer = garminsvc.NewSyncer(log, report, e.garmin, activityRepo, planRepo, routeRepo, lactateRepo, e.garminTrigger)
 	planService.OnWorkoutsChanged(e.garminSyncer.WorkoutsChanged)
 	garminService := garminsvc.NewService(report, activityRepo, e.garminSyncer)
 	raceService := race.NewService(log, report, raceRepo, routeRepo)

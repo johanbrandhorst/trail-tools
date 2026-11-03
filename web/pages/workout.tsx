@@ -3,6 +3,7 @@ import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import Loading from "@components/loading";
 import { FitBounds, PointMarker, PolylineLayer } from "@components/map/layers";
 import MapView from "@components/map/map-view";
+import RunSteps from "@components/plans/run-steps";
 import WorkoutDialog from "@components/plans/workout-dialog";
 import { WeatherForecast } from "@components/plans/workout-weather";
 import { toTuples } from "@components/routes/route-geometry";
@@ -421,6 +422,10 @@ const WorkoutPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="flex min-w-0 flex-col gap-4">
           <Goal workout={workout} />
+          {workout.details.case === "run" &&
+            workout.details.value.blocks.length > 0 && (
+              <RunSteps blocks={workout.details.value.blocks} />
+            )}
           {workout.details.case === "strength" && (
             <StrengthWorkoutView
               workout={workout}

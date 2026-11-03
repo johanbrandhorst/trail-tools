@@ -107,6 +107,9 @@ type Workout struct {
 	// without elevation.
 	Location     *geo.Point
 	LocationName string
+	// The structure of a run, in order. Nil for runs without structure and
+	// other workouts.
+	RunBlocks []RunBlock
 	// The exercises of a strength workout, in order. Nil for other types.
 	Exercises []*PlannedExercise
 	// The exercises the user lacks equipment for, computed when reading.
@@ -380,6 +383,7 @@ func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.U
 		params.LocationLats = append(params.LocationLats, location.Lat)
 		params.LocationLngs = append(params.LocationLngs, location.Lng)
 		params.LocationNames = append(params.LocationNames, w.LocationName)
+		params.RunBlocks = append(params.RunBlocks, runBlocksToDB(w.RunBlocks))
 	}
 	var wr workoutReader
 	err := r.db.Transact(ctx, func(b *store.Batch) error {
@@ -499,6 +503,7 @@ func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *W
 				LocationLat:               locationToDB(w.Location, func(p geo.Point) float64 { return p.Lat }),
 				LocationLng:               locationToDB(w.Location, func(p geo.Point) float64 { return p.Lng }),
 				LocationName:              w.LocationName,
+				RunBlocks:                 runBlocksToDB(w.RunBlocks),
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
 				return store.ErrNotFound
@@ -630,6 +635,7 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		StartTime:                 startTimeFromDB(w.StartTime),
 		StartWindowMinutes:        w.StartWindowMinutes,
 		LocationName:              w.LocationName,
+		RunBlocks:                 runBlocksFromDB(w.RunBlocks),
 	}
 	if w.LocationLat.Valid && w.LocationLng.Valid {
 		workout.Location = &geo.Point{Lat: w.LocationLat.Float64, Lng: w.LocationLng.Float64}

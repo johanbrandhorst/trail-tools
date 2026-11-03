@@ -83,7 +83,8 @@ insert into workouts (
   start_window_minutes,
   location_lat,
   location_lng,
-  location_name
+  location_name,
+  run_blocks
 )
 select
   w.id,
@@ -102,7 +103,8 @@ select
   w.start_window_minutes,
   case when w.has_location then w.location_lat end,
   case when w.has_location then w.location_lng end,
-  w.location_name
+  w.location_name,
+  nullif(w.run_blocks, '')::jsonb
 from (
   select
     unnest(sqlc.arg(ids)::uuid[]) as id,
@@ -124,7 +126,9 @@ from (
     unnest(sqlc.arg(has_locations)::boolean[]) as has_location,
     unnest(sqlc.arg(location_lats)::double precision[]) as location_lat,
     unnest(sqlc.arg(location_lngs)::double precision[]) as location_lng,
-    unnest(sqlc.arg(location_names)::text[]) as location_name
+    unnest(sqlc.arg(location_names)::text[]) as location_name,
+    -- Empty for runs without structure.
+    unnest(sqlc.arg(run_blocks)::text[]) as run_blocks
 ) w
 returning *;
 
@@ -170,7 +174,8 @@ update workouts set
   start_window_minutes = $13,
   location_lat = sqlc.narg(location_lat),
   location_lng = sqlc.narg(location_lng),
-  location_name = sqlc.arg(location_name)
+  location_name = sqlc.arg(location_name),
+  run_blocks = nullif(sqlc.arg(run_blocks)::text, '')::jsonb
 where id = $1
 returning *;
 

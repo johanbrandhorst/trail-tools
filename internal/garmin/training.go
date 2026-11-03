@@ -69,7 +69,11 @@ type WorkoutStep struct {
 	// "TIME" in seconds, "DISTANCE" in meters, "REPS" or "OPEN".
 	DurationType  string  `json:"durationType,omitempty"`
 	DurationValue float64 `json:"durationValue,omitempty"`
-	TargetType    string  `json:"targetType,omitempty"`
+	// "OPEN", "HEART_RATE" in beats per minute, or "PACE" in meters per
+	// second, between TargetValueLow and TargetValueHigh.
+	TargetType      string  `json:"targetType,omitempty"`
+	TargetValueLow  float64 `json:"targetValueLow,omitempty"`
+	TargetValueHigh float64 `json:"targetValueHigh,omitempty"`
 	// The exercise of strength steps, from Garmin's catalog: see
 	// LookupExercise. Empty for exercises outside the catalog.
 	ExerciseCategory string `json:"exerciseCategory,omitempty"`
