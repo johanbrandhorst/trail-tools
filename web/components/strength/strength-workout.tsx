@@ -7,9 +7,10 @@ import {
   linkClass,
   primaryButton,
 } from "@components/ui/styles";
-import { useMutation } from "@connectrpc/connect-query";
+import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { ChevronRightIcon, PlayIcon } from "@heroicons/react/24/solid";
 import { useQueryClient } from "@tanstack/react-query";
+import { getGarminConnection } from "gen/garmin/v1/garmin-GarminService_connectquery";
 import type { Exercise } from "gen/plans/v1/exercises_pb";
 import { deleteStrengthLog } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import type { StrengthWorkout, Workout } from "gen/plans/v1/plans_pb";
@@ -48,6 +49,14 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
   exercises,
 }) => {
   const queryClient = useQueryClient();
+  const garmin = useQuery(getGarminConnection);
+  /*
+   * With Garmin syncing workouts, the workout is put on the user's Garmin
+   * calendar, so the file is only for other watches.
+   */
+  const garminSyncs =
+    garmin.data?.connection?.connected === true &&
+    garmin.data.connection.workoutsAllowed;
   const removeLog = useMutation(deleteStrengthLog, {
     onSuccess: async () => {
       await invalidateServices(queryClient, [TrainingPlanService]);
@@ -78,19 +87,27 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
         <PlayIcon className="size-5" />
         {log === undefined ? "Start workout" : "Edit the log"}
       </Link>
-      <p className="-mt-2 text-sm text-gray-600">
-        Or{" "}
-        <a
-          href={`/workouts/${workout.id}.fit`}
-          download
-          className={linkClass}
-          title="A Garmin workout with the sets, reps, weights and rest"
-        >
-          download it for your Garmin watch
-        </a>
-        : import it in Garmin Connect, or copy it to the GARMIN/NewFiles folder
-        of the watch.
-      </p>
+      {garminSyncs ? (
+        <p className="-mt-2 text-sm text-gray-600">
+          Or do it on your watch: it's put on your Garmin calendar two weeks
+          ahead, with the sets, reps, weights and rest.
+        </p>
+      ) : (
+        <p className="-mt-2 text-sm text-gray-600">
+          Or{" "}
+          <a
+            href={`/workouts/${workout.id}.fit`}
+            download
+            className={linkClass}
+            title="A FIT workout with the sets, reps, weights and rest"
+          >
+            download it for your watch
+          </a>
+          : import it in Garmin Connect, or copy it to the GARMIN/NewFiles
+          folder of the watch. Or connect Garmin in the settings to put your
+          workouts on your Garmin calendar.
+        </p>
+      )}
       <EquipmentCheck
         workout={workout}
         strength={strength}
