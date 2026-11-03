@@ -85,6 +85,7 @@ type PlanRepository interface {
 	AddGarminCourse(ctx context.Context, userID pgtype.UUID, c *plans.GarminCourse) error
 	RemoveGarminCourse(ctx context.Context, userID, id pgtype.UUID) error
 	RemoveGarminCourses(ctx context.Context, userID pgtype.UUID) error
+	SetGarminCourseSent(ctx context.Context, userID, routeID pgtype.UUID, sent bool) error
 	GetWorkoutByActivity(ctx context.Context, userID, activityID pgtype.UUID) (*plans.Workout, error)
 	SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *plans.Workout, log *plans.StrengthLog) error
 }
@@ -393,13 +394,21 @@ func syncsCalendar(conn *activities.GarminConnection) bool {
 	return slices.Contains(conn.Permissions, garmin.PermissionWorkoutImport) || slices.Contains(conn.Permissions, garmin.PermissionCourseImport)
 }
 
+// lockCalendar locks what the app puts on a user's Garmin account, so syncs
+// and changes the user asks for don't put the same workout or course there
+// twice, and returns the function unlocking it.
+func (s *Syncer) lockCalendar(userID pgtype.UUID) func() {
+	lock, _ := s.workoutLocks.LoadOrStore(userID, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+	return lock.(*sync.Mutex).Unlock
+}
+
 // syncCalendar puts the user's workouts of the coming days on their Garmin
 // calendar, and the routes of their runs and races as courses, as far as
 // they allow, and returns what it did.
 func (s *Syncer) syncCalendar(ctx context.Context, conn *activities.GarminConnection) (string, error) {
-	lock, _ := s.workoutLocks.LoadOrStore(conn.UserID, &sync.Mutex{})
-	lock.(*sync.Mutex).Lock()
-	defer lock.(*sync.Mutex).Unlock()
+	unlock := s.lockCalendar(conn.UserID)
+	defer unlock()
 	today := s.nowFn().UTC().Truncate(24 * time.Hour)
 	workouts, err := s.plans.ListUserWorkouts(ctx, conn.UserID, today, today.AddDate(0, 0, calendarDays))
 	if err != nil {

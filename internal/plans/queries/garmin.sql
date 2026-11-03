@@ -43,10 +43,15 @@ insert into garmin_courses (
   user_id,
   route_id,
   garmin_course_id,
-  content_hash
+  content_hash,
+  sent
 ) values (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 );
+
+-- name: SetGarminCourseSent :execrows
+update garmin_courses set sent = $3
+where user_id = $1 and route_id = $2;
 
 -- name: DeleteGarminCourse :exec
 delete from garmin_courses

@@ -25,6 +25,18 @@ service GarminService {
   rpc DisconnectGarmin(DisconnectGarminRequest) returns (DisconnectGarminResponse) {
     option (mcp.v1.method).exclude = true;
   }
+  // Put a route on the user's Garmin account as a course now, for their
+  // watch to navigate, whether or not a workout runs it. It stays there,
+  // updated when the route changes, until it's removed with
+  // RemoveRouteFromGarmin. Garmin syncs it to the watch. Fails with
+  // FAILED_PRECONDITION without a Garmin connection that allows courses.
+  rpc SendRouteToGarmin(SendRouteToGarminRequest) returns (SendRouteToGarminResponse);
+  // Remove a route sent with SendRouteToGarmin from the user's Garmin
+  // account. The route of an upcoming workout stays until the workout is
+  // past.
+  rpc RemoveRouteFromGarmin(RemoveRouteFromGarminRequest) returns (RemoveRouteFromGarminResponse);
+  // Get whether a route is on the user's Garmin account as a course.
+  rpc GetRouteGarminStatus(GetRouteGarminStatusRequest) returns (GetRouteGarminStatusResponse);
 }
 
 // The status of the Garmin connection.
@@ -69,3 +81,42 @@ message SyncGarminResponse {
 message DisconnectGarminRequest {}
 
 message DisconnectGarminResponse {}
+
+// Whether a route is on the user's Garmin account as a course.
+message RouteGarminStatus {
+  // Whether the route's course is on Garmin, sent by the user or for an
+  // upcoming workout.
+  bool on_garmin = 1;
+  // Whether the user sent it, so it stays until they remove it.
+  bool sent = 2;
+}
+
+message SendRouteToGarminRequest {
+  // The ID of the route.
+  string route_id = 1;
+}
+
+message SendRouteToGarminResponse {
+  // The route's status after sending it.
+  RouteGarminStatus status = 1;
+}
+
+message RemoveRouteFromGarminRequest {
+  // The ID of the route.
+  string route_id = 1;
+}
+
+message RemoveRouteFromGarminResponse {
+  // The route's status after removing it.
+  RouteGarminStatus status = 1;
+}
+
+message GetRouteGarminStatusRequest {
+  // The ID of the route.
+  string route_id = 1;
+}
+
+message GetRouteGarminStatusResponse {
+  // The route's status.
+  RouteGarminStatus status = 1;
+}

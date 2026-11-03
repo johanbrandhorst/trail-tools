@@ -32,6 +32,15 @@ const (
 	// GarminServiceDisconnectGarminProcedure is the procedure name of the GarminService's
 	// DisconnectGarmin RPC.
 	GarminServiceDisconnectGarminProcedure = "/garmin.v1.GarminService/DisconnectGarmin"
+	// GarminServiceSendRouteToGarminProcedure is the procedure name of the GarminService's
+	// SendRouteToGarmin RPC.
+	GarminServiceSendRouteToGarminProcedure = "/garmin.v1.GarminService/SendRouteToGarmin"
+	// GarminServiceRemoveRouteFromGarminProcedure is the procedure name of the GarminService's
+	// RemoveRouteFromGarmin RPC.
+	GarminServiceRemoveRouteFromGarminProcedure = "/garmin.v1.GarminService/RemoveRouteFromGarmin"
+	// GarminServiceGetRouteGarminStatusProcedure is the procedure name of the GarminService's
+	// GetRouteGarminStatus RPC.
+	GarminServiceGetRouteGarminStatusProcedure = "/garmin.v1.GarminService/GetRouteGarminStatus"
 )
 
 var (
@@ -56,6 +65,27 @@ var (
 			Procedure:  GarminServiceDisconnectGarminProcedure,
 		}
 	})
+	garminServiceSendRouteToGarminSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_garmin_v1_garmin_proto.Services().ByName("GarminService").Methods().ByName("SendRouteToGarmin"),
+			Procedure:  GarminServiceSendRouteToGarminProcedure,
+		}
+	})
+	garminServiceRemoveRouteFromGarminSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_garmin_v1_garmin_proto.Services().ByName("GarminService").Methods().ByName("RemoveRouteFromGarmin"),
+			Procedure:  GarminServiceRemoveRouteFromGarminProcedure,
+		}
+	})
+	garminServiceGetRouteGarminStatusSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_garmin_v1_garmin_proto.Services().ByName("GarminService").Methods().ByName("GetRouteGarminStatus"),
+			Procedure:  GarminServiceGetRouteGarminStatusProcedure,
+		}
+	})
 )
 
 // GarminServiceClient is a client for the garmin.v1.GarminService service.
@@ -70,6 +100,18 @@ type GarminServiceClient interface {
 	// Disconnect the Garmin account, removing the workouts put on its
 	// calendar. Synced activities are kept.
 	DisconnectGarmin(context.Context, *v1.DisconnectGarminRequest) (*v1.DisconnectGarminResponse, error)
+	// Put a route on the user's Garmin account as a course now, for their
+	// watch to navigate, whether or not a workout runs it. It stays there,
+	// updated when the route changes, until it's removed with
+	// RemoveRouteFromGarmin. Garmin syncs it to the watch. Fails with
+	// FAILED_PRECONDITION without a Garmin connection that allows courses.
+	SendRouteToGarmin(context.Context, *v1.SendRouteToGarminRequest) (*v1.SendRouteToGarminResponse, error)
+	// Remove a route sent with SendRouteToGarmin from the user's Garmin
+	// account. The route of an upcoming workout stays until the workout is
+	// past.
+	RemoveRouteFromGarmin(context.Context, *v1.RemoveRouteFromGarminRequest) (*v1.RemoveRouteFromGarminResponse, error)
+	// Get whether a route is on the user's Garmin account as a course.
+	GetRouteGarminStatus(context.Context, *v1.GetRouteGarminStatusRequest) (*v1.GetRouteGarminStatusResponse, error)
 }
 
 // NewGarminServiceClient constructs a client for the garmin.v1.GarminService service. Multiple
@@ -90,6 +132,18 @@ type GarminServiceHandler interface {
 	// Disconnect the Garmin account, removing the workouts put on its
 	// calendar. Synced activities are kept.
 	DisconnectGarmin(context.Context, *v1.DisconnectGarminRequest) (*v1.DisconnectGarminResponse, error)
+	// Put a route on the user's Garmin account as a course now, for their
+	// watch to navigate, whether or not a workout runs it. It stays there,
+	// updated when the route changes, until it's removed with
+	// RemoveRouteFromGarmin. Garmin syncs it to the watch. Fails with
+	// FAILED_PRECONDITION without a Garmin connection that allows courses.
+	SendRouteToGarmin(context.Context, *v1.SendRouteToGarminRequest) (*v1.SendRouteToGarminResponse, error)
+	// Remove a route sent with SendRouteToGarmin from the user's Garmin
+	// account. The route of an upcoming workout stays until the workout is
+	// past.
+	RemoveRouteFromGarmin(context.Context, *v1.RemoveRouteFromGarminRequest) (*v1.RemoveRouteFromGarminResponse, error)
+	// Get whether a route is on the user's Garmin account as a course.
+	GetRouteGarminStatus(context.Context, *v1.GetRouteGarminStatusRequest) (*v1.GetRouteGarminStatusResponse, error)
 }
 
 // RegisterGarminServiceHandler registers svc as the garmin.v1.GarminService implementation on
@@ -100,6 +154,9 @@ func RegisterGarminServiceHandler(server *connect.Server, svc GarminServiceHandl
 		connect.Method{Spec: garminServiceGetGarminConnectionSpec(), Handler: adapter.getGarminConnection},
 		connect.Method{Spec: garminServiceSyncGarminSpec(), Handler: adapter.syncGarmin},
 		connect.Method{Spec: garminServiceDisconnectGarminSpec(), Handler: adapter.disconnectGarmin},
+		connect.Method{Spec: garminServiceSendRouteToGarminSpec(), Handler: adapter.sendRouteToGarmin},
+		connect.Method{Spec: garminServiceRemoveRouteFromGarminSpec(), Handler: adapter.removeRouteFromGarmin},
+		connect.Method{Spec: garminServiceGetRouteGarminStatusSpec(), Handler: adapter.getRouteGarminStatus},
 	)
 }
 
@@ -116,6 +173,18 @@ func (UnimplementedGarminServiceHandler) SyncGarmin(context.Context, *v1.SyncGar
 
 func (UnimplementedGarminServiceHandler) DisconnectGarmin(context.Context, *v1.DisconnectGarminRequest) (*v1.DisconnectGarminResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "garmin.v1.GarminService.DisconnectGarmin is not implemented")
+}
+
+func (UnimplementedGarminServiceHandler) SendRouteToGarmin(context.Context, *v1.SendRouteToGarminRequest) (*v1.SendRouteToGarminResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "garmin.v1.GarminService.SendRouteToGarmin is not implemented")
+}
+
+func (UnimplementedGarminServiceHandler) RemoveRouteFromGarmin(context.Context, *v1.RemoveRouteFromGarminRequest) (*v1.RemoveRouteFromGarminResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "garmin.v1.GarminService.RemoveRouteFromGarmin is not implemented")
+}
+
+func (UnimplementedGarminServiceHandler) GetRouteGarminStatus(context.Context, *v1.GetRouteGarminStatusRequest) (*v1.GetRouteGarminStatusResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "garmin.v1.GarminService.GetRouteGarminStatus is not implemented")
 }
 
 type garminServiceClient struct {
@@ -141,6 +210,30 @@ func (c *garminServiceClient) SyncGarmin(ctx context.Context, req *v1.SyncGarmin
 func (c *garminServiceClient) DisconnectGarmin(ctx context.Context, req *v1.DisconnectGarminRequest) (*v1.DisconnectGarminResponse, error) {
 	var res v1.DisconnectGarminResponse
 	if err := c.client.CallUnary(ctx, garminServiceDisconnectGarminSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *garminServiceClient) SendRouteToGarmin(ctx context.Context, req *v1.SendRouteToGarminRequest) (*v1.SendRouteToGarminResponse, error) {
+	var res v1.SendRouteToGarminResponse
+	if err := c.client.CallUnary(ctx, garminServiceSendRouteToGarminSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *garminServiceClient) RemoveRouteFromGarmin(ctx context.Context, req *v1.RemoveRouteFromGarminRequest) (*v1.RemoveRouteFromGarminResponse, error) {
+	var res v1.RemoveRouteFromGarminResponse
+	if err := c.client.CallUnary(ctx, garminServiceRemoveRouteFromGarminSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *garminServiceClient) GetRouteGarminStatus(ctx context.Context, req *v1.GetRouteGarminStatusRequest) (*v1.GetRouteGarminStatusResponse, error) {
+	var res v1.GetRouteGarminStatusResponse
+	if err := c.client.CallUnary(ctx, garminServiceGetRouteGarminStatusSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -178,6 +271,42 @@ func (h garminServiceHandler) disconnectGarmin(ctx context.Context, _ connect.Sp
 		return err
 	}
 	res, err := h.svc.DisconnectGarmin(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h garminServiceHandler) sendRouteToGarmin(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SendRouteToGarminRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SendRouteToGarmin(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h garminServiceHandler) removeRouteFromGarmin(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RemoveRouteFromGarminRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RemoveRouteFromGarmin(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h garminServiceHandler) getRouteGarminStatus(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetRouteGarminStatusRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetRouteGarminStatus(ctx, &req)
 	if err != nil {
 		return err
 	}

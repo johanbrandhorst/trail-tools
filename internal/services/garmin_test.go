@@ -863,11 +863,60 @@ func TestGarminCourses(t *testing.T) {
 		t.Errorf("got courses %v after moving the workouts, want the race course", got)
 	}
 
-	// Disconnecting removes the courses.
+	// A route sent to Garmin stays there without a workout coming up, and
+	// syncing keeps it.
+	sent, err := e.garminAPI.SendRouteToGarmin(ctx, garminv1.SendRouteToGarminRequest_builder{RouteId: hill}.Build())
+	if err != nil {
+		t.Fatalf("SendRouteToGarmin: %v", err)
+	}
+	if st := sent.GetStatus(); !st.GetOnGarmin() || !st.GetSent() {
+		t.Errorf("got status %v after sending, want it sent", st)
+	}
+	if _, err := e.garminAPI.SyncGarmin(ctx, garminv1.SyncGarminRequest_builder{}.Build()); err != nil {
+		t.Fatalf("SyncGarmin: %v", err)
+	}
+	if got := e.garmin.courseNames(); fmt.Sprint(got) != "[Hill loop Race course]" {
+		t.Errorf("got courses %v after sending the hill loop and syncing, want both", got)
+	}
+	// Sending the route of an upcoming workout marks it sent without
+	// sending it again, and removing it keeps it for the workout.
+	calls := len(e.garmin.courses)
+	if _, err := e.garminAPI.SendRouteToGarmin(ctx, garminv1.SendRouteToGarminRequest_builder{RouteId: race}.Build()); err != nil {
+		t.Fatalf("SendRouteToGarmin: %v", err)
+	}
+	if got := len(e.garmin.courses); got != calls {
+		t.Errorf("got %d courses after sending an unchanged route, want %d", got, calls)
+	}
+	removed, err := e.garminAPI.RemoveRouteFromGarmin(ctx, garminv1.RemoveRouteFromGarminRequest_builder{RouteId: race}.Build())
+	if err != nil {
+		t.Fatalf("RemoveRouteFromGarmin: %v", err)
+	}
+	if st := removed.GetStatus(); !st.GetOnGarmin() || st.GetSent() {
+		t.Errorf("got status %v after removing an upcoming route, want it kept for the workout", st)
+	}
+	// Removing the hill loop takes it off Garmin.
+	if _, err := e.garminAPI.RemoveRouteFromGarmin(ctx, garminv1.RemoveRouteFromGarminRequest_builder{RouteId: hill}.Build()); err != nil {
+		t.Fatalf("RemoveRouteFromGarmin: %v", err)
+	}
+	if got := e.garmin.courseNames(); fmt.Sprint(got) != "[Race course]" {
+		t.Errorf("got courses %v after removing the hill loop, want the race course", got)
+	}
+	status, err := e.garminAPI.GetRouteGarminStatus(ctx, garminv1.GetRouteGarminStatusRequest_builder{RouteId: hill}.Build())
+	if err != nil || status.GetStatus().GetOnGarmin() {
+		t.Errorf("GetRouteGarminStatus after removing: %v, %v", status, err)
+	}
+	// Another user's route isn't found.
+	_, err = e.garminAPI.SendRouteToGarmin(ctx, garminv1.SendRouteToGarminRequest_builder{RouteId: "00000000-0000-0000-0000-000000000000"}.Build())
+	wantCode(t, err, connect.CodeNotFound)
+
+	// Disconnecting removes the courses, and routes can't be sent without a
+	// connection.
 	if _, err := e.garminSession.DisconnectGarmin(ctx, garminv1.DisconnectGarminRequest_builder{}.Build()); err != nil {
 		t.Fatalf("DisconnectGarmin: %v", err)
 	}
 	if got := e.garmin.courseNames(); len(got) != 0 {
 		t.Errorf("got courses %v after disconnecting", got)
 	}
+	_, err = e.garminAPI.SendRouteToGarmin(ctx, garminv1.SendRouteToGarminRequest_builder{RouteId: hill}.Build())
+	wantCode(t, err, connect.CodeFailedPrecondition)
 }

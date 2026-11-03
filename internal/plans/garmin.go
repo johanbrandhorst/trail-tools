@@ -24,6 +24,10 @@ type GarminWorkout struct {
 	GarminScheduleID int64
 	// A hash of what was sent, to send it again only when it changes.
 	ContentHash string
+	// Whether the user sent the route to Garmin themselves. Sent courses
+	// stay until the user removes them; the others are removed once no
+	// upcoming workout runs the route.
+	Sent bool
 }
 
 // ListGarminWorkouts lists the workouts on the user's Garmin calendar.
@@ -100,6 +104,10 @@ type GarminCourse struct {
 	GarminCourseID int64
 	// A hash of what was sent, to send it again only when it changes.
 	ContentHash string
+	// Whether the user sent the route to Garmin themselves. Sent courses
+	// stay until the user removes them; the others are removed once no
+	// upcoming workout runs the route.
+	Sent bool
 }
 
 // ListGarminCourses lists the courses on the user's Garmin account.
@@ -110,7 +118,7 @@ func (r *Repository) ListGarminCourses(ctx context.Context, userID pgtype.UUID) 
 	}
 	result := make([]*GarminCourse, len(rows))
 	for i, row := range rows {
-		result[i] = &GarminCourse{ID: row.ID, RouteID: row.RouteID, GarminCourseID: row.GarminCourseID, ContentHash: row.ContentHash}
+		result[i] = &GarminCourse{ID: row.ID, RouteID: row.RouteID, GarminCourseID: row.GarminCourseID, ContentHash: row.ContentHash, Sent: row.Sent}
 	}
 	return result, nil
 }
@@ -122,8 +130,18 @@ func (r *Repository) AddGarminCourse(ctx context.Context, userID pgtype.UUID, c 
 		RouteID:        c.RouteID,
 		GarminCourseID: c.GarminCourseID,
 		ContentHash:    c.ContentHash,
+		Sent:           c.Sent,
 	}); err != nil {
 		return fmt.Errorf("failed to record Garmin course: %w", err)
+	}
+	return nil
+}
+
+// SetGarminCourseSent sets whether the user sent a route's course to Garmin
+// themselves.
+func (r *Repository) SetGarminCourseSent(ctx context.Context, userID, routeID pgtype.UUID, sent bool) error {
+	if _, err := r.q.SetGarminCourseSent(ctx, &gen.SetGarminCourseSentParams{UserID: userID, RouteID: routeID, Sent: sent}); err != nil {
+		return fmt.Errorf("failed to update Garmin course: %w", err)
 	}
 	return nil
 }

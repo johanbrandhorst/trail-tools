@@ -87,9 +87,10 @@ insert into garmin_courses (
   user_id,
   route_id,
   garmin_course_id,
-  content_hash
+  content_hash,
+  sent
 ) values (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 )
 `
 
@@ -98,6 +99,7 @@ type InsertGarminCourseParams struct {
 	RouteID        pgtype.UUID
 	GarminCourseID int64
 	ContentHash    string
+	Sent           bool
 }
 
 func (q *Queries) InsertGarminCourse(ctx context.Context, arg *InsertGarminCourseParams) error {
@@ -106,6 +108,7 @@ func (q *Queries) InsertGarminCourse(ctx context.Context, arg *InsertGarminCours
 		arg.RouteID,
 		arg.GarminCourseID,
 		arg.ContentHash,
+		arg.Sent,
 	)
 	return err
 }
@@ -142,7 +145,7 @@ func (q *Queries) InsertGarminWorkout(ctx context.Context, arg *InsertGarminWork
 }
 
 const listGarminCourses = `-- name: ListGarminCourses :many
-select id, user_id, route_id, garmin_course_id, content_hash, create_time from garmin_courses
+select id, user_id, route_id, garmin_course_id, content_hash, create_time, sent from garmin_courses
 where user_id = $1
 `
 
@@ -163,6 +166,7 @@ func (q *Queries) ListGarminCourses(ctx context.Context, userID pgtype.UUID) ([]
 			&i.GarminCourseID,
 			&i.ContentHash,
 			&i.CreateTime,
+			&i.Sent,
 		); err != nil {
 			return nil, err
 		}
@@ -221,4 +225,23 @@ func (q *Queries) ListGarminWorkouts(ctx context.Context, userID pgtype.UUID) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const setGarminCourseSent = `-- name: SetGarminCourseSent :execrows
+update garmin_courses set sent = $3
+where user_id = $1 and route_id = $2
+`
+
+type SetGarminCourseSentParams struct {
+	UserID  pgtype.UUID
+	RouteID pgtype.UUID
+	Sent    bool
+}
+
+func (q *Queries) SetGarminCourseSent(ctx context.Context, arg *SetGarminCourseSentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setGarminCourseSent, arg.UserID, arg.RouteID, arg.Sent)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

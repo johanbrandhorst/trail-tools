@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file garmin/v1/garmin.proto.
  */
 export const file_garmin_v1_garmin: GenFile = /*@__PURE__*/
-  fileDesc("ChZnYXJtaW4vdjEvZ2FybWluLnByb3RvEglnYXJtaW4udjEinwIKEEdhcm1pbkNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhIKCmNvbmZpZ3VyZWQYAiABKAgSGgoSYWN0aXZpdGllc19hbGxvd2VkGAMgASgIEhgKEHdvcmtvdXRzX2FsbG93ZWQYBCABKAgSNgoSd29ya291dHNfc3luY190aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxzeW5jX21lc3NhZ2UYBiABKAkSFQoNd29ya291dF9jb3VudBgHIAEoBRIaChJwZW5kaW5nX2ZpbGVfY291bnQYCCABKAUSFwoPY291cnNlc19hbGxvd2VkGAkgASgIEhQKDGNvdXJzZV9jb3VudBgKIAEoBSIcChpHZXRHYXJtaW5Db25uZWN0aW9uUmVxdWVzdCJOChtHZXRHYXJtaW5Db25uZWN0aW9uUmVzcG9uc2USLwoKY29ubmVjdGlvbhgBIAEoCzIbLmdhcm1pbi52MS5HYXJtaW5Db25uZWN0aW9uIhMKEVN5bmNHYXJtaW5SZXF1ZXN0IkUKElN5bmNHYXJtaW5SZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuZ2FybWluLnYxLkdhcm1pbkNvbm5lY3Rpb24iGQoXRGlzY29ubmVjdEdhcm1pblJlcXVlc3QiGgoYRGlzY29ubmVjdEdhcm1pblJlc3BvbnNlMqUCCg1HYXJtaW5TZXJ2aWNlEmQKE0dldEdhcm1pbkNvbm5lY3Rpb24SJS5nYXJtaW4udjEuR2V0R2FybWluQ29ubmVjdGlvblJlcXVlc3QaJi5nYXJtaW4udjEuR2V0R2FybWluQ29ubmVjdGlvblJlc3BvbnNlEkkKClN5bmNHYXJtaW4SHC5nYXJtaW4udjEuU3luY0dhcm1pblJlcXVlc3QaHS5nYXJtaW4udjEuU3luY0dhcm1pblJlc3BvbnNlEmMKEERpc2Nvbm5lY3RHYXJtaW4SIi5nYXJtaW4udjEuRGlzY29ubmVjdEdhcm1pblJlcXVlc3QaIy5nYXJtaW4udjEuRGlzY29ubmVjdEdhcm1pblJlc3BvbnNlIgainxkCCAFCqQEKDWNvbS5nYXJtaW4udjFCC0dhcm1pblByb3RvUAFaRmdpdGh1Yi5jb20vam9oYW5icmFuZGhvcnN0L3RyYWlsLXRvb2xzL2ludGVybmFsL2dlbi9nYXJtaW4vdjE7Z2FybWludjGiAgNHWFiqAglHYXJtaW4uVjHKAglHYXJtaW5cVjHiAhVHYXJtaW5cVjFcR1BCTWV0YWRhdGHqAgpHYXJtaW46OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_mcp_v1_options]);
+  fileDesc("ChZnYXJtaW4vdjEvZ2FybWluLnByb3RvEglnYXJtaW4udjEinwIKEEdhcm1pbkNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhIKCmNvbmZpZ3VyZWQYAiABKAgSGgoSYWN0aXZpdGllc19hbGxvd2VkGAMgASgIEhgKEHdvcmtvdXRzX2FsbG93ZWQYBCABKAgSNgoSd29ya291dHNfc3luY190aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxzeW5jX21lc3NhZ2UYBiABKAkSFQoNd29ya291dF9jb3VudBgHIAEoBRIaChJwZW5kaW5nX2ZpbGVfY291bnQYCCABKAUSFwoPY291cnNlc19hbGxvd2VkGAkgASgIEhQKDGNvdXJzZV9jb3VudBgKIAEoBSIcChpHZXRHYXJtaW5Db25uZWN0aW9uUmVxdWVzdCJOChtHZXRHYXJtaW5Db25uZWN0aW9uUmVzcG9uc2USLwoKY29ubmVjdGlvbhgBIAEoCzIbLmdhcm1pbi52MS5HYXJtaW5Db25uZWN0aW9uIhMKEVN5bmNHYXJtaW5SZXF1ZXN0IkUKElN5bmNHYXJtaW5SZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuZ2FybWluLnYxLkdhcm1pbkNvbm5lY3Rpb24iGQoXRGlzY29ubmVjdEdhcm1pblJlcXVlc3QiGgoYRGlzY29ubmVjdEdhcm1pblJlc3BvbnNlIjQKEVJvdXRlR2FybWluU3RhdHVzEhEKCW9uX2dhcm1pbhgBIAEoCBIMCgRzZW50GAIgASgIIiwKGFNlbmRSb3V0ZVRvR2FybWluUmVxdWVzdBIQCghyb3V0ZV9pZBgBIAEoCSJJChlTZW5kUm91dGVUb0dhcm1pblJlc3BvbnNlEiwKBnN0YXR1cxgBIAEoCzIcLmdhcm1pbi52MS5Sb3V0ZUdhcm1pblN0YXR1cyIwChxSZW1vdmVSb3V0ZUZyb21HYXJtaW5SZXF1ZXN0EhAKCHJvdXRlX2lkGAEgASgJIk0KHVJlbW92ZVJvdXRlRnJvbUdhcm1pblJlc3BvbnNlEiwKBnN0YXR1cxgBIAEoCzIcLmdhcm1pbi52MS5Sb3V0ZUdhcm1pblN0YXR1cyIvChtHZXRSb3V0ZUdhcm1pblN0YXR1c1JlcXVlc3QSEAoIcm91dGVfaWQYASABKAkiTAocR2V0Um91dGVHYXJtaW5TdGF0dXNSZXNwb25zZRIsCgZzdGF0dXMYASABKAsyHC5nYXJtaW4udjEuUm91dGVHYXJtaW5TdGF0dXMy2gQKDUdhcm1pblNlcnZpY2USZAoTR2V0R2FybWluQ29ubmVjdGlvbhIlLmdhcm1pbi52MS5HZXRHYXJtaW5Db25uZWN0aW9uUmVxdWVzdBomLmdhcm1pbi52MS5HZXRHYXJtaW5Db25uZWN0aW9uUmVzcG9uc2USSQoKU3luY0dhcm1pbhIcLmdhcm1pbi52MS5TeW5jR2FybWluUmVxdWVzdBodLmdhcm1pbi52MS5TeW5jR2FybWluUmVzcG9uc2USYwoQRGlzY29ubmVjdEdhcm1pbhIiLmdhcm1pbi52MS5EaXNjb25uZWN0R2FybWluUmVxdWVzdBojLmdhcm1pbi52MS5EaXNjb25uZWN0R2FybWluUmVzcG9uc2UiBqKfGQIIARJeChFTZW5kUm91dGVUb0dhcm1pbhIjLmdhcm1pbi52MS5TZW5kUm91dGVUb0dhcm1pblJlcXVlc3QaJC5nYXJtaW4udjEuU2VuZFJvdXRlVG9HYXJtaW5SZXNwb25zZRJqChVSZW1vdmVSb3V0ZUZyb21HYXJtaW4SJy5nYXJtaW4udjEuUmVtb3ZlUm91dGVGcm9tR2FybWluUmVxdWVzdBooLmdhcm1pbi52MS5SZW1vdmVSb3V0ZUZyb21HYXJtaW5SZXNwb25zZRJnChRHZXRSb3V0ZUdhcm1pblN0YXR1cxImLmdhcm1pbi52MS5HZXRSb3V0ZUdhcm1pblN0YXR1c1JlcXVlc3QaJy5nYXJtaW4udjEuR2V0Um91dGVHYXJtaW5TdGF0dXNSZXNwb25zZUKpAQoNY29tLmdhcm1pbi52MUILR2FybWluUHJvdG9QAVpGZ2l0aHViLmNvbS9qb2hhbmJyYW5kaG9yc3QvdHJhaWwtdG9vbHMvaW50ZXJuYWwvZ2VuL2dhcm1pbi92MTtnYXJtaW52MaICA0dYWKoCCUdhcm1pbi5WMcoCCUdhcm1pblxWMeICFUdhcm1pblxWMVxHUEJNZXRhZGF0YeoCCkdhcm1pbjo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_mcp_v1_options]);
 
 /**
  * The status of the Garmin connection.
@@ -191,6 +191,149 @@ export const DisconnectGarminResponseSchema: GenMessage<DisconnectGarminResponse
   messageDesc(file_garmin_v1_garmin, 6);
 
 /**
+ * Whether a route is on the user's Garmin account as a course.
+ *
+ * @generated from message garmin.v1.RouteGarminStatus
+ */
+export type RouteGarminStatus = Message<"garmin.v1.RouteGarminStatus"> & {
+  /**
+   * Whether the route's course is on Garmin, sent by the user or for an
+   * upcoming workout.
+   *
+   * @generated from field: bool on_garmin = 1;
+   */
+  onGarmin: boolean;
+
+  /**
+   * Whether the user sent it, so it stays until they remove it.
+   *
+   * @generated from field: bool sent = 2;
+   */
+  sent: boolean;
+};
+
+/**
+ * Describes the message garmin.v1.RouteGarminStatus.
+ * Use `create(RouteGarminStatusSchema)` to create a new message.
+ */
+export const RouteGarminStatusSchema: GenMessage<RouteGarminStatus> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 7);
+
+/**
+ * @generated from message garmin.v1.SendRouteToGarminRequest
+ */
+export type SendRouteToGarminRequest = Message<"garmin.v1.SendRouteToGarminRequest"> & {
+  /**
+   * The ID of the route.
+   *
+   * @generated from field: string route_id = 1;
+   */
+  routeId: string;
+};
+
+/**
+ * Describes the message garmin.v1.SendRouteToGarminRequest.
+ * Use `create(SendRouteToGarminRequestSchema)` to create a new message.
+ */
+export const SendRouteToGarminRequestSchema: GenMessage<SendRouteToGarminRequest> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 8);
+
+/**
+ * @generated from message garmin.v1.SendRouteToGarminResponse
+ */
+export type SendRouteToGarminResponse = Message<"garmin.v1.SendRouteToGarminResponse"> & {
+  /**
+   * The route's status after sending it.
+   *
+   * @generated from field: garmin.v1.RouteGarminStatus status = 1;
+   */
+  status?: RouteGarminStatus | undefined;
+};
+
+/**
+ * Describes the message garmin.v1.SendRouteToGarminResponse.
+ * Use `create(SendRouteToGarminResponseSchema)` to create a new message.
+ */
+export const SendRouteToGarminResponseSchema: GenMessage<SendRouteToGarminResponse> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 9);
+
+/**
+ * @generated from message garmin.v1.RemoveRouteFromGarminRequest
+ */
+export type RemoveRouteFromGarminRequest = Message<"garmin.v1.RemoveRouteFromGarminRequest"> & {
+  /**
+   * The ID of the route.
+   *
+   * @generated from field: string route_id = 1;
+   */
+  routeId: string;
+};
+
+/**
+ * Describes the message garmin.v1.RemoveRouteFromGarminRequest.
+ * Use `create(RemoveRouteFromGarminRequestSchema)` to create a new message.
+ */
+export const RemoveRouteFromGarminRequestSchema: GenMessage<RemoveRouteFromGarminRequest> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 10);
+
+/**
+ * @generated from message garmin.v1.RemoveRouteFromGarminResponse
+ */
+export type RemoveRouteFromGarminResponse = Message<"garmin.v1.RemoveRouteFromGarminResponse"> & {
+  /**
+   * The route's status after removing it.
+   *
+   * @generated from field: garmin.v1.RouteGarminStatus status = 1;
+   */
+  status?: RouteGarminStatus | undefined;
+};
+
+/**
+ * Describes the message garmin.v1.RemoveRouteFromGarminResponse.
+ * Use `create(RemoveRouteFromGarminResponseSchema)` to create a new message.
+ */
+export const RemoveRouteFromGarminResponseSchema: GenMessage<RemoveRouteFromGarminResponse> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 11);
+
+/**
+ * @generated from message garmin.v1.GetRouteGarminStatusRequest
+ */
+export type GetRouteGarminStatusRequest = Message<"garmin.v1.GetRouteGarminStatusRequest"> & {
+  /**
+   * The ID of the route.
+   *
+   * @generated from field: string route_id = 1;
+   */
+  routeId: string;
+};
+
+/**
+ * Describes the message garmin.v1.GetRouteGarminStatusRequest.
+ * Use `create(GetRouteGarminStatusRequestSchema)` to create a new message.
+ */
+export const GetRouteGarminStatusRequestSchema: GenMessage<GetRouteGarminStatusRequest> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 12);
+
+/**
+ * @generated from message garmin.v1.GetRouteGarminStatusResponse
+ */
+export type GetRouteGarminStatusResponse = Message<"garmin.v1.GetRouteGarminStatusResponse"> & {
+  /**
+   * The route's status.
+   *
+   * @generated from field: garmin.v1.RouteGarminStatus status = 1;
+   */
+  status?: RouteGarminStatus | undefined;
+};
+
+/**
+ * Describes the message garmin.v1.GetRouteGarminStatusResponse.
+ * Use `create(GetRouteGarminStatusResponseSchema)` to create a new message.
+ */
+export const GetRouteGarminStatusResponseSchema: GenMessage<GetRouteGarminStatusResponse> = /*@__PURE__*/
+  messageDesc(file_garmin_v1_garmin, 13);
+
+/**
  * GarminService manages the connection to the user's Garmin Connect account.
  * Once connected, the user's activities come straight from Garmin, with the
  * sets of strength workouts, alongside any from Strava: an activity on both
@@ -235,6 +378,42 @@ export const GarminService: GenService<{
     methodKind: "unary";
     input: typeof DisconnectGarminRequestSchema;
     output: typeof DisconnectGarminResponseSchema;
+  },
+  /**
+   * Put a route on the user's Garmin account as a course now, for their
+   * watch to navigate, whether or not a workout runs it. It stays there,
+   * updated when the route changes, until it's removed with
+   * RemoveRouteFromGarmin. Garmin syncs it to the watch. Fails with
+   * FAILED_PRECONDITION without a Garmin connection that allows courses.
+   *
+   * @generated from rpc garmin.v1.GarminService.SendRouteToGarmin
+   */
+  sendRouteToGarmin: {
+    methodKind: "unary";
+    input: typeof SendRouteToGarminRequestSchema;
+    output: typeof SendRouteToGarminResponseSchema;
+  },
+  /**
+   * Remove a route sent with SendRouteToGarmin from the user's Garmin
+   * account. The route of an upcoming workout stays until the workout is
+   * past.
+   *
+   * @generated from rpc garmin.v1.GarminService.RemoveRouteFromGarmin
+   */
+  removeRouteFromGarmin: {
+    methodKind: "unary";
+    input: typeof RemoveRouteFromGarminRequestSchema;
+    output: typeof RemoveRouteFromGarminResponseSchema;
+  },
+  /**
+   * Get whether a route is on the user's Garmin account as a course.
+   *
+   * @generated from rpc garmin.v1.GarminService.GetRouteGarminStatus
+   */
+  getRouteGarminStatus: {
+    methodKind: "unary";
+    input: typeof GetRouteGarminStatusRequestSchema;
+    output: typeof GetRouteGarminStatusResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_garmin_v1_garmin, 0);
