@@ -402,3 +402,43 @@ func TestTrainingPlanDates(t *testing.T) {
 func baseRun() *plansv1.RunWorkout {
 	return plansv1.RunWorkout_builder{Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE}.Build()
 }
+
+func TestWorkoutsInStartTimeOrder(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
+		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: "2027-03-01", EndDate: "2027-03-31"}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An evening run, a session at any time and a morning session, created
+	// in that order on one day.
+	if _, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId: plan.GetPlan().GetId(),
+		Workouts: []*plansv1.Workout{
+			plansv1.Workout_builder{Date: "2027-03-03", Title: "Evening", StartTime: "17:00", Run: baseRun()}.Build(),
+			plansv1.Workout_builder{Date: "2027-03-03", Title: "Any time", Run: baseRun()}.Build(),
+			plansv1.Workout_builder{Date: "2027-03-03", Title: "Morning", StartTime: "07:00", Strength: plansv1.StrengthWorkout_builder{}.Build()}.Build(),
+		},
+	}.Build()); err != nil {
+		t.Fatalf("CreateWorkouts: %v", err)
+	}
+	for name, req := range map[string]*plansv1.ListWorkoutsRequest{
+		"plan":      plansv1.ListWorkoutsRequest_builder{PlanId: plan.GetPlan().GetId()}.Build(),
+		"all plans": plansv1.ListWorkoutsRequest_builder{}.Build(),
+	} {
+		list, err := e.plans.ListWorkouts(ctx, req)
+		if err != nil {
+			t.Fatalf("%s: ListWorkouts: %v", name, err)
+		}
+		var titles []string
+		for _, w := range list.GetWorkouts() {
+			titles = append(titles, w.GetTitle())
+		}
+		if strings.Join(titles, ",") != "Morning,Evening,Any time" {
+			t.Errorf("%s: got %v, want the morning, the evening, then any time", name, titles)
+		}
+	}
+}

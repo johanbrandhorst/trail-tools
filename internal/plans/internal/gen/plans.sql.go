@@ -521,7 +521,7 @@ join training_plans p on p.id = w.plan_id
 where p.user_id = $1
   and ($2::date is null or w.date >= $2::date)
   and ($3::date is null or w.date <= $3::date)
-order by w.date, w.create_time
+order by w.date, w.start_time nulls last, w.create_time
 `
 
 type ListUserWorkoutsParams struct {
@@ -575,7 +575,7 @@ select id, plan_id, date, type, title, description, target_distance_meters, targ
 where plan_id = $1
   and ($2::date is null or date >= $2::date)
   and ($3::date is null or date <= $3::date)
-order by date, create_time
+order by date, start_time nulls last, create_time
 `
 
 type ListWorkoutsParams struct {

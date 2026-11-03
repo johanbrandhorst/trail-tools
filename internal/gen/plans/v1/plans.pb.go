@@ -4219,7 +4219,8 @@ func (x *ListWorkoutsResponse) SetWorkouts(v []*Workout) {
 type ListWorkoutsResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The workouts in date order.
+	// The workouts in date order, each day's by start time, those without one
+	// last.
 	Workouts []*Workout
 }
 

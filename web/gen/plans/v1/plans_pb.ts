@@ -1329,7 +1329,8 @@ export const ListWorkoutsRequestSchema: GenMessage<ListWorkoutsRequest> = /*@__P
  */
 export type ListWorkoutsResponse = Message<"plans.v1.ListWorkoutsResponse"> & {
   /**
-   * The workouts in date order.
+   * The workouts in date order, each day's by start time, those without one
+   * last.
    *
    * @generated from field: repeated plans.v1.Workout workouts = 1;
    */
@@ -2437,7 +2438,7 @@ export const TrainingPlanService: GenService<{
   },
   /**
    * List a plan's workouts, or those of all the user's plans, in date order,
-   * optionally within a date range.
+   * each day's by start time, optionally within a date range.
    *
    * @generated from rpc plans.v1.TrainingPlanService.ListWorkouts
    */
