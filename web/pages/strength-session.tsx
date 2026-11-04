@@ -22,9 +22,14 @@ import {
   getWorkout,
   setStrengthLog,
 } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
-import type { PlannedExercise, StrengthWorkout } from "gen/plans/v1/plans_pb";
+import type {
+  ExerciseGroup,
+  PlannedExercise,
+  StrengthWorkout,
+} from "gen/plans/v1/plans_pb";
 import {
   ExerciseEffort,
+  ExerciseGroupKind,
   ExerciseVolume,
   SessionEffort,
   TrainingPlanService,
@@ -40,6 +45,8 @@ import {
   formatWeight,
   formatReps,
   isOpen,
+  roundGroup,
+  withRoundSets,
   formatSeconds,
   workoutMuscles,
 } from "helpers/strength";
@@ -287,7 +294,7 @@ const StrengthSessionPage: React.FC = () => {
       key={workout.id}
       workoutId={workout.id}
       title={workout.title === "" ? "Strength" : workout.title}
-      strength={workout.details.value}
+      strength={withRoundSets(workout.details.value)}
       library={library}
     />
   );
@@ -389,6 +396,8 @@ const Session: React.FC<SessionProps> = ({
 
   const current = planned[step];
   const currentDraft = draft.exercises[step];
+  const next = nextStep(strength, draft, step);
+  const block = roundBlockOf(strength, step);
   return (
     <div className="flex min-h-full flex-col bg-gray-100 font-ui text-gray-900">
       <SessionHeader
@@ -402,6 +411,8 @@ const Session: React.FC<SessionProps> = ({
         {current !== undefined && currentDraft !== undefined ? (
           <ExerciseStep
             planned={current}
+            block={roundBlockOf(strength, step)}
+            lastOfBlock={roundBlockOf(strength, step)?.last === step}
             exercise={library.get(current.exerciseId)}
             draft={currentDraft}
             onChange={(change) => {
@@ -445,12 +456,12 @@ const Session: React.FC<SessionProps> = ({
               type="button"
               className="flex h-13 min-w-0 grow items-center justify-center gap-1 rounded-lg bg-ink px-4 font-medium text-white"
               onClick={() => {
-                goTo(step + 1);
+                goTo(next.step);
               }}
             >
               <span className="truncate">
-                {step + 1 < finishStep
-                  ? `Next: ${planned[step + 1]?.exerciseName ?? ""}`
+                {next.step < finishStep
+                  ? `Next: ${planned[next.step]?.exerciseName ?? ""}${next.round > 0 ? ` · round ${next.round}` : ""}`
                   : "Finish"}
               </span>
               <ChevronRightIcon className="size-5 shrink-0" />
@@ -471,6 +482,17 @@ const Session: React.FC<SessionProps> = ({
             </button>
           )}
         </nav>
+        {block !== undefined && next.step === block.first && (
+          <button
+            type="button"
+            className="self-center text-sm font-medium text-gray-600 hover:underline"
+            onClick={() => {
+              goTo(block.last + 1);
+            }}
+          >
+            {`Done with the ${block.group.kind === ExerciseGroupKind.CIRCUIT ? "circuit" : "superset"}`}
+          </button>
+        )}
       </main>
     </div>
   );
@@ -544,11 +566,112 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
 
 interface ExerciseStepProps {
   planned: PlannedExercise;
+  // The superset or circuit the exercise is in, if any.
+  block: RoundBlock | undefined;
+  // Whether the exercise is the last of its superset or circuit.
+  lastOfBlock: boolean;
   // The exercise in the library, undefined if it's missing.
   exercise: Exercise | undefined;
   draft: DraftExercise;
   onChange: (change: Partial<DraftExercise>) => void;
 }
+
+/**
+ * RoundBlock is the exercises of a superset or circuit, done one set of each
+ * in order, then again for its rounds.
+ */
+interface RoundBlock {
+  group: ExerciseGroup;
+  // The indices of its first and last exercises.
+  first: number;
+  last: number;
+}
+
+// RoundBlockOf returns the superset or circuit an exercise is in, if any.
+const roundBlockOf = (
+  strength: StrengthWorkout,
+  index: number
+): RoundBlock | undefined => {
+  const name = strength.exercises[index]?.group ?? "";
+  const group = roundGroup(strength.groups, name);
+  if (group === undefined) {
+    return undefined;
+  }
+  let first = index;
+  while (strength.exercises[first - 1]?.group === name) {
+    first -= 1;
+  }
+  let last = index;
+  while (strength.exercises[last + 1]?.group === name) {
+    last += 1;
+  }
+  return { first, group, last };
+};
+
+// DoneSets counts the sets of an exercise ticked off.
+const doneSets = (exercise: DraftExercise | undefined): number =>
+  exercise?.sets.filter((set) => set.done).length ?? 0;
+
+/**
+ * NextStep is the step after one: in a superset or circuit, the next
+ * exercise of the round, and after its last exercise, its first again until
+ * all the rounds are done.
+ */
+const nextStep = (
+  strength: StrengthWorkout,
+  draft: Draft,
+  step: number
+): { step: number; round: number } => {
+  const block = roundBlockOf(strength, step);
+  if (block === undefined || step < block.last) {
+    const next = roundBlockOf(strength, step + 1);
+    return {
+      round:
+        next === undefined
+          ? 0
+          : Math.min(
+              doneSets(draft.exercises[step + 1]) + 1,
+              next.group.rounds ?? 1
+            ),
+      step: step + 1,
+    };
+  }
+  const rounds = block.group.rounds ?? 1;
+  const done = doneSets(draft.exercises[block.last]);
+  if (done < rounds) {
+    return { round: done + 1, step: block.first };
+  }
+  return { round: 0, step: block.last + 1 };
+};
+
+/**
+ * TapHint says to tick off a set when it's done, and what follows it: the
+ * rest, or in a superset or circuit, the next exercise.
+ */
+const tapHint = (
+  planned: PlannedExercise,
+  block: RoundBlock | undefined,
+  lastOfBlock: boolean,
+  round: number
+): string => {
+  if (
+    block !== undefined &&
+    lastOfBlock &&
+    round >= (block.group.rounds ?? 1)
+  ) {
+    return "Tap this round when you finish it: it's the last.";
+  }
+  if (block === undefined) {
+    return `Tap a set when you finish it${planned.restSeconds > 0 ? `, then rest ${formatSeconds(planned.restSeconds)}` : ""}.`;
+  }
+  const rest = lastOfBlock
+    ? (block.group.restSeconds ?? 0)
+    : planned.restSeconds;
+  const then = lastOfBlock
+    ? "start the next round"
+    : "go on to the next exercise";
+  return `Tap this round when you finish it, then ${rest > 0 ? `rest ${formatSeconds(rest)} and ` : ""}${then}.`;
+};
 
 // SetsLabel labels what a planned exercise's sets are of.
 const setsLabel = (planned: PlannedExercise): string => {
@@ -564,6 +687,8 @@ const setsLabel = (planned: PlannedExercise): string => {
  */
 const ExerciseStep: React.FC<ExerciseStepProps> = ({
   planned,
+  block,
+  lastOfBlock,
   exercise,
   draft,
   onChange,
@@ -575,20 +700,39 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
     [exercise]
   );
   const allDone = finished(draft);
+  const reps = formatReps(planned.reps, planned.holdSeconds, false);
   const stats: { label: string; value: string; sub: string }[] = [
-    {
-      label: setsLabel(planned),
-      sub: eachSide ? "each side" : "",
-      value: `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, false)}`,
-    },
+    block === undefined
+      ? {
+          label: setsLabel(planned),
+          sub: eachSide ? "each side" : "",
+          value: `${planned.sets} × ${reps}`,
+        }
+      : {
+          label: planned.holdSeconds > 0 ? "Time" : "Reps",
+          sub: `${eachSide ? "each side, " : ""}once each round`,
+          value: isOpen(planned) ? "Until done" : reps,
+        },
   ];
   if (planned.restSeconds > 0) {
     stats.push({
       label: "Rest",
-      sub: "between sets",
+      sub: block === undefined ? "between sets" : "before the next exercise",
       value: formatSeconds(planned.restSeconds),
     });
   }
+  const roundRest = block?.group.restSeconds ?? 0;
+  if (block !== undefined && lastOfBlock && roundRest > 0) {
+    stats.push({
+      label: "Rest",
+      sub: "after each round",
+      value: formatSeconds(roundRest),
+    });
+  }
+  const round =
+    block === undefined
+      ? 0
+      : Math.min(doneSets(draft) + 1, block.group.rounds ?? 1);
   stats.push({
     label: "Weight",
     sub:
@@ -612,6 +756,10 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
         {planned.group !== "" && (
           <span className="text-xs font-semibold tracking-wide text-violet-700 uppercase">
             {planned.group}
+            {block !== undefined &&
+              (allDone
+                ? " · all rounds done"
+                : ` · round ${round} of ${block.group.rounds ?? 1}`)}
           </span>
         )}
         <h1 className="text-[1.75rem] leading-tight font-semibold text-balance">
@@ -652,7 +800,9 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-[0.9375rem] font-semibold">Sets</h2>
+        <h2 className="text-[0.9375rem] font-semibold">
+          {block === undefined ? "Sets" : "Rounds"}
+        </h2>
         <div className="grid grid-cols-3 gap-2">
           {draft.sets.map((set, index) => (
             <button
@@ -672,7 +822,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
             >
               <span className="flex items-center gap-1">
                 {set.done && <CheckIcon className="size-4" />}
-                Set {index + 1}
+                {block === undefined ? "Set" : "Round"} {index + 1}
               </span>
               <span className="text-xs font-normal tabular-nums">
                 {formatReps(set.reps, set.holdSeconds, false)}
@@ -684,8 +834,8 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-sm text-gray-600">
             {allDone
-              ? "All sets done."
-              : `Tap a set when you finish it${planned.restSeconds > 0 ? `, then rest ${formatSeconds(planned.restSeconds)}` : ""}.`}
+              ? `All ${block === undefined ? "sets" : "rounds"} done.`
+              : tapHint(planned, block, lastOfBlock, round)}
           </p>
           <button
             type="button"

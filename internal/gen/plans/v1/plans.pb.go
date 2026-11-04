@@ -2514,8 +2514,10 @@ type ExerciseGroup struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,1,opt,name=name,proto3"`
 	xxx_hidden_Kind        ExerciseGroupKind      `protobuf:"varint,2,opt,name=kind,proto3,enum=plans.v1.ExerciseGroupKind"`
-	xxx_hidden_Rounds      int32                  `protobuf:"varint,3,opt,name=rounds,proto3"`
-	xxx_hidden_RestSeconds int32                  `protobuf:"varint,4,opt,name=rest_seconds,json=restSeconds,proto3"`
+	xxx_hidden_Rounds      int32                  `protobuf:"varint,3,opt,name=rounds,proto3,oneof"`
+	xxx_hidden_RestSeconds int32                  `protobuf:"varint,4,opt,name=rest_seconds,json=restSeconds,proto3,oneof"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2583,10 +2585,36 @@ func (x *ExerciseGroup) SetKind(v ExerciseGroupKind) {
 
 func (x *ExerciseGroup) SetRounds(v int32) {
 	x.xxx_hidden_Rounds = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
 func (x *ExerciseGroup) SetRestSeconds(v int32) {
 	x.xxx_hidden_RestSeconds = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *ExerciseGroup) HasRounds() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ExerciseGroup) HasRestSeconds() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ExerciseGroup) ClearRounds() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Rounds = 0
+}
+
+func (x *ExerciseGroup) ClearRestSeconds() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_RestSeconds = 0
 }
 
 type ExerciseGroup_builder struct {
@@ -2598,13 +2626,14 @@ type ExerciseGroup_builder struct {
 	// How the exercises are done. Required.
 	Kind ExerciseGroupKind
 	// For a superset or circuit, how many times the whole sequence of
-	// exercises is done, from 1 to 20. 0 for straight sets, whose exercises
-	// each have their own sets.
-	Rounds int32
+	// exercises is done, from 1 to 20. Required for them, and the only place
+	// their rounds are kept. Unset for straight sets, whose exercises each
+	// have their own sets.
+	Rounds *int32
 	// For a superset or circuit, the rest after each round in seconds, e.g.
-	// 60. 0 if none, and for straight sets, whose exercises each have their
-	// own rest.
-	RestSeconds int32
+	// 60, or 0 for none. Unset for straight sets, whose exercises each have
+	// their own rest.
+	RestSeconds *int32
 }
 
 func (b0 ExerciseGroup_builder) Build() *ExerciseGroup {
@@ -2613,8 +2642,14 @@ func (b0 ExerciseGroup_builder) Build() *ExerciseGroup {
 	_, _ = b, x
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Kind = b.Kind
-	x.xxx_hidden_Rounds = b.Rounds
-	x.xxx_hidden_RestSeconds = b.RestSeconds
+	if b.Rounds != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Rounds = *b.Rounds
+	}
+	if b.RestSeconds != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_RestSeconds = *b.RestSeconds
+	}
 	return m0
 }
 
@@ -2918,12 +2953,14 @@ type PlannedExercise_builder struct {
 	// shown together. A group is straight sets unless StrengthWorkout.groups
 	// says it's a superset or circuit. Empty if none.
 	Group string
-	// The number of sets, from 1 to 20. In a superset or circuit, leave it 0:
-	// the exercise is done once each round, and it's set to the group's
-	// rounds when reading.
+	// The number of sets, from 1 to 20. In a superset or circuit, leave it 0,
+	// as it reads: the exercise is done once each round, for the group's
+	// rounds. A number other than the rounds is refused.
 	Sets int32
 	// The reps of each set, per side for exercises done on each side. 0 for
-	// exercises held for a time.
+	// exercises held for a time, and for exercises done until the user is
+	// done, like stretches or leg swings: leave both reps and hold_seconds 0
+	// for those, and watches move on when the lap button is pressed.
 	Reps int32
 	// How long each set is held in seconds, per side for exercises done on
 	// each side, e.g. 30 for a plank. 0 for exercises done for reps. Set at
@@ -6218,12 +6255,14 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x17target_duration_seconds\x18\x02 \x01(\x05R\x15targetDurationSeconds\x12/\n" +
 	"\x03log\x18\x03 \x01(\v2\x15.plans.v1.StrengthLogB\x06\xaa\x9f\x19\x02\b\x01R\x03log\x12K\n" +
 	"\x10equipment_issues\x18\x04 \x03(\v2\x18.plans.v1.EquipmentIssueB\x06\xaa\x9f\x19\x02\b\x01R\x0fequipmentIssues\x12/\n" +
-	"\x06groups\x18\x05 \x03(\v2\x17.plans.v1.ExerciseGroupR\x06groups\"\x8f\x01\n" +
+	"\x06groups\x18\x05 \x03(\v2\x17.plans.v1.ExerciseGroupR\x06groups\"\xb5\x01\n" +
 	"\rExerciseGroup\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
-	"\x04kind\x18\x02 \x01(\x0e2\x1b.plans.v1.ExerciseGroupKindR\x04kind\x12\x16\n" +
-	"\x06rounds\x18\x03 \x01(\x05R\x06rounds\x12!\n" +
-	"\frest_seconds\x18\x04 \x01(\x05R\vrestSeconds\"\xc7\x01\n" +
+	"\x04kind\x18\x02 \x01(\x0e2\x1b.plans.v1.ExerciseGroupKindR\x04kind\x12\x1b\n" +
+	"\x06rounds\x18\x03 \x01(\x05H\x00R\x06rounds\x88\x01\x01\x12&\n" +
+	"\frest_seconds\x18\x04 \x01(\x05H\x01R\vrestSeconds\x88\x01\x01B\t\n" +
+	"\a_roundsB\x0f\n" +
+	"\r_rest_seconds\"\xc7\x01\n" +
 	"\x0eEquipmentIssue\x12%\n" +
 	"\x0eexercise_index\x18\x01 \x01(\x05R\rexerciseIndex\x121\n" +
 	"\tequipment\x18\x02 \x01(\x0e2\x13.plans.v1.EquipmentR\tequipment\x129\n" +
@@ -6654,6 +6693,7 @@ func file_plans_v1_plans_proto_init() {
 		(*runStep_HeartRate)(nil),
 		(*runStep_Pace)(nil),
 	}
+	file_plans_v1_plans_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
