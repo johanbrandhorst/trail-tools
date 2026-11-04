@@ -259,7 +259,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => (
         <Passkeys />
         <Invitations admin={user.admin} />
         <StravaCard showDisconnect />
-        <GarminCard />
+        <GarminCard showDisconnect />
       </div>
       <div className="flex flex-col gap-4">
         <PublicProfileCard />

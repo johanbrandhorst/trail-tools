@@ -44,12 +44,25 @@ const Permission: React.FC<PermissionProps> = ({ allowed, label }) => (
   </li>
 );
 
+interface GarminCardProps {
+  // Show the disconnect button, used on the settings page.
+  showDisconnect?: boolean;
+  /**
+   * Show nothing if the server has no Garmin credentials, rather than how to
+   * add them, used on the dashboard.
+   */
+  hideUnconfigured?: boolean;
+}
+
 /**
  * GarminCard shows the Garmin Connect connection: what the user allowed,
  * how many workouts are on their Garmin calendar, and the last sync, with
  * buttons to connect, sync and disconnect.
  */
-const GarminCard: React.FC = () => {
+const GarminCard: React.FC<GarminCardProps> = ({
+  showDisconnect = false,
+  hideUnconfigured = false,
+}) => {
   const queryClient = useQueryClient();
   const connectResult = useConnectResult("garmin");
   const { isPending, isError, data, error, refetch } =
@@ -91,6 +104,9 @@ const GarminCard: React.FC = () => {
 
   const { connection } = data;
   if (connection === undefined || !connection.configured) {
+    if (hideUnconfigured) {
+      return null;
+    }
     return (
       <Card title="Garmin Connect">
         <p className="text-sm text-gray-700">
@@ -199,17 +215,19 @@ const GarminCard: React.FC = () => {
             />
             {sync.isPending ? "Syncing" : "Sync now"}
           </button>
-          <ConfirmButton
-            title="Disconnect Garmin?"
-            message="Upcoming workouts are removed from your Garmin calendar. Synced activities are kept."
-            confirmLabel="Disconnect"
-            disabled={disconnect.isPending}
-            onConfirm={() => {
-              disconnect.mutate({});
-            }}
-          >
-            Disconnect
-          </ConfirmButton>
+          {showDisconnect && (
+            <ConfirmButton
+              title="Disconnect Garmin?"
+              message="Upcoming workouts are removed from your Garmin calendar. Synced activities are kept."
+              confirmLabel="Disconnect"
+              disabled={disconnect.isPending}
+              onConfirm={() => {
+                disconnect.mutate({});
+              }}
+            >
+              Disconnect
+            </ConfirmButton>
+          )}
         </div>
       </div>
     </Card>
