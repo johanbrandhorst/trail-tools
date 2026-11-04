@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect/v2"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -38,7 +39,7 @@ func TestExerciseGroups(t *testing.T) {
 		t.Fatal(err)
 	}
 	circuit := plansv1.ExerciseGroup_builder{
-		Name: "Core circuit", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT, Rounds: 2, RestSeconds: 45,
+		Name: "Core circuit", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT, Rounds: proto.Int32(2), RestSeconds: proto.Int32(45),
 	}.Build()
 	warmUp := func() *plansv1.PlannedExercise {
 		// Done until the user is done, with neither reps nor a time.
@@ -60,8 +61,8 @@ func TestExerciseGroups(t *testing.T) {
 		return resp.GetWorkouts()[0], nil
 	}
 
-	// A circuit's exercises are done once each round: they read with its
-	// rounds as their sets, and the rest between rounds on the group.
+	// A circuit's exercises are done once each round: its rounds and the
+	// rest between rounds are only on the group.
 	w, err := create([]*plansv1.ExerciseGroup{circuit}, warmUp(), inCircuit(1, 0), inCircuit(2, 15), inCircuit(3, 0))
 	if err != nil {
 		t.Fatalf("CreateWorkouts: %v", err)
@@ -69,6 +70,7 @@ func TestExerciseGroups(t *testing.T) {
 	st := w.GetStrength()
 	groups := st.GetGroups()
 	if len(groups) != 2 || groups[0].GetName() != "Warm-up" || groups[0].GetKind() != plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS ||
+		groups[0].HasRounds() || groups[0].HasRestSeconds() ||
 		groups[1].GetKind() != plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT || groups[1].GetRounds() != 2 || groups[1].GetRestSeconds() != 45 {
 		t.Errorf("got groups %v, want the warm-up's straight sets and the circuit of 2 rounds resting 45 s", groups)
 	}
@@ -77,8 +79,8 @@ func TestExerciseGroups(t *testing.T) {
 		t.Errorf("the warm-up is %v, want one set until done", ex[0])
 	}
 	for i := 1; i < 4; i++ {
-		if ex[i].GetSets() != 2 {
-			t.Errorf("exercise %d has %d sets, want the circuit's 2 rounds", i, ex[i].GetSets())
+		if ex[i].GetSets() != 0 {
+			t.Errorf("exercise %d of the circuit has %d sets, want none, as its rounds are on the group", i, ex[i].GetSets())
 		}
 	}
 	if ex[2].GetRestSeconds() != 15 || ex[3].GetRestSeconds() != 0 {
@@ -138,6 +140,13 @@ func TestExerciseGroups(t *testing.T) {
 			groups:    []*plansv1.ExerciseGroup{circuit},
 			exercises: []*plansv1.PlannedExercise{warmUp()},
 			want:      "no exercise is in group",
+		},
+		"straight sets with rounds": {
+			groups: []*plansv1.ExerciseGroup{plansv1.ExerciseGroup_builder{
+				Name: "Warm-up", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS, Rounds: proto.Int32(2),
+			}.Build()},
+			exercises: []*plansv1.PlannedExercise{warmUp()},
+			want:      "leave them unset",
 		},
 		"straight sets without sets": {
 			exercises: []*plansv1.PlannedExercise{plansv1.PlannedExercise_builder{ExerciseId: ids[0], Group: "Warm-up", Reps: 10}.Build()},

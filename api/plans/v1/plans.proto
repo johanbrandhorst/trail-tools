@@ -420,13 +420,14 @@ message ExerciseGroup {
   // How the exercises are done. Required.
   ExerciseGroupKind kind = 2;
   // For a superset or circuit, how many times the whole sequence of
-  // exercises is done, from 1 to 20. 0 for straight sets, whose exercises
-  // each have their own sets.
-  int32 rounds = 3;
+  // exercises is done, from 1 to 20. Required for them, and the only place
+  // their rounds are kept. Unset for straight sets, whose exercises each
+  // have their own sets.
+  optional int32 rounds = 3;
   // For a superset or circuit, the rest after each round in seconds, e.g.
-  // 60. 0 if none, and for straight sets, whose exercises each have their
-  // own rest.
-  int32 rest_seconds = 4;
+  // 60, or 0 for none. Unset for straight sets, whose exercises each have
+  // their own rest.
+  optional int32 rest_seconds = 4;
 }
 
 // Equipment an exercise of a strength workout needs that the user doesn't
@@ -459,12 +460,14 @@ message PlannedExercise {
   // shown together. A group is straight sets unless StrengthWorkout.groups
   // says it's a superset or circuit. Empty if none.
   string group = 3;
-  // The number of sets, from 1 to 20. In a superset or circuit, leave it 0:
-  // the exercise is done once each round, and it's set to the group's
-  // rounds when reading.
+  // The number of sets, from 1 to 20. In a superset or circuit, leave it 0,
+  // as it reads: the exercise is done once each round, for the group's
+  // rounds. A number other than the rounds is refused.
   int32 sets = 4;
   // The reps of each set, per side for exercises done on each side. 0 for
-  // exercises held for a time.
+  // exercises held for a time, and for exercises done until the user is
+  // done, like stretches or leg swings: leave both reps and hold_seconds 0
+  // for those, and watches move on when the lap button is pressed.
   int32 reps = 5;
   // How long each set is held in seconds, per side for exercises done on
   // each side, e.g. 30 for a plank. 0 for exercises done for reps. Set at

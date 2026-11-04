@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import type { Weight } from "gen/plans/v1/equipment_pb";
 import { Equipment, WeightUnit } from "gen/plans/v1/equipment_pb";
 import type { Exercise } from "gen/plans/v1/exercises_pb";
@@ -6,9 +7,12 @@ import type {
   ExerciseGroup as PlannedGroup,
   LoggedSet,
   PlannedExercise,
+  StrengthWorkout,
 } from "gen/plans/v1/plans_pb";
 import {
   ExerciseGroupKind,
+  PlannedExerciseSchema,
+  StrengthWorkoutSchema,
   ExerciseEffort,
   ExerciseVolume,
   SessionEffort,
@@ -365,15 +369,33 @@ export const formatRounds = (
 ): { rounds: string; rest: string } => {
   const kind =
     group.kind === ExerciseGroupKind.CIRCUIT ? "Circuit" : "Superset";
-  const rounds = `${kind} · ${group.rounds} ${group.rounds === 1 ? "round" : "rounds"}`;
+  const count = group.rounds ?? 1;
+  const restSeconds = group.restSeconds ?? 0;
+  const rounds = `${kind} · ${count} ${count === 1 ? "round" : "rounds"}`;
   let rest = "No rest between rounds";
-  if (group.rounds === 1) {
-    rest =
-      group.restSeconds > 0
-        ? `Rest ${formatSeconds(group.restSeconds)} after`
-        : "";
-  } else if (group.restSeconds > 0) {
-    rest = `Rest ${formatSeconds(group.restSeconds)} between rounds`;
+  if (count === 1) {
+    rest = restSeconds > 0 ? `Rest ${formatSeconds(restSeconds)} after` : "";
+  } else if (restSeconds > 0) {
+    rest = `Rest ${formatSeconds(restSeconds)} between rounds`;
   }
   return { rest, rounds };
 };
+
+/**
+ * WithRoundSets returns a strength workout with the exercises of its
+ * supersets and circuits given their group's rounds as their sets, as
+ * they're done that many times, for following the workout set by set.
+ */
+export const withRoundSets = (strength: StrengthWorkout): StrengthWorkout =>
+  create(StrengthWorkoutSchema, {
+    ...strength,
+    exercises: strength.exercises.map((planned) => {
+      const group = roundGroup(strength.groups, planned.group);
+      return group === undefined
+        ? planned
+        : create(PlannedExerciseSchema, {
+            ...planned,
+            sets: group.rounds ?? 1,
+          });
+    }),
+  });

@@ -13,6 +13,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
 	"github.com/johanbrandhorst/trail-tools/internal/services/route"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -187,8 +188,8 @@ func strengthExercisesFromProto(st *plansv1.StrengthWorkout) ([]*plans.PlannedEx
 			return nil, fmt.Errorf("groups[%d]: group %q is listed twice", i, name)
 		case !ok:
 			return nil, fmt.Errorf("groups[%d].kind is required: STRAIGHT_SETS, SUPERSET or CIRCUIT", i)
-		case kind == plans.GroupStraightSets && (g.GetRounds() != 0 || g.GetRestSeconds() != 0):
-			return nil, fmt.Errorf("groups[%d]: straight sets have no rounds or rest_seconds; set each exercise's sets and rest_seconds", i)
+		case kind == plans.GroupStraightSets && (g.HasRounds() || g.HasRestSeconds()):
+			return nil, fmt.Errorf("groups[%d]: straight sets have no rounds or rest_seconds; leave them unset, and set each exercise's sets and rest_seconds", i)
 		case kind != plans.GroupStraightSets && (g.GetRounds() < 1 || g.GetRounds() > maxSets):
 			return nil, fmt.Errorf("groups[%d].rounds must be between 1 and %d", i, maxSets)
 		case g.GetRestSeconds() < 0:
@@ -258,8 +259,9 @@ func looksLikeRounds(group string) bool {
 }
 
 // strengthGroupsToProto returns the groups of a strength workout's
-// exercises, in order, and moves the rest between rounds of supersets and
-// circuits from their last exercises to the groups.
+// exercises, in order, and moves the rounds of supersets and circuits from
+// their exercises' sets, and the rest between rounds from their last
+// exercises, to the groups, so each is in one place.
 func strengthGroupsToProto(exercises []*plans.PlannedExercise, out []*plansv1.PlannedExercise) []*plansv1.ExerciseGroup {
 	var groups []*plansv1.ExerciseGroup
 	for i, e := range exercises {
@@ -269,13 +271,16 @@ func strengthGroupsToProto(exercises []*plans.PlannedExercise, out []*plansv1.Pl
 		g := plansv1.ExerciseGroup_builder{Name: e.Group, Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS}
 		if e.GroupKind != plans.GroupStraightSets {
 			g.Kind = groupKindsToProto[e.GroupKind]
-			g.Rounds = e.Sets
+			g.Rounds = proto.Int32(e.Sets)
 			last := i
 			for last+1 < len(exercises) && exercises[last+1].Group == e.Group {
 				last++
 			}
-			g.RestSeconds = exercises[last].RestSeconds
+			g.RestSeconds = proto.Int32(exercises[last].RestSeconds)
 			out[last].SetRestSeconds(0)
+			for j := i; j <= last; j++ {
+				out[j].SetSets(0)
+			}
 		}
 		groups = append(groups, g.Build())
 	}
