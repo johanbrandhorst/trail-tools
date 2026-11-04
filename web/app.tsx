@@ -33,6 +33,7 @@ import RoutePage from "pages/route";
 import RoutesPage from "pages/routes";
 import SettingsPage from "pages/settings";
 import SharedRacePlanPage from "pages/shared-race-plan";
+import SharedWorkoutPage from "pages/shared-workout";
 import SignInPage from "pages/sign-in";
 import StrengthSessionPage from "pages/strength-session";
 import TripReportPage from "pages/trip-report";
@@ -122,6 +123,7 @@ const App: React.FC = () => {
     <Routes>
       <Route element={<Layout user={user} />}>
         <Route path="/share/race-plans" element={<SharedRacePlanPage />} />
+        <Route path="/share/workouts" element={<SharedWorkoutPage />} />
         <Route
           path="/u/:handle/races/:slug"
           element={<PublicRaceReportPage />}

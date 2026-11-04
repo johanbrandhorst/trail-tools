@@ -1,12 +1,10 @@
-import ElevationProfile from "@components/charts/elevation-profile";
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import Loading from "@components/loading";
-import { FitBounds, PointMarker, PolylineLayer } from "@components/map/layers";
-import MapView from "@components/map/map-view";
 import RunSteps from "@components/plans/run-steps";
 import WorkoutDialog from "@components/plans/workout-dialog";
+import { Goal, RouteCard } from "@components/plans/workout-goal";
+import WorkoutShareCard from "@components/plans/workout-share";
 import { WeatherForecast } from "@components/plans/workout-weather";
-import { toTuples } from "@components/routes/route-geometry";
 import StrengthWorkoutView from "@components/strength/strength-workout";
 import Card from "@components/ui/card";
 import QueryError from "@components/ui/query-error";
@@ -20,7 +18,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { skipToken } from "@tanstack/react-query";
 import { listActivities } from "gen/activities/v1/activities-ActivityService_connectquery";
-import { Terrain } from "gen/geo/v1/geo_pb";
 import { listExercises } from "gen/plans/v1/exercises-ExerciseService_connectquery";
 import {
   getTrainingPlan,
@@ -30,10 +27,9 @@ import {
 import type { Workout } from "gen/plans/v1/plans_pb";
 import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { getRoute } from "gen/routes/v1/routes-RouteService_connectquery";
-import type { Route } from "gen/routes/v1/routes_pb";
 import { addDays, today } from "helpers/dates";
-import { formatDate, formatHoursMinutes, formatKm } from "helpers/format";
-import { terrainStyle, workoutStyle } from "helpers/labels";
+import { formatDate } from "helpers/format";
+import { workoutStyle } from "helpers/labels";
 import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -50,154 +46,6 @@ const FORECAST_DAYS = 15;
 
 // Forecasts change slowly, so they're kept for half an hour.
 const WEATHER_STALE_MS = 30 * 60 * 1000;
-
-// Paragraphs splits text into paragraphs at blank lines.
-const Paragraphs: React.FC<{ text: string }> = ({ text }) =>
-  text
-    .split(/\n\s*\n/u)
-    .filter((paragraph) => paragraph.trim() !== "")
-    .map((paragraph) => (
-      <p key={paragraph} className="whitespace-pre-line">
-        {paragraph}
-      </p>
-    ));
-
-/**
- * Goal shows what the workout is for and its targets. Base workouts stay
- * below the user's aerobic threshold, if a lactate test found it.
- */
-const Goal: React.FC<{ workout: Workout }> = ({ workout }) => {
-  const threshold = useAerobicThreshold();
-  const capped = workout.type === WorkoutType.BASE && threshold !== undefined;
-  const targets: { label: string; value: string }[] = [];
-  const planned = workoutTargets(workout);
-  if (planned.distanceMeters > 0) {
-    targets.push({
-      label: "Distance",
-      value: formatKm(planned.distanceMeters),
-    });
-  }
-  if (planned.elevationGainMeters > 0) {
-    targets.push({
-      label: "Elevation gain",
-      value: `${Math.round(planned.elevationGainMeters).toLocaleString()} m`,
-    });
-  }
-  if (planned.durationSeconds > 0) {
-    targets.push({
-      label: "Time",
-      value: formatHoursMinutes(planned.durationSeconds),
-    });
-  }
-  if (workout.details.case === "strength") {
-    const count = workout.details.value.exercises.length;
-    if (count > 0) {
-      targets.push({ label: "Exercises", value: String(count) });
-    }
-  }
-  if (planned.terrain !== Terrain.UNSPECIFIED) {
-    targets.push({
-      label: "Terrain",
-      value: terrainStyle(planned.terrain).label,
-    });
-  }
-  if (capped) {
-    targets.push({
-      label: "Heart rate",
-      value: `Under ${threshold.heartRateBpm} bpm`,
-    });
-  }
-  return (
-    <Card title="Goal">
-      <div className="flex flex-col gap-4">
-        {targets.length > 0 && (
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {targets.map((target) => (
-              <div key={target.label}>
-                <dt className="text-xs font-medium tracking-wide text-gray-500 uppercase">
-                  {target.label}
-                </dt>
-                <dd className="text-lg font-semibold text-gray-900 tabular-nums">
-                  {target.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {capped && (
-          <p className="text-sm text-gray-600">
-            Your aerobic threshold, from your{" "}
-            <Link
-              to={`/lactate-tests/${threshold.test.id}`}
-              className={linkClass}
-            >
-              lactate test on {formatDate(threshold.test.date)}
-            </Link>
-            . Keeping below it keeps the workout easy.
-          </p>
-        )}
-        {workout.description.trim() === "" ? (
-          targets.length === 0 && (
-            <p className="text-sm text-gray-500">No goal set.</p>
-          )
-        ) : (
-          <div className="flex flex-col gap-3 leading-7 text-gray-800">
-            <Paragraphs text={workout.description} />
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-};
-
-// RouteCard shows the workout's route on a map with its elevation profile.
-const RouteCard: React.FC<{ route: Route }> = ({ route }) => {
-  const { points } = route;
-  const tuples = useMemo(() => toTuples(points), [points]);
-  const [start] = tuples;
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const hover = hoverIndex === null ? undefined : points.at(hoverIndex);
-  const total = points.at(-1)?.distanceMeters ?? 0;
-  return (
-    <Card
-      title="Route"
-      actions={
-        <Link to={`/routes/${route.id}`} className={`${linkClass} text-sm`}>
-          {route.name}
-        </Link>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <div className="overflow-hidden rounded-lg border border-gray-200">
-          <MapView className="h-80">
-            {tuples.length > 1 && (
-              <PolylineLayer positions={tuples} color="#d2601a" weight={4} />
-            )}
-            {start !== undefined && (
-              <PointMarker position={start} color="#111111" tooltip="Start" />
-            )}
-            {hover !== undefined && (
-              <PointMarker
-                position={[hover.lat, hover.lng]}
-                color="#d2601a"
-                radius={6}
-              />
-            )}
-            <FitBounds positions={tuples} fitKey={route.id} />
-          </MapView>
-        </div>
-        <p className="text-sm text-gray-600 tabular-nums">
-          {formatKm(total)}
-          {route.stats !== undefined &&
-            ` · ${Math.round(route.stats.elevationGainMeters).toLocaleString()} m up`}
-        </p>
-        {points.length > 1 && (
-          <ElevationProfile points={points} onHover={setHoverIndex} />
-        )}
-      </div>
-    </Card>
-  );
-};
 
 // NoForecast explains why a workout has no forecast.
 const noForecast = (date: string): string => {
@@ -264,6 +112,7 @@ const WorkoutPage: React.FC = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const threshold = useAerobicThreshold();
   const { isPending, isError, data, error, refetch } = useQuery(getWorkout, {
     id,
   });
@@ -421,7 +270,7 @@ const WorkoutPage: React.FC = () => {
       </header>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Goal workout={workout} />
+          <Goal workout={workout} threshold={threshold} />
           {workout.details.case === "run" &&
             workout.details.value.blocks.length > 0 && (
               <RunSteps blocks={workout.details.value.blocks} />
@@ -434,7 +283,13 @@ const WorkoutPage: React.FC = () => {
             />
           )}
           {route.data?.route !== undefined && (
-            <RouteCard route={route.data.route} />
+            <RouteCard
+              name={route.data.route.name}
+              points={route.data.route.points}
+              stats={route.data.route.stats}
+              link={`/routes/${route.data.route.id}`}
+              fitKey={route.data.route.id}
+            />
           )}
           {routeId === "" && outdoors(workout) && (
             <Card title="Route">
@@ -453,6 +308,7 @@ const WorkoutPage: React.FC = () => {
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           <WeatherCard workout={workout} />
+          <WorkoutShareCard workout={workout} />
         </div>
       </div>
       {editing && plan.data?.plan !== undefined && (

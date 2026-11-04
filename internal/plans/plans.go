@@ -4,6 +4,7 @@ package plans
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -110,6 +111,8 @@ type Workout struct {
 	// The structure of a run, in order. Nil for runs without structure and
 	// other workouts.
 	RunBlocks []RunBlock
+	// The token of the workout's share link, empty if it isn't shared.
+	ShareToken string
 	// The exercises of a strength workout, in order. Nil for other types.
 	Exercises []*PlannedExercise
 	// The exercises the user lacks equipment for, computed when reading.
@@ -636,6 +639,7 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		StartWindowMinutes:        w.StartWindowMinutes,
 		LocationName:              w.LocationName,
 		RunBlocks:                 runBlocksFromDB(w.RunBlocks),
+		ShareToken:                w.ShareToken.String,
 	}
 	if w.LocationLat.Valid && w.LocationLng.Valid {
 		workout.Location = &geo.Point{Lat: w.LocationLat.Float64, Lng: w.LocationLng.Float64}
@@ -671,4 +675,49 @@ func startTimeFromDB(t pgtype.Time) string {
 	}
 	minutes := t.Microseconds / int64(time.Minute/time.Microsecond)
 	return fmt.Sprintf("%02d:%02d", minutes/60, minutes%60)
+}
+
+// ShareWorkout returns the token of the share link of one of the user's
+// workouts, creating it if the workout isn't shared yet.
+func (r *Repository) ShareWorkout(ctx context.Context, userID, workoutID pgtype.UUID) (string, error) {
+	token, err := r.q.ShareWorkout(ctx, &gen.ShareWorkoutParams{ID: workoutID, UserID: userID, NewToken: rand.Text()})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", store.ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to share workout: %w", err)
+	}
+	return token.String, nil
+}
+
+// UnshareWorkout removes the share link of one of the user's workouts.
+func (r *Repository) UnshareWorkout(ctx context.Context, userID, workoutID pgtype.UUID) error {
+	n, err := r.q.UnshareWorkout(ctx, &gen.UnshareWorkoutParams{ID: workoutID, UserID: userID})
+	if err != nil {
+		return fmt.Errorf("failed to unshare workout: %w", err)
+	}
+	if n == 0 {
+		return store.ErrNotFound
+	}
+	return nil
+}
+
+// GetSharedWorkout returns the workout shared with a token, with the ID of
+// the user it belongs to.
+func (r *Repository) GetSharedWorkout(ctx context.Context, token string) (*Workout, pgtype.UUID, error) {
+	if token == "" {
+		return nil, pgtype.UUID{}, store.ErrNotFound
+	}
+	share, err := r.q.GetWorkoutShare(ctx, pgtype.Text{String: token, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, pgtype.UUID{}, store.ErrNotFound
+	}
+	if err != nil {
+		return nil, pgtype.UUID{}, fmt.Errorf("failed to get shared workout: %w", err)
+	}
+	w, err := r.GetWorkout(ctx, share.UserID, share.ID)
+	if err != nil {
+		return nil, pgtype.UUID{}, err
+	}
+	return w, share.UserID, nil
 }

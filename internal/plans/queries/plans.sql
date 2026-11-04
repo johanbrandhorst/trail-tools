@@ -217,3 +217,20 @@ order by date, kind;
 -- name: CountRaces :one
 select count(*) from races
 where user_id = $1 and id = any(sqlc.arg(ids)::uuid[]);
+
+-- name: ShareWorkout :one
+update workouts w set
+  share_token = coalesce(w.share_token, sqlc.arg(new_token)::text)
+from training_plans p
+where w.id = sqlc.arg(id) and p.id = w.plan_id and p.user_id = sqlc.arg(user_id)
+returning w.share_token;
+
+-- name: UnshareWorkout :execrows
+update workouts w set share_token = null
+from training_plans p
+where w.id = sqlc.arg(id) and p.id = w.plan_id and p.user_id = sqlc.arg(user_id);
+
+-- name: GetWorkoutShare :one
+select w.id, p.user_id from workouts w
+join training_plans p on p.id = w.plan_id
+where w.share_token = $1;

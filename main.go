@@ -679,6 +679,7 @@ func run(
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
+	planService.SetSharing(planRepo, baseURL)
 	if garminSyncer != nil {
 		// Changed workouts of the coming days go on the Garmin calendar
 		// right away.
@@ -730,6 +731,7 @@ func run(
 	routingv1connect.RegisterMapDataServiceHandler(server, mapDataService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(server, planService)
 	plansv1connect.RegisterExerciseServiceHandler(server, exerciseService)
+	plansv1connect.RegisterWorkoutShareServiceHandler(server, planService)
 	racesv1connect.RegisterRaceServiceHandler(server, raceService)
 	racesv1connect.RegisterRacePlanServiceHandler(server, racePlanService)
 	racesv1connect.RegisterRaceReportServiceHandler(server, raceReportService)
@@ -774,6 +776,7 @@ func run(
 		mcp.Service{Name: geov1connect.GeoServiceName, Handler: geoService},
 		mcp.Service{Name: plansv1connect.TrainingPlanServiceName, Handler: planService},
 		mcp.Service{Name: plansv1connect.ExerciseServiceName, Handler: exerciseService},
+		mcp.Service{Name: plansv1connect.WorkoutShareServiceName, Handler: planService},
 		mcp.Service{Name: racesv1connect.RaceServiceName, Handler: raceService},
 		mcp.Service{Name: racesv1connect.RacePlanServiceName, Handler: racePlanService},
 		mcp.Service{Name: tripsv1connect.TripReportServiceName, Handler: tripService},
@@ -890,6 +893,8 @@ func run(
 	// Serve strength workouts as Garmin workouts, falling back to the
 	// frontend for other /workouts/ pages.
 	mux.Handle("/workouts/", authenticate(planService.DownloadHandler(indexHandler)))
+	// Shared workouts' files are downloaded without signing in.
+	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
 	mux.Handle("/race-plans/", authenticate(racePlanService.CourseHandler(indexHandler)))
 	// Registering /routes/ makes the mux redirect /routes to /routes/, so
 	// serve the frontend for /routes explicitly.

@@ -112,8 +112,12 @@ type env struct {
 	imports       *fakeImportRunner
 	plans         plansv1connect.TrainingPlanServiceClient
 	exercises     plansv1connect.ExerciseServiceClient
-	races         racesv1connect.RaceServiceClient
-	racePlans     racesv1connect.RacePlanServiceClient
+	// Workout shares of the user, anyone and another user.
+	shares      plansv1connect.WorkoutShareServiceClient
+	anonShares  plansv1connect.WorkoutShareServiceClient
+	otherShares plansv1connect.WorkoutShareServiceClient
+	races       racesv1connect.RaceServiceClient
+	racePlans   racesv1connect.RacePlanServiceClient
 	// Race reports of the user, anyone and another user.
 	raceReports      racesv1connect.RaceReportServiceClient
 	anonRaceReports  racesv1connect.RaceReportServiceClient
@@ -207,6 +211,7 @@ func newEnv(t *testing.T) *env {
 	routeService := route.NewService(log, report, routeRepo, activityRepo, e.router, e.mapData)
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
+	planService.SetSharing(planRepo, "https://trail.example")
 	e.garmin = newFakeGarmin()
 	// Notifications are handled when tests say, as by the scheduled
 	// sync the trigger runs.
@@ -250,6 +255,7 @@ func newEnv(t *testing.T) *env {
 	geov1connect.RegisterGeoServiceHandler(srv2, geoService)
 	plansv1connect.RegisterTrainingPlanServiceHandler(srv2, planService)
 	plansv1connect.RegisterExerciseServiceHandler(srv2, plan.NewExerciseService(log, report, planRepo))
+	plansv1connect.RegisterWorkoutShareServiceHandler(srv2, planService)
 	racesv1connect.RegisterRaceServiceHandler(srv2, raceService)
 	racesv1connect.RegisterRacePlanServiceHandler(srv2, racePlanService)
 	tripsv1connect.RegisterTripReportServiceHandler(srv2, tripService)
@@ -265,6 +271,7 @@ func newEnv(t *testing.T) *env {
 
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle("/workouts/", planService.DownloadHandler(http.NotFoundHandler()))
+	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
 	mux.Handle("/race-plans/", racePlanService.CourseHandler(http.NotFoundHandler()))
 	e.imports = &fakeImportRunner{}
 	srv3 := connect.NewServer()
@@ -314,6 +321,8 @@ func newEnv(t *testing.T) *env {
 	e.mapDataAPI = routingv1connect.NewMapDataServiceClient(authed)
 	e.plans = plansv1connect.NewTrainingPlanServiceClient(authed)
 	e.exercises = plansv1connect.NewExerciseServiceClient(authed)
+	e.shares = plansv1connect.NewWorkoutShareServiceClient(authed)
+	e.anonShares = plansv1connect.NewWorkoutShareServiceClient(anon)
 	e.races = racesv1connect.NewRaceServiceClient(authed)
 	e.racePlans = racesv1connect.NewRacePlanServiceClient(authed)
 	e.anonPlans = racesv1connect.NewRacePlanServiceClient(anon)
@@ -322,6 +331,7 @@ func newEnv(t *testing.T) *env {
 	e.otherPlans = racesv1connect.NewRacePlanServiceClient(other)
 	e.otherTraining = plansv1connect.NewTrainingPlanServiceClient(other)
 	e.otherExercises = plansv1connect.NewExerciseServiceClient(other)
+	e.otherShares = plansv1connect.NewWorkoutShareServiceClient(other)
 	e.oauth = oauthv1connect.NewOAuthServiceClient(signedIn)
 	e.anonOAuth = oauthv1connect.NewOAuthServiceClient(anon)
 	e.trips = tripsv1connect.NewTripReportServiceClient(authed)

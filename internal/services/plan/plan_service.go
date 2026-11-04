@@ -56,6 +56,10 @@ type Service struct {
 	weather    WeatherSource
 	// Called after the user's workouts changed, nil if nothing listens.
 	workoutsChanged WorkoutsChangedFunc
+	// Shares workouts, nil if sharing isn't set up, with links under
+	// baseURL.
+	shares  ShareRepository
+	baseURL string
 }
 
 // WorkoutsChangedFunc is told about changes to the user's workouts, on the
@@ -316,7 +320,7 @@ func (s *Service) ListWorkouts(ctx context.Context, req *plansv1.ListWorkoutsReq
 	}
 	protoWorkouts := make([]*plansv1.Workout, len(workouts))
 	for i, w := range workouts {
-		protoWorkouts[i] = workoutToProto(w)
+		protoWorkouts[i] = s.workoutProto(w)
 	}
 	return plansv1.ListWorkoutsResponse_builder{Workouts: protoWorkouts}.Build(), nil
 }
@@ -348,7 +352,7 @@ func (s *Service) CreateWorkouts(ctx context.Context, req *plansv1.CreateWorkout
 	protoWorkouts := make([]*plansv1.Workout, len(created))
 	dates := make([]time.Time, len(created))
 	for i, w := range created {
-		protoWorkouts[i] = workoutToProto(w)
+		protoWorkouts[i] = s.workoutProto(w)
 		dates[i] = w.Date
 	}
 	s.notifyWorkoutsChanged(ctx, plan.UserID, dates...)
@@ -368,7 +372,7 @@ func (s *Service) GetWorkout(ctx context.Context, req *plansv1.GetWorkoutRequest
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get workout")
 	}
-	return plansv1.GetWorkoutResponse_builder{Workout: workoutToProto(workout)}.Build(), nil
+	return plansv1.GetWorkoutResponse_builder{Workout: s.workoutProto(workout)}.Build(), nil
 }
 
 func (s *Service) UpdateWorkout(ctx context.Context, req *plansv1.UpdateWorkoutRequest) (*plansv1.UpdateWorkoutResponse, error) {
@@ -405,7 +409,7 @@ func (s *Service) UpdateWorkout(ctx context.Context, req *plansv1.UpdateWorkoutR
 		return nil, s.toConnectError(ctx, err, "failed to update workout")
 	}
 	s.notifyWorkoutsChanged(ctx, userID, existing.Date, updated.Date)
-	return plansv1.UpdateWorkoutResponse_builder{Workout: workoutToProto(updated)}.Build(), nil
+	return plansv1.UpdateWorkoutResponse_builder{Workout: s.workoutProto(updated)}.Build(), nil
 }
 
 func (s *Service) DeleteWorkouts(ctx context.Context, req *plansv1.DeleteWorkoutsRequest) (*plansv1.DeleteWorkoutsResponse, error) {
