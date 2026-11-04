@@ -1,5 +1,6 @@
 import { RouteThumbnail } from "@components/activities/activity-bits";
 import VolumeChart from "@components/charts/volume-chart";
+import GarminCard from "@components/garmin/garmin-card";
 import Loading from "@components/loading";
 import {
   groupActivitiesByDate,
@@ -393,6 +394,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => (
       </div>
       <div className="flex flex-col gap-4">
         <StravaCard />
+        <GarminCard hideUnconfigured />
         <UpcomingRacesCard />
         <RecentActivitiesCard />
       </div>
