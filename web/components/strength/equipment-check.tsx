@@ -112,6 +112,7 @@ const EquipmentCheck: React.FC<EquipmentCheckProps> = ({
                 weight: position === index ? weight : planned.weight,
               })
             ),
+            groups: strength.groups,
             targetDurationSeconds: strength.targetDurationSeconds,
           }),
         },

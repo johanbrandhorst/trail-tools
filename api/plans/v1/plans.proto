@@ -388,6 +388,45 @@ message StrengthWorkout {
   // haven't said what they have. Change the exercises or weights so there
   // are none.
   repeated EquipmentIssue equipment_issues = 4 [(mcp.v1.field).output_only = true];
+  // How the exercises of each group named in exercises' group are done:
+  // straight sets, or back to back for rounds as a superset or circuit.
+  // Every superset and circuit must be listed here, with its rounds and the
+  // rest between rounds; a group that isn't listed is straight sets.
+  repeated ExerciseGroup groups = 5;
+}
+
+// ExerciseGroupKind is how the exercises of a group are done.
+enum ExerciseGroupKind {
+  EXERCISE_GROUP_KIND_UNSPECIFIED = 0;
+  // Each exercise for all its sets, resting after each set, before the
+  // next exercise, e.g. a warm-up or the main lifts.
+  EXERCISE_GROUP_KIND_STRAIGHT_SETS = 1;
+  // Two or three exercises done back to back, one set of each, then
+  // repeated for the group's rounds, e.g. split squats and single-leg
+  // deadlifts.
+  EXERCISE_GROUP_KIND_SUPERSET = 2;
+  // Several exercises done back to back, one set of each, then repeated for
+  // the group's rounds, e.g. a core circuit.
+  EXERCISE_GROUP_KIND_CIRCUIT = 3;
+}
+
+// ExerciseGroup says how the exercises of a group of a strength workout are
+// done. The exercises are those whose group is the group's name, and must
+// be consecutive in the workout's exercises.
+message ExerciseGroup {
+  // The group's name, as in the exercises' group, e.g. "Superset A" or
+  // "Core circuit". Required, and unique in the workout.
+  string name = 1;
+  // How the exercises are done. Required.
+  ExerciseGroupKind kind = 2;
+  // For a superset or circuit, how many times the whole sequence of
+  // exercises is done, from 1 to 20. 0 for straight sets, whose exercises
+  // each have their own sets.
+  int32 rounds = 3;
+  // For a superset or circuit, the rest after each round in seconds, e.g.
+  // 60. 0 if none, and for straight sets, whose exercises each have their
+  // own rest.
+  int32 rest_seconds = 4;
 }
 
 // Equipment an exercise of a strength workout needs that the user doesn't
@@ -417,17 +456,21 @@ message PlannedExercise {
   string exercise_name = 2 [(mcp.v1.field).output_only = true];
   // The part of the workout the exercise is in, e.g. "Warm-up", "Main",
   // "Superset A" or "Cool-down". Consecutive exercises in the same group are
-  // shown together; name a group "Superset" or "Circuit" for exercises done
-  // back to back, with the rest after the last of them. Empty if none.
+  // shown together. A group is straight sets unless StrengthWorkout.groups
+  // says it's a superset or circuit. Empty if none.
   string group = 3;
-  // The number of sets, or rounds of a superset. At least 1.
+  // The number of sets, from 1 to 20. In a superset or circuit, leave it 0:
+  // the exercise is done once each round, and it's set to the group's
+  // rounds when reading.
   int32 sets = 4;
   // The reps of each set, per side for exercises done on each side. 0 for
   // exercises held for a time.
   int32 reps = 5;
   // How long each set is held in seconds, per side for exercises done on
-  // each side, e.g. 30 for a plank. 0 for exercises done for reps. One of
-  // reps and hold_seconds must be set.
+  // each side, e.g. 30 for a plank. 0 for exercises done for reps. Set at
+  // most one of reps and hold_seconds: with neither, the exercise is done
+  // until the user is done, e.g. leg swings in a warm-up or stretches in a
+  // cool-down, and watches move on when they press the lap button.
   int32 hold_seconds = 6;
   // The weight of the exercise's dumbbells (each), kettlebell or medicine
   // ball, in the unit of the user's equipment, e.g. 25 pounds for 25 lb
@@ -435,7 +478,10 @@ message PlannedExercise {
   // ExerciseService.GetHomeEquipment): they use this weight rather than
   // picking one on the day.
   Weight weight = 7;
-  // The rest after each set in seconds. 0 if none.
+  // The rest after each set in seconds. 0 if none. In a superset or
+  // circuit, the rest before the next exercise of the round, usually 0; it
+  // must be 0 for the group's last exercise, as the group's rest_seconds
+  // comes after the round.
   int32 rest_seconds = 8;
   // The tempo, e.g. "3 s down, 1 s pause". Empty if none.
   string tempo = 9;

@@ -95,7 +95,7 @@ func TestStrengthWorkouts(t *testing.T) {
 	squats := plansv1.PlannedExercise_builder{
 		ExerciseId: squat.GetId(), Group: "Main", Sets: 3, Reps: 8, Weight: kilograms(10), RestSeconds: 90, TargetEffort: 7,
 	}.Build()
-	planks := plansv1.PlannedExercise_builder{ExerciseId: plank.GetId(), Group: "Superset A", Sets: 3, HoldSeconds: 20}.Build()
+	planks := plansv1.PlannedExercise_builder{ExerciseId: plank.GetId(), Group: "Core", Sets: 3, HoldSeconds: 20}.Build()
 	workouts, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
 		PlanId: planID,
 		Workouts: []*plansv1.Workout{
@@ -177,12 +177,12 @@ func TestStrengthWorkouts(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"start_time", "start_window_minutes"}},
 	}.Build())
 	wantCode(t, err, connect.CodeInvalidArgument)
-	// Exercises must be in the user's library, and be done for reps or for
-	// a time.
+	// Exercises must be in the user's library, and be done for reps, for a
+	// time or until done, not both reps and a time.
 	for name, planned := range map[string]*plansv1.PlannedExercise{
 		"missing":        plansv1.PlannedExercise_builder{ExerciseId: "00000000-0000-0000-0000-000000000000", Sets: 1, Reps: 5}.Build(),
 		"another user's": plansv1.PlannedExercise_builder{ExerciseId: otherExercise.GetExercises()[0].GetId(), Sets: 1, Reps: 5}.Build(),
-		"no reps":        plansv1.PlannedExercise_builder{ExerciseId: squat.GetId(), Sets: 3}.Build(),
+		"reps and time":  plansv1.PlannedExercise_builder{ExerciseId: squat.GetId(), Sets: 3, Reps: 5, HoldSeconds: 20}.Build(),
 		"no sets":        plansv1.PlannedExercise_builder{ExerciseId: squat.GetId(), Reps: 5}.Build(),
 	} {
 		_, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{

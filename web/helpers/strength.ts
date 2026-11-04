@@ -2,8 +2,13 @@ import type { Weight } from "gen/plans/v1/equipment_pb";
 import { Equipment, WeightUnit } from "gen/plans/v1/equipment_pb";
 import type { Exercise } from "gen/plans/v1/exercises_pb";
 import { Muscle } from "gen/plans/v1/exercises_pb";
-import type { LoggedSet, PlannedExercise } from "gen/plans/v1/plans_pb";
+import type {
+  ExerciseGroup as PlannedGroup,
+  LoggedSet,
+  PlannedExercise,
+} from "gen/plans/v1/plans_pb";
 import {
+  ExerciseGroupKind,
   ExerciseEffort,
   ExerciseVolume,
   SessionEffort,
@@ -173,25 +178,35 @@ export const formatReps = (
   reps: number,
   holdSeconds: number,
   eachSide: boolean
-): string =>
-  holdSeconds > 0
-    ? `${formatSeconds(holdSeconds)}${perSide(eachSide)}`
-    : `${reps}${perSide(eachSide)}`;
+): string => {
+  if (holdSeconds > 0) {
+    return `${formatSeconds(holdSeconds)}${perSide(eachSide)}`;
+  }
+  if (reps > 0) {
+    return `${reps}${perSide(eachSide)}`;
+  }
+  return `until done${perSide(eachSide)}`;
+};
 
 /**
  * FormatDose formats what to do of a planned exercise, e.g. "3 × 8 each
- * side · 10 kg · rest 90 s".
+ * side · 10 kg · rest 90 s". In a superset or circuit, inRounds leaves out
+ * the sets, which are the group's rounds.
  */
 export const formatDose = (
   planned: PlannedExercise,
-  eachSide: boolean
+  eachSide: boolean,
+  inRounds = false
 ): string => {
+  const reps = formatReps(planned.reps, planned.holdSeconds, eachSide);
+  const once = inRounds || (planned.sets === 1 && isOpen(planned));
+  // Without "N ×" before them, reps need their unit.
+  const alone =
+    planned.reps > 0 && planned.holdSeconds === 0
+      ? `${planned.reps} reps${perSide(eachSide)}`
+      : capitalize(reps);
   // Lines only break between the parts.
-  const parts = [
-    keepTogether(
-      `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, eachSide)}`
-    ),
-  ];
+  const parts = [keepTogether(once ? alone : `${planned.sets} × ${reps}`)];
   if (hasWeight(planned.weight)) {
     parts.push(formatWeight(planned.weight));
   }
@@ -204,10 +219,25 @@ export const formatDose = (
   return parts.join(" · ");
 };
 
-// FormatSet formats a logged set, e.g. "8 × 10 kg" or "20 s".
+/**
+ * IsOpen reports whether an exercise is done until the user is done, with
+ * neither reps nor a time.
+ */
+export const isOpen = (planned: PlannedExercise): boolean =>
+  planned.reps === 0 && planned.holdSeconds === 0;
+
+// Capitalize capitalizes the first letter of a text.
+const capitalize = (text: string): string =>
+  text.charAt(0).toUpperCase() + text.slice(1);
+
+// FormatSet formats a logged set, e.g. "8 × 10 kg", "20 s" or "Done".
 export const formatSet = (set: LoggedSet): string => {
-  const reps =
-    set.holdSeconds > 0 ? formatSeconds(set.holdSeconds) : `${set.reps}`;
+  let reps = `${set.reps}`;
+  if (set.holdSeconds > 0) {
+    reps = formatSeconds(set.holdSeconds);
+  } else if (set.reps === 0) {
+    reps = "Done";
+  }
   return keepTogether(
     hasWeight(set.weight) ? `${reps} × ${formatWeight(set.weight)}` : reps
   );
@@ -309,4 +339,41 @@ export const groupExercises = <Item extends { group: string }>(
     }
   }
   return groups;
+};
+
+/**
+ * RoundGroup returns the superset or circuit a group of a strength workout
+ * is, or undefined for straight sets.
+ */
+export const roundGroup = (
+  groups: PlannedGroup[],
+  name: string
+): PlannedGroup | undefined =>
+  groups.find(
+    (group) =>
+      group.name === name &&
+      (group.kind === ExerciseGroupKind.SUPERSET ||
+        group.kind === ExerciseGroupKind.CIRCUIT)
+  );
+
+/**
+ * FormatRounds formats how a superset or circuit is done, e.g. "Circuit ·
+ * 2 rounds" and "Rest 45 s between rounds".
+ */
+export const formatRounds = (
+  group: PlannedGroup
+): { rounds: string; rest: string } => {
+  const kind =
+    group.kind === ExerciseGroupKind.CIRCUIT ? "Circuit" : "Superset";
+  const rounds = `${kind} · ${group.rounds} ${group.rounds === 1 ? "round" : "rounds"}`;
+  let rest = "No rest between rounds";
+  if (group.rounds === 1) {
+    rest =
+      group.restSeconds > 0
+        ? `Rest ${formatSeconds(group.restSeconds)} after`
+        : "";
+  } else if (group.restSeconds > 0) {
+    rest = `Rest ${formatSeconds(group.restSeconds)} between rounds`;
+  }
+  return { rest, rounds };
 };

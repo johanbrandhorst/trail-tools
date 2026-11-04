@@ -39,6 +39,7 @@ import {
   equipmentLabel,
   formatWeight,
   formatReps,
+  isOpen,
   formatSeconds,
   workoutMuscles,
 } from "helpers/strength";
@@ -549,6 +550,14 @@ interface ExerciseStepProps {
   onChange: (change: Partial<DraftExercise>) => void;
 }
 
+// SetsLabel labels what a planned exercise's sets are of.
+const setsLabel = (planned: PlannedExercise): string => {
+  if (planned.holdSeconds > 0) {
+    return "Sets × time";
+  }
+  return isOpen(planned) ? "Sets" : "Sets × reps";
+};
+
 /**
  * ExerciseStep is one exercise of the workout: what to do, the sets to tick
  * off, how it should feel and how to do it.
@@ -568,7 +577,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
   const allDone = finished(draft);
   const stats: { label: string; value: string; sub: string }[] = [
     {
-      label: planned.holdSeconds > 0 ? "Sets × time" : "Sets × reps",
+      label: setsLabel(planned),
       sub: eachSide ? "each side" : "",
       value: `${planned.sets} × ${formatReps(planned.reps, planned.holdSeconds, false)}`,
     },

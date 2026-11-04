@@ -138,14 +138,15 @@ export const workoutDetails = (
       };
     }
     case WorkoutType.STRENGTH: {
-      const exercises =
+      const existingStrength =
         existing?.details.case === "strength"
-          ? existing.details.value.exercises
-          : [];
+          ? existing.details.value
+          : undefined;
       return {
         case: "strength",
         value: create(StrengthWorkoutSchema, {
-          exercises,
+          exercises: existingStrength?.exercises ?? [],
+          groups: existingStrength?.groups ?? [],
           targetDurationSeconds: targets.durationSeconds,
         }),
       };

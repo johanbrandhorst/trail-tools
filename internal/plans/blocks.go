@@ -1,7 +1,5 @@
 package plans
 
-import "strings"
-
 // StrengthBlock is exercises of a strength workout done together for a
 // number of rounds: a single exercise for its sets, or a superset or
 // circuit of several, done back to back.
@@ -12,13 +10,6 @@ type StrengthBlock struct {
 	Rounds int
 }
 
-// isRoundGroup reports whether a group of exercises is done back to back for
-// rounds, rather than each exercise for its sets: a superset or circuit.
-func isRoundGroup(group string) bool {
-	group = strings.ToLower(group)
-	return strings.Contains(group, "superset") || strings.Contains(group, "circuit")
-}
-
 // StrengthBlocks returns the blocks of a strength workout's exercises:
 // each exercise for its sets, and the consecutive exercises of a superset
 // or circuit group together, for the most sets of them.
@@ -26,8 +17,8 @@ func StrengthBlocks(exercises []*PlannedExercise) []StrengthBlock {
 	var blocks []StrengthBlock
 	for i := 0; i < len(exercises); {
 		end := i + 1
-		if group := exercises[i].Group; group != "" && isRoundGroup(group) {
-			for end < len(exercises) && exercises[end].Group == group {
+		if e := exercises[i]; e.Group != "" && e.GroupKind != GroupStraightSets {
+			for end < len(exercises) && exercises[end].Group == e.Group {
 				end++
 			}
 		}

@@ -1758,4 +1758,5 @@ type WorkoutExercise struct {
 	Tempo        string
 	TargetEffort int32
 	Notes        string
+	GroupKind    string
 }

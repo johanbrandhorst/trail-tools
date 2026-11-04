@@ -92,16 +92,11 @@ func workoutDetailsFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 		if len(st.GetExercises()) > maxPlannedExercises {
 			return invalidArgument("strength.exercises: at most %d exercises are allowed", maxPlannedExercises)
 		}
-		// A strength workout always has a list of exercises, possibly
-		// empty, so it's told apart from other kinds.
-		workout.Exercises = []*plans.PlannedExercise{}
-		for i, e := range st.GetExercises() {
-			planned, err := plannedExerciseFromProto(e)
-			if err != nil {
-				return invalidArgument("strength.exercises[%d]: %v", i, err)
-			}
-			workout.Exercises = append(workout.Exercises, planned)
+		exercises, err := strengthExercisesFromProto(st)
+		if err != nil {
+			return invalidArgument("strength.%v", err)
 		}
+		workout.Exercises = exercises
 		return nil
 	case plansv1.Workout_Race_case:
 		race := w.GetRace()
@@ -140,14 +135,14 @@ func plannedExerciseFromProto(e *plansv1.PlannedExercise) (*plans.PlannedExercis
 	if err != nil {
 		return nil, fmt.Errorf("invalid exercise_id: %w", err)
 	}
-	if e.GetSets() < 1 || e.GetSets() > maxSets {
+	if e.GetSets() < 0 || e.GetSets() > maxSets {
 		return nil, fmt.Errorf("sets must be between 1 and %d", maxSets)
 	}
 	if e.GetReps() < 0 || e.GetHoldSeconds() < 0 || e.GetRestSeconds() < 0 {
 		return nil, errors.New("reps, hold_seconds and rest_seconds must not be negative")
 	}
-	if (e.GetReps() > 0) == (e.GetHoldSeconds() > 0) {
-		return nil, errors.New("set one of reps and hold_seconds")
+	if e.GetReps() > 0 && e.GetHoldSeconds() > 0 {
+		return nil, errors.New("set one of reps and hold_seconds, or neither for an exercise done until the user is done")
 	}
 	weight, err := weightFromProto("weight", e.GetWeight())
 	if err != nil {
@@ -168,6 +163,123 @@ func plannedExerciseFromProto(e *plansv1.PlannedExercise) (*plans.PlannedExercis
 		TargetEffort: e.GetTargetEffort(),
 		Notes:        strings.TrimSpace(e.GetNotes()),
 	}, nil
+}
+
+// groupKinds are the API's kinds of exercise groups.
+var groupKinds = map[plansv1.ExerciseGroupKind]plans.GroupKind{
+	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS: plans.GroupStraightSets,
+	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_SUPERSET:      plans.GroupSuperset,
+	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT:       plans.GroupCircuit,
+}
+
+// strengthExercisesFromProto converts and validates the exercises of a
+// strength workout with its groups. The exercises of a superset or circuit
+// are stored with its rounds as their sets, and its rest between rounds as
+// the rest of its last exercise, which is where watches put it.
+func strengthExercisesFromProto(st *plansv1.StrengthWorkout) ([]*plans.PlannedExercise, error) {
+	groups := map[string]*plansv1.ExerciseGroup{}
+	for i, g := range st.GetGroups() {
+		name := strings.TrimSpace(g.GetName())
+		switch kind, ok := groupKinds[g.GetKind()]; {
+		case name == "":
+			return nil, fmt.Errorf("groups[%d].name is required: the group of its exercises", i)
+		case groups[name] != nil:
+			return nil, fmt.Errorf("groups[%d]: group %q is listed twice", i, name)
+		case !ok:
+			return nil, fmt.Errorf("groups[%d].kind is required: STRAIGHT_SETS, SUPERSET or CIRCUIT", i)
+		case kind == plans.GroupStraightSets && (g.GetRounds() != 0 || g.GetRestSeconds() != 0):
+			return nil, fmt.Errorf("groups[%d]: straight sets have no rounds or rest_seconds; set each exercise's sets and rest_seconds", i)
+		case kind != plans.GroupStraightSets && (g.GetRounds() < 1 || g.GetRounds() > maxSets):
+			return nil, fmt.Errorf("groups[%d].rounds must be between 1 and %d", i, maxSets)
+		case g.GetRestSeconds() < 0:
+			return nil, fmt.Errorf("groups[%d].rest_seconds must not be negative", i)
+		}
+		groups[name] = g
+	}
+	// A strength workout always has a list of exercises, possibly empty, so
+	// it's told apart from other kinds.
+	exercises := []*plans.PlannedExercise{}
+	used := map[string]bool{}
+	for i, e := range st.GetExercises() {
+		planned, err := plannedExerciseFromProto(e)
+		if err != nil {
+			return nil, fmt.Errorf("exercises[%d]: %w", i, err)
+		}
+		g := groups[planned.Group]
+		if planned.Group != "" {
+			if used[planned.Group] && exercises[i-1].Group != planned.Group {
+				return nil, fmt.Errorf("exercises[%d]: the exercises of group %q must be consecutive", i, planned.Group)
+			}
+			used[planned.Group] = true
+		}
+		kind := plans.GroupStraightSets
+		if g != nil {
+			kind = groupKinds[g.GetKind()]
+		}
+		if kind == plans.GroupStraightSets {
+			if g == nil && looksLikeRounds(planned.Group) {
+				return nil, fmt.Errorf("exercises[%d]: group %q reads like a superset or circuit; list it in groups with its kind, rounds and rest_seconds, or with kind STRAIGHT_SETS", i, planned.Group)
+			}
+			if planned.Sets < 1 {
+				return nil, fmt.Errorf("exercises[%d].sets must be between 1 and %d", i, maxSets)
+			}
+			exercises = append(exercises, planned)
+			continue
+		}
+		if planned.Sets != 0 && planned.Sets != g.GetRounds() {
+			return nil, fmt.Errorf("exercises[%d]: %d sets in a %s of %d rounds; leave sets 0, as the exercise is done once each round", i, planned.Sets, kind, g.GetRounds())
+		}
+		last := i+1 == len(st.GetExercises()) || strings.TrimSpace(st.GetExercises()[i+1].GetGroup()) != planned.Group
+		if last && planned.RestSeconds != 0 {
+			return nil, fmt.Errorf("exercises[%d]: the last exercise of %s %q has rest_seconds; set the rest between rounds in the group's rest_seconds", i, kind, planned.Group)
+		}
+		planned.GroupKind = kind
+		planned.Sets = g.GetRounds()
+		if last {
+			planned.RestSeconds = g.GetRestSeconds()
+		}
+		exercises = append(exercises, planned)
+	}
+	for name := range groups {
+		if !used[name] {
+			return nil, fmt.Errorf("groups: no exercise is in group %q", name)
+		}
+	}
+	return exercises, nil
+}
+
+// looksLikeRounds reports whether a group's name says its exercises are
+// done back to back, as it did before groups had kinds, so a client that
+// names a group "Circuit" without listing it isn't silently given straight
+// sets.
+func looksLikeRounds(group string) bool {
+	group = strings.ToLower(group)
+	return strings.Contains(group, "superset") || strings.Contains(group, "circuit")
+}
+
+// strengthGroupsToProto returns the groups of a strength workout's
+// exercises, in order, and moves the rest between rounds of supersets and
+// circuits from their last exercises to the groups.
+func strengthGroupsToProto(exercises []*plans.PlannedExercise, out []*plansv1.PlannedExercise) []*plansv1.ExerciseGroup {
+	var groups []*plansv1.ExerciseGroup
+	for i, e := range exercises {
+		if e.Group == "" || (i > 0 && exercises[i-1].Group == e.Group) {
+			continue
+		}
+		g := plansv1.ExerciseGroup_builder{Name: e.Group, Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS}
+		if e.GroupKind != plans.GroupStraightSets {
+			g.Kind = groupKindsToProto[e.GroupKind]
+			g.Rounds = e.Sets
+			last := i
+			for last+1 < len(exercises) && exercises[last+1].Group == e.Group {
+				last++
+			}
+			g.RestSeconds = exercises[last].RestSeconds
+			out[last].SetRestSeconds(0)
+		}
+		groups = append(groups, g.Build())
+	}
+	return groups
 }
 
 func plannedExerciseToProto(e *plans.PlannedExercise) *plansv1.PlannedExercise {
@@ -229,6 +341,7 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 			exercises[i] = plannedExerciseToProto(e)
 		}
 		st := plansv1.StrengthWorkout_builder{
+			Groups:                strengthGroupsToProto(w.Exercises, exercises),
 			Exercises:             exercises,
 			TargetDurationSeconds: w.TargetDurationSeconds,
 			EquipmentIssues:       equipmentIssuesToProto(w.EquipmentIssues),
@@ -283,6 +396,7 @@ func reverse[K, V comparable](m map[K]V) map[V]K {
 }
 
 var (
+	groupKindsToProto      = reverse(groupKinds)
 	sessionEffortsToProto  = reverse(sessionEfforts)
 	exerciseEffortsToProto = reverse(exerciseEfforts)
 	exerciseVolumesToProto = reverse(exerciseVolumes)
