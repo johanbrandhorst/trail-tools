@@ -915,6 +915,7 @@ type Workout struct {
 	xxx_hidden_StartWindowMinutes  int32                  `protobuf:"varint,19,opt,name=start_window_minutes,json=startWindowMinutes,proto3"`
 	xxx_hidden_Location            *v1.LatLng             `protobuf:"bytes,20,opt,name=location,proto3"`
 	xxx_hidden_LocationName        string                 `protobuf:"bytes,21,opt,name=location_name,json=locationName,proto3"`
+	xxx_hidden_ShareUrl            string                 `protobuf:"bytes,22,opt,name=share_url,json=shareUrl,proto3"`
 	xxx_hidden_Details             isWorkout_Details      `protobuf_oneof:"details"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
@@ -1022,6 +1023,13 @@ func (x *Workout) GetLocationName() string {
 	return ""
 }
 
+func (x *Workout) GetShareUrl() string {
+	if x != nil {
+		return x.xxx_hidden_ShareUrl
+	}
+	return ""
+}
+
 func (x *Workout) GetRun() *RunWorkout {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Details.(*workout_Run); ok {
@@ -1109,6 +1117,10 @@ func (x *Workout) SetLocation(v *v1.LatLng) {
 
 func (x *Workout) SetLocationName(v string) {
 	x.xxx_hidden_LocationName = v
+}
+
+func (x *Workout) SetShareUrl(v string) {
+	x.xxx_hidden_ShareUrl = v
 }
 
 func (x *Workout) SetRun(v *RunWorkout) {
@@ -1304,6 +1316,10 @@ type Workout_builder struct {
 	Location *v1.LatLng
 	// A short name for the location, e.g. "Trailhead parking". Empty if none.
 	LocationName string
+	// The link anyone can view the workout with, and download its route and
+	// watch files, without signing in, if it's shared. See
+	// WorkoutShareService.
+	ShareUrl string
 	// What the workout is. Exactly one must be set.
 
 	// Fields of oneof xxx_hidden_Details:
@@ -1335,6 +1351,7 @@ func (b0 Workout_builder) Build() *Workout {
 	x.xxx_hidden_StartWindowMinutes = b.StartWindowMinutes
 	x.xxx_hidden_Location = b.Location
 	x.xxx_hidden_LocationName = b.LocationName
+	x.xxx_hidden_ShareUrl = b.ShareUrl
 	if b.Run != nil {
 		x.xxx_hidden_Details = &workout_Run{b.Run}
 	}
@@ -5937,7 +5954,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x05notes\x18\x05 \x01(\tR\x05notes\x124\n" +
 	"\x16target_distance_meters\x18\x06 \x01(\x01R\x14targetDistanceMeters\x12?\n" +
 	"\x1ctarget_elevation_gain_meters\x18\a \x01(\x01R\x19targetElevationGainMeters\x126\n" +
-	"\x17target_duration_seconds\x18\b \x01(\x05R\x15targetDurationSeconds\"\xa3\x06\n" +
+	"\x17target_duration_seconds\x18\b \x01(\x05R\x15targetDurationSeconds\"\xc8\x06\n" +
 	"\aWorkout\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\aplan_id\x18\x02 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x06planId\x12\x12\n" +
@@ -5950,7 +5967,8 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"start_time\x18\x12 \x01(\tR\tstartTime\x120\n" +
 	"\x14start_window_minutes\x18\x13 \x01(\x05R\x12startWindowMinutes\x12*\n" +
 	"\blocation\x18\x14 \x01(\v2\x0e.geo.v1.LatLngR\blocation\x12#\n" +
-	"\rlocation_name\x18\x15 \x01(\tR\flocationName\x12(\n" +
+	"\rlocation_name\x18\x15 \x01(\tR\flocationName\x12#\n" +
+	"\tshare_url\x18\x16 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\bshareUrl\x12(\n" +
 	"\x03run\x18\r \x01(\v2\x14.plans.v1.RunWorkoutH\x00R\x03run\x12G\n" +
 	"\x0ecross_training\x18\x0e \x01(\v2\x1e.plans.v1.CrossTrainingWorkoutH\x00R\rcrossTraining\x127\n" +
 	"\bstrength\x18\x0f \x01(\v2\x19.plans.v1.StrengthWorkoutH\x00R\bstrength\x12+\n" +

@@ -202,6 +202,10 @@ message Workout {
   geo.v1.LatLng location = 20;
   // A short name for the location, e.g. "Trailhead parking". Empty if none.
   string location_name = 21;
+  // The link anyone can view the workout with, and download its route and
+  // watch files, without signing in, if it's shared. See
+  // WorkoutShareService.
+  string share_url = 22 [(mcp.v1.field).output_only = true];
 
   // What the workout is. Exactly one must be set.
   oneof details {

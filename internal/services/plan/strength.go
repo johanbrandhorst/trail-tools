@@ -48,7 +48,7 @@ func (s *Service) SetStrengthLog(ctx context.Context, req *plansv1.SetStrengthLo
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to get workout")
 	}
-	return plansv1.SetStrengthLogResponse_builder{Workout: workoutToProto(updated)}.Build(), nil
+	return plansv1.SetStrengthLogResponse_builder{Workout: s.workoutProto(updated)}.Build(), nil
 }
 
 func (s *Service) DeleteStrengthLog(ctx context.Context, req *plansv1.DeleteStrengthLogRequest) (*plansv1.DeleteStrengthLogResponse, error) {

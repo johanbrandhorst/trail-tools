@@ -50,28 +50,33 @@ func (s *Service) DownloadHandler(next http.Handler) http.Handler {
 			http.Error(w, "failed to get workout", http.StatusInternalServerError)
 			return
 		}
-		if workout.Type != plans.WorkoutTypeStrength {
-			http.Error(w, "only strength workouts can be downloaded as Garmin workouts", http.StatusConflict)
-			return
-		}
-		if len(workout.Exercises) == 0 {
-			http.Error(w, "the workout has no exercises yet", http.StatusConflict)
-			return
-		}
-		var buf bytes.Buffer
-		if err := fit.WriteStrengthWorkout(&buf, strengthWorkoutFIT(workout), time.Now()); err != nil {
-			// Too many steps for a watch is the only way it fails.
-			http.Error(w, fmt.Sprintf("the workout doesn't fit on a watch: %v", err), http.StatusConflict)
-			return
-		}
-		name := strings.Trim(unsafeFilenameChars.ReplaceAllString(workout.Title, "-"), "-")
-		if name == "" {
-			name = "strength-workout"
-		}
-		w.Header().Set("Content-Type", "application/vnd.ant.fit")
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.fit"`, name))
-		_, _ = w.Write(buf.Bytes())
+		writeStrengthFIT(w, workout)
 	})
+}
+
+// writeStrengthFIT writes a strength workout as a FIT workout download.
+func writeStrengthFIT(w http.ResponseWriter, workout *plans.Workout) {
+	if workout.Type != plans.WorkoutTypeStrength {
+		http.Error(w, "only strength workouts can be downloaded as watch workouts", http.StatusConflict)
+		return
+	}
+	if len(workout.Exercises) == 0 {
+		http.Error(w, "the workout has no exercises yet", http.StatusConflict)
+		return
+	}
+	var buf bytes.Buffer
+	if err := fit.WriteStrengthWorkout(&buf, strengthWorkoutFIT(workout), time.Now()); err != nil {
+		// Too many steps for a watch is the only way it fails.
+		http.Error(w, fmt.Sprintf("the workout doesn't fit on a watch: %v", err), http.StatusConflict)
+		return
+	}
+	name := strings.Trim(unsafeFilenameChars.ReplaceAllString(workout.Title, "-"), "-")
+	if name == "" {
+		name = "strength-workout"
+	}
+	w.Header().Set("Content-Type", "application/vnd.ant.fit")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.fit"`, name))
+	_, _ = w.Write(buf.Bytes())
 }
 
 // strengthWorkoutFIT returns a strength workout as a FIT workout: each

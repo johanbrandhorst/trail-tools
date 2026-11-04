@@ -11,6 +11,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/authn"
 	"github.com/johanbrandhorst/trail-tools/internal/errreport"
 	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/routes"
 	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
@@ -64,30 +65,36 @@ func (s *Service) DownloadHandler(next http.Handler) http.Handler {
 			http.Error(w, "failed to get route", http.StatusInternalServerError)
 			return
 		}
-		points, _ := route.Path()
-		filename := DownloadFilename(route.Name, "route")
-		if isGPX {
-			w.Header().Set("Content-Type", "application/gpx+xml")
-			w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.gpx"`, filename))
-			if err := geo.WriteGPX(w, route.Name, points); err != nil {
-				s.report.Report(r.Context(), "Failed to write GPX", err)
-			}
-			return
-		}
-		if len(points) < 2 {
-			http.Error(w, "the route has no path", http.StatusConflict)
-			return
-		}
-		elapsed := geo.ElapsedSeconds(points, CourseSpeedKMH, CourseClimbMetersPerHour)
-		course := &geo.FITCourse{
-			Name:           route.Name,
-			Points:         points,
-			ElapsedSeconds: elapsed,
-			CoursePoints:   highPoint(points, elapsed),
-			Start:          time.Now(),
-		}
-		WriteFIT(w, r, s.report, filename, course)
+		WriteRouteFile(w, r, s.report, route, !isGPX)
 	})
+}
+
+// WriteRouteFile writes a route as a GPX file download, or a FIT course if
+// asFIT is set, named after the route.
+func WriteRouteFile(w http.ResponseWriter, r *http.Request, report *errreport.Reporter, route *routes.Route, asFIT bool) {
+	points, _ := route.Path()
+	filename := DownloadFilename(route.Name, "route")
+	if !asFIT {
+		w.Header().Set("Content-Type", "application/gpx+xml")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.gpx"`, filename))
+		if err := geo.WriteGPX(w, route.Name, points); err != nil {
+			report.Report(r.Context(), "Failed to write GPX", err)
+		}
+		return
+	}
+	if len(points) < 2 {
+		http.Error(w, "the route has no path", http.StatusConflict)
+		return
+	}
+	elapsed := geo.ElapsedSeconds(points, CourseSpeedKMH, CourseClimbMetersPerHour)
+	course := &geo.FITCourse{
+		Name:           route.Name,
+		Points:         points,
+		ElapsedSeconds: elapsed,
+		CoursePoints:   highPoint(points, elapsed),
+		Start:          time.Now(),
+	}
+	WriteFIT(w, r, report, filename, course)
 }
 
 // highPoint returns a course point at the highest point of a path with the

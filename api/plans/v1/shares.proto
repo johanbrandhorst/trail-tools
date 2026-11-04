@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package plans.v1;
+
+import "mcp/v1/options.proto";
+import "plans/v1/exercises.proto";
+import "plans/v1/plans.proto";
+import "routes/v1/routes.proto";
+
+// WorkoutShareService shares workouts read-only with people who don't have
+// an account, like a friend joining a run. Anyone with a workout's share
+// link can view it, with its route and exercises, and download the route as
+// GPX and as a course for their watch, and a strength workout for their
+// watch, without signing in. Nothing else of the user's is shared, and
+// unsharing stops the link working.
+service WorkoutShareService {
+  // Create a share link for a workout, or return its existing one.
+  rpc ShareWorkout(ShareWorkoutRequest) returns (ShareWorkoutResponse);
+  // Stop sharing a workout: its share link stops working. Sharing it again
+  // creates a new link.
+  rpc UnshareWorkout(UnshareWorkoutRequest) returns (UnshareWorkoutResponse);
+  // Get a shared workout by the token of its share link. Doesn't require
+  // signing in.
+  rpc GetSharedWorkout(GetSharedWorkoutRequest) returns (GetSharedWorkoutResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+}
+
+message ShareWorkoutRequest {
+  // The ID of the workout.
+  string id = 1;
+}
+
+message ShareWorkoutResponse {
+  // The link anyone can view the workout with.
+  string share_url = 1;
+}
+
+message UnshareWorkoutRequest {
+  // The ID of the workout.
+  string id = 1;
+}
+
+message UnshareWorkoutResponse {}
+
+message GetSharedWorkoutRequest {
+  // The token from the share link.
+  string token = 1;
+}
+
+// The route of a shared workout.
+message SharedRoute {
+  // The route's name.
+  string name = 1;
+  // The route's statistics.
+  routes.v1.RouteStats stats = 2;
+  // The path, downsampled for display.
+  repeated routes.v1.RoutePoint points = 3;
+}
+
+message GetSharedWorkoutResponse {
+  // The workout, without what's the owner's own: its plan, the activity
+  // that completed it and its strength log.
+  Workout workout = 1;
+  // The route of a run or race, if it has one.
+  SharedRoute route = 2;
+  // The exercises of a strength workout, from the owner's library, with
+  // how to do them and their animations.
+  repeated Exercise exercises = 3;
+}
