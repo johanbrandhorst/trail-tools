@@ -170,6 +170,9 @@ update workouts set
   target_terrain = $9,
   route_id = $10,
   completed_activity_id = $11,
+  -- Removing the activity that completes the workout stops it from being
+  -- linked again as activities sync.
+  link_dismissed = link_dismissed or (completed_activity_id is not null and $11::uuid is null),
   start_time = $12,
   start_window_minutes = $13,
   location_lat = sqlc.narg(location_lat),

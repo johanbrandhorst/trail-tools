@@ -119,12 +119,12 @@ type ActivitySummary struct {
 }
 
 // UpsertActivity creates or updates an activity from Strava, and links
-// strength workouts to it.
+// workouts to it.
 func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *ActivitySummary) (id pgtype.UUID, hasGarminSamples bool, err error) {
 	if err := r.putObjects(ctx, summaryObjects(userID, []*ActivitySummary{a})); err != nil {
 		return pgtype.UUID{}, false, fmt.Errorf("failed to store activity summary: %w", err)
 	}
-	// Strength workouts are linked to the activity in the same round trip.
+	// Workouts are linked to the activity in the same round trip.
 	var row *gen.UpsertActivityRow
 	var batch store.Batch
 	q := gen.New(&batch)
@@ -136,7 +136,7 @@ func (r *Repository) UpsertActivity(ctx context.Context, userID pgtype.UUID, a *
 		row, err = gen.New(db).UpsertActivity(ctx, upsertActivityParams(userID, a))
 		return err
 	})
-	if err := queueLinkStrengthWorkouts(ctx, q, userID); err != nil {
+	if err := queueLinkWorkouts(ctx, q, userID); err != nil {
 		return pgtype.UUID{}, false, err
 	}
 	if err := batch.Send(ctx, r.db); err != nil {
@@ -160,22 +160,34 @@ func attachParams(userID pgtype.UUID, a *ActivitySummary) *gen.AttachStravaToGar
 // activities complete the user's strength workouts of the same day.
 var StrengthSportTypes = []string{"WeightTraining", "Workout", "Crossfit", "HighIntensityIntervalTraining"}
 
-// LinkStrengthWorkouts links the user's strength workouts that have no
-// activity to a strength activity of the same day that no workout has, if
-// any.
-func (r *Repository) LinkStrengthWorkouts(ctx context.Context, userID pgtype.UUID) error {
-	if err := queueLinkStrengthWorkouts(ctx, r.q, userID); err != nil {
-		return fmt.Errorf("failed to link strength workouts: %w", err)
+// RunSportTypes are the Strava sport types that complete the user's runs and
+// races of the same day.
+var RunSportTypes = []string{"Run", "TrailRun", "VirtualRun"}
+
+// unplannedSportTypes are the Strava sport types that complete no workout:
+// walks are everyday life, not cross-training.
+var unplannedSportTypes = []string{"Walk"}
+
+// LinkWorkouts links the user's workouts that have no activity to the
+// activities of the same day that no workout has, if any.
+func (r *Repository) LinkWorkouts(ctx context.Context, userID pgtype.UUID) error {
+	if err := queueLinkWorkouts(ctx, r.q, userID); err != nil {
+		return fmt.Errorf("failed to link workouts: %w", err)
 	}
 	return nil
 }
 
-func queueLinkStrengthWorkouts(ctx context.Context, q *gen.Queries, userID pgtype.UUID) error {
-	return q.LinkStrengthWorkouts(ctx, &gen.LinkStrengthWorkoutsParams{UserID: userID, SportTypes: StrengthSportTypes})
+func queueLinkWorkouts(ctx context.Context, q *gen.Queries, userID pgtype.UUID) error {
+	return q.LinkWorkouts(ctx, &gen.LinkWorkoutsParams{
+		UserID:              userID,
+		StrengthSportTypes:  StrengthSportTypes,
+		RunSportTypes:       RunSportTypes,
+		UnplannedSportTypes: unplannedSportTypes,
+	})
 }
 
 // StoreListedActivities creates or updates a page of the user's activities
-// listed from Strava, links strength workouts to them, and records how far
+// listed from Strava, links workouts to them, and records how far
 // the listing got: the activities
 // that started before listBefore remain to be listed. A zero listBefore
 // records that the listing finished. It takes a single round trip to the
@@ -195,7 +207,7 @@ func (r *Repository) StoreListedActivities(ctx context.Context, userID pgtype.UU
 		}
 	}
 	if len(page) > 0 {
-		if err := queueLinkStrengthWorkouts(ctx, q, userID); err != nil {
+		if err := queueLinkWorkouts(ctx, q, userID); err != nil {
 			return err
 		}
 	}

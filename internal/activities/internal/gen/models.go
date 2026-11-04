@@ -1741,6 +1741,7 @@ type Workout struct {
 	LocationName              string
 	RunBlocks                 json.RawMessage
 	ShareToken                pgtype.Text
+	LinkDismissed             bool
 }
 
 type WorkoutExercise struct {
