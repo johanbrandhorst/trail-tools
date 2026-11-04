@@ -329,8 +329,8 @@ func (r *Repository) UpsertGarminActivity(ctx context.Context, userID pgtype.UUI
 	}); err != nil {
 		return nil, fmt.Errorf("failed to update activity: %w", err)
 	}
-	if err := queueLinkStrengthWorkouts(ctx, q, userID); err != nil {
-		return nil, fmt.Errorf("failed to link strength workouts: %w", err)
+	if err := queueLinkWorkouts(ctx, q, userID); err != nil {
+		return nil, fmt.Errorf("failed to link workouts: %w", err)
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit activity: %w", err)

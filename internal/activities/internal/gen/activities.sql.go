@@ -191,34 +191,65 @@ func (q *Queries) GetLatestActivityStartTime(ctx context.Context, userID pgtype.
 	return column_1, err
 }
 
-const linkStrengthWorkouts = `-- name: LinkStrengthWorkouts :exec
-update workouts w set
-  completed_activity_id = m.activity_id
-from (
-  select distinct on (sw.id) sw.id as workout_id, a.id as activity_id
-  from workouts sw
-  join training_plans p on p.id = sw.plan_id
-  join strava_activities a on a.user_id = p.user_id and a.start_date_local = sw.date
+const linkWorkouts = `-- name: LinkWorkouts :exec
+with workout_kinds as (
+  select w.id, w.date, k.kind,
+    row_number() over (partition by w.date, k.kind order by w.start_time nulls last, w.id) as n
+  from workouts w
+  join training_plans p on p.id = w.plan_id
+  cross join lateral (select case
+    when w.type = 'strength' then 'strength'
+    when w.type in ('base', 'intensity', 'race') then 'run'
+    else 'cross_training'
+  end as kind) k
   where p.user_id = $1::uuid
-    and sw.type = 'strength'
-    and sw.completed_activity_id is null
-    and a.sport_type = any($2::text[])
+    and w.type <> 'rest'
+    and w.completed_activity_id is null
+    and not w.link_dismissed
+),
+activity_kinds as (
+  select a.id, a.start_date_local as date, k.kind,
+    row_number() over (partition by a.start_date_local, k.kind order by a.start_time, a.id) as n
+  from strava_activities a
+  cross join lateral (select case
+    when a.sport_type = any($2::text[]) then 'strength'
+    when a.sport_type = any($3::text[]) then 'run'
+    when a.sport_type = any($4::text[]) then null
+    else 'cross_training'
+  end as kind) k
+  where a.user_id = $1::uuid
+    and k.kind is not null
+    and a.start_date_local in (select date from workout_kinds)
     and not exists (select 1 from workouts o where o.completed_activity_id = a.id)
-  order by sw.id, a.start_time
-) m
-where w.id = m.workout_id
+)
+update workouts w set
+  completed_activity_id = a.id
+from workout_kinds wk
+join activity_kinds a on a.date = wk.date and a.kind = wk.kind and a.n = wk.n
+where w.id = wk.id
 `
 
-type LinkStrengthWorkoutsParams struct {
-	UserID     pgtype.UUID
-	SportTypes []string
+type LinkWorkoutsParams struct {
+	UserID              pgtype.UUID
+	StrengthSportTypes  []string
+	RunSportTypes       []string
+	UnplannedSportTypes []string
 }
 
-// Links the user's strength workouts that have no activity to a strength
-// activity of the same day that no workout has, the first of the day if
-// there are several.
-func (q *Queries) LinkStrengthWorkouts(ctx context.Context, arg *LinkStrengthWorkoutsParams) error {
-	_, err := q.db.Exec(ctx, linkStrengthWorkouts, arg.UserID, arg.SportTypes)
+// Links the user's workouts that have no activity to the activities of the
+// same day that no workout has: runs and races to runs, strength workouts
+// to strength training and cross-training to anything else. With several
+// of a kind on a day, they're paired in order, the workouts by their start
+// time and the activities by theirs, so the morning run completes the
+// morning workout without comparing times across time zones. Workouts whose
+// link the user removed are left alone.
+func (q *Queries) LinkWorkouts(ctx context.Context, arg *LinkWorkoutsParams) error {
+	_, err := q.db.Exec(ctx, linkWorkouts,
+		arg.UserID,
+		arg.StrengthSportTypes,
+		arg.RunSportTypes,
+		arg.UnplannedSportTypes,
+	)
 	return err
 }
 

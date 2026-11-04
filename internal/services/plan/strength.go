@@ -40,7 +40,7 @@ func (s *Service) SetStrengthLog(ctx context.Context, req *plansv1.SetStrengthLo
 	// The activity may have synced before the workout was done, e.g. when
 	// the log is saved after the watch's activity.
 	if !workout.CompletedActivityID.Valid {
-		if err := s.activities.LinkStrengthWorkouts(ctx, userID); err != nil {
+		if err := s.activities.LinkWorkouts(ctx, userID); err != nil {
 			s.report.Report(ctx, "Failed to link a strength workout to its activity, leaving it to the next sync", err)
 		}
 	}

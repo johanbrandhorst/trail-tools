@@ -216,9 +216,13 @@ export type Workout = Message<"plans.v1.Workout"> & {
 
   /**
    * The ID of the activity that completed this workout, if any. See
-   * ActivityService. Strength workouts are linked to the user's strength
-   * activity of the same day when it's synced from Strava or the workout's
-   * log is saved, unless one is already set.
+   * ActivityService. As activities sync, workouts without one are linked to
+   * an activity of the same day that no other workout has: runs and races to
+   * a run, strength workouts to strength training, and cross-training to
+   * any other sport but walks. Several workouts of a kind on a day are
+   * paired with that day's activities in order of their start times. Clear
+   * it to remove a wrong link: the workout then isn't linked again until it
+   * is set by hand.
    *
    * @generated from field: string completed_activity_id = 12;
    */
