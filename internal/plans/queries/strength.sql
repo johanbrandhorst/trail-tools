@@ -81,6 +81,7 @@ insert into workout_exercises (
   position,
   exercise_id,
   group_name,
+  group_kind,
   sets,
   reps,
   hold_seconds,
@@ -92,7 +93,7 @@ insert into workout_exercises (
   notes
 )
 select
-  e.workout_id, e.position, e.exercise_id, e.group_name, e.sets, e.reps, e.hold_seconds,
+  e.workout_id, e.position, e.exercise_id, e.group_name, e.group_kind, e.sets, e.reps, e.hold_seconds,
   e.weight_value, nullif(e.weight_unit, '')::weight_unit,
   e.rest_seconds, e.tempo, e.target_effort, e.notes
 from (
@@ -101,6 +102,8 @@ from (
     unnest(sqlc.arg(positions)::integer[]) as position,
     unnest(sqlc.arg(exercise_ids)::uuid[]) as exercise_id,
     unnest(sqlc.arg(group_names)::text[]) as group_name,
+    -- Empty for straight sets.
+    unnest(sqlc.arg(group_kinds)::text[]) as group_kind,
     unnest(sqlc.arg(sets)::integer[]) as sets,
     unnest(sqlc.arg(reps)::integer[]) as reps,
     unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,

@@ -19,9 +19,11 @@ import { invalidateServices } from "helpers/query";
 import {
   feedbackStyles,
   formatDose,
+  formatRounds,
   formatSet,
   groupExercises,
   muscleLabel,
+  roundGroup,
   sessionEffortLabel,
   workoutMuscles,
 } from "helpers/strength";
@@ -196,44 +198,75 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
           </p>
         </div>
       </Card>
-      {groupExercises(planned).map((group) => (
-        <Card
-          key={group.items[0]?.index ?? 0}
-          title={group.name === "" ? "Exercises" : group.name}
-        >
-          <ul className="-m-4 divide-y divide-gray-100">
-            {group.items.map(({ item, index }) => {
-              const exercise = exercises.get(item.exerciseId);
-              const muscleNames =
-                exercise === undefined ? undefined : workoutMuscles([exercise]);
-              return (
-                <li key={index}>
-                  <Link
-                    to={`${sessionPath}?step=${index}`}
-                    className="flex min-h-11 items-center gap-3 px-4 py-3 hover:bg-gray-50"
-                  >
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
-                      {index + 1}
-                    </span>
-                    <span className="flex min-w-0 grow flex-col gap-0.5">
-                      <span className="font-medium text-gray-900">
-                        {item.exerciseName}
-                      </span>
-                      <span className="text-sm text-gray-700 tabular-nums">
-                        {formatDose(item, exercise?.eachSide ?? false)}
-                      </span>
-                      {muscleNames !== undefined && (
-                        <MuscleLine muscles={muscleNames} />
-                      )}
-                    </span>
-                    <ChevronRightIcon className="size-5 shrink-0 text-gray-400" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      ))}
+      {groupExercises(planned).map((group) => {
+        const rounds = roundGroup(strength.groups, group.name);
+        const described =
+          rounds === undefined ? undefined : formatRounds(rounds);
+        return (
+          <Card
+            key={group.items[0]?.index ?? 0}
+            title={group.name === "" ? "Exercises" : group.name}
+            actions={
+              described !== undefined && (
+                <span className="text-sm font-medium text-gray-700">
+                  {described.rounds}
+                </span>
+              )
+            }
+          >
+            <div className="-m-4 divide-y divide-gray-100">
+              {/* A superset or circuit is one set of each in order, repeated. */}
+              {described !== undefined && (
+                <p className="bg-gray-50 px-4 py-2 text-xs text-gray-600">
+                  One set of each exercise in order, then repeat.
+                </p>
+              )}
+              <ul className="divide-y divide-gray-100">
+                {group.items.map(({ item, index }) => {
+                  const exercise = exercises.get(item.exerciseId);
+                  const muscleNames =
+                    exercise === undefined
+                      ? undefined
+                      : workoutMuscles([exercise]);
+                  return (
+                    <li key={index}>
+                      <Link
+                        to={`${sessionPath}?step=${index}`}
+                        className="flex min-h-11 items-center gap-3 px-4 py-3 hover:bg-gray-50"
+                      >
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
+                          {index + 1}
+                        </span>
+                        <span className="flex min-w-0 grow flex-col gap-0.5">
+                          <span className="font-medium text-gray-900">
+                            {item.exerciseName}
+                          </span>
+                          <span className="text-sm text-gray-700 tabular-nums">
+                            {formatDose(
+                              item,
+                              exercise?.eachSide ?? false,
+                              rounds !== undefined
+                            )}
+                          </span>
+                          {muscleNames !== undefined && (
+                            <MuscleLine muscles={muscleNames} />
+                          )}
+                        </span>
+                        <ChevronRightIcon className="size-5 shrink-0 text-gray-400" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              {described !== undefined && described.rest !== "" && (
+                <p className="bg-gray-50 px-4 py-2 text-xs font-medium text-gray-700">
+                  {described.rest}
+                </p>
+              )}
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 };

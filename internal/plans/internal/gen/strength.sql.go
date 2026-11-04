@@ -402,6 +402,7 @@ insert into workout_exercises (
   position,
   exercise_id,
   group_name,
+  group_kind,
   sets,
   reps,
   hold_seconds,
@@ -413,7 +414,7 @@ insert into workout_exercises (
   notes
 )
 select
-  e.workout_id, e.position, e.exercise_id, e.group_name, e.sets, e.reps, e.hold_seconds,
+  e.workout_id, e.position, e.exercise_id, e.group_name, e.group_kind, e.sets, e.reps, e.hold_seconds,
   e.weight_value, nullif(e.weight_unit, '')::weight_unit,
   e.rest_seconds, e.tempo, e.target_effort, e.notes
 from (
@@ -422,16 +423,18 @@ from (
     unnest($2::integer[]) as position,
     unnest($3::uuid[]) as exercise_id,
     unnest($4::text[]) as group_name,
-    unnest($5::integer[]) as sets,
-    unnest($6::integer[]) as reps,
-    unnest($7::integer[]) as hold_seconds,
-    unnest($8::double precision[]) as weight_value,
+    -- Empty for straight sets.
+    unnest($5::text[]) as group_kind,
+    unnest($6::integer[]) as sets,
+    unnest($7::integer[]) as reps,
+    unnest($8::integer[]) as hold_seconds,
+    unnest($9::double precision[]) as weight_value,
     -- Empty for bodyweight.
-    unnest($9::text[]) as weight_unit,
-    unnest($10::integer[]) as rest_seconds,
-    unnest($11::text[]) as tempo,
-    unnest($12::integer[]) as target_effort,
-    unnest($13::text[]) as notes
+    unnest($10::text[]) as weight_unit,
+    unnest($11::integer[]) as rest_seconds,
+    unnest($12::text[]) as tempo,
+    unnest($13::integer[]) as target_effort,
+    unnest($14::text[]) as notes
 ) e
 `
 
@@ -440,6 +443,7 @@ type InsertWorkoutExercisesParams struct {
 	Positions     []int32
 	ExerciseIds   []pgtype.UUID
 	GroupNames    []string
+	GroupKinds    []string
 	Sets          []int32
 	Reps          []int32
 	HoldSeconds   []int32
@@ -457,6 +461,7 @@ func (q *Queries) InsertWorkoutExercises(ctx context.Context, arg *InsertWorkout
 		arg.Positions,
 		arg.ExerciseIds,
 		arg.GroupNames,
+		arg.GroupKinds,
 		arg.Sets,
 		arg.Reps,
 		arg.HoldSeconds,
@@ -866,7 +871,7 @@ func (q *Queries) ListStrengthLogs(ctx context.Context, arg *ListStrengthLogsPar
 }
 
 const listWorkoutExercises = `-- name: ListWorkoutExercises :many
-select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
+select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, we.group_kind, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
   e.garmin_exercise as exercise_garmin_exercise
 from workout_exercises we
 join workouts w on w.id = we.workout_id
@@ -902,6 +907,7 @@ type ListWorkoutExercisesRow struct {
 	Tempo                  string
 	TargetEffort           int32
 	Notes                  string
+	GroupKind              string
 	ExerciseName           string
 	ExerciseEquipment      []string
 	ExerciseEachSide       bool
@@ -939,6 +945,7 @@ func (q *Queries) ListWorkoutExercises(ctx context.Context, arg *ListWorkoutExer
 			&i.Tempo,
 			&i.TargetEffort,
 			&i.Notes,
+			&i.GroupKind,
 			&i.ExerciseName,
 			&i.ExerciseEquipment,
 			&i.ExerciseEachSide,

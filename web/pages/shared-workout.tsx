@@ -14,7 +14,12 @@ import { getSharedWorkout } from "gen/plans/v1/shares-WorkoutShareService_connec
 import { formatDate } from "helpers/format";
 import { useFragmentToken } from "helpers/hooks";
 import { workoutStyle } from "helpers/labels";
-import { formatDose, groupExercises } from "helpers/strength";
+import {
+  formatDose,
+  formatRounds,
+  groupExercises,
+  roundGroup,
+} from "helpers/strength";
 import { startWindow } from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -125,50 +130,77 @@ const SharedExercises: React.FC<SharedExercisesProps> = ({
   if (workout.details.case !== "strength") {
     return null;
   }
-  const groups = groupExercises(workout.details.value.exercises);
+  const strength = workout.details.value;
+  const groups = groupExercises(strength.exercises);
   return (
     <Card title="Exercises">
       <div className="flex flex-col gap-6">
-        {groups.map((group) => (
-          <section
-            key={`${group.name}-${group.items[0]?.index ?? 0}`}
-            className="flex flex-col gap-4"
-          >
-            {group.name !== "" && (
-              <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                {group.name}
-              </h3>
-            )}
-            {group.items.map(({ item, index }) => {
-              const ex = library.get(item.exerciseId);
-              return (
-                <article key={index} className="flex flex-col gap-2">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <h4 className="font-semibold text-gray-900">
-                      {item.exerciseName}
-                    </h4>
-                    <p className="text-sm text-gray-600 tabular-nums">
-                      {formatDose(item, ex?.eachSide ?? false)}
+        {groups.map((group) => {
+          const rounds = roundGroup(strength.groups, group.name);
+          const described =
+            rounds === undefined ? undefined : formatRounds(rounds);
+          return (
+            <section
+              key={`${group.name}-${group.items[0]?.index ?? 0}`}
+              className={`flex flex-col gap-4 ${described === undefined ? "" : "rounded-lg border border-gray-200 p-4"}`}
+            >
+              {(group.name !== "" || described !== undefined) && (
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <h3 className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                    {group.name}
+                  </h3>
+                  {described !== undefined && (
+                    <p className="text-sm font-medium text-gray-700">
+                      {described.rounds}
                     </p>
-                  </div>
-                  {item.notes !== "" && (
-                    <p className="text-sm text-gray-700">{item.notes}</p>
                   )}
-                  {ex !== undefined && ex.animations.length > 0 && (
-                    <AnimationPlayer animations={ex.animations} />
-                  )}
-                  {ex !== undefined && ex.instructions.length > 0 && (
-                    <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm leading-relaxed text-gray-700">
-                      {ex.instructions.map((step) => (
-                        <li key={step}>{step}</li>
-                      ))}
-                    </ol>
-                  )}
-                </article>
-              );
-            })}
-          </section>
-        ))}
+                </div>
+              )}
+              {described !== undefined && (
+                <p className="-mt-2 text-xs text-gray-600">
+                  One set of each exercise in order, then repeat.
+                </p>
+              )}
+              {group.items.map(({ item, index }) => {
+                const ex = library.get(item.exerciseId);
+                return (
+                  <article key={index} className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <h4 className="font-semibold text-gray-900">
+                        {item.exerciseName}
+                      </h4>
+                      <p className="text-sm text-gray-600 tabular-nums">
+                        {formatDose(
+                          item,
+                          ex?.eachSide ?? false,
+                          rounds !== undefined
+                        )}
+                      </p>
+                    </div>
+                    {item.notes !== "" && (
+                      <p className="text-sm text-gray-700">{item.notes}</p>
+                    )}
+                    {ex !== undefined && ex.animations.length > 0 && (
+                      <AnimationPlayer animations={ex.animations} />
+                    )}
+                    {ex !== undefined && ex.instructions.length > 0 && (
+                      <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm leading-relaxed text-gray-700">
+                        {ex.instructions.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ol>
+                    )}
+                  </article>
+                );
+              })}
+              {described !== undefined && described.rest !== "" && (
+                <p className="text-sm font-medium text-gray-700">
+                  {described.rest}
+                </p>
+              )}
+            </section>
+          );
+        })}
       </div>
     </Card>
   );

@@ -156,7 +156,11 @@ type PlannedExercise struct {
 	ExerciseGarmin string
 	// The part of the workout, e.g. "Warm-up". Empty if none.
 	Group string
-	Sets  int32
+	// How the exercises of the group are done. The exercises of a superset
+	// or circuit all have its rounds as their sets, and its last exercise's
+	// rest is the rest between rounds.
+	GroupKind GroupKind
+	Sets      int32
 	// Per side for exercises done on each side. 0 for exercises held for a
 	// time.
 	Reps int32
@@ -170,6 +174,19 @@ type PlannedExercise struct {
 	TargetEffort int32
 	Notes        string
 }
+
+// GroupKind is how the exercises of a group of a strength workout are done.
+type GroupKind string
+
+const (
+	// GroupStraightSets is each exercise for all its sets, and exercises
+	// in no group.
+	GroupStraightSets GroupKind = ""
+	// GroupSuperset is a few exercises done back to back for rounds.
+	GroupSuperset GroupKind = "superset"
+	// GroupCircuit is several exercises done back to back for rounds.
+	GroupCircuit GroupKind = "circuit"
+)
 
 // SessionEffort is how hard a strength session felt. Empty if not rated.
 type SessionEffort string
@@ -623,6 +640,7 @@ func (wr *workoutReader) workouts() []*Workout {
 			ExerciseEachSide:  row.ExerciseEachSide,
 			ExerciseGarmin:    row.ExerciseGarminExercise,
 			Group:             row.GroupName,
+			GroupKind:         GroupKind(row.GroupKind),
 			Sets:              row.Sets,
 			Reps:              row.Reps,
 			HoldSeconds:       row.HoldSeconds,
@@ -715,6 +733,7 @@ func queueReplaceExercises(ctx context.Context, q *gen.Queries, workouts []*Work
 			params.Positions = append(params.Positions, int32(i))
 			params.ExerciseIds = append(params.ExerciseIds, e.ExerciseID)
 			params.GroupNames = append(params.GroupNames, e.Group)
+			params.GroupKinds = append(params.GroupKinds, string(e.GroupKind))
 			params.Sets = append(params.Sets, e.Sets)
 			params.Reps = append(params.Reps, e.Reps)
 			params.HoldSeconds = append(params.HoldSeconds, e.HoldSeconds)
