@@ -22,6 +22,398 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// A calendar feed of the user's upcoming workouts, in iCalendar format.
+// It has an event for each workout with a start time and a target duration
+// that isn't a rest day or already done, from yesterday to four weeks
+// ahead. An event starts at the workout's start time and ends after its
+// target duration. Its description has a line "latest_end: HH:MM", the
+// local time it ends if started at the end of its start window. Times are
+// in the time zone of the user's latest activity.
+type CalendarFeed struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Url          string                 `protobuf:"bytes,1,opt,name=url,proto3"`
+	xxx_hidden_BasicAuthUrl string                 `protobuf:"bytes,2,opt,name=basic_auth_url,json=basicAuthUrl,proto3"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *CalendarFeed) Reset() {
+	*x = CalendarFeed{}
+	mi := &file_plans_v1_shares_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CalendarFeed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CalendarFeed) ProtoMessage() {}
+
+func (x *CalendarFeed) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CalendarFeed) GetUrl() string {
+	if x != nil {
+		return x.xxx_hidden_Url
+	}
+	return ""
+}
+
+func (x *CalendarFeed) GetBasicAuthUrl() string {
+	if x != nil {
+		return x.xxx_hidden_BasicAuthUrl
+	}
+	return ""
+}
+
+func (x *CalendarFeed) SetUrl(v string) {
+	x.xxx_hidden_Url = v
+}
+
+func (x *CalendarFeed) SetBasicAuthUrl(v string) {
+	x.xxx_hidden_BasicAuthUrl = v
+}
+
+type CalendarFeed_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The feed's URL, with its secret in the path, for apps that can only
+	// subscribe to a URL.
+	Url string
+	// The same feed with its secret as HTTP Basic auth instead, which keeps
+	// it out of server logs, for apps that support it.
+	BasicAuthUrl string
+}
+
+func (b0 CalendarFeed_builder) Build() *CalendarFeed {
+	m0 := &CalendarFeed{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Url = b.Url
+	x.xxx_hidden_BasicAuthUrl = b.BasicAuthUrl
+	return m0
+}
+
+type GetCalendarFeedRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCalendarFeedRequest) Reset() {
+	*x = GetCalendarFeedRequest{}
+	mi := &file_plans_v1_shares_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCalendarFeedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCalendarFeedRequest) ProtoMessage() {}
+
+func (x *GetCalendarFeedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type GetCalendarFeedRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetCalendarFeedRequest_builder) Build() *GetCalendarFeedRequest {
+	m0 := &GetCalendarFeedRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetCalendarFeedResponse struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Feed *CalendarFeed          `protobuf:"bytes,1,opt,name=feed,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetCalendarFeedResponse) Reset() {
+	*x = GetCalendarFeedResponse{}
+	mi := &file_plans_v1_shares_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCalendarFeedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCalendarFeedResponse) ProtoMessage() {}
+
+func (x *GetCalendarFeedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetCalendarFeedResponse) GetFeed() *CalendarFeed {
+	if x != nil {
+		return x.xxx_hidden_Feed
+	}
+	return nil
+}
+
+func (x *GetCalendarFeedResponse) SetFeed(v *CalendarFeed) {
+	x.xxx_hidden_Feed = v
+}
+
+func (x *GetCalendarFeedResponse) HasFeed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Feed != nil
+}
+
+func (x *GetCalendarFeedResponse) ClearFeed() {
+	x.xxx_hidden_Feed = nil
+}
+
+type GetCalendarFeedResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The feed. Unset if the user has none.
+	Feed *CalendarFeed
+}
+
+func (b0 GetCalendarFeedResponse_builder) Build() *GetCalendarFeedResponse {
+	m0 := &GetCalendarFeedResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Feed = b.Feed
+	return m0
+}
+
+type CreateCalendarFeedRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCalendarFeedRequest) Reset() {
+	*x = CreateCalendarFeedRequest{}
+	mi := &file_plans_v1_shares_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCalendarFeedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCalendarFeedRequest) ProtoMessage() {}
+
+func (x *CreateCalendarFeedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type CreateCalendarFeedRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 CreateCalendarFeedRequest_builder) Build() *CreateCalendarFeedRequest {
+	m0 := &CreateCalendarFeedRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type CreateCalendarFeedResponse struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Feed *CalendarFeed          `protobuf:"bytes,1,opt,name=feed,proto3"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CreateCalendarFeedResponse) Reset() {
+	*x = CreateCalendarFeedResponse{}
+	mi := &file_plans_v1_shares_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCalendarFeedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCalendarFeedResponse) ProtoMessage() {}
+
+func (x *CreateCalendarFeedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CreateCalendarFeedResponse) GetFeed() *CalendarFeed {
+	if x != nil {
+		return x.xxx_hidden_Feed
+	}
+	return nil
+}
+
+func (x *CreateCalendarFeedResponse) SetFeed(v *CalendarFeed) {
+	x.xxx_hidden_Feed = v
+}
+
+func (x *CreateCalendarFeedResponse) HasFeed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Feed != nil
+}
+
+func (x *CreateCalendarFeedResponse) ClearFeed() {
+	x.xxx_hidden_Feed = nil
+}
+
+type CreateCalendarFeedResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The new feed.
+	Feed *CalendarFeed
+}
+
+func (b0 CreateCalendarFeedResponse_builder) Build() *CreateCalendarFeedResponse {
+	m0 := &CreateCalendarFeedResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Feed = b.Feed
+	return m0
+}
+
+type DeleteCalendarFeedRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCalendarFeedRequest) Reset() {
+	*x = DeleteCalendarFeedRequest{}
+	mi := &file_plans_v1_shares_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCalendarFeedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCalendarFeedRequest) ProtoMessage() {}
+
+func (x *DeleteCalendarFeedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type DeleteCalendarFeedRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 DeleteCalendarFeedRequest_builder) Build() *DeleteCalendarFeedRequest {
+	m0 := &DeleteCalendarFeedRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type DeleteCalendarFeedResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCalendarFeedResponse) Reset() {
+	*x = DeleteCalendarFeedResponse{}
+	mi := &file_plans_v1_shares_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCalendarFeedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCalendarFeedResponse) ProtoMessage() {}
+
+func (x *DeleteCalendarFeedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_shares_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type DeleteCalendarFeedResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 DeleteCalendarFeedResponse_builder) Build() *DeleteCalendarFeedResponse {
+	m0 := &DeleteCalendarFeedResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 type ShareWorkoutRequest struct {
 	state         protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id string                 `protobuf:"bytes,1,opt,name=id,proto3"`
@@ -31,7 +423,7 @@ type ShareWorkoutRequest struct {
 
 func (x *ShareWorkoutRequest) Reset() {
 	*x = ShareWorkoutRequest{}
-	mi := &file_plans_v1_shares_proto_msgTypes[0]
+	mi := &file_plans_v1_shares_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +435,7 @@ func (x *ShareWorkoutRequest) String() string {
 func (*ShareWorkoutRequest) ProtoMessage() {}
 
 func (x *ShareWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[0]
+	mi := &file_plans_v1_shares_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -89,7 +481,7 @@ type ShareWorkoutResponse struct {
 
 func (x *ShareWorkoutResponse) Reset() {
 	*x = ShareWorkoutResponse{}
-	mi := &file_plans_v1_shares_proto_msgTypes[1]
+	mi := &file_plans_v1_shares_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -101,7 +493,7 @@ func (x *ShareWorkoutResponse) String() string {
 func (*ShareWorkoutResponse) ProtoMessage() {}
 
 func (x *ShareWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[1]
+	mi := &file_plans_v1_shares_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -147,7 +539,7 @@ type UnshareWorkoutRequest struct {
 
 func (x *UnshareWorkoutRequest) Reset() {
 	*x = UnshareWorkoutRequest{}
-	mi := &file_plans_v1_shares_proto_msgTypes[2]
+	mi := &file_plans_v1_shares_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -159,7 +551,7 @@ func (x *UnshareWorkoutRequest) String() string {
 func (*UnshareWorkoutRequest) ProtoMessage() {}
 
 func (x *UnshareWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[2]
+	mi := &file_plans_v1_shares_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -204,7 +596,7 @@ type UnshareWorkoutResponse struct {
 
 func (x *UnshareWorkoutResponse) Reset() {
 	*x = UnshareWorkoutResponse{}
-	mi := &file_plans_v1_shares_proto_msgTypes[3]
+	mi := &file_plans_v1_shares_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -216,7 +608,7 @@ func (x *UnshareWorkoutResponse) String() string {
 func (*UnshareWorkoutResponse) ProtoMessage() {}
 
 func (x *UnshareWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[3]
+	mi := &file_plans_v1_shares_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -248,7 +640,7 @@ type GetSharedWorkoutRequest struct {
 
 func (x *GetSharedWorkoutRequest) Reset() {
 	*x = GetSharedWorkoutRequest{}
-	mi := &file_plans_v1_shares_proto_msgTypes[4]
+	mi := &file_plans_v1_shares_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -260,7 +652,7 @@ func (x *GetSharedWorkoutRequest) String() string {
 func (*GetSharedWorkoutRequest) ProtoMessage() {}
 
 func (x *GetSharedWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[4]
+	mi := &file_plans_v1_shares_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -309,7 +701,7 @@ type SharedRoute struct {
 
 func (x *SharedRoute) Reset() {
 	*x = SharedRoute{}
-	mi := &file_plans_v1_shares_proto_msgTypes[5]
+	mi := &file_plans_v1_shares_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -321,7 +713,7 @@ func (x *SharedRoute) String() string {
 func (*SharedRoute) ProtoMessage() {}
 
 func (x *SharedRoute) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[5]
+	mi := &file_plans_v1_shares_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +802,7 @@ type GetSharedWorkoutResponse struct {
 
 func (x *GetSharedWorkoutResponse) Reset() {
 	*x = GetSharedWorkoutResponse{}
-	mi := &file_plans_v1_shares_proto_msgTypes[6]
+	mi := &file_plans_v1_shares_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +814,7 @@ func (x *GetSharedWorkoutResponse) String() string {
 func (*GetSharedWorkoutResponse) ProtoMessage() {}
 
 func (x *GetSharedWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_shares_proto_msgTypes[6]
+	mi := &file_plans_v1_shares_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +909,18 @@ var File_plans_v1_shares_proto protoreflect.FileDescriptor
 
 const file_plans_v1_shares_proto_rawDesc = "" +
 	"\n" +
-	"\x15plans/v1/shares.proto\x12\bplans.v1\x1a\x14mcp/v1/options.proto\x1a\x18plans/v1/exercises.proto\x1a\x14plans/v1/plans.proto\x1a\x16routes/v1/routes.proto\"%\n" +
+	"\x15plans/v1/shares.proto\x12\bplans.v1\x1a\x14mcp/v1/options.proto\x1a\x18plans/v1/exercises.proto\x1a\x14plans/v1/plans.proto\x1a\x16routes/v1/routes.proto\"F\n" +
+	"\fCalendarFeed\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12$\n" +
+	"\x0ebasic_auth_url\x18\x02 \x01(\tR\fbasicAuthUrl\"\x18\n" +
+	"\x16GetCalendarFeedRequest\"E\n" +
+	"\x17GetCalendarFeedResponse\x12*\n" +
+	"\x04feed\x18\x01 \x01(\v2\x16.plans.v1.CalendarFeedR\x04feed\"\x1b\n" +
+	"\x19CreateCalendarFeedRequest\"H\n" +
+	"\x1aCreateCalendarFeedResponse\x12*\n" +
+	"\x04feed\x18\x01 \x01(\v2\x16.plans.v1.CalendarFeedR\x04feed\"\x1b\n" +
+	"\x19DeleteCalendarFeedRequest\"\x1c\n" +
+	"\x1aDeleteCalendarFeedResponse\"%\n" +
 	"\x13ShareWorkoutRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"3\n" +
 	"\x14ShareWorkoutResponse\x12\x1b\n" +
@@ -534,44 +937,62 @@ const file_plans_v1_shares_proto_rawDesc = "" +
 	"\x18GetSharedWorkoutResponse\x12+\n" +
 	"\aworkout\x18\x01 \x01(\v2\x11.plans.v1.WorkoutR\aworkout\x12+\n" +
 	"\x05route\x18\x02 \x01(\v2\x15.plans.v1.SharedRouteR\x05route\x120\n" +
-	"\texercises\x18\x03 \x03(\v2\x12.plans.v1.ExerciseR\texercises2\x9c\x02\n" +
+	"\texercises\x18\x03 \x03(\v2\x12.plans.v1.ExerciseR\texercises2\xce\x04\n" +
 	"\x13WorkoutShareService\x12M\n" +
 	"\fShareWorkout\x12\x1d.plans.v1.ShareWorkoutRequest\x1a\x1e.plans.v1.ShareWorkoutResponse\x12S\n" +
 	"\x0eUnshareWorkout\x12\x1f.plans.v1.UnshareWorkoutRequest\x1a .plans.v1.UnshareWorkoutResponse\x12a\n" +
-	"\x10GetSharedWorkout\x12!.plans.v1.GetSharedWorkoutRequest\x1a\".plans.v1.GetSharedWorkoutResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa2\x01\n" +
+	"\x10GetSharedWorkout\x12!.plans.v1.GetSharedWorkoutRequest\x1a\".plans.v1.GetSharedWorkoutResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12^\n" +
+	"\x0fGetCalendarFeed\x12 .plans.v1.GetCalendarFeedRequest\x1a!.plans.v1.GetCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12g\n" +
+	"\x12CreateCalendarFeed\x12#.plans.v1.CreateCalendarFeedRequest\x1a$.plans.v1.CreateCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12g\n" +
+	"\x12DeleteCalendarFeed\x12#.plans.v1.DeleteCalendarFeedRequest\x1a$.plans.v1.DeleteCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa2\x01\n" +
 	"\fcom.plans.v1B\vSharesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
-var file_plans_v1_shares_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_plans_v1_shares_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_plans_v1_shares_proto_goTypes = []any{
-	(*ShareWorkoutRequest)(nil),      // 0: plans.v1.ShareWorkoutRequest
-	(*ShareWorkoutResponse)(nil),     // 1: plans.v1.ShareWorkoutResponse
-	(*UnshareWorkoutRequest)(nil),    // 2: plans.v1.UnshareWorkoutRequest
-	(*UnshareWorkoutResponse)(nil),   // 3: plans.v1.UnshareWorkoutResponse
-	(*GetSharedWorkoutRequest)(nil),  // 4: plans.v1.GetSharedWorkoutRequest
-	(*SharedRoute)(nil),              // 5: plans.v1.SharedRoute
-	(*GetSharedWorkoutResponse)(nil), // 6: plans.v1.GetSharedWorkoutResponse
-	(*v1.RouteStats)(nil),            // 7: routes.v1.RouteStats
-	(*v1.RoutePoint)(nil),            // 8: routes.v1.RoutePoint
-	(*Workout)(nil),                  // 9: plans.v1.Workout
-	(*Exercise)(nil),                 // 10: plans.v1.Exercise
+	(*CalendarFeed)(nil),               // 0: plans.v1.CalendarFeed
+	(*GetCalendarFeedRequest)(nil),     // 1: plans.v1.GetCalendarFeedRequest
+	(*GetCalendarFeedResponse)(nil),    // 2: plans.v1.GetCalendarFeedResponse
+	(*CreateCalendarFeedRequest)(nil),  // 3: plans.v1.CreateCalendarFeedRequest
+	(*CreateCalendarFeedResponse)(nil), // 4: plans.v1.CreateCalendarFeedResponse
+	(*DeleteCalendarFeedRequest)(nil),  // 5: plans.v1.DeleteCalendarFeedRequest
+	(*DeleteCalendarFeedResponse)(nil), // 6: plans.v1.DeleteCalendarFeedResponse
+	(*ShareWorkoutRequest)(nil),        // 7: plans.v1.ShareWorkoutRequest
+	(*ShareWorkoutResponse)(nil),       // 8: plans.v1.ShareWorkoutResponse
+	(*UnshareWorkoutRequest)(nil),      // 9: plans.v1.UnshareWorkoutRequest
+	(*UnshareWorkoutResponse)(nil),     // 10: plans.v1.UnshareWorkoutResponse
+	(*GetSharedWorkoutRequest)(nil),    // 11: plans.v1.GetSharedWorkoutRequest
+	(*SharedRoute)(nil),                // 12: plans.v1.SharedRoute
+	(*GetSharedWorkoutResponse)(nil),   // 13: plans.v1.GetSharedWorkoutResponse
+	(*v1.RouteStats)(nil),              // 14: routes.v1.RouteStats
+	(*v1.RoutePoint)(nil),              // 15: routes.v1.RoutePoint
+	(*Workout)(nil),                    // 16: plans.v1.Workout
+	(*Exercise)(nil),                   // 17: plans.v1.Exercise
 }
 var file_plans_v1_shares_proto_depIdxs = []int32{
-	7,  // 0: plans.v1.SharedRoute.stats:type_name -> routes.v1.RouteStats
-	8,  // 1: plans.v1.SharedRoute.points:type_name -> routes.v1.RoutePoint
-	9,  // 2: plans.v1.GetSharedWorkoutResponse.workout:type_name -> plans.v1.Workout
-	5,  // 3: plans.v1.GetSharedWorkoutResponse.route:type_name -> plans.v1.SharedRoute
-	10, // 4: plans.v1.GetSharedWorkoutResponse.exercises:type_name -> plans.v1.Exercise
-	0,  // 5: plans.v1.WorkoutShareService.ShareWorkout:input_type -> plans.v1.ShareWorkoutRequest
-	2,  // 6: plans.v1.WorkoutShareService.UnshareWorkout:input_type -> plans.v1.UnshareWorkoutRequest
-	4,  // 7: plans.v1.WorkoutShareService.GetSharedWorkout:input_type -> plans.v1.GetSharedWorkoutRequest
-	1,  // 8: plans.v1.WorkoutShareService.ShareWorkout:output_type -> plans.v1.ShareWorkoutResponse
-	3,  // 9: plans.v1.WorkoutShareService.UnshareWorkout:output_type -> plans.v1.UnshareWorkoutResponse
-	6,  // 10: plans.v1.WorkoutShareService.GetSharedWorkout:output_type -> plans.v1.GetSharedWorkoutResponse
-	8,  // [8:11] is the sub-list for method output_type
-	5,  // [5:8] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	0,  // 0: plans.v1.GetCalendarFeedResponse.feed:type_name -> plans.v1.CalendarFeed
+	0,  // 1: plans.v1.CreateCalendarFeedResponse.feed:type_name -> plans.v1.CalendarFeed
+	14, // 2: plans.v1.SharedRoute.stats:type_name -> routes.v1.RouteStats
+	15, // 3: plans.v1.SharedRoute.points:type_name -> routes.v1.RoutePoint
+	16, // 4: plans.v1.GetSharedWorkoutResponse.workout:type_name -> plans.v1.Workout
+	12, // 5: plans.v1.GetSharedWorkoutResponse.route:type_name -> plans.v1.SharedRoute
+	17, // 6: plans.v1.GetSharedWorkoutResponse.exercises:type_name -> plans.v1.Exercise
+	7,  // 7: plans.v1.WorkoutShareService.ShareWorkout:input_type -> plans.v1.ShareWorkoutRequest
+	9,  // 8: plans.v1.WorkoutShareService.UnshareWorkout:input_type -> plans.v1.UnshareWorkoutRequest
+	11, // 9: plans.v1.WorkoutShareService.GetSharedWorkout:input_type -> plans.v1.GetSharedWorkoutRequest
+	1,  // 10: plans.v1.WorkoutShareService.GetCalendarFeed:input_type -> plans.v1.GetCalendarFeedRequest
+	3,  // 11: plans.v1.WorkoutShareService.CreateCalendarFeed:input_type -> plans.v1.CreateCalendarFeedRequest
+	5,  // 12: plans.v1.WorkoutShareService.DeleteCalendarFeed:input_type -> plans.v1.DeleteCalendarFeedRequest
+	8,  // 13: plans.v1.WorkoutShareService.ShareWorkout:output_type -> plans.v1.ShareWorkoutResponse
+	10, // 14: plans.v1.WorkoutShareService.UnshareWorkout:output_type -> plans.v1.UnshareWorkoutResponse
+	13, // 15: plans.v1.WorkoutShareService.GetSharedWorkout:output_type -> plans.v1.GetSharedWorkoutResponse
+	2,  // 16: plans.v1.WorkoutShareService.GetCalendarFeed:output_type -> plans.v1.GetCalendarFeedResponse
+	4,  // 17: plans.v1.WorkoutShareService.CreateCalendarFeed:output_type -> plans.v1.CreateCalendarFeedResponse
+	6,  // 18: plans.v1.WorkoutShareService.DeleteCalendarFeed:output_type -> plans.v1.DeleteCalendarFeedResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_shares_proto_init() }
@@ -587,7 +1008,7 @@ func file_plans_v1_shares_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_shares_proto_rawDesc), len(file_plans_v1_shares_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

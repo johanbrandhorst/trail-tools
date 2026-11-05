@@ -237,3 +237,22 @@ where w.id = sqlc.arg(id) and p.id = w.plan_id and p.user_id = sqlc.arg(user_id)
 select w.id, p.user_id from workouts w
 join training_plans p on p.id = w.plan_id
 where w.share_token = $1;
+
+-- name: GetCalendarToken :one
+select calendar_token from users where id = $1;
+
+-- name: SetCalendarToken :exec
+update users set calendar_token = sqlc.narg(token) where id = sqlc.arg(user_id);
+
+-- name: GetCalendarFeedUser :one
+-- Returns the user of a calendar feed, with the time zone of their latest
+-- activity, which their workouts' local times are in. Empty if they have
+-- no activities.
+select u.id, coalesce((
+  select a.timezone from strava_activities a
+  where a.user_id = u.id
+  order by a.start_time desc
+  limit 1
+), '')::text as timezone
+from users u
+where u.calendar_token = $1;

@@ -26,3 +26,27 @@ export const unshareWorkout = WorkoutShareService.method.unshareWorkout;
  * @generated from rpc plans.v1.WorkoutShareService.GetSharedWorkout
  */
 export const getSharedWorkout = WorkoutShareService.method.getSharedWorkout;
+
+/**
+ * Get the user's calendar feed: an iCalendar URL of their upcoming
+ * workouts, for calendar apps and home automation to subscribe to. Its URL
+ * is a secret, so it's only shown in the web app.
+ *
+ * @generated from rpc plans.v1.WorkoutShareService.GetCalendarFeed
+ */
+export const getCalendarFeed = WorkoutShareService.method.getCalendarFeed;
+
+/**
+ * Create the user's calendar feed, or replace it with a new URL, so the
+ * old one stops working.
+ *
+ * @generated from rpc plans.v1.WorkoutShareService.CreateCalendarFeed
+ */
+export const createCalendarFeed = WorkoutShareService.method.createCalendarFeed;
+
+/**
+ * Delete the user's calendar feed: its URL stops working.
+ *
+ * @generated from rpc plans.v1.WorkoutShareService.DeleteCalendarFeed
+ */
+export const deleteCalendarFeed = WorkoutShareService.method.deleteCalendarFeed;

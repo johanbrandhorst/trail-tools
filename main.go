@@ -680,6 +680,7 @@ func run(
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
 	planService.SetSharing(planRepo, baseURL)
+	planService.SetCalendars(planRepo)
 	if garminSyncer != nil {
 		// Changed workouts of the coming days go on the Garmin calendar
 		// right away.
@@ -895,6 +896,7 @@ func run(
 	mux.Handle("/workouts/", authenticate(planService.DownloadHandler(indexHandler)))
 	// Shared workouts' files are downloaded without signing in.
 	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
+	mux.Handle(plan.CalendarPath, planService.CalendarHandler())
 	mux.Handle("/race-plans/", authenticate(racePlanService.CourseHandler(indexHandler)))
 	// Registering /routes/ makes the mux redirect /routes to /routes/, so
 	// serve the frontend for /routes explicitly.

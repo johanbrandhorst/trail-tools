@@ -17,7 +17,133 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file plans/v1/shares.proto.
  */
 export const file_plans_v1_shares: GenFile = /*@__PURE__*/
-  fileDesc("ChVwbGFucy92MS9zaGFyZXMucHJvdG8SCHBsYW5zLnYxIiEKE1NoYXJlV29ya291dFJlcXVlc3QSCgoCaWQYASABKAkiKQoUU2hhcmVXb3Jrb3V0UmVzcG9uc2USEQoJc2hhcmVfdXJsGAEgASgJIiMKFVVuc2hhcmVXb3Jrb3V0UmVxdWVzdBIKCgJpZBgBIAEoCSIYChZVbnNoYXJlV29ya291dFJlc3BvbnNlIigKF0dldFNoYXJlZFdvcmtvdXRSZXF1ZXN0Eg0KBXRva2VuGAEgASgJImgKC1NoYXJlZFJvdXRlEgwKBG5hbWUYASABKAkSJAoFc3RhdHMYAiABKAsyFS5yb3V0ZXMudjEuUm91dGVTdGF0cxIlCgZwb2ludHMYAyADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludCKLAQoYR2V0U2hhcmVkV29ya291dFJlc3BvbnNlEiIKB3dvcmtvdXQYASABKAsyES5wbGFucy52MS5Xb3Jrb3V0EiQKBXJvdXRlGAIgASgLMhUucGxhbnMudjEuU2hhcmVkUm91dGUSJQoJZXhlcmNpc2VzGAMgAygLMhIucGxhbnMudjEuRXhlcmNpc2UynAIKE1dvcmtvdXRTaGFyZVNlcnZpY2USTQoMU2hhcmVXb3Jrb3V0Eh0ucGxhbnMudjEuU2hhcmVXb3Jrb3V0UmVxdWVzdBoeLnBsYW5zLnYxLlNoYXJlV29ya291dFJlc3BvbnNlElMKDlVuc2hhcmVXb3Jrb3V0Eh8ucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXF1ZXN0GiAucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXNwb25zZRJhChBHZXRTaGFyZWRXb3Jrb3V0EiEucGxhbnMudjEuR2V0U2hhcmVkV29ya291dFJlcXVlc3QaIi5wbGFucy52MS5HZXRTaGFyZWRXb3Jrb3V0UmVzcG9uc2UiBqKfGQIIAUKiAQoMY29tLnBsYW5zLnYxQgtTaGFyZXNQcm90b1ABWkRnaXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vcGxhbnMvdjE7cGxhbnN2MaICA1BYWKoCCFBsYW5zLlYxygIIUGxhbnNcVjHiAhRQbGFuc1xWMVxHUEJNZXRhZGF0YeoCCVBsYW5zOjpWMWIGcHJvdG8z", [file_mcp_v1_options, file_plans_v1_exercises, file_plans_v1_plans, file_routes_v1_routes]);
+  fileDesc("ChVwbGFucy92MS9zaGFyZXMucHJvdG8SCHBsYW5zLnYxIjMKDENhbGVuZGFyRmVlZBILCgN1cmwYASABKAkSFgoOYmFzaWNfYXV0aF91cmwYAiABKAkiGAoWR2V0Q2FsZW5kYXJGZWVkUmVxdWVzdCI/ChdHZXRDYWxlbmRhckZlZWRSZXNwb25zZRIkCgRmZWVkGAEgASgLMhYucGxhbnMudjEuQ2FsZW5kYXJGZWVkIhsKGUNyZWF0ZUNhbGVuZGFyRmVlZFJlcXVlc3QiQgoaQ3JlYXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2USJAoEZmVlZBgBIAEoCzIWLnBsYW5zLnYxLkNhbGVuZGFyRmVlZCIbChlEZWxldGVDYWxlbmRhckZlZWRSZXF1ZXN0IhwKGkRlbGV0ZUNhbGVuZGFyRmVlZFJlc3BvbnNlIiEKE1NoYXJlV29ya291dFJlcXVlc3QSCgoCaWQYASABKAkiKQoUU2hhcmVXb3Jrb3V0UmVzcG9uc2USEQoJc2hhcmVfdXJsGAEgASgJIiMKFVVuc2hhcmVXb3Jrb3V0UmVxdWVzdBIKCgJpZBgBIAEoCSIYChZVbnNoYXJlV29ya291dFJlc3BvbnNlIigKF0dldFNoYXJlZFdvcmtvdXRSZXF1ZXN0Eg0KBXRva2VuGAEgASgJImgKC1NoYXJlZFJvdXRlEgwKBG5hbWUYASABKAkSJAoFc3RhdHMYAiABKAsyFS5yb3V0ZXMudjEuUm91dGVTdGF0cxIlCgZwb2ludHMYAyADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludCKLAQoYR2V0U2hhcmVkV29ya291dFJlc3BvbnNlEiIKB3dvcmtvdXQYASABKAsyES5wbGFucy52MS5Xb3Jrb3V0EiQKBXJvdXRlGAIgASgLMhUucGxhbnMudjEuU2hhcmVkUm91dGUSJQoJZXhlcmNpc2VzGAMgAygLMhIucGxhbnMudjEuRXhlcmNpc2UyzgQKE1dvcmtvdXRTaGFyZVNlcnZpY2USTQoMU2hhcmVXb3Jrb3V0Eh0ucGxhbnMudjEuU2hhcmVXb3Jrb3V0UmVxdWVzdBoeLnBsYW5zLnYxLlNoYXJlV29ya291dFJlc3BvbnNlElMKDlVuc2hhcmVXb3Jrb3V0Eh8ucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXF1ZXN0GiAucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXNwb25zZRJhChBHZXRTaGFyZWRXb3Jrb3V0EiEucGxhbnMudjEuR2V0U2hhcmVkV29ya291dFJlcXVlc3QaIi5wbGFucy52MS5HZXRTaGFyZWRXb3Jrb3V0UmVzcG9uc2UiBqKfGQIIARJeCg9HZXRDYWxlbmRhckZlZWQSIC5wbGFucy52MS5HZXRDYWxlbmRhckZlZWRSZXF1ZXN0GiEucGxhbnMudjEuR2V0Q2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIARJnChJDcmVhdGVDYWxlbmRhckZlZWQSIy5wbGFucy52MS5DcmVhdGVDYWxlbmRhckZlZWRSZXF1ZXN0GiQucGxhbnMudjEuQ3JlYXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIARJnChJEZWxldGVDYWxlbmRhckZlZWQSIy5wbGFucy52MS5EZWxldGVDYWxlbmRhckZlZWRSZXF1ZXN0GiQucGxhbnMudjEuRGVsZXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIAUKiAQoMY29tLnBsYW5zLnYxQgtTaGFyZXNQcm90b1ABWkRnaXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vcGxhbnMvdjE7cGxhbnN2MaICA1BYWKoCCFBsYW5zLlYxygIIUGxhbnNcVjHiAhRQbGFuc1xWMVxHUEJNZXRhZGF0YeoCCVBsYW5zOjpWMWIGcHJvdG8z", [file_mcp_v1_options, file_plans_v1_exercises, file_plans_v1_plans, file_routes_v1_routes]);
+
+/**
+ * A calendar feed of the user's upcoming workouts, in iCalendar format.
+ * It has an event for each workout with a start time and a target duration
+ * that isn't a rest day or already done, from yesterday to four weeks
+ * ahead. An event starts at the workout's start time and ends after its
+ * target duration. Its description has a line "latest_end: HH:MM", the
+ * local time it ends if started at the end of its start window. Times are
+ * in the time zone of the user's latest activity.
+ *
+ * @generated from message plans.v1.CalendarFeed
+ */
+export type CalendarFeed = Message<"plans.v1.CalendarFeed"> & {
+  /**
+   * The feed's URL, with its secret in the path, for apps that can only
+   * subscribe to a URL.
+   *
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * The same feed with its secret as HTTP Basic auth instead, which keeps
+   * it out of server logs, for apps that support it.
+   *
+   * @generated from field: string basic_auth_url = 2;
+   */
+  basicAuthUrl: string;
+};
+
+/**
+ * Describes the message plans.v1.CalendarFeed.
+ * Use `create(CalendarFeedSchema)` to create a new message.
+ */
+export const CalendarFeedSchema: GenMessage<CalendarFeed> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 0);
+
+/**
+ * @generated from message plans.v1.GetCalendarFeedRequest
+ */
+export type GetCalendarFeedRequest = Message<"plans.v1.GetCalendarFeedRequest"> & {
+};
+
+/**
+ * Describes the message plans.v1.GetCalendarFeedRequest.
+ * Use `create(GetCalendarFeedRequestSchema)` to create a new message.
+ */
+export const GetCalendarFeedRequestSchema: GenMessage<GetCalendarFeedRequest> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 1);
+
+/**
+ * @generated from message plans.v1.GetCalendarFeedResponse
+ */
+export type GetCalendarFeedResponse = Message<"plans.v1.GetCalendarFeedResponse"> & {
+  /**
+   * The feed. Unset if the user has none.
+   *
+   * @generated from field: plans.v1.CalendarFeed feed = 1;
+   */
+  feed?: CalendarFeed | undefined;
+};
+
+/**
+ * Describes the message plans.v1.GetCalendarFeedResponse.
+ * Use `create(GetCalendarFeedResponseSchema)` to create a new message.
+ */
+export const GetCalendarFeedResponseSchema: GenMessage<GetCalendarFeedResponse> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 2);
+
+/**
+ * @generated from message plans.v1.CreateCalendarFeedRequest
+ */
+export type CreateCalendarFeedRequest = Message<"plans.v1.CreateCalendarFeedRequest"> & {
+};
+
+/**
+ * Describes the message plans.v1.CreateCalendarFeedRequest.
+ * Use `create(CreateCalendarFeedRequestSchema)` to create a new message.
+ */
+export const CreateCalendarFeedRequestSchema: GenMessage<CreateCalendarFeedRequest> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 3);
+
+/**
+ * @generated from message plans.v1.CreateCalendarFeedResponse
+ */
+export type CreateCalendarFeedResponse = Message<"plans.v1.CreateCalendarFeedResponse"> & {
+  /**
+   * The new feed.
+   *
+   * @generated from field: plans.v1.CalendarFeed feed = 1;
+   */
+  feed?: CalendarFeed | undefined;
+};
+
+/**
+ * Describes the message plans.v1.CreateCalendarFeedResponse.
+ * Use `create(CreateCalendarFeedResponseSchema)` to create a new message.
+ */
+export const CreateCalendarFeedResponseSchema: GenMessage<CreateCalendarFeedResponse> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 4);
+
+/**
+ * @generated from message plans.v1.DeleteCalendarFeedRequest
+ */
+export type DeleteCalendarFeedRequest = Message<"plans.v1.DeleteCalendarFeedRequest"> & {
+};
+
+/**
+ * Describes the message plans.v1.DeleteCalendarFeedRequest.
+ * Use `create(DeleteCalendarFeedRequestSchema)` to create a new message.
+ */
+export const DeleteCalendarFeedRequestSchema: GenMessage<DeleteCalendarFeedRequest> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 5);
+
+/**
+ * @generated from message plans.v1.DeleteCalendarFeedResponse
+ */
+export type DeleteCalendarFeedResponse = Message<"plans.v1.DeleteCalendarFeedResponse"> & {
+};
+
+/**
+ * Describes the message plans.v1.DeleteCalendarFeedResponse.
+ * Use `create(DeleteCalendarFeedResponseSchema)` to create a new message.
+ */
+export const DeleteCalendarFeedResponseSchema: GenMessage<DeleteCalendarFeedResponse> = /*@__PURE__*/
+  messageDesc(file_plans_v1_shares, 6);
 
 /**
  * @generated from message plans.v1.ShareWorkoutRequest
@@ -36,7 +162,7 @@ export type ShareWorkoutRequest = Message<"plans.v1.ShareWorkoutRequest"> & {
  * Use `create(ShareWorkoutRequestSchema)` to create a new message.
  */
 export const ShareWorkoutRequestSchema: GenMessage<ShareWorkoutRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 0);
+  messageDesc(file_plans_v1_shares, 7);
 
 /**
  * @generated from message plans.v1.ShareWorkoutResponse
@@ -55,7 +181,7 @@ export type ShareWorkoutResponse = Message<"plans.v1.ShareWorkoutResponse"> & {
  * Use `create(ShareWorkoutResponseSchema)` to create a new message.
  */
 export const ShareWorkoutResponseSchema: GenMessage<ShareWorkoutResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 1);
+  messageDesc(file_plans_v1_shares, 8);
 
 /**
  * @generated from message plans.v1.UnshareWorkoutRequest
@@ -74,7 +200,7 @@ export type UnshareWorkoutRequest = Message<"plans.v1.UnshareWorkoutRequest"> & 
  * Use `create(UnshareWorkoutRequestSchema)` to create a new message.
  */
 export const UnshareWorkoutRequestSchema: GenMessage<UnshareWorkoutRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 2);
+  messageDesc(file_plans_v1_shares, 9);
 
 /**
  * @generated from message plans.v1.UnshareWorkoutResponse
@@ -87,7 +213,7 @@ export type UnshareWorkoutResponse = Message<"plans.v1.UnshareWorkoutResponse"> 
  * Use `create(UnshareWorkoutResponseSchema)` to create a new message.
  */
 export const UnshareWorkoutResponseSchema: GenMessage<UnshareWorkoutResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 3);
+  messageDesc(file_plans_v1_shares, 10);
 
 /**
  * @generated from message plans.v1.GetSharedWorkoutRequest
@@ -106,7 +232,7 @@ export type GetSharedWorkoutRequest = Message<"plans.v1.GetSharedWorkoutRequest"
  * Use `create(GetSharedWorkoutRequestSchema)` to create a new message.
  */
 export const GetSharedWorkoutRequestSchema: GenMessage<GetSharedWorkoutRequest> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 4);
+  messageDesc(file_plans_v1_shares, 11);
 
 /**
  * The route of a shared workout.
@@ -141,7 +267,7 @@ export type SharedRoute = Message<"plans.v1.SharedRoute"> & {
  * Use `create(SharedRouteSchema)` to create a new message.
  */
 export const SharedRouteSchema: GenMessage<SharedRoute> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 5);
+  messageDesc(file_plans_v1_shares, 12);
 
 /**
  * @generated from message plans.v1.GetSharedWorkoutResponse
@@ -176,7 +302,7 @@ export type GetSharedWorkoutResponse = Message<"plans.v1.GetSharedWorkoutRespons
  * Use `create(GetSharedWorkoutResponseSchema)` to create a new message.
  */
 export const GetSharedWorkoutResponseSchema: GenMessage<GetSharedWorkoutResponse> = /*@__PURE__*/
-  messageDesc(file_plans_v1_shares, 6);
+  messageDesc(file_plans_v1_shares, 13);
 
 /**
  * WorkoutShareService shares workouts read-only with people who don't have
@@ -220,6 +346,39 @@ export const WorkoutShareService: GenService<{
     methodKind: "unary";
     input: typeof GetSharedWorkoutRequestSchema;
     output: typeof GetSharedWorkoutResponseSchema;
+  },
+  /**
+   * Get the user's calendar feed: an iCalendar URL of their upcoming
+   * workouts, for calendar apps and home automation to subscribe to. Its URL
+   * is a secret, so it's only shown in the web app.
+   *
+   * @generated from rpc plans.v1.WorkoutShareService.GetCalendarFeed
+   */
+  getCalendarFeed: {
+    methodKind: "unary";
+    input: typeof GetCalendarFeedRequestSchema;
+    output: typeof GetCalendarFeedResponseSchema;
+  },
+  /**
+   * Create the user's calendar feed, or replace it with a new URL, so the
+   * old one stops working.
+   *
+   * @generated from rpc plans.v1.WorkoutShareService.CreateCalendarFeed
+   */
+  createCalendarFeed: {
+    methodKind: "unary";
+    input: typeof CreateCalendarFeedRequestSchema;
+    output: typeof CreateCalendarFeedResponseSchema;
+  },
+  /**
+   * Delete the user's calendar feed: its URL stops working.
+   *
+   * @generated from rpc plans.v1.WorkoutShareService.DeleteCalendarFeed
+   */
+  deleteCalendarFeed: {
+    methodKind: "unary";
+    input: typeof DeleteCalendarFeedRequestSchema;
+    output: typeof DeleteCalendarFeedResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_plans_v1_shares, 0);

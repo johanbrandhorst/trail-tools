@@ -33,6 +33,15 @@ const (
 	// WorkoutShareServiceGetSharedWorkoutProcedure is the procedure name of the WorkoutShareService's
 	// GetSharedWorkout RPC.
 	WorkoutShareServiceGetSharedWorkoutProcedure = "/plans.v1.WorkoutShareService/GetSharedWorkout"
+	// WorkoutShareServiceGetCalendarFeedProcedure is the procedure name of the WorkoutShareService's
+	// GetCalendarFeed RPC.
+	WorkoutShareServiceGetCalendarFeedProcedure = "/plans.v1.WorkoutShareService/GetCalendarFeed"
+	// WorkoutShareServiceCreateCalendarFeedProcedure is the procedure name of the WorkoutShareService's
+	// CreateCalendarFeed RPC.
+	WorkoutShareServiceCreateCalendarFeedProcedure = "/plans.v1.WorkoutShareService/CreateCalendarFeed"
+	// WorkoutShareServiceDeleteCalendarFeedProcedure is the procedure name of the WorkoutShareService's
+	// DeleteCalendarFeed RPC.
+	WorkoutShareServiceDeleteCalendarFeedProcedure = "/plans.v1.WorkoutShareService/DeleteCalendarFeed"
 )
 
 var (
@@ -57,6 +66,27 @@ var (
 			Procedure:  WorkoutShareServiceGetSharedWorkoutProcedure,
 		}
 	})
+	workoutShareServiceGetCalendarFeedSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_shares_proto.Services().ByName("WorkoutShareService").Methods().ByName("GetCalendarFeed"),
+			Procedure:  WorkoutShareServiceGetCalendarFeedProcedure,
+		}
+	})
+	workoutShareServiceCreateCalendarFeedSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_shares_proto.Services().ByName("WorkoutShareService").Methods().ByName("CreateCalendarFeed"),
+			Procedure:  WorkoutShareServiceCreateCalendarFeedProcedure,
+		}
+	})
+	workoutShareServiceDeleteCalendarFeedSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_shares_proto.Services().ByName("WorkoutShareService").Methods().ByName("DeleteCalendarFeed"),
+			Procedure:  WorkoutShareServiceDeleteCalendarFeedProcedure,
+		}
+	})
 )
 
 // WorkoutShareServiceClient is a client for the plans.v1.WorkoutShareService service.
@@ -69,6 +99,15 @@ type WorkoutShareServiceClient interface {
 	// Get a shared workout by the token of its share link. Doesn't require
 	// signing in.
 	GetSharedWorkout(context.Context, *v1.GetSharedWorkoutRequest) (*v1.GetSharedWorkoutResponse, error)
+	// Get the user's calendar feed: an iCalendar URL of their upcoming
+	// workouts, for calendar apps and home automation to subscribe to. Its URL
+	// is a secret, so it's only shown in the web app.
+	GetCalendarFeed(context.Context, *v1.GetCalendarFeedRequest) (*v1.GetCalendarFeedResponse, error)
+	// Create the user's calendar feed, or replace it with a new URL, so the
+	// old one stops working.
+	CreateCalendarFeed(context.Context, *v1.CreateCalendarFeedRequest) (*v1.CreateCalendarFeedResponse, error)
+	// Delete the user's calendar feed: its URL stops working.
+	DeleteCalendarFeed(context.Context, *v1.DeleteCalendarFeedRequest) (*v1.DeleteCalendarFeedResponse, error)
 }
 
 // NewWorkoutShareServiceClient constructs a client for the plans.v1.WorkoutShareService service.
@@ -87,6 +126,15 @@ type WorkoutShareServiceHandler interface {
 	// Get a shared workout by the token of its share link. Doesn't require
 	// signing in.
 	GetSharedWorkout(context.Context, *v1.GetSharedWorkoutRequest) (*v1.GetSharedWorkoutResponse, error)
+	// Get the user's calendar feed: an iCalendar URL of their upcoming
+	// workouts, for calendar apps and home automation to subscribe to. Its URL
+	// is a secret, so it's only shown in the web app.
+	GetCalendarFeed(context.Context, *v1.GetCalendarFeedRequest) (*v1.GetCalendarFeedResponse, error)
+	// Create the user's calendar feed, or replace it with a new URL, so the
+	// old one stops working.
+	CreateCalendarFeed(context.Context, *v1.CreateCalendarFeedRequest) (*v1.CreateCalendarFeedResponse, error)
+	// Delete the user's calendar feed: its URL stops working.
+	DeleteCalendarFeed(context.Context, *v1.DeleteCalendarFeedRequest) (*v1.DeleteCalendarFeedResponse, error)
 }
 
 // RegisterWorkoutShareServiceHandler registers svc as the plans.v1.WorkoutShareService
@@ -97,6 +145,9 @@ func RegisterWorkoutShareServiceHandler(server *connect.Server, svc WorkoutShare
 		connect.Method{Spec: workoutShareServiceShareWorkoutSpec(), Handler: adapter.shareWorkout},
 		connect.Method{Spec: workoutShareServiceUnshareWorkoutSpec(), Handler: adapter.unshareWorkout},
 		connect.Method{Spec: workoutShareServiceGetSharedWorkoutSpec(), Handler: adapter.getSharedWorkout},
+		connect.Method{Spec: workoutShareServiceGetCalendarFeedSpec(), Handler: adapter.getCalendarFeed},
+		connect.Method{Spec: workoutShareServiceCreateCalendarFeedSpec(), Handler: adapter.createCalendarFeed},
+		connect.Method{Spec: workoutShareServiceDeleteCalendarFeedSpec(), Handler: adapter.deleteCalendarFeed},
 	)
 }
 
@@ -113,6 +164,18 @@ func (UnimplementedWorkoutShareServiceHandler) UnshareWorkout(context.Context, *
 
 func (UnimplementedWorkoutShareServiceHandler) GetSharedWorkout(context.Context, *v1.GetSharedWorkoutRequest) (*v1.GetSharedWorkoutResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.WorkoutShareService.GetSharedWorkout is not implemented")
+}
+
+func (UnimplementedWorkoutShareServiceHandler) GetCalendarFeed(context.Context, *v1.GetCalendarFeedRequest) (*v1.GetCalendarFeedResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.WorkoutShareService.GetCalendarFeed is not implemented")
+}
+
+func (UnimplementedWorkoutShareServiceHandler) CreateCalendarFeed(context.Context, *v1.CreateCalendarFeedRequest) (*v1.CreateCalendarFeedResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.WorkoutShareService.CreateCalendarFeed is not implemented")
+}
+
+func (UnimplementedWorkoutShareServiceHandler) DeleteCalendarFeed(context.Context, *v1.DeleteCalendarFeedRequest) (*v1.DeleteCalendarFeedResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.WorkoutShareService.DeleteCalendarFeed is not implemented")
 }
 
 type workoutShareServiceClient struct {
@@ -138,6 +201,30 @@ func (c *workoutShareServiceClient) UnshareWorkout(ctx context.Context, req *v1.
 func (c *workoutShareServiceClient) GetSharedWorkout(ctx context.Context, req *v1.GetSharedWorkoutRequest) (*v1.GetSharedWorkoutResponse, error) {
 	var res v1.GetSharedWorkoutResponse
 	if err := c.client.CallUnary(ctx, workoutShareServiceGetSharedWorkoutSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *workoutShareServiceClient) GetCalendarFeed(ctx context.Context, req *v1.GetCalendarFeedRequest) (*v1.GetCalendarFeedResponse, error) {
+	var res v1.GetCalendarFeedResponse
+	if err := c.client.CallUnary(ctx, workoutShareServiceGetCalendarFeedSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *workoutShareServiceClient) CreateCalendarFeed(ctx context.Context, req *v1.CreateCalendarFeedRequest) (*v1.CreateCalendarFeedResponse, error) {
+	var res v1.CreateCalendarFeedResponse
+	if err := c.client.CallUnary(ctx, workoutShareServiceCreateCalendarFeedSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *workoutShareServiceClient) DeleteCalendarFeed(ctx context.Context, req *v1.DeleteCalendarFeedRequest) (*v1.DeleteCalendarFeedResponse, error) {
+	var res v1.DeleteCalendarFeedResponse
+	if err := c.client.CallUnary(ctx, workoutShareServiceDeleteCalendarFeedSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -175,6 +262,42 @@ func (h workoutShareServiceHandler) getSharedWorkout(ctx context.Context, _ conn
 		return err
 	}
 	res, err := h.svc.GetSharedWorkout(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h workoutShareServiceHandler) getCalendarFeed(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetCalendarFeedRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetCalendarFeed(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h workoutShareServiceHandler) createCalendarFeed(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateCalendarFeedRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateCalendarFeed(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h workoutShareServiceHandler) deleteCalendarFeed(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.DeleteCalendarFeedRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DeleteCalendarFeed(ctx, &req)
 	if err != nil {
 		return err
 	}
