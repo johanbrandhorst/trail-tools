@@ -212,6 +212,7 @@ func newEnv(t *testing.T) *env {
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
 	planService.SetSharing(planRepo, "https://trail.example")
+	planService.SetCalendars(planRepo)
 	e.garmin = newFakeGarmin()
 	// Notifications are handled when tests say, as by the scheduled
 	// sync the trigger runs.
@@ -272,6 +273,7 @@ func newEnv(t *testing.T) *env {
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle("/workouts/", planService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
+	mux.Handle(plan.CalendarPath, planService.CalendarHandler())
 	mux.Handle("/race-plans/", racePlanService.CourseHandler(http.NotFoundHandler()))
 	e.imports = &fakeImportRunner{}
 	srv3 := connect.NewServer()

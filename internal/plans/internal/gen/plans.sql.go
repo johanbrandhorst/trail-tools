@@ -329,6 +329,43 @@ func (q *Queries) FindReferences(ctx context.Context, arg *FindReferencesParams)
 	return &i, err
 }
 
+const getCalendarFeedUser = `-- name: GetCalendarFeedUser :one
+select u.id, coalesce((
+  select a.timezone from strava_activities a
+  where a.user_id = u.id
+  order by a.start_time desc
+  limit 1
+), '')::text as timezone
+from users u
+where u.calendar_token = $1
+`
+
+type GetCalendarFeedUserRow struct {
+	ID       pgtype.UUID
+	Timezone string
+}
+
+// Returns the user of a calendar feed, with the time zone of their latest
+// activity, which their workouts' local times are in. Empty if they have
+// no activities.
+func (q *Queries) GetCalendarFeedUser(ctx context.Context, calendarToken pgtype.Text) (*GetCalendarFeedUserRow, error) {
+	row := q.db.QueryRow(ctx, getCalendarFeedUser, calendarToken)
+	var i GetCalendarFeedUserRow
+	err := row.Scan(&i.ID, &i.Timezone)
+	return &i, err
+}
+
+const getCalendarToken = `-- name: GetCalendarToken :one
+select calendar_token from users where id = $1
+`
+
+func (q *Queries) GetCalendarToken(ctx context.Context, id pgtype.UUID) (pgtype.Text, error) {
+	row := q.db.QueryRow(ctx, getCalendarToken, id)
+	var calendar_token pgtype.Text
+	err := row.Scan(&calendar_token)
+	return calendar_token, err
+}
+
 const getTrainingPlan = `-- name: GetTrainingPlan :one
 select id, user_id, name, description, start_date, end_date, goal_race_ids, create_time, update_time from training_plans
 where id = $1 and user_id = $2
@@ -648,6 +685,20 @@ func (q *Queries) ListWorkouts(ctx context.Context, arg *ListWorkoutsParams) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const setCalendarToken = `-- name: SetCalendarToken :exec
+update users set calendar_token = $1 where id = $2
+`
+
+type SetCalendarTokenParams struct {
+	Token  pgtype.Text
+	UserID pgtype.UUID
+}
+
+func (q *Queries) SetCalendarToken(ctx context.Context, arg *SetCalendarTokenParams) error {
+	_, err := q.db.Exec(ctx, setCalendarToken, arg.Token, arg.UserID)
+	return err
 }
 
 const shareWorkout = `-- name: ShareWorkout :one

@@ -1,6 +1,7 @@
 import GarminCard from "@components/garmin/garmin-card";
 import Loading from "@components/loading";
 import AvatarCard from "@components/settings/avatar-card";
+import CalendarFeedCard from "@components/settings/calendar-feed";
 import Connections from "@components/settings/connections";
 import Invitations from "@components/settings/invitations";
 import Passkeys from "@components/settings/passkeys";
@@ -264,6 +265,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => (
       <div className="flex flex-col gap-4">
         <PublicProfileCard />
         <PrivacyZonesCard />
+        <CalendarFeedCard />
         <ApiTokens />
         <Connections />
         <McpInstructions />

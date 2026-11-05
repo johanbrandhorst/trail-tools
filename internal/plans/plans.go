@@ -721,3 +721,41 @@ func (r *Repository) GetSharedWorkout(ctx context.Context, token string) (*Worko
 	}
 	return w, share.UserID, nil
 }
+
+// GetCalendarToken returns the secret of the user's calendar feed, empty if
+// they have none.
+func (r *Repository) GetCalendarToken(ctx context.Context, userID pgtype.UUID) (string, error) {
+	token, err := r.q.GetCalendarToken(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get calendar token: %w", err)
+	}
+	return token.String, nil
+}
+
+// SetCalendarToken sets the secret of the user's calendar feed, replacing
+// any earlier one, or removes the feed if token is empty.
+func (r *Repository) SetCalendarToken(ctx context.Context, userID pgtype.UUID, token string) error {
+	if err := r.q.SetCalendarToken(ctx, &gen.SetCalendarTokenParams{
+		UserID: userID,
+		Token:  pgtype.Text{String: token, Valid: token != ""},
+	}); err != nil {
+		return fmt.Errorf("failed to set calendar token: %w", err)
+	}
+	return nil
+}
+
+// GetCalendarFeedUser returns the user of a calendar feed, and the time zone
+// of their latest activity, empty if they have none.
+func (r *Repository) GetCalendarFeedUser(ctx context.Context, token string) (pgtype.UUID, string, error) {
+	if token == "" {
+		return pgtype.UUID{}, "", store.ErrNotFound
+	}
+	row, err := r.q.GetCalendarFeedUser(ctx, pgtype.Text{String: token, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return pgtype.UUID{}, "", store.ErrNotFound
+	}
+	if err != nil {
+		return pgtype.UUID{}, "", fmt.Errorf("failed to get calendar feed: %w", err)
+	}
+	return row.ID, row.Timezone, nil
+}

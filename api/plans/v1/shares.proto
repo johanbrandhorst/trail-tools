@@ -24,7 +24,56 @@ service WorkoutShareService {
   rpc GetSharedWorkout(GetSharedWorkoutRequest) returns (GetSharedWorkoutResponse) {
     option (mcp.v1.method).exclude = true;
   }
+  // Get the user's calendar feed: an iCalendar URL of their upcoming
+  // workouts, for calendar apps and home automation to subscribe to. Its URL
+  // is a secret, so it's only shown in the web app.
+  rpc GetCalendarFeed(GetCalendarFeedRequest) returns (GetCalendarFeedResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+  // Create the user's calendar feed, or replace it with a new URL, so the
+  // old one stops working.
+  rpc CreateCalendarFeed(CreateCalendarFeedRequest) returns (CreateCalendarFeedResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+  // Delete the user's calendar feed: its URL stops working.
+  rpc DeleteCalendarFeed(DeleteCalendarFeedRequest) returns (DeleteCalendarFeedResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
 }
+
+// A calendar feed of the user's upcoming workouts, in iCalendar format.
+// It has an event for each workout with a start time and a target duration
+// that isn't a rest day or already done, from yesterday to four weeks
+// ahead. An event starts at the workout's start time and ends after its
+// target duration. Its description has a line "latest_end: HH:MM", the
+// local time it ends if started at the end of its start window. Times are
+// in the time zone of the user's latest activity.
+message CalendarFeed {
+  // The feed's URL, with its secret in the path, for apps that can only
+  // subscribe to a URL.
+  string url = 1;
+  // The same feed with its secret as HTTP Basic auth instead, which keeps
+  // it out of server logs, for apps that support it.
+  string basic_auth_url = 2;
+}
+
+message GetCalendarFeedRequest {}
+
+message GetCalendarFeedResponse {
+  // The feed. Unset if the user has none.
+  CalendarFeed feed = 1;
+}
+
+message CreateCalendarFeedRequest {}
+
+message CreateCalendarFeedResponse {
+  // The new feed.
+  CalendarFeed feed = 1;
+}
+
+message DeleteCalendarFeedRequest {}
+
+message DeleteCalendarFeedResponse {}
 
 message ShareWorkoutRequest {
   // The ID of the workout.

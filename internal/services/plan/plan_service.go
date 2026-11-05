@@ -60,6 +60,8 @@ type Service struct {
 	// baseURL.
 	shares  ShareRepository
 	baseURL string
+	// Serves calendar feeds, nil if they aren't set up.
+	calendars CalendarRepository
 }
 
 // WorkoutsChangedFunc is told about changes to the user's workouts, on the
