@@ -22,13 +22,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A calendar feed of the user's upcoming workouts, in iCalendar format.
-// It has an event for each workout with a start time and a target duration
-// that isn't a rest day or already done, from yesterday to four weeks
-// ahead. An event starts at the workout's start time and ends after its
-// target duration. Its description has a line "latest_end: HH:MM", the
-// local time it ends if started at the end of its start window. Times are
+// A calendar feed of the user's workouts, in iCalendar format, from a week
+// ago to four weeks ahead, for calendar apps: an event for each workout but
+// rest days, at its start time for its target duration (or its start window
+// without one), or all day without a start time. Done workouts stay, marked
+// "✓". Each event's description is the workout's, with its link. Times are
 // in the time zone of the user's latest activity.
+//
+// Home automation, like Home Assistant, adds the query parameter
+// format=home-assistant: then the feed only has the workouts from yesterday
+// on that aren't done and have a start time and a target duration, and each
+// description's first line is "latest_end: HH:MM", the local time the
+// workout ends if started at the end of its start window.
 type CalendarFeed struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Url          string                 `protobuf:"bytes,1,opt,name=url,proto3"`

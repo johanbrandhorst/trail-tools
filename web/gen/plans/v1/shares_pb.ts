@@ -20,13 +20,18 @@ export const file_plans_v1_shares: GenFile = /*@__PURE__*/
   fileDesc("ChVwbGFucy92MS9zaGFyZXMucHJvdG8SCHBsYW5zLnYxIjMKDENhbGVuZGFyRmVlZBILCgN1cmwYASABKAkSFgoOYmFzaWNfYXV0aF91cmwYAiABKAkiGAoWR2V0Q2FsZW5kYXJGZWVkUmVxdWVzdCI/ChdHZXRDYWxlbmRhckZlZWRSZXNwb25zZRIkCgRmZWVkGAEgASgLMhYucGxhbnMudjEuQ2FsZW5kYXJGZWVkIhsKGUNyZWF0ZUNhbGVuZGFyRmVlZFJlcXVlc3QiQgoaQ3JlYXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2USJAoEZmVlZBgBIAEoCzIWLnBsYW5zLnYxLkNhbGVuZGFyRmVlZCIbChlEZWxldGVDYWxlbmRhckZlZWRSZXF1ZXN0IhwKGkRlbGV0ZUNhbGVuZGFyRmVlZFJlc3BvbnNlIiEKE1NoYXJlV29ya291dFJlcXVlc3QSCgoCaWQYASABKAkiKQoUU2hhcmVXb3Jrb3V0UmVzcG9uc2USEQoJc2hhcmVfdXJsGAEgASgJIiMKFVVuc2hhcmVXb3Jrb3V0UmVxdWVzdBIKCgJpZBgBIAEoCSIYChZVbnNoYXJlV29ya291dFJlc3BvbnNlIigKF0dldFNoYXJlZFdvcmtvdXRSZXF1ZXN0Eg0KBXRva2VuGAEgASgJImgKC1NoYXJlZFJvdXRlEgwKBG5hbWUYASABKAkSJAoFc3RhdHMYAiABKAsyFS5yb3V0ZXMudjEuUm91dGVTdGF0cxIlCgZwb2ludHMYAyADKAsyFS5yb3V0ZXMudjEuUm91dGVQb2ludCKLAQoYR2V0U2hhcmVkV29ya291dFJlc3BvbnNlEiIKB3dvcmtvdXQYASABKAsyES5wbGFucy52MS5Xb3Jrb3V0EiQKBXJvdXRlGAIgASgLMhUucGxhbnMudjEuU2hhcmVkUm91dGUSJQoJZXhlcmNpc2VzGAMgAygLMhIucGxhbnMudjEuRXhlcmNpc2UyzgQKE1dvcmtvdXRTaGFyZVNlcnZpY2USTQoMU2hhcmVXb3Jrb3V0Eh0ucGxhbnMudjEuU2hhcmVXb3Jrb3V0UmVxdWVzdBoeLnBsYW5zLnYxLlNoYXJlV29ya291dFJlc3BvbnNlElMKDlVuc2hhcmVXb3Jrb3V0Eh8ucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXF1ZXN0GiAucGxhbnMudjEuVW5zaGFyZVdvcmtvdXRSZXNwb25zZRJhChBHZXRTaGFyZWRXb3Jrb3V0EiEucGxhbnMudjEuR2V0U2hhcmVkV29ya291dFJlcXVlc3QaIi5wbGFucy52MS5HZXRTaGFyZWRXb3Jrb3V0UmVzcG9uc2UiBqKfGQIIARJeCg9HZXRDYWxlbmRhckZlZWQSIC5wbGFucy52MS5HZXRDYWxlbmRhckZlZWRSZXF1ZXN0GiEucGxhbnMudjEuR2V0Q2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIARJnChJDcmVhdGVDYWxlbmRhckZlZWQSIy5wbGFucy52MS5DcmVhdGVDYWxlbmRhckZlZWRSZXF1ZXN0GiQucGxhbnMudjEuQ3JlYXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIARJnChJEZWxldGVDYWxlbmRhckZlZWQSIy5wbGFucy52MS5EZWxldGVDYWxlbmRhckZlZWRSZXF1ZXN0GiQucGxhbnMudjEuRGVsZXRlQ2FsZW5kYXJGZWVkUmVzcG9uc2UiBqKfGQIIAUKiAQoMY29tLnBsYW5zLnYxQgtTaGFyZXNQcm90b1ABWkRnaXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vcGxhbnMvdjE7cGxhbnN2MaICA1BYWKoCCFBsYW5zLlYxygIIUGxhbnNcVjHiAhRQbGFuc1xWMVxHUEJNZXRhZGF0YeoCCVBsYW5zOjpWMWIGcHJvdG8z", [file_mcp_v1_options, file_plans_v1_exercises, file_plans_v1_plans, file_routes_v1_routes]);
 
 /**
- * A calendar feed of the user's upcoming workouts, in iCalendar format.
- * It has an event for each workout with a start time and a target duration
- * that isn't a rest day or already done, from yesterday to four weeks
- * ahead. An event starts at the workout's start time and ends after its
- * target duration. Its description has a line "latest_end: HH:MM", the
- * local time it ends if started at the end of its start window. Times are
+ * A calendar feed of the user's workouts, in iCalendar format, from a week
+ * ago to four weeks ahead, for calendar apps: an event for each workout but
+ * rest days, at its start time for its target duration (or its start window
+ * without one), or all day without a start time. Done workouts stay, marked
+ * "✓". Each event's description is the workout's, with its link. Times are
  * in the time zone of the user's latest activity.
+ *
+ * Home automation, like Home Assistant, adds the query parameter
+ * format=home-assistant: then the feed only has the workouts from yesterday
+ * on that aren't done and have a start time and a target duration, and each
+ * description's first line is "latest_end: HH:MM", the local time the
+ * workout ends if started at the end of its start window.
  *
  * @generated from message plans.v1.CalendarFeed
  */
