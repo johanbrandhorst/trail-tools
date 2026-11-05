@@ -31,6 +31,13 @@ const (
 	calendarBasicAuthUser = "feed"
 	// calendarDaysAhead is how many days ahead feeds list workouts.
 	calendarDaysAhead = 28
+	// calendarDaysBack is how many days back calendar apps' feeds list
+	// workouts, so the past week stays in them.
+	calendarDaysBack = 7
+	// calendarFormatHomeAssistant is the format query parameter's value for
+	// home automation, like Home Assistant: only upcoming workouts with a
+	// start time and a target duration, with their latest end.
+	calendarFormatHomeAssistant = "home-assistant"
 )
 
 // CalendarRepository stores calendar feeds.
@@ -131,6 +138,15 @@ func (s *Service) CalendarHandler() http.Handler {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		homeAssistant := false
+		switch format := r.URL.Query().Get("format"); format {
+		case "":
+		case calendarFormatHomeAssistant:
+			homeAssistant = true
+		default:
+			http.Error(w, fmt.Sprintf("unknown format %q: leave it out for calendar apps, or use format=%s", format, calendarFormatHomeAssistant), http.StatusBadRequest)
+			return
+		}
 		token := calendarToken(r)
 		if s.calendars == nil || token == "" {
 			s.calendarUnauthorized(w, r)
@@ -152,7 +168,11 @@ func (s *Service) CalendarHandler() http.Handler {
 		}
 		now := time.Now().In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-		workouts, err := s.plans.ListUserWorkouts(ctx, userID, today.AddDate(0, 0, -1), today.AddDate(0, 0, calendarDaysAhead))
+		daysBack := calendarDaysBack
+		if homeAssistant {
+			daysBack = 1
+		}
+		workouts, err := s.plans.ListUserWorkouts(ctx, userID, today.AddDate(0, 0, -daysBack), today.AddDate(0, 0, calendarDaysAhead))
 		if err != nil {
 			s.report.Report(ctx, "Failed to list workouts for a calendar feed", err)
 			http.Error(w, "failed to get the calendar", http.StatusInternalServerError)
@@ -160,7 +180,7 @@ func (s *Service) CalendarHandler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 		w.Header().Set("Cache-Control", "private, no-store")
-		_, _ = w.Write([]byte(workoutCalendar(workouts, loc, now, s.baseURL)))
+		_, _ = w.Write([]byte(workoutCalendar(workouts, loc, now, s.baseURL, homeAssistant)))
 	})
 }
 
@@ -182,10 +202,14 @@ var workoutTypeNames = map[plans.WorkoutType]string{
 	plans.WorkoutTypeRace:          "Race",
 }
 
-// workoutCalendar returns an iCalendar of workouts: an event for each that
-// isn't a rest day or done, with a start time and a target duration, in
-// UTC from their local times in loc.
-func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Time, baseURL string) string {
+// workoutCalendar returns an iCalendar of workouts, from their local times
+// in loc. For calendar apps, it has an event for each workout but rest
+// days: at its start time for its target duration, or for its start window
+// without one, or all day without a start time, and done workouts are
+// marked. For home automation, with homeAssistant, it only has the
+// workouts that aren't done with a start time and a target duration, and
+// their descriptions start with their latest end, "latest_end: HH:MM".
+func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Time, baseURL string, homeAssistant bool) string {
 	var b strings.Builder
 	line := func(s string) {
 		// Lines are folded at 75 octets, continuing with a space.
@@ -200,7 +224,10 @@ func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Tim
 		}
 		b.WriteString(s + "\r\n")
 	}
-	const stamp = "20060102T150405Z"
+	const (
+		stamp = "20060102T150405Z"
+		day   = "20060102"
+	)
 	line("BEGIN:VCALENDAR")
 	line("VERSION:2.0")
 	line("PRODID:-//trailrunn.ing//Workouts//EN")
@@ -208,15 +235,18 @@ func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Tim
 	line("X-WR-CALNAME:Workouts")
 	for _, w := range workouts {
 		name, ok := workoutTypeNames[w.Type]
-		if !ok || w.CompletedActivityID.Valid || w.StartTime == "" || w.TargetDurationSeconds <= 0 {
+		if !ok {
 			continue
 		}
-		clock, err := time.Parse("15:04", w.StartTime)
-		if err != nil {
-			continue
-		}
-		start := time.Date(w.Date.Year(), w.Date.Month(), w.Date.Day(), clock.Hour(), clock.Minute(), 0, 0, loc)
+		done := w.CompletedActivityID.Valid || w.Log != nil
 		duration := time.Duration(w.TargetDurationSeconds) * time.Second
+		var start time.Time
+		if clock, err := time.Parse("15:04", w.StartTime); err == nil {
+			start = time.Date(w.Date.Year(), w.Date.Month(), w.Date.Day(), clock.Hour(), clock.Minute(), 0, 0, loc)
+		}
+		if homeAssistant && (done || start.IsZero() || duration <= 0) {
+			continue
+		}
 		window := time.Duration(w.StartWindowMinutes) * time.Minute
 		if window <= 0 {
 			window = defaultStartWindowMinutes * time.Minute
@@ -225,17 +255,39 @@ func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Tim
 		if title := strings.TrimSpace(w.Title); title != "" {
 			summary += ": " + title
 		}
-		description := fmt.Sprintf("latest_end: %s\n%s/workouts/%s", start.Add(window+duration).Format("15:04"), baseURL, store.UUIDToString(w.ID))
+		link := baseURL + "/workouts/" + store.UUIDToString(w.ID)
+		var description string
+		if homeAssistant {
+			description = fmt.Sprintf("latest_end: %s\n%s", start.Add(window+duration).Format("15:04"), link)
+		} else {
+			if done {
+				summary = "✓ " + summary
+			}
+			description = link
+			if text := strings.TrimSpace(w.Description); text != "" {
+				description = text + "\n\n" + link
+			}
+		}
 		line("BEGIN:VEVENT")
 		line("UID:" + store.UUIDToString(w.ID) + "@trailrunn.ing")
 		line("DTSTAMP:" + now.UTC().Format(stamp))
-		line("DTSTART:" + start.UTC().Format(stamp))
-		line("DTEND:" + start.Add(duration).UTC().Format(stamp))
+		switch {
+		case start.IsZero():
+			line("DTSTART;VALUE=DATE:" + w.Date.Format(day))
+			line("DTEND;VALUE=DATE:" + w.Date.AddDate(0, 0, 1).Format(day))
+		case duration > 0:
+			line("DTSTART:" + start.UTC().Format(stamp))
+			line("DTEND:" + start.Add(duration).UTC().Format(stamp))
+		default:
+			line("DTSTART:" + start.UTC().Format(stamp))
+			line("DTEND:" + start.Add(window).UTC().Format(stamp))
+		}
 		line("SUMMARY:" + icalText(summary))
 		line("DESCRIPTION:" + icalText(description))
 		if w.LocationName != "" {
 			line("LOCATION:" + icalText(w.LocationName))
 		}
+		line("URL:" + link)
 		line("END:VEVENT")
 	}
 	line("END:VCALENDAR")

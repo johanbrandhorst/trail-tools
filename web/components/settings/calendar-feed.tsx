@@ -63,6 +63,14 @@ const CalendarFeedCard: React.FC = () => {
             secret out of server logs:
           </p>
           <CopyField value={feed.basicAuthUrl} />
+          <p className="text-xs text-gray-600">
+            For Home Assistant, to warm the house for when you&apos;re back, add{" "}
+            <code className="rounded bg-gray-100 px-1">
+              ?format=home-assistant
+            </code>{" "}
+            to the URL: it then lists only upcoming workouts with a start time
+            and a target duration, with when they end at the latest.
+          </p>
           <div className="flex flex-wrap gap-3 text-sm">
             <ConfirmButton
               title="Replace the calendar feed?"
@@ -95,10 +103,9 @@ const CalendarFeedCard: React.FC = () => {
     <Card title="Calendar feed">
       <div className="flex flex-col gap-3">
         <p className="text-sm text-gray-600">
-          Subscribe to your upcoming workouts in a calendar app, or in Home
-          Assistant to warm the house for when you&apos;re back. Workouts with a
-          start time and a target duration are listed for the next four weeks.
-          Anyone with the URL can see them, so keep it private.
+          Subscribe to your workouts in a calendar app, like a family calendar:
+          the past week and the next four, with done workouts ticked off. Anyone
+          with the URL can see them, so keep it private.
         </p>
         {content}
         <ErrorText error={create.error ?? remove.error} />

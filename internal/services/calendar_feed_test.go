@@ -41,8 +41,9 @@ func TestCalendarFeed(t *testing.T) {
 		Workouts: []*plansv1.Workout{
 			plansv1.Workout_builder{Date: tomorrow, Title: "Hills, easy", StartTime: "17:00", StartWindowMinutes: 30, Run: run}.Build(),
 			plansv1.Workout_builder{Date: tomorrow, Title: "Core", StartTime: "07:00", Strength: plansv1.StrengthWorkout_builder{TargetDurationSeconds: 1800}.Build()}.Build(),
-			// Not in the feed: no start time, a rest day, and too far ahead.
-			plansv1.Workout_builder{Date: tomorrow, Title: "Whenever", Run: run}.Build(),
+			// Not in Home Assistant's feed: no start time, a rest day, and
+			// too far ahead.
+			plansv1.Workout_builder{Date: tomorrow, Title: "Whenever", Description: "Easy, by feel", Run: run}.Build(),
 			plansv1.Workout_builder{Date: tomorrow, Rest: &plansv1.RestDay{}}.Build(),
 			plansv1.Workout_builder{Date: today.AddDate(0, 0, 40).Format(time.DateOnly), Title: "Later", StartTime: "09:00", Run: run}.Build(),
 		},
@@ -62,12 +63,40 @@ func TestCalendarFeed(t *testing.T) {
 		t.Errorf("got feed %v (%v), want the created one", got.GetFeed(), err)
 	}
 
+	// For calendar apps, every workout but rest days is in the feed: one
+	// without a start time all day, with the workout's description.
 	resp, body := e.get(feed.GetUrl(), "")
+	family := string(body)
+	day := strings.ReplaceAll(tomorrow, "-", "")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("getting the feed: %d", resp.StatusCode)
+	}
+	for _, want := range []string{
+		"DTSTART:" + day + "T170000Z\r\n",
+		"DTSTART;VALUE=DATE:" + day + "\r\n",
+		"SUMMARY:Base run: Whenever\r\n",
+		"DESCRIPTION:Easy\\, by feel\\n\\nhttps://trail.example/workouts/",
+	} {
+		if !strings.Contains(family, want) {
+			t.Errorf("the feed doesn't have %q:\n%s", want, family)
+		}
+	}
+	if n := strings.Count(family, "BEGIN:VEVENT"); n != 3 {
+		t.Errorf("got %d events, want the 3 within four weeks that aren't rest days:\n%s", n, family)
+	}
+	if strings.Contains(family, "latest_end") {
+		t.Errorf("the calendar apps' feed has Home Assistant's latest end:\n%s", family)
+	}
+	if resp, _ := e.get(feed.GetUrl()+"?format=outlook", ""); resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("an unknown format: %d, want 400", resp.StatusCode)
+	}
+
+	// For Home Assistant, only workouts with a start time and a duration.
+	resp, body = e.get(feed.GetUrl()+"?format=home-assistant", "")
 	cal := string(body)
 	if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/calendar") {
 		t.Fatalf("getting the feed: %d %s", resp.StatusCode, resp.Header.Get("Content-Type"))
 	}
-	day := strings.ReplaceAll(tomorrow, "-", "")
 	for _, want := range []string{
 		"BEGIN:VCALENDAR\r\n",
 		"DTSTART:" + day + "T170000Z\r\n",
@@ -89,7 +118,7 @@ func TestCalendarFeed(t *testing.T) {
 	// The token works as HTTP Basic auth's password too.
 	token := strings.TrimSuffix(strings.TrimPrefix(feed.GetUrl(), "https://trail.example/calendar/"), ".ics")
 	basic := func(password string) int {
-		req, err := http.NewRequest(http.MethodGet, e.srv.URL+"/calendar/workouts.ics", nil)
+		req, err := http.NewRequest(http.MethodGet, e.srv.URL+"/calendar/workouts.ics?format=home-assistant", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
