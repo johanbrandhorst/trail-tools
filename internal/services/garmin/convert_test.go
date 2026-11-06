@@ -1,9 +1,12 @@
 package garmin
 
 import (
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/johanbrandhorst/trail-tools/internal/fit"
 	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
@@ -24,7 +27,7 @@ func TestStepDescription(t *testing.T) {
 		},
 		{"catalog exercise", &plans.PlannedExercise{ExerciseName: "Push-up", Tempo: "2 s down", Notes: "Elbows in"}, false, "Tempo: 2 s down. Elbows in"},
 	} {
-		if got := stepDescription(tc.exercise, tc.withName); got != tc.want {
+		if got := stepDescription(tc.exercise, tc.withName, 0); got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
 		}
 	}
@@ -87,15 +90,67 @@ func TestStrengthWarmUpSteps(t *testing.T) {
 		t.Fatal("not a Garmin workout")
 	}
 	steps := gw.Segments[0].Steps
-	if len(steps) != 3 {
-		t.Fatalf("got %d steps, want 3: %+v", len(steps), steps)
+	// The stretch's hold waits for the lap button.
+	if len(steps) != 4 {
+		t.Fatalf("got %d steps, want 4: %+v", len(steps), steps)
 	}
-	for i, want := range []string{"WARMUP", "ACTIVE", "COOLDOWN"} {
+	for i, want := range []string{"WARMUP", "ACTIVE", "REST", "COOLDOWN"} {
 		if steps[i].Intensity != want {
 			t.Errorf("step %d has intensity %q, want %q", i, steps[i].Intensity, want)
 		}
 	}
 	if steps[0].DurationType != "OPEN" {
 		t.Errorf("the warm-up until done is %q, want OPEN", steps[0].DurationType)
+	}
+}
+
+func TestStrengthHoldSteps(t *testing.T) {
+	t.Parallel()
+	w := &plans.Workout{Type: plans.WorkoutTypeStrength, Title: "Core", Exercises: []*plans.PlannedExercise{
+		{ExerciseName: "Side plank", ExerciseEachSide: true, Sets: 1, HoldSeconds: 30, RestSeconds: 45},
+		{ExerciseName: "Dead bug", ExerciseEachSide: true, Sets: 1, Reps: 8},
+	}}
+	gw, ok := trainingWorkout(w, thresholds{})
+	if !ok {
+		t.Fatal("not a Garmin workout")
+	}
+	steps := gw.Segments[0].Steps
+	type step struct {
+		intensity, duration string
+		value               float64
+	}
+	var got []step
+	for _, s := range steps {
+		got = append(got, step{s.Intensity, s.DurationType, s.DurationValue})
+	}
+	// Each side's hold waits for the lap button, then the rest, then the
+	// dead bugs with reps per side.
+	want := []step{
+		{"REST", "OPEN", 0},
+		{"ACTIVE", "TIME", 30},
+		{"REST", "OPEN", 0},
+		{"ACTIVE", "TIME", 30},
+		{"REST", "TIME", 45},
+		{"ACTIVE", "REPS", 8},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("got steps %v, want %v", got, want)
+	}
+	if !strings.Contains(steps[3].Description, "Side 2 of 2") || !strings.Contains(steps[5].Description, "Each side") {
+		t.Errorf("got descriptions %q and %q", steps[3].Description, steps[5].Description)
+	}
+	// The steps the watch records sets of are the same as those sent.
+	if layout := plans.StrengthStepExercises(w.Exercises); len(layout) != len(steps) || layout[1] != 0 || layout[3] != plans.StepSecondSide || layout[5] != 1 {
+		t.Errorf("got step exercises %v for %d steps", layout, len(steps))
+	}
+
+	// A watch records a set for each side: they're one set.
+	log := strengthLogFromSets(w, &fit.Activity{Sets: []fit.Set{
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 1, Duration: 30 * time.Second},
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 3, Duration: 31 * time.Second},
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 5, Reps: 8},
+	}})
+	if log == nil || len(log.Exercises) != 2 || len(log.Exercises[0].Sets) != 1 || log.Exercises[0].Sets[0].HoldSeconds != 30 || len(log.Exercises[1].Sets) != 1 {
+		t.Errorf("got log %+v, want one side plank set and one set of dead bugs", log)
 	}
 }

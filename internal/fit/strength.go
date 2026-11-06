@@ -77,6 +77,9 @@ type StrengthExercise struct {
 	// The step's intensity: IntensityActive, the zero value, or
 	// IntensityWarmUp or IntensityCoolDown for a warm-up or cool-down.
 	Intensity Intensity
+	// Whether a hold is done on each side: then each set holds each side
+	// in turn, for Hold each.
+	EachSide bool
 }
 
 // strengthStep is a step of a strength workout as written.
@@ -98,7 +101,11 @@ type strengthStep struct {
 const invalidUint16 = 0xFFFF
 
 // strengthSteps returns the steps of a strength workout: each exercise of a
-// block, with its rest, and a step repeating the block for its rounds.
+// block, with its rest, and a step repeating the block for its rounds. A
+// hold waits for the lap button before its timer, so it starts once the
+// user is in position, and a hold on each side is done for each side in
+// turn. This is the layout of plans.ExerciseSteps, which the sets watches
+// record are matched to.
 func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 	var steps []strengthStep
 	var titles []string
@@ -116,6 +123,10 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 				weight:    invalidUint16,
 			}
 			titles = append(titles, e.Name)
+			sides := 1
+			if e.Hold > 0 && e.EachSide {
+				sides = 2
+			}
 			switch {
 			case e.Reps > 0:
 				step.durationType, step.durationValue = durationReps, uint32(e.Reps)
@@ -131,7 +142,23 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 					step.weightUnit = WeightUnitPounds
 				}
 			}
-			steps = append(steps, step)
+			for side := 1; side <= sides; side++ {
+				if e.Hold > 0 {
+					ready := strengthStep{
+						name:         "Get ready",
+						notes:        "Get into position, then press lap",
+						durationType: durationOpen,
+						intensity:    IntensityRest,
+						exercise:     invalidUint16,
+						weight:       invalidUint16,
+					}
+					if sides == 2 {
+						ready.notes = fmt.Sprintf("Side %d of 2: get into position, then press lap", side)
+					}
+					steps = append(steps, ready)
+				}
+				steps = append(steps, step)
+			}
 			if e.Rest > 0 {
 				steps = append(steps, strengthStep{
 					name:          "Rest",
