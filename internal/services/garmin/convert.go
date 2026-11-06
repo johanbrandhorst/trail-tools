@@ -247,6 +247,10 @@ func strengthLogFromSets(w *plans.Workout, a *fit.Activity) *plans.StrengthLog {
 		exercise := -1
 		if s.HasWorkoutStep && s.WorkoutStep < len(steps) {
 			exercise = steps[s.WorkoutStep]
+			// The second side of a hold is the same set as the first.
+			if exercise == plans.StepSecondSide {
+				continue
+			}
 		}
 		key := [2]uint16{s.Category, s.Name}
 		if exercise < 0 {
@@ -478,61 +482,82 @@ func garminExercise(e *plans.PlannedExercise) (garmin.Exercise, bool) {
 	return garmin.MatchExercise(e.ExerciseName)
 }
 
-// exerciseSteps returns an exercise's step and its rest. An exercise
-// outside Garmin's catalog is a step without an exercise, described by its
-// name, as Garmin only takes exercises of its catalog.
+// exerciseSteps returns the steps of an exercise, as plans.ExerciseSteps
+// lays them out. An exercise outside Garmin's catalog is a step without an
+// exercise, described by its name, as Garmin only takes exercises of its
+// catalog.
 func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.WorkoutStep {
-	step := garmin.WorkoutStep{
-		Type:       "WorkoutStep",
-		StepOrder:  nextOrder(),
-		Intensity:  "ACTIVE",
-		TargetType: "OPEN",
-	}
 	// Warm-ups and cool-downs show as such on the watch.
+	intensity := "ACTIVE"
 	switch e.GroupKind {
 	case plans.GroupWarmUp:
-		step.Intensity = "WARMUP"
+		intensity = "WARMUP"
 	case plans.GroupCoolDown:
-		step.Intensity = "COOLDOWN"
+		intensity = "COOLDOWN"
 	}
 	catalog, inCatalog := garminExercise(e)
-	if inCatalog {
-		step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name
-	}
-	step.Description = stepDescription(e, !inCatalog)
-	switch {
-	case e.Reps > 0:
-		step.DurationType, step.DurationValue = "REPS", float64(e.Reps)
-	case e.HoldSeconds > 0:
-		step.DurationType, step.DurationValue = "TIME", float64(e.HoldSeconds)
-	default:
-		step.DurationType = "OPEN"
-	}
-	if e.Weight.Value > 0 {
-		step.WeightValue = math.Round(e.Weight.Kilograms()*100) / 100
-		step.WeightDisplayUnit = "KILOGRAM"
-		if e.Weight.Unit == plans.Pounds {
-			step.WeightDisplayUnit = "POUND"
+	var steps []garmin.WorkoutStep
+	for _, s := range plans.ExerciseSteps(e) {
+		switch s.Kind {
+		case plans.StepGetReady:
+			description := "Get into position, then press lap to start the timer"
+			if s.Side > 0 {
+				description = fmt.Sprintf("Side %d of 2: get into position, then press lap to start the timer", s.Side)
+			}
+			steps = append(steps, garmin.WorkoutStep{
+				Type:         "WorkoutStep",
+				StepOrder:    nextOrder(),
+				Intensity:    "REST",
+				Description:  description,
+				DurationType: "OPEN",
+				TargetType:   "OPEN",
+			})
+		case plans.StepRest:
+			steps = append(steps, garmin.WorkoutStep{
+				Type:          "WorkoutStep",
+				StepOrder:     nextOrder(),
+				Intensity:     "REST",
+				DurationType:  "TIME",
+				DurationValue: float64(e.RestSeconds),
+				TargetType:    "OPEN",
+			})
+		default:
+			step := garmin.WorkoutStep{
+				Type:        "WorkoutStep",
+				StepOrder:   nextOrder(),
+				Intensity:   intensity,
+				TargetType:  "OPEN",
+				Description: stepDescription(e, !inCatalog, s.Side),
+			}
+			if inCatalog {
+				step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name
+			}
+			switch {
+			case e.Reps > 0:
+				step.DurationType, step.DurationValue = "REPS", float64(e.Reps)
+			case e.HoldSeconds > 0:
+				step.DurationType, step.DurationValue = "TIME", float64(e.HoldSeconds)
+			default:
+				step.DurationType = "OPEN"
+			}
+			if e.Weight.Value > 0 {
+				step.WeightValue = math.Round(e.Weight.Kilograms()*100) / 100
+				step.WeightDisplayUnit = "KILOGRAM"
+				if e.Weight.Unit == plans.Pounds {
+					step.WeightDisplayUnit = "POUND"
+				}
+			}
+			steps = append(steps, step)
 		}
-	}
-	steps := []garmin.WorkoutStep{step}
-	if e.RestSeconds > 0 {
-		steps = append(steps, garmin.WorkoutStep{
-			Type:          "WorkoutStep",
-			StepOrder:     nextOrder(),
-			Intensity:     "REST",
-			DurationType:  "TIME",
-			DurationValue: float64(e.RestSeconds),
-			TargetType:    "OPEN",
-		})
 	}
 	return steps
 }
 
-// stepDescription describes an exercise's step: its name, if withName, and
-// its tempo, target effort and notes, which Garmin's steps have no fields
-// for, so the watch shows them with the step.
-func stepDescription(e *plans.PlannedExercise, withName bool) string {
+// stepDescription describes an exercise's step: its name, if withName, the
+// side of a hold on each side (0 for none), and its tempo, target effort
+// and notes, which Garmin's steps have no fields for, so the watch shows
+// them with the step.
+func stepDescription(e *plans.PlannedExercise, withName bool, side int) string {
 	var parts []string
 	add := func(part string) {
 		if part = strings.TrimSuffix(strings.TrimSpace(part), "."); part != "" {
@@ -541,6 +566,12 @@ func stepDescription(e *plans.PlannedExercise, withName bool) string {
 	}
 	if withName {
 		add(e.ExerciseName)
+	}
+	switch {
+	case side > 0:
+		add(fmt.Sprintf("Side %d of 2", side))
+	case e.ExerciseEachSide && e.Reps > 0:
+		add("Each side")
 	}
 	if e.Tempo != "" {
 		add("Tempo: " + e.Tempo)

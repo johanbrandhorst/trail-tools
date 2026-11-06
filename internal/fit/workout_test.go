@@ -81,17 +81,21 @@ func TestWriteStrengthWorkout(t *testing.T) {
 				{Name: "Calf raise", Reps: 15, WeightKilograms: 10},
 				{Name: "Copenhagen plank", Hold: 20 * time.Second, Rest: time.Minute},
 			}},
+			// A side plank on each side, waiting to start each side's timer.
+			{Rounds: 1, Exercises: []fit.StrengthExercise{
+				{Name: "Side plank", Hold: 30 * time.Second, EachSide: true},
+			}},
 		},
 	}, created)
 	if err != nil {
 		t.Fatalf("WriteStrengthWorkout: %v", err)
 	}
 	messages := fittest.Decode(t, buf.Bytes())
-	// A file ID, a workout, 7 steps and 3 exercise titles.
-	if len(messages) != 12 {
-		t.Fatalf("got %d messages, want 12", len(messages))
+	// A file ID, a workout, 12 steps and 4 exercise titles.
+	if len(messages) != 18 {
+		t.Fatalf("got %d messages, want 18", len(messages))
 	}
-	if workout := messages[1]; workout.Uint(t, 4) != fit.SportTraining || workout.Uint(t, 11) != fit.SubSportStrengthTraining || workout.Uint(t, 6) != 7 {
+	if workout := messages[1]; workout.Uint(t, 4) != fit.SportTraining || workout.Uint(t, 11) != fit.SubSportStrengthTraining || workout.Uint(t, 6) != 12 {
 		t.Errorf("unexpected workout %v", workout.Fields)
 	}
 	for i, want := range []struct {
@@ -105,9 +109,16 @@ func TestWriteStrengthWorkout(t *testing.T) {
 		// Repeat from the first step for 3 sets.
 		{"", 6, 0, 3, 0, 0xFFFF, 0xFFFF},
 		{"Calf raise", 29, 15, 0, 0, 1, 1000},
+		// Holds wait for the lap button before their timer.
+		{"Get ready", 5, 0, 0, 1, 0xFFFF, 0xFFFF},
 		{"Copenhagen plan", 0, 20000, 0, 0, 2, 0xFFFF},
 		{"Rest", 0, 60000, 0, 1, 0xFFFF, 0xFFFF},
 		{"", 6, 3, 2, 0, 0xFFFF, 0xFFFF},
+		// A hold on each side is held for each side in turn.
+		{"Get ready", 5, 0, 0, 1, 0xFFFF, 0xFFFF},
+		{"Side plank", 0, 30000, 0, 0, 3, 0xFFFF},
+		{"Get ready", 5, 0, 0, 1, 0xFFFF, 0xFFFF},
+		{"Side plank", 0, 30000, 0, 0, 3, 0xFFFF},
 	} {
 		step := messages[2+i]
 		got := []uint64{step.Uint(t, 1), step.Uint(t, 2), step.Uint(t, 4), step.Uint(t, 7), step.Uint(t, 11), step.Uint(t, 12)}
@@ -120,7 +131,7 @@ func TestWriteStrengthWorkout(t *testing.T) {
 		t.Errorf("got weight unit %d, want pounds", unit)
 	}
 	// The titles name the exercises in full.
-	if title := messages[9]; title.String(2) != "Bulgarian split squat" || title.Uint(t, 1) != 0 || title.Uint(t, 0) != 65534 {
+	if title := messages[14]; title.String(2) != "Bulgarian split squat" || title.Uint(t, 1) != 0 || title.Uint(t, 0) != 65534 {
 		t.Errorf("unexpected title %v", title.Fields)
 	}
 

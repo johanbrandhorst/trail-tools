@@ -117,6 +117,7 @@ func strengthExerciseFIT(e *plans.PlannedExercise) fit.StrengthExercise {
 		Pounds:          e.Weight.Unit == plans.Pounds,
 		Rest:            time.Duration(e.RestSeconds) * time.Second,
 		Intensity:       exerciseIntensities[e.GroupKind],
+		EachSide:        e.ExerciseEachSide,
 	}
 }
 
