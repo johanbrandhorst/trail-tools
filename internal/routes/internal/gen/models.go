@@ -1646,6 +1646,8 @@ type StrengthLogSet struct {
 	HoldSeconds int32
 	WeightValue float64
 	WeightUnit  NullWeightUnit
+	Effort      NullExerciseEffort
+	Stiffness   string
 }
 
 type TrainingPlan struct {

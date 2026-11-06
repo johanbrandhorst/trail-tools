@@ -361,11 +361,14 @@ insert into strength_log_sets (
   reps,
   hold_seconds,
   weight_value,
-  weight_unit
+  weight_unit,
+  effort,
+  stiffness
 )
 select
   $1::uuid, s.position, s.set_number, s.reps, s.hold_seconds,
-  s.weight_value, nullif(s.weight_unit, '')::weight_unit
+  s.weight_value, nullif(s.weight_unit, '')::weight_unit,
+  nullif(s.effort, '')::exercise_effort, s.stiffness
 from (
   select
     unnest($2::integer[]) as position,
@@ -374,7 +377,10 @@ from (
     unnest($5::integer[]) as hold_seconds,
     unnest($6::double precision[]) as weight_value,
     -- Empty for bodyweight.
-    unnest($7::text[]) as weight_unit
+    unnest($7::text[]) as weight_unit,
+    -- Empty if not rated.
+    unnest($8::text[]) as effort,
+    unnest($9::text[]) as stiffness
 ) s
 `
 
@@ -386,6 +392,8 @@ type InsertStrengthLogSetsParams struct {
 	HoldSeconds  []int32
 	WeightValues []float64
 	WeightUnits  []string
+	Efforts      []string
+	Stiffnesses  []string
 }
 
 func (q *Queries) InsertStrengthLogSets(ctx context.Context, arg *InsertStrengthLogSetsParams) error {
@@ -397,6 +405,8 @@ func (q *Queries) InsertStrengthLogSets(ctx context.Context, arg *InsertStrength
 		arg.HoldSeconds,
 		arg.WeightValues,
 		arg.WeightUnits,
+		arg.Efforts,
+		arg.Stiffnesses,
 	)
 	return err
 }
@@ -582,7 +592,7 @@ func (q *Queries) ListExerciseHistory(ctx context.Context, arg *ListExerciseHist
 }
 
 const listExerciseHistorySets = `-- name: ListExerciseHistorySets :many
-select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit
+select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness
 from strength_log_sets s
 join strength_log_exercises le on le.log_id = s.log_id and le.position = s.position
 join strength_logs l on l.id = s.log_id
@@ -624,6 +634,8 @@ func (q *Queries) ListExerciseHistorySets(ctx context.Context, arg *ListExercise
 			&i.HoldSeconds,
 			&i.WeightValue,
 			&i.WeightUnit,
+			&i.Effort,
+			&i.Stiffness,
 		); err != nil {
 			return nil, err
 		}
@@ -767,7 +779,7 @@ func (q *Queries) ListStrengthLogExercises(ctx context.Context, arg *ListStrengt
 }
 
 const listStrengthLogSets = `-- name: ListStrengthLogSets :many
-select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit
+select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness
 from strength_log_sets s
 join strength_logs l on l.id = s.log_id
 join workouts w on w.id = l.workout_id
@@ -812,6 +824,8 @@ func (q *Queries) ListStrengthLogSets(ctx context.Context, arg *ListStrengthLogS
 			&i.HoldSeconds,
 			&i.WeightValue,
 			&i.WeightUnit,
+			&i.Effort,
+			&i.Stiffness,
 		); err != nil {
 			return nil, err
 		}

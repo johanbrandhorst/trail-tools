@@ -572,9 +572,11 @@ message LoggedExercise {
   // The sets done, in order. Sets that were skipped are left out. Maximum
   // 20.
   repeated LoggedSet sets = 3;
-  // How hard the exercise felt compared to the plan. Unspecified if not
-  // rated, and for warm-up and cool-down exercises, which are rated by
-  // stiffness instead.
+  // How hard the exercise felt compared to the plan, overall. Unspecified
+  // if not rated, and for warm-up and cool-down exercises, which are rated
+  // by stiffness instead. The web app rates each set instead, see
+  // LoggedSet.effort, as sets can feel different; this is set in older
+  // logs.
   ExerciseEffort effort = 4;
   // How the number of reps felt. Unspecified if not rated, and for warm-up
   // and cool-down exercises.
@@ -582,8 +584,9 @@ message LoggedExercise {
   // Notes on the exercise, e.g. "Last set wobbly on the left leg". Empty if
   // none.
   string notes = 6;
-  // How stiff the body felt, for warm-up and cool-down exercises.
-  // Unspecified if not rated.
+  // How stiff the body felt, overall, for warm-up and cool-down exercises.
+  // Unspecified if not rated. The web app rates each set instead, see
+  // LoggedSet.stiffness.
   Stiffness stiffness = 7;
 }
 
@@ -596,6 +599,14 @@ message LoggedSet {
   int32 hold_seconds = 2;
   // The weight used, as in PlannedExercise. Unset for bodyweight.
   Weight weight = 3;
+  // How hard the set felt compared to the plan, e.g. the first too easy and
+  // the last too hard. Unspecified if not rated, and for warm-up and
+  // cool-down exercises. Use it with the reps and weight to choose the next
+  // workout's.
+  ExerciseEffort effort = 4;
+  // How stiff the body felt in the set, for warm-up and cool-down
+  // exercises. Unspecified if not rated.
+  Stiffness stiffness = 5;
 }
 
 message CreateTrainingPlanRequest {

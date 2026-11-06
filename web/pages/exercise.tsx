@@ -16,7 +16,7 @@ import type { ExerciseHistoryEntry } from "gen/plans/v1/exercises_pb";
 import { formatDate } from "helpers/format";
 import {
   equipmentLabel,
-  feedbackStyles,
+  loggedFeedbackStyles,
   formatDose,
   formatSet,
   workoutMuscles,
@@ -179,18 +179,16 @@ const ExercisePage: React.FC = () => {
                         <td className={tdClass}>
                           <div className="flex flex-wrap gap-1">
                             {entry.logged !== undefined &&
-                              feedbackStyles(
-                                entry.logged.effort,
-                                entry.logged.volume,
-                                entry.logged.stiffness
-                              ).map((style) => (
-                                <Badge
-                                  key={style.label}
-                                  className={style.badgeClass}
-                                >
-                                  {style.label}
-                                </Badge>
-                              ))}
+                              loggedFeedbackStyles(entry.logged).map(
+                                (style) => (
+                                  <Badge
+                                    key={style.label}
+                                    className={style.badgeClass}
+                                  >
+                                    {style.label}
+                                  </Badge>
+                                )
+                              )}
                           </div>
                           {entry.logged !== undefined &&
                             entry.logged.notes !== "" && (
