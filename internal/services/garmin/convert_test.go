@@ -126,8 +126,10 @@ func TestStrengthHoldSteps(t *testing.T) {
 	// Each side's hold waits for the lap button, then the rest, then the
 	// dead bugs with reps per side.
 	want := []step{
-		{"REST", "OPEN", 0}, {"ACTIVE", "TIME", 30},
-		{"REST", "OPEN", 0}, {"ACTIVE", "TIME", 30},
+		{"REST", "OPEN", 0},
+		{"ACTIVE", "TIME", 30},
+		{"REST", "OPEN", 0},
+		{"ACTIVE", "TIME", 30},
 		{"REST", "TIME", 45},
 		{"ACTIVE", "REPS", 8},
 	}
