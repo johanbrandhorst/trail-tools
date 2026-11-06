@@ -408,6 +408,16 @@ enum ExerciseGroupKind {
   // Several exercises done back to back, one set of each, then repeated for
   // the group's rounds, e.g. a core circuit.
   EXERCISE_GROUP_KIND_CIRCUIT = 3;
+  // Exercises that prepare for the workout, like leg swings, hip circles or
+  // light bodyweight squats, each done for its sets like straight sets. They
+  // aren't rated for effort, so leave their target_effort 0; the user says
+  // how stiff they felt instead, see LoggedExercise.stiffness. Watches show
+  // them as warm-up steps.
+  EXERCISE_GROUP_KIND_WARM_UP = 4;
+  // Exercises that wind down after the workout, like stretches, each done
+  // for its sets like straight sets. Like a warm-up, they're rated for
+  // stiffness rather than effort, and watches show them as cool-down steps.
+  EXERCISE_GROUP_KIND_COOL_DOWN = 5;
 }
 
 // ExerciseGroup says how the exercises of a group of a strength workout are
@@ -526,6 +536,20 @@ enum ExerciseVolume {
   EXERCISE_VOLUME_TOO_MANY = 3;
 }
 
+// Stiffness is how stiff the body felt in a warm-up or cool-down exercise,
+// which tracks recovery and niggles over time.
+enum Stiffness {
+  STIFFNESS_UNSPECIFIED = 0;
+  // Moved freely.
+  STIFFNESS_LOOSE = 1;
+  // A bit stiff, easing as it went.
+  STIFFNESS_A_BIT_STIFF = 2;
+  // Stiff throughout.
+  STIFFNESS_STIFF = 3;
+  // Sore or painful somewhere; the notes say where.
+  STIFFNESS_SORE = 4;
+}
+
 // What the user did in a strength workout, and how it felt.
 message StrengthLog {
   // When the workout was completed: when the log was first saved.
@@ -549,13 +573,18 @@ message LoggedExercise {
   // 20.
   repeated LoggedSet sets = 3;
   // How hard the exercise felt compared to the plan. Unspecified if not
-  // rated.
+  // rated, and for warm-up and cool-down exercises, which are rated by
+  // stiffness instead.
   ExerciseEffort effort = 4;
-  // How the number of reps felt. Unspecified if not rated.
+  // How the number of reps felt. Unspecified if not rated, and for warm-up
+  // and cool-down exercises.
   ExerciseVolume volume = 5;
   // Notes on the exercise, e.g. "Last set wobbly on the left leg". Empty if
   // none.
   string notes = 6;
+  // How stiff the body felt, for warm-up and cool-down exercises.
+  // Unspecified if not rated.
+  Stiffness stiffness = 7;
 }
 
 // A set as it was done.

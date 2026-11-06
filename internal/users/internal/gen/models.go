@@ -1635,6 +1635,7 @@ type StrengthLogExercise struct {
 	PlannedTempo        pgtype.Text
 	PlannedTargetEffort pgtype.Int4
 	PlannedNotes        pgtype.Text
+	Stiffness           string
 }
 
 type StrengthLogSet struct {

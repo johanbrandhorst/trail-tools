@@ -17,7 +17,7 @@ func StrengthBlocks(exercises []*PlannedExercise) []StrengthBlock {
 	var blocks []StrengthBlock
 	for i := 0; i < len(exercises); {
 		end := i + 1
-		if e := exercises[i]; e.Group != "" && e.GroupKind != GroupStraightSets {
+		if e := exercises[i]; e.Group != "" && e.GroupKind.Rounds() {
 			for end < len(exercises) && exercises[end].Group == e.Group {
 				end++
 			}

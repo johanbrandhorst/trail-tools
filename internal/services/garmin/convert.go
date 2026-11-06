@@ -488,6 +488,13 @@ func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.Work
 		Intensity:  "ACTIVE",
 		TargetType: "OPEN",
 	}
+	// Warm-ups and cool-downs show as such on the watch.
+	switch e.GroupKind {
+	case plans.GroupWarmUp:
+		step.Intensity = "WARMUP"
+	case plans.GroupCoolDown:
+		step.Intensity = "COOLDOWN"
+	}
 	catalog, inCatalog := garminExercise(e)
 	if inCatalog {
 		step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name

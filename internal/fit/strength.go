@@ -74,6 +74,9 @@ type StrengthExercise struct {
 	Pounds          bool
 	// The rest after the exercise, 0 for none.
 	Rest time.Duration
+	// The step's intensity: IntensityActive, the zero value, or
+	// IntensityWarmUp or IntensityCoolDown for a warm-up or cool-down.
+	Intensity Intensity
 }
 
 // strengthStep is a step of a strength workout as written.
@@ -108,7 +111,7 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 			step := strengthStep{
 				name:      e.Name,
 				notes:     e.Notes,
-				intensity: IntensityActive,
+				intensity: e.Intensity,
 				exercise:  uint16(len(titles)),
 				weight:    invalidUint16,
 			}

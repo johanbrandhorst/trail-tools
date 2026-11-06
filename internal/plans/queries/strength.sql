@@ -187,6 +187,7 @@ insert into strength_log_exercises (
   exercise_id,
   effort,
   volume,
+  stiffness,
   notes,
   planned_group_name,
   planned_sets,
@@ -205,6 +206,7 @@ select
   e.exercise_id,
   nullif(e.effort, '')::exercise_effort,
   nullif(e.volume, '')::exercise_volume,
+  e.stiffness,
   e.notes,
   case when e.planned then e.planned_group_name end,
   case when e.planned then e.planned_sets end,
@@ -223,6 +225,7 @@ from (
     -- Empty if not rated.
     unnest(sqlc.arg(efforts)::text[]) as effort,
     unnest(sqlc.arg(volumes)::text[]) as volume,
+    unnest(sqlc.arg(stiffnesses)::text[]) as stiffness,
     unnest(sqlc.arg(notes)::text[]) as notes,
     unnest(sqlc.arg(planned)::boolean[]) as planned,
     unnest(sqlc.arg(planned_group_names)::text[]) as planned_group_name,

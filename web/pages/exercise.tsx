@@ -181,7 +181,8 @@ const ExercisePage: React.FC = () => {
                             {entry.logged !== undefined &&
                               feedbackStyles(
                                 entry.logged.effort,
-                                entry.logged.volume
+                                entry.logged.volume,
+                                entry.logged.stiffness
                               ).map((style) => (
                                 <Badge
                                   key={style.label}

@@ -16,6 +16,7 @@ import {
   ExerciseEffort,
   ExerciseVolume,
   SessionEffort,
+  Stiffness,
 } from "gen/plans/v1/plans_pb";
 
 // MUSCLE_LABELS are the names of the muscles, in the order of the enum.
@@ -294,6 +295,32 @@ export const EXERCISE_VOLUMES: {
   },
 ];
 
+const STIFF = "bg-amber-50 text-amber-800 ring-amber-200";
+const SORE = "bg-red-50 text-red-800 ring-red-200";
+
+// STIFFNESSES are how stiff a warm-up or cool-down exercise felt.
+export const STIFFNESSES: {
+  stiffness: Stiffness;
+  style: FeedbackStyle;
+}[] = [
+  {
+    stiffness: Stiffness.LOOSE,
+    style: { badgeClass: RIGHT, label: "Loose" },
+  },
+  {
+    stiffness: Stiffness.A_BIT_STIFF,
+    style: { badgeClass: EASIER, label: "A bit stiff" },
+  },
+  {
+    stiffness: Stiffness.STIFF,
+    style: { badgeClass: STIFF, label: "Stiff" },
+  },
+  {
+    stiffness: Stiffness.SORE,
+    style: { badgeClass: SORE, label: "Sore" },
+  },
+];
+
 export const SESSION_EFFORTS: { effort: SessionEffort; label: string }[] = [
   { effort: SessionEffort.VERY_EASY, label: "Very easy" },
   { effort: SessionEffort.EASY, label: "Easy" },
@@ -308,9 +335,16 @@ export const sessionEffortLabel = (effort: SessionEffort): string =>
 // FeedbackStyles returns how the ratings of a logged exercise are shown.
 export const feedbackStyles = (
   effort: ExerciseEffort,
-  volume: ExerciseVolume
+  volume: ExerciseVolume,
+  stiffness: Stiffness = Stiffness.UNSPECIFIED
 ): FeedbackStyle[] => {
   const styles: FeedbackStyle[] = [];
+  const stiffnessStyle = STIFFNESSES.find(
+    (entry) => entry.stiffness === stiffness
+  );
+  if (stiffnessStyle !== undefined) {
+    styles.push(stiffnessStyle.style);
+  }
   const effortStyle = EXERCISE_EFFORTS.find((entry) => entry.effort === effort);
   if (effortStyle !== undefined) {
     styles.push(effortStyle.style);
@@ -399,3 +433,15 @@ export const withRoundSets = (strength: StrengthWorkout): StrengthWorkout =>
           });
     }),
   });
+
+/**
+ * IsEasyGroup reports whether a group of a strength workout is a warm-up or
+ * cool-down, rated by stiffness rather than effort.
+ */
+export const isEasyGroup = (groups: PlannedGroup[], name: string): boolean =>
+  groups.some(
+    (group) =>
+      group.name === name &&
+      (group.kind === ExerciseGroupKind.WARM_UP ||
+        group.kind === ExerciseGroupKind.COOL_DOWN)
+  );

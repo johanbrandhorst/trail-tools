@@ -74,3 +74,28 @@ func TestRunSteps(t *testing.T) {
 		t.Errorf("unexpected step orders %d %d %d %d", warmUp.StepOrder, repeat.StepOrder, repeat.Steps[0].StepOrder, coolDown.StepOrder)
 	}
 }
+
+func TestStrengthWarmUpSteps(t *testing.T) {
+	t.Parallel()
+	w := &plans.Workout{Type: plans.WorkoutTypeStrength, Title: "Legs", Exercises: []*plans.PlannedExercise{
+		{ExerciseName: "Leg swings", Group: "Warm-up", GroupKind: plans.GroupWarmUp, Sets: 1},
+		{ExerciseName: "Split squat", Group: "Main", Sets: 1, Reps: 8},
+		{ExerciseName: "Hip flexor stretch", Group: "Cool-down", GroupKind: plans.GroupCoolDown, Sets: 1, HoldSeconds: 30},
+	}}
+	gw, ok := trainingWorkout(w, thresholds{})
+	if !ok {
+		t.Fatal("not a Garmin workout")
+	}
+	steps := gw.Segments[0].Steps
+	if len(steps) != 3 {
+		t.Fatalf("got %d steps, want 3: %+v", len(steps), steps)
+	}
+	for i, want := range []string{"WARMUP", "ACTIVE", "COOLDOWN"} {
+		if steps[i].Intensity != want {
+			t.Errorf("step %d has intensity %q, want %q", i, steps[i].Intensity, want)
+		}
+	}
+	if steps[0].DurationType != "OPEN" {
+		t.Errorf("the warm-up until done is %q, want OPEN", steps[0].DurationType)
+	}
+}
