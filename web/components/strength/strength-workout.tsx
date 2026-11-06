@@ -17,7 +17,7 @@ import type { StrengthWorkout, Workout } from "gen/plans/v1/plans_pb";
 import { SessionEffort, TrainingPlanService } from "gen/plans/v1/plans_pb";
 import { invalidateServices } from "helpers/query";
 import {
-  feedbackStyles,
+  loggedFeedbackStyles,
   formatDose,
   formatRounds,
   formatSet,
@@ -166,17 +166,9 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
                       ? "No sets"
                       : logged.sets.map(formatSet).join(", ")}
                   </span>
-                  {feedbackStyles(
-                    logged.effort,
-                    logged.volume,
-                    logged.stiffness
-                  ).length > 0 && (
+                  {loggedFeedbackStyles(logged).length > 0 && (
                     <span className="flex w-full flex-wrap gap-1">
-                      {feedbackStyles(
-                        logged.effort,
-                        logged.volume,
-                        logged.stiffness
-                      ).map((style) => (
+                      {loggedFeedbackStyles(logged).map((style) => (
                         <Badge key={style.label} className={style.badgeClass}>
                           {style.label}
                         </Badge>

@@ -356,6 +356,39 @@ export const feedbackStyles = (
   return styles;
 };
 
+/**
+ * SetFeedbackStyles returns how the ratings of each set of an exercise are
+ * shown, e.g. "Set 1: Too easy". A single rated set isn't numbered.
+ */
+export const setFeedbackStyles = (
+  sets: { effort?: ExerciseEffort; stiffness?: Stiffness }[]
+): FeedbackStyle[] =>
+  sets.flatMap((set, index) =>
+    feedbackStyles(
+      set.effort ?? ExerciseEffort.UNSPECIFIED,
+      ExerciseVolume.UNSPECIFIED,
+      set.stiffness ?? Stiffness.UNSPECIFIED
+    ).map((style) => ({
+      badgeClass: style.badgeClass,
+      label:
+        sets.length === 1 ? style.label : `Set ${index + 1}: ${style.label}`,
+    }))
+  );
+
+/**
+ * LoggedFeedbackStyles returns how a logged exercise's ratings are shown:
+ * each set's, then the exercise's.
+ */
+export const loggedFeedbackStyles = (logged: {
+  effort: ExerciseEffort;
+  volume: ExerciseVolume;
+  stiffness: Stiffness;
+  sets: { effort?: ExerciseEffort; stiffness?: Stiffness }[];
+}): FeedbackStyle[] => [
+  ...setFeedbackStyles(logged.sets),
+  ...feedbackStyles(logged.effort, logged.volume, logged.stiffness),
+];
+
 // ExerciseGroup is consecutive exercises of a workout in the same group.
 export interface ExerciseGroup<Item> {
   // Empty if the exercises have no group.

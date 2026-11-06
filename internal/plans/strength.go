@@ -259,6 +259,11 @@ type LoggedSet struct {
 	HoldSeconds int32
 	// Zero for bodyweight.
 	Weight Weight
+	// How hard the set felt, empty if not rated.
+	Effort ExerciseEffort
+	// How stiff the set felt, for warm-up and cool-down exercises, empty if
+	// not rated.
+	Stiffness Stiffness
 }
 
 // HistoryEntry is what the user did in an exercise in one strength workout.
@@ -472,6 +477,8 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 				sets.HoldSeconds = append(sets.HoldSeconds, s.HoldSeconds)
 				sets.WeightValues = append(sets.WeightValues, s.Weight.Value)
 				sets.WeightUnits = append(sets.WeightUnits, string(s.Weight.Unit))
+				sets.Efforts = append(sets.Efforts, string(s.Effort))
+				sets.Stiffnesses = append(sets.Stiffnesses, string(s.Stiffness))
 			}
 		}
 		if len(log.Exercises) > 0 {
@@ -736,7 +743,13 @@ func groupSets(rows []*gen.StrengthLogSet) map[setKey][]LoggedSet {
 	result := map[setKey][]LoggedSet{}
 	for _, s := range rows {
 		k := setKey{s.LogID, s.Position}
-		result[k] = append(result[k], LoggedSet{Reps: s.Reps, HoldSeconds: s.HoldSeconds, Weight: weightFromDB(s.WeightValue, s.WeightUnit)})
+		result[k] = append(result[k], LoggedSet{
+			Reps:        s.Reps,
+			HoldSeconds: s.HoldSeconds,
+			Weight:      weightFromDB(s.WeightValue, s.WeightUnit),
+			Effort:      ExerciseEffort(s.Effort.ExerciseEffort),
+			Stiffness:   Stiffness(s.Stiffness),
+		})
 	}
 	return result
 }

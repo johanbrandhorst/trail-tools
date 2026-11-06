@@ -108,16 +108,29 @@ func TestExerciseGroups(t *testing.T) {
 		WorkoutId: w.GetId(),
 		Log: plansv1.StrengthLog_builder{Exercises: []*plansv1.LoggedExercise{plansv1.LoggedExercise_builder{
 			ExerciseId: ids[0],
-			Sets:       []*plansv1.LoggedSet{{}},
-			Stiffness:  plansv1.Stiffness_STIFFNESS_SORE,
-			Notes:      "Left hip",
+			Sets: []*plansv1.LoggedSet{
+				plansv1.LoggedSet_builder{Stiffness: plansv1.Stiffness_STIFFNESS_STIFF}.Build(),
+				plansv1.LoggedSet_builder{Stiffness: plansv1.Stiffness_STIFFNESS_LOOSE}.Build(),
+			},
+			Stiffness: plansv1.Stiffness_STIFFNESS_SORE,
+			Notes:     "Left hip",
+		}.Build(), plansv1.LoggedExercise_builder{
+			// Each set of an exercise is rated on its own.
+			ExerciseId: ids[1],
+			Sets: []*plansv1.LoggedSet{
+				plansv1.LoggedSet_builder{Reps: 10, Effort: plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_EASY}.Build(),
+				plansv1.LoggedSet_builder{Reps: 10, Effort: plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_HARD}.Build(),
+			},
 		}.Build()}}.Build(),
 	}.Build())
 	if err != nil {
 		t.Fatalf("SetStrengthLog: %v", err)
 	}
-	if got := logged.GetWorkout().GetStrength().GetLog().GetExercises(); len(got) != 1 || got[0].GetStiffness() != plansv1.Stiffness_STIFFNESS_SORE {
-		t.Errorf("got logged exercises %v, want the warm-up rated sore", got)
+	got := logged.GetWorkout().GetStrength().GetLog().GetExercises()
+	if len(got) != 2 || got[0].GetStiffness() != plansv1.Stiffness_STIFFNESS_SORE ||
+		got[0].GetSets()[0].GetStiffness() != plansv1.Stiffness_STIFFNESS_STIFF || got[0].GetSets()[1].GetStiffness() != plansv1.Stiffness_STIFFNESS_LOOSE ||
+		got[1].GetSets()[0].GetEffort() != plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_EASY || got[1].GetSets()[1].GetEffort() != plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_HARD {
+		t.Errorf("got logged exercises %v, want the warm-up rated sore, stiff then loose, and the next exercise's sets too easy then too hard", got)
 	}
 
 	// Ambiguous workouts are refused, saying what to do.

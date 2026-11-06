@@ -248,11 +248,14 @@ insert into strength_log_sets (
   reps,
   hold_seconds,
   weight_value,
-  weight_unit
+  weight_unit,
+  effort,
+  stiffness
 )
 select
   sqlc.arg(log_id)::uuid, s.position, s.set_number, s.reps, s.hold_seconds,
-  s.weight_value, nullif(s.weight_unit, '')::weight_unit
+  s.weight_value, nullif(s.weight_unit, '')::weight_unit,
+  nullif(s.effort, '')::exercise_effort, s.stiffness
 from (
   select
     unnest(sqlc.arg(positions)::integer[]) as position,
@@ -261,7 +264,10 @@ from (
     unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,
     unnest(sqlc.arg(weight_values)::double precision[]) as weight_value,
     -- Empty for bodyweight.
-    unnest(sqlc.arg(weight_units)::text[]) as weight_unit
+    unnest(sqlc.arg(weight_units)::text[]) as weight_unit,
+    -- Empty if not rated.
+    unnest(sqlc.arg(efforts)::text[]) as effort,
+    unnest(sqlc.arg(stiffnesses)::text[]) as stiffness
 ) s;
 
 -- name: DeleteStrengthLog :execrows

@@ -485,7 +485,15 @@ func loggedExerciseFromProto(e *plansv1.LoggedExercise) (*plans.LoggedExercise, 
 		if err != nil {
 			return nil, err
 		}
-		logged.Sets = append(logged.Sets, plans.LoggedSet{Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), Weight: weight})
+		setEffort, ok := exerciseEfforts[s.GetEffort()]
+		if !ok {
+			return nil, fmt.Errorf("sets[%d]: invalid effort %v", j, s.GetEffort())
+		}
+		setStiffness, ok := stiffnesses[s.GetStiffness()]
+		if !ok {
+			return nil, fmt.Errorf("sets[%d]: invalid stiffness %v", j, s.GetStiffness())
+		}
+		logged.Sets = append(logged.Sets, plans.LoggedSet{Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), Weight: weight, Effort: setEffort, Stiffness: setStiffness})
 	}
 	return logged, nil
 }
@@ -506,7 +514,13 @@ func strengthLogToProto(l *plans.StrengthLog) *plansv1.StrengthLog {
 func loggedExerciseToProto(e *plans.LoggedExercise) *plansv1.LoggedExercise {
 	sets := make([]*plansv1.LoggedSet, len(e.Sets))
 	for i, s := range e.Sets {
-		sets[i] = plansv1.LoggedSet_builder{Reps: s.Reps, HoldSeconds: s.HoldSeconds, Weight: weightToProto(s.Weight)}.Build()
+		sets[i] = plansv1.LoggedSet_builder{
+			Reps:        s.Reps,
+			HoldSeconds: s.HoldSeconds,
+			Weight:      weightToProto(s.Weight),
+			Effort:      exerciseEffortsToProto[s.Effort],
+			Stiffness:   stiffnessesToProto[s.Stiffness],
+		}.Build()
 	}
 	return plansv1.LoggedExercise_builder{
 		ExerciseId:   store.UUIDToString(e.ExerciseID),
