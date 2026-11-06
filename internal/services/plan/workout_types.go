@@ -171,6 +171,8 @@ var groupKinds = map[plansv1.ExerciseGroupKind]plans.GroupKind{
 	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS: plans.GroupStraightSets,
 	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_SUPERSET:      plans.GroupSuperset,
 	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT:       plans.GroupCircuit,
+	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_WARM_UP:       plans.GroupWarmUp,
+	plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_COOL_DOWN:     plans.GroupCoolDown,
 }
 
 // strengthExercisesFromProto converts and validates the exercises of a
@@ -187,10 +189,10 @@ func strengthExercisesFromProto(st *plansv1.StrengthWorkout) ([]*plans.PlannedEx
 		case groups[name] != nil:
 			return nil, fmt.Errorf("groups[%d]: group %q is listed twice", i, name)
 		case !ok:
-			return nil, fmt.Errorf("groups[%d].kind is required: STRAIGHT_SETS, SUPERSET or CIRCUIT", i)
-		case kind == plans.GroupStraightSets && (g.HasRounds() || g.HasRestSeconds()):
-			return nil, fmt.Errorf("groups[%d]: straight sets have no rounds or rest_seconds; leave them unset, and set each exercise's sets and rest_seconds", i)
-		case kind != plans.GroupStraightSets && (g.GetRounds() < 1 || g.GetRounds() > maxSets):
+			return nil, fmt.Errorf("groups[%d].kind is required: STRAIGHT_SETS, SUPERSET, CIRCUIT, WARM_UP or COOL_DOWN", i)
+		case !kind.Rounds() && (g.HasRounds() || g.HasRestSeconds()):
+			return nil, fmt.Errorf("groups[%d]: only supersets and circuits have rounds and rest_seconds; leave them unset, and set each exercise's sets and rest_seconds", i)
+		case kind.Rounds() && (g.GetRounds() < 1 || g.GetRounds() > maxSets):
 			return nil, fmt.Errorf("groups[%d].rounds must be between 1 and %d", i, maxSets)
 		case g.GetRestSeconds() < 0:
 			return nil, fmt.Errorf("groups[%d].rest_seconds must not be negative", i)
@@ -217,13 +219,20 @@ func strengthExercisesFromProto(st *plansv1.StrengthWorkout) ([]*plans.PlannedEx
 		if g != nil {
 			kind = groupKinds[g.GetKind()]
 		}
-		if kind == plans.GroupStraightSets {
+		if !kind.Rounds() {
 			if g == nil && looksLikeRounds(planned.Group) {
 				return nil, fmt.Errorf("exercises[%d]: group %q reads like a superset or circuit; list it in groups with its kind, rounds and rest_seconds, or with kind STRAIGHT_SETS", i, planned.Group)
+			}
+			if g == nil && looksLikeEasy(planned.Group) {
+				return nil, fmt.Errorf("exercises[%d]: group %q reads like a warm-up or cool-down; list it in groups with kind WARM_UP or COOL_DOWN, so the user rates it by stiffness rather than effort, or with kind STRAIGHT_SETS", i, planned.Group)
 			}
 			if planned.Sets < 1 {
 				return nil, fmt.Errorf("exercises[%d].sets must be between 1 and %d", i, maxSets)
 			}
+			if kind.Easy() && planned.TargetEffort != 0 {
+				return nil, fmt.Errorf("exercises[%d]: warm-up and cool-down exercises have no target_effort; leave it 0", i)
+			}
+			planned.GroupKind = kind
 			exercises = append(exercises, planned)
 			continue
 		}
@@ -258,6 +267,14 @@ func looksLikeRounds(group string) bool {
 	return strings.Contains(group, "superset") || strings.Contains(group, "circuit")
 }
 
+// looksLikeEasy reports whether a group's name says it's a warm-up or
+// cool-down, so a client that names a group "Warm-up" without listing it
+// isn't silently given straight sets, rated by effort.
+func looksLikeEasy(group string) bool {
+	group = strings.ToLower(strings.NewReplacer("-", "", " ", "").Replace(group))
+	return strings.Contains(group, "warmup") || strings.Contains(group, "cooldown")
+}
+
 // strengthGroupsToProto returns the groups of a strength workout's
 // exercises, in order, and moves the rounds of supersets and circuits from
 // their exercises' sets, and the rest between rounds from their last
@@ -268,9 +285,8 @@ func strengthGroupsToProto(exercises []*plans.PlannedExercise, out []*plansv1.Pl
 		if e.Group == "" || (i > 0 && exercises[i-1].Group == e.Group) {
 			continue
 		}
-		g := plansv1.ExerciseGroup_builder{Name: e.Group, Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS}
-		if e.GroupKind != plans.GroupStraightSets {
-			g.Kind = groupKindsToProto[e.GroupKind]
+		g := plansv1.ExerciseGroup_builder{Name: e.Group, Kind: groupKindsToProto[e.GroupKind]}
+		if e.GroupKind.Rounds() {
 			g.Rounds = proto.Int32(e.Sets)
 			last := i
 			for last+1 < len(exercises) && exercises[last+1].Group == e.Group {
@@ -384,6 +400,14 @@ var exerciseEfforts = map[plansv1.ExerciseEffort]plans.ExerciseEffort{
 	plansv1.ExerciseEffort_EXERCISE_EFFORT_TOO_HARD:    "too_hard",
 }
 
+var stiffnesses = map[plansv1.Stiffness]plans.Stiffness{
+	plansv1.Stiffness_STIFFNESS_UNSPECIFIED: "",
+	plansv1.Stiffness_STIFFNESS_LOOSE:       "loose",
+	plansv1.Stiffness_STIFFNESS_A_BIT_STIFF: "a_bit_stiff",
+	plansv1.Stiffness_STIFFNESS_STIFF:       "stiff",
+	plansv1.Stiffness_STIFFNESS_SORE:        "sore",
+}
+
 var exerciseVolumes = map[plansv1.ExerciseVolume]plans.ExerciseVolume{
 	plansv1.ExerciseVolume_EXERCISE_VOLUME_UNSPECIFIED: "",
 	plansv1.ExerciseVolume_EXERCISE_VOLUME_TOO_FEW:     "too_few",
@@ -405,6 +429,7 @@ var (
 	sessionEffortsToProto  = reverse(sessionEfforts)
 	exerciseEffortsToProto = reverse(exerciseEfforts)
 	exerciseVolumesToProto = reverse(exerciseVolumes)
+	stiffnessesToProto     = reverse(stiffnesses)
 )
 
 // strengthLogFromProto converts and validates a strength log. The caller
@@ -444,10 +469,14 @@ func loggedExerciseFromProto(e *plansv1.LoggedExercise) (*plans.LoggedExercise, 
 	if !ok {
 		return nil, fmt.Errorf("invalid volume %v", e.GetVolume())
 	}
+	stiffness, ok := stiffnesses[e.GetStiffness()]
+	if !ok {
+		return nil, fmt.Errorf("invalid stiffness %v", e.GetStiffness())
+	}
 	if len(e.GetSets()) > maxSets {
 		return nil, fmt.Errorf("at most %d sets are allowed", maxSets)
 	}
-	logged := &plans.LoggedExercise{ExerciseID: id, Effort: effort, Volume: volume, Notes: strings.TrimSpace(e.GetNotes())}
+	logged := &plans.LoggedExercise{ExerciseID: id, Effort: effort, Volume: volume, Stiffness: stiffness, Notes: strings.TrimSpace(e.GetNotes())}
 	for j, s := range e.GetSets() {
 		if s.GetReps() < 0 || s.GetHoldSeconds() < 0 {
 			return nil, fmt.Errorf("sets[%d]: reps and hold_seconds must not be negative", j)
@@ -485,6 +514,7 @@ func loggedExerciseToProto(e *plans.LoggedExercise) *plansv1.LoggedExercise {
 		Sets:         sets,
 		Effort:       exerciseEffortsToProto[e.Effort],
 		Volume:       exerciseVolumesToProto[e.Volume],
+		Stiffness:    stiffnessesToProto[e.Stiffness],
 		Notes:        e.Notes,
 	}.Build()
 }

@@ -41,6 +41,7 @@ func TestExerciseGroups(t *testing.T) {
 	circuit := plansv1.ExerciseGroup_builder{
 		Name: "Core circuit", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT, Rounds: proto.Int32(2), RestSeconds: proto.Int32(45),
 	}.Build()
+	warmUpGroup := plansv1.ExerciseGroup_builder{Name: "Warm-up", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_WARM_UP}.Build()
 	warmUp := func() *plansv1.PlannedExercise {
 		// Done until the user is done, with neither reps nor a time.
 		return plansv1.PlannedExercise_builder{ExerciseId: ids[0], Group: "Warm-up", Sets: 1}.Build()
@@ -63,16 +64,16 @@ func TestExerciseGroups(t *testing.T) {
 
 	// A circuit's exercises are done once each round: its rounds and the
 	// rest between rounds are only on the group.
-	w, err := create([]*plansv1.ExerciseGroup{circuit}, warmUp(), inCircuit(1, 0), inCircuit(2, 15), inCircuit(3, 0))
+	w, err := create([]*plansv1.ExerciseGroup{warmUpGroup, circuit}, warmUp(), inCircuit(1, 0), inCircuit(2, 15), inCircuit(3, 0))
 	if err != nil {
 		t.Fatalf("CreateWorkouts: %v", err)
 	}
 	st := w.GetStrength()
 	groups := st.GetGroups()
-	if len(groups) != 2 || groups[0].GetName() != "Warm-up" || groups[0].GetKind() != plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_STRAIGHT_SETS ||
+	if len(groups) != 2 || groups[0].GetName() != "Warm-up" || groups[0].GetKind() != plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_WARM_UP ||
 		groups[0].HasRounds() || groups[0].HasRestSeconds() ||
 		groups[1].GetKind() != plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_CIRCUIT || groups[1].GetRounds() != 2 || groups[1].GetRestSeconds() != 45 {
-		t.Errorf("got groups %v, want the warm-up's straight sets and the circuit of 2 rounds resting 45 s", groups)
+		t.Errorf("got groups %v, want the warm-up and the circuit of 2 rounds resting 45 s", groups)
 	}
 	ex := st.GetExercises()
 	if ex[0].GetSets() != 1 || ex[0].GetReps() != 0 || ex[0].GetHoldSeconds() != 0 {
@@ -102,6 +103,23 @@ func TestExerciseGroups(t *testing.T) {
 		t.Errorf("downloading the circuit: %d", resp.StatusCode)
 	}
 
+	// A warm-up exercise is rated by how stiff it felt.
+	logged, err := e.plans.SetStrengthLog(ctx, plansv1.SetStrengthLogRequest_builder{
+		WorkoutId: w.GetId(),
+		Log: plansv1.StrengthLog_builder{Exercises: []*plansv1.LoggedExercise{plansv1.LoggedExercise_builder{
+			ExerciseId: ids[0],
+			Sets:       []*plansv1.LoggedSet{{}},
+			Stiffness:  plansv1.Stiffness_STIFFNESS_SORE,
+			Notes:      "Left hip",
+		}.Build()}}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatalf("SetStrengthLog: %v", err)
+	}
+	if got := logged.GetWorkout().GetStrength().GetLog().GetExercises(); len(got) != 1 || got[0].GetStiffness() != plansv1.Stiffness_STIFFNESS_SORE {
+		t.Errorf("got logged exercises %v, want the warm-up rated sore", got)
+	}
+
 	// Ambiguous workouts are refused, saying what to do.
 	for name, tc := range map[string]struct {
 		groups    []*plansv1.ExerciseGroup
@@ -125,7 +143,7 @@ func TestExerciseGroups(t *testing.T) {
 			want:      "group's rest_seconds",
 		},
 		"not consecutive": {
-			groups:    []*plansv1.ExerciseGroup{circuit},
+			groups:    []*plansv1.ExerciseGroup{warmUpGroup, circuit},
 			exercises: []*plansv1.PlannedExercise{inCircuit(1, 0), warmUp(), inCircuit(2, 0)},
 			want:      "consecutive",
 		},
@@ -137,7 +155,7 @@ func TestExerciseGroups(t *testing.T) {
 			want:      "rounds",
 		},
 		"unused group": {
-			groups:    []*plansv1.ExerciseGroup{circuit},
+			groups:    []*plansv1.ExerciseGroup{warmUpGroup, circuit},
 			exercises: []*plansv1.PlannedExercise{warmUp()},
 			want:      "no exercise is in group",
 		},
@@ -148,8 +166,24 @@ func TestExerciseGroups(t *testing.T) {
 			exercises: []*plansv1.PlannedExercise{warmUp()},
 			want:      "leave them unset",
 		},
+		"warm-up with rounds": {
+			groups: []*plansv1.ExerciseGroup{plansv1.ExerciseGroup_builder{
+				Name: "Warm-up", Kind: plansv1.ExerciseGroupKind_EXERCISE_GROUP_KIND_WARM_UP, Rounds: proto.Int32(2),
+			}.Build()},
+			exercises: []*plansv1.PlannedExercise{warmUp()},
+			want:      "only supersets and circuits have rounds",
+		},
+		"warm-up not listed": {
+			exercises: []*plansv1.PlannedExercise{warmUp()},
+			want:      "reads like a warm-up",
+		},
+		"warm-up with a target effort": {
+			groups:    []*plansv1.ExerciseGroup{warmUpGroup},
+			exercises: []*plansv1.PlannedExercise{plansv1.PlannedExercise_builder{ExerciseId: ids[0], Group: "Warm-up", Sets: 1, TargetEffort: 5}.Build()},
+			want:      "no target_effort",
+		},
 		"straight sets without sets": {
-			exercises: []*plansv1.PlannedExercise{plansv1.PlannedExercise_builder{ExerciseId: ids[0], Group: "Warm-up", Reps: 10}.Build()},
+			exercises: []*plansv1.PlannedExercise{plansv1.PlannedExercise_builder{ExerciseId: ids[0], Group: "Main", Reps: 10}.Build()},
 			want:      "sets must be between",
 		},
 	} {

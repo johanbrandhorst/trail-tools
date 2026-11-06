@@ -116,5 +116,13 @@ func strengthExerciseFIT(e *plans.PlannedExercise) fit.StrengthExercise {
 		WeightKilograms: e.Weight.Kilograms(),
 		Pounds:          e.Weight.Unit == plans.Pounds,
 		Rest:            time.Duration(e.RestSeconds) * time.Second,
+		Intensity:       exerciseIntensities[e.GroupKind],
 	}
+}
+
+// exerciseIntensities are the intensities of the steps of warm-up and
+// cool-down exercises; other exercises are active.
+var exerciseIntensities = map[plans.GroupKind]fit.Intensity{
+	plans.GroupWarmUp:   fit.IntensityWarmUp,
+	plans.GroupCoolDown: fit.IntensityCoolDown,
 }

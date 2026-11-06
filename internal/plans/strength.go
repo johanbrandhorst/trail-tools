@@ -186,7 +186,25 @@ const (
 	GroupSuperset GroupKind = "superset"
 	// GroupCircuit is several exercises done back to back for rounds.
 	GroupCircuit GroupKind = "circuit"
+	// GroupWarmUp is exercises that prepare for the workout, each for its
+	// sets.
+	GroupWarmUp GroupKind = "warm_up"
+	// GroupCoolDown is exercises that wind down after the workout, each for
+	// its sets.
+	GroupCoolDown GroupKind = "cool_down"
 )
+
+// Rounds reports whether the group's exercises are done back to back for
+// rounds, one set of each, rather than each for its sets.
+func (k GroupKind) Rounds() bool {
+	return k == GroupSuperset || k == GroupCircuit
+}
+
+// Easy reports whether the group's exercises are a warm-up or cool-down,
+// rated by stiffness rather than effort.
+func (k GroupKind) Easy() bool {
+	return k == GroupWarmUp || k == GroupCoolDown
+}
 
 // SessionEffort is how hard a strength session felt. Empty if not rated.
 type SessionEffort string
@@ -194,6 +212,10 @@ type SessionEffort string
 // ExerciseEffort is how hard an exercise felt compared to the plan. Empty
 // if not rated.
 type ExerciseEffort string
+
+// Stiffness is how stiff the user felt in a warm-up or cool-down exercise:
+// "loose", "a_bit_stiff", "stiff" or "sore". Empty if not rated.
+type Stiffness string
 
 // ExerciseVolume is how the number of reps of an exercise felt. Empty if
 // not rated.
@@ -220,7 +242,9 @@ type LoggedExercise struct {
 	Sets         []LoggedSet
 	Effort       ExerciseEffort
 	Volume       ExerciseVolume
-	Notes        string
+	// How stiff the user felt, for warm-up and cool-down exercises.
+	Stiffness Stiffness
+	Notes     string
 	// What was planned for the exercise when the log was saved. Nil if it
 	// wasn't planned.
 	Planned *PlannedExercise
@@ -424,6 +448,7 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 			exercises.ExerciseIds = append(exercises.ExerciseIds, e.ExerciseID)
 			exercises.Efforts = append(exercises.Efforts, string(e.Effort))
 			exercises.Volumes = append(exercises.Volumes, string(e.Volume))
+			exercises.Stiffnesses = append(exercises.Stiffnesses, string(e.Stiffness))
 			exercises.Notes = append(exercises.Notes, e.Notes)
 			p := planned[i]
 			exercises.Planned = append(exercises.Planned, p != nil)
@@ -539,6 +564,7 @@ func (r *Repository) ListExerciseHistory(ctx context.Context, userID pgtype.UUID
 				ExerciseID:          row.ExerciseID,
 				Effort:              row.Effort,
 				Volume:              row.Volume,
+				Stiffness:           row.Stiffness,
 				Notes:               row.Notes,
 				PlannedGroupName:    row.PlannedGroupName,
 				PlannedSets:         row.PlannedSets,
@@ -660,6 +686,7 @@ func (wr *workoutReader) workouts() []*Workout {
 			ExerciseID:          row.ExerciseID,
 			Effort:              row.Effort,
 			Volume:              row.Volume,
+			Stiffness:           row.Stiffness,
 			Notes:               row.Notes,
 			PlannedGroupName:    row.PlannedGroupName,
 			PlannedSets:         row.PlannedSets,
@@ -758,6 +785,7 @@ func loggedExerciseFromDB(row *gen.StrengthLogExercise, name string, sets []Logg
 		Sets:         sets,
 		Effort:       ExerciseEffort(row.Effort.ExerciseEffort),
 		Volume:       ExerciseVolume(row.Volume.ExerciseVolume),
+		Stiffness:    Stiffness(row.Stiffness),
 		Notes:        row.Notes,
 	}
 	if row.PlannedSets.Valid {

@@ -32,6 +32,7 @@ import {
   ExerciseGroupKind,
   ExerciseVolume,
   SessionEffort,
+  Stiffness,
   TrainingPlanService,
 } from "gen/plans/v1/plans_pb";
 import { invalidateServices } from "helpers/query";
@@ -44,8 +45,10 @@ import {
   equipmentLabel,
   formatWeight,
   formatReps,
+  isEasyGroup,
   isOpen,
   roundGroup,
+  STIFFNESSES,
   withRoundSets,
   formatSeconds,
   workoutMuscles,
@@ -68,6 +71,8 @@ interface DraftExercise {
   sets: DraftSet[];
   effort: ExerciseEffort;
   volume: ExerciseVolume;
+  // How stiff a warm-up or cool-down exercise felt.
+  stiffness: Stiffness;
   notes: string;
 }
 
@@ -206,6 +211,7 @@ const initialDraft = (workoutId: string, strength: StrengthWorkout): Draft => {
         exerciseId: item.exerciseId,
         notes: "",
         sets: plannedSets(item),
+        stiffness: Stiffness.UNSPECIFIED,
         volume: ExerciseVolume.UNSPECIFIED,
       };
     }
@@ -226,6 +232,7 @@ const initialDraft = (workoutId: string, strength: StrengthWorkout): Draft => {
       exerciseId: item.exerciseId,
       notes: logged.notes,
       sets,
+      stiffness: logged.stiffness,
       volume: logged.volume,
     };
   });
@@ -241,6 +248,7 @@ const started = (exercise: DraftExercise): boolean =>
   exercise.sets.some((set) => set.done) ||
   exercise.effort !== ExerciseEffort.UNSPECIFIED ||
   exercise.volume !== ExerciseVolume.UNSPECIFIED ||
+  (exercise.stiffness ?? Stiffness.UNSPECIFIED) !== Stiffness.UNSPECIFIED ||
   exercise.notes.trim() !== "";
 
 // Finished reports whether all the sets of an exercise are done.
@@ -386,6 +394,7 @@ const Session: React.FC<SessionProps> = ({
               reps: set.reps,
               weight: set.weight.value > 0 ? set.weight : undefined,
             })),
+          stiffness: exercise.stiffness ?? Stiffness.UNSPECIFIED,
           volume: exercise.volume,
         })),
         notes: draft.notes.trim(),
@@ -413,6 +422,7 @@ const Session: React.FC<SessionProps> = ({
             planned={current}
             block={roundBlockOf(strength, step)}
             lastOfBlock={roundBlockOf(strength, step)?.last === step}
+            easy={isEasyGroup(strength.groups, current.group)}
             exercise={library.get(current.exerciseId)}
             draft={currentDraft}
             onChange={(change) => {
@@ -570,6 +580,8 @@ interface ExerciseStepProps {
   block: RoundBlock | undefined;
   // Whether the exercise is the last of its superset or circuit.
   lastOfBlock: boolean;
+  // Whether the exercise is a warm-up or cool-down.
+  easy: boolean;
   // The exercise in the library, undefined if it's missing.
   exercise: Exercise | undefined;
   draft: DraftExercise;
@@ -689,6 +701,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
   planned,
   block,
   lastOfBlock,
+  easy,
   exercise,
   draft,
   onChange,
@@ -706,7 +719,11 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
       ? {
           label: setsLabel(planned),
           sub: eachSide ? "each side" : "",
-          value: `${planned.sets} × ${reps}`,
+          // A single set until done needs no count.
+          value:
+            planned.sets === 1 && isOpen(planned)
+              ? "Until done"
+              : `${planned.sets} × ${reps}`,
         }
       : {
           label: planned.holdSeconds > 0 ? "Time" : "Reps",
@@ -733,12 +750,15 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
     block === undefined
       ? 0
       : Math.min(doneSets(draft) + 1, block.group.rounds ?? 1);
-  stats.push({
-    label: "Weight",
-    sub:
-      planned.weight === undefined || planned.weight.value === 0 ? "" : "each",
-    value: formatWeight(planned.weight),
-  });
+  const bodyweight = planned.weight === undefined || planned.weight.value === 0;
+  // A warm-up or cool-down without weights needs no weight to show.
+  if (!easy || !bodyweight) {
+    stats.push({
+      label: "Weight",
+      sub: bodyweight ? "" : "each",
+      value: formatWeight(planned.weight),
+    });
+  }
   if (planned.tempo !== "") {
     stats.push({ label: "Tempo", sub: "", value: planned.tempo });
   }
@@ -857,7 +877,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
       </section>
 
       {(allDone || started(draft)) && (
-        <Debrief draft={draft} onChange={onChange} />
+        <Debrief draft={draft} easy={easy} onChange={onChange} />
       )}
 
       <Card title="How it should feel">
@@ -1068,58 +1088,94 @@ const Chips = <Value,>({
 
 interface DebriefProps {
   draft: DraftExercise;
+  // Whether the exercise is a warm-up or cool-down, rated by stiffness.
+  easy: boolean;
   onChange: (change: Partial<DraftExercise>) => void;
 }
 
-// Debrief asks how an exercise went once its sets are done.
-const Debrief: React.FC<DebriefProps> = ({ draft, onChange }) => (
-  <section className="flex flex-col gap-3.5 rounded-lg border-2 border-ink bg-white p-4">
-    <h2 className="text-base font-semibold">How was it?</h2>
-    <div className="flex flex-col gap-1.5">
-      <span className="text-sm text-gray-600">Effort</span>
+/**
+ * Debrief asks how an exercise went once its sets are done: how hard it
+ * was and how the reps were, or for a warm-up or cool-down, how stiff the
+ * body felt.
+ */
+const Debrief: React.FC<DebriefProps> = ({ draft, easy, onChange }) =>
+  easy ? (
+    <section className="flex flex-col gap-3.5 rounded-lg border-2 border-ink bg-white p-4">
+      <h2 className="text-base font-semibold">How did it feel?</h2>
       <Chips
-        layout="grid grid-cols-3"
-        options={EXERCISE_EFFORTS.map((entry) => ({
+        layout="grid grid-cols-2"
+        options={STIFFNESSES.map((entry) => ({
           label: entry.style.label,
-          value: entry.effort,
+          value: entry.stiffness,
         }))}
-        value={draft.effort}
-        none={ExerciseEffort.UNSPECIFIED}
-        onChange={(effort) => {
-          onChange({ effort });
+        value={draft.stiffness ?? Stiffness.UNSPECIFIED}
+        none={Stiffness.UNSPECIFIED}
+        onChange={(stiffness) => {
+          onChange({ stiffness });
         }}
       />
-    </div>
-    <div className="flex flex-col gap-1.5">
-      <span className="text-sm text-gray-600">Reps</span>
-      <Chips
-        layout="grid grid-cols-3"
-        options={EXERCISE_VOLUMES.map((entry) => ({
-          label: entry.style.label
-            .replace(" reps", "")
-            .replace("Reps about", "About"),
-          value: entry.volume,
-        }))}
-        value={draft.volume}
-        none={ExerciseVolume.UNSPECIFIED}
-        onChange={(volume) => {
-          onChange({ volume });
-        }}
-      />
-    </div>
-    <label className="flex flex-col gap-1.5 text-sm text-gray-600">
-      A note, if anything stood out
-      <input
-        className={`${inputClass} text-base`}
-        value={draft.notes}
-        placeholder="E.g. left knee felt the last set"
-        onChange={(event) => {
-          onChange({ notes: event.target.value });
-        }}
-      />
-    </label>
-  </section>
-);
+      <label className="flex flex-col gap-1.5 text-sm text-gray-600">
+        {draft.stiffness === Stiffness.SORE
+          ? "Where?"
+          : "Anything tight or sore?"}
+        <input
+          className={`${inputClass} text-base`}
+          value={draft.notes}
+          placeholder="E.g. tight left hip, eased after a minute"
+          onChange={(event) => {
+            onChange({ notes: event.target.value });
+          }}
+        />
+      </label>
+    </section>
+  ) : (
+    <section className="flex flex-col gap-3.5 rounded-lg border-2 border-ink bg-white p-4">
+      <h2 className="text-base font-semibold">How was it?</h2>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm text-gray-600">Effort</span>
+        <Chips
+          layout="grid grid-cols-3"
+          options={EXERCISE_EFFORTS.map((entry) => ({
+            label: entry.style.label,
+            value: entry.effort,
+          }))}
+          value={draft.effort}
+          none={ExerciseEffort.UNSPECIFIED}
+          onChange={(effort) => {
+            onChange({ effort });
+          }}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm text-gray-600">Reps</span>
+        <Chips
+          layout="grid grid-cols-3"
+          options={EXERCISE_VOLUMES.map((entry) => ({
+            label: entry.style.label
+              .replace(" reps", "")
+              .replace("Reps about", "About"),
+            value: entry.volume,
+          }))}
+          value={draft.volume}
+          none={ExerciseVolume.UNSPECIFIED}
+          onChange={(volume) => {
+            onChange({ volume });
+          }}
+        />
+      </div>
+      <label className="flex flex-col gap-1.5 text-sm text-gray-600">
+        A note, if anything stood out
+        <input
+          className={`${inputClass} text-base`}
+          value={draft.notes}
+          placeholder="E.g. left knee felt the last set"
+          onChange={(event) => {
+            onChange({ notes: event.target.value });
+          }}
+        />
+      </label>
+    </section>
+  );
 
 interface FinishStepProps {
   planned: PlannedExercise[];
@@ -1168,7 +1224,11 @@ const FinishStep: React.FC<FinishStepProps> = ({
             const styles =
               exercise === undefined
                 ? []
-                : feedbackStyles(exercise.effort, exercise.volume);
+                : feedbackStyles(
+                    exercise.effort,
+                    exercise.volume,
+                    exercise.stiffness
+                  );
             const sets = exercise?.sets.filter((set) => set.done).length ?? 0;
             return (
               // Exercises keep their order during the workout.

@@ -166,15 +166,21 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
                       ? "No sets"
                       : logged.sets.map(formatSet).join(", ")}
                   </span>
-                  {feedbackStyles(logged.effort, logged.volume).length > 0 && (
+                  {feedbackStyles(
+                    logged.effort,
+                    logged.volume,
+                    logged.stiffness
+                  ).length > 0 && (
                     <span className="flex w-full flex-wrap gap-1">
-                      {feedbackStyles(logged.effort, logged.volume).map(
-                        (style) => (
-                          <Badge key={style.label} className={style.badgeClass}>
-                            {style.label}
-                          </Badge>
-                        )
-                      )}
+                      {feedbackStyles(
+                        logged.effort,
+                        logged.volume,
+                        logged.stiffness
+                      ).map((style) => (
+                        <Badge key={style.label} className={style.badgeClass}>
+                          {style.label}
+                        </Badge>
+                      ))}
                     </span>
                   )}
                   {logged.notes !== "" && (
