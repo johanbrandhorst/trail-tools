@@ -37,6 +37,21 @@ const MIN_DISTANCE_METERS = 50;
 export const hasDistance = (activity: Activity): boolean =>
   activity.distanceMeters >= MIN_DISTANCE_METERS;
 
+/**
+ * ActivitySummary is an activity's distance and climb, or its time if it
+ * has no distance, like strength training.
+ */
+export const activitySummary = (activity: Activity): string => {
+  if (!hasDistance(activity)) {
+    return formatHoursMinutes(activity.movingTimeSeconds);
+  }
+  const climb =
+    activity.elevationGainMeters > 0
+      ? ` · ${Math.round(activity.elevationGainMeters)} m`
+      : "";
+  return `${formatKm(activity.distanceMeters)}${climb}`;
+};
+
 interface ActivityChipProps {
   activity: Activity;
 }
@@ -50,15 +65,7 @@ export const ActivityChip: React.FC<ActivityChipProps> = ({ activity }) => (
   >
     <span className="truncate font-medium">{activity.name}</span>
     <span className="tabular-nums text-gray-500">
-      {hasDistance(activity) ? (
-        <>
-          {formatKm(activity.distanceMeters)}
-          {activity.elevationGainMeters > 0 &&
-            ` · ${Math.round(activity.elevationGainMeters)} m`}
-        </>
-      ) : (
-        formatHoursMinutes(activity.movingTimeSeconds)
-      )}
+      {activitySummary(activity)}
     </span>
   </Link>
 );
