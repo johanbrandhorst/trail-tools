@@ -13,3 +13,6 @@ localhost.pem
 # Activities' streams and Strava's responses stored locally, see
 # -activity-dir
 /activity-data/
+
+# Test binaries, from go test -c.
+*.test
