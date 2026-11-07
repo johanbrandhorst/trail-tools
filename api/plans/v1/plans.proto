@@ -262,8 +262,11 @@ message RunWorkout {
   // rising heart rates, with the lactate measured after each, to find the
   // aerobic threshold. See LactateTestService. Its workout page starts the
   // test, or creates a link for someone else to record it, and the test is
-  // linked to the workout. Plan it as a base run without blocks: the
-  // stages are chosen when the test starts.
+  // linked to the workout. Plan it as a base run without blocks: on the
+  // Garmin calendar it gets the test's stages, a warm-up and then 4 minute
+  // stages 10 bpm apart, each followed by a step to sample lactate in that
+  // ends at the lap button. The stages start where the user's last test
+  // did, or at 100 bpm, and go to 180 bpm, or at least 5 stages.
   bool lactate_test = 8;
 }
 

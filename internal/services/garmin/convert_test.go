@@ -154,3 +154,45 @@ func TestStrengthHoldSteps(t *testing.T) {
 		t.Errorf("got log %+v, want one side plank set and one set of dead bugs", log)
 	}
 }
+
+func TestLactateTestSteps(t *testing.T) {
+	t.Parallel()
+	w := &plans.Workout{Type: plans.WorkoutTypeBase, Title: "Lactate test", LactateTest: true}
+	for _, tc := range []struct {
+		name              string
+		start             int32
+		firstBPM, lastBPM float64
+		wantStages        int
+	}{
+		{name: "first test", firstBPM: 100, lastBPM: 180, wantStages: 9},
+		// A later test starts where the last did, with enough stages to get
+		// past the threshold.
+		{name: "from the last test", start: 150, firstBPM: 150, lastBPM: 190, wantStages: 5},
+	} {
+		gw, ok := trainingWorkout(w, thresholds{lactateStart: tc.start})
+		if !ok {
+			t.Fatalf("%s: not a Garmin workout", tc.name)
+		}
+		steps := gw.Segments[0].Steps
+		if len(steps) != 2*tc.wantStages+2 {
+			t.Fatalf("%s: got %d steps, want a warm-up, %d stages with a sample each, and a cool-down: %+v", tc.name, len(steps), tc.wantStages, steps)
+		}
+		if warmUp := steps[0]; warmUp.Intensity != "WARMUP" || warmUp.DurationType != "TIME" || warmUp.DurationValue != 900 {
+			t.Errorf("%s: unexpected warm-up %+v", tc.name, warmUp)
+		}
+		first, sample, last := steps[1], steps[2], steps[len(steps)-3]
+		if first.Intensity != "ACTIVE" || first.DurationType != "TIME" || first.DurationValue != 240 ||
+			first.TargetType != "HEART_RATE" || first.TargetValueLow != tc.firstBPM-5 || first.TargetValueHigh != tc.firstBPM+5 {
+			t.Errorf("%s: unexpected first stage %+v", tc.name, first)
+		}
+		if sample.Intensity != "REST" || sample.DurationType != "OPEN" || !strings.Contains(sample.Description, "lactate") {
+			t.Errorf("%s: unexpected sample step %+v", tc.name, sample)
+		}
+		if last.TargetValueLow != tc.lastBPM-5 || last.TargetValueHigh != tc.lastBPM+5 {
+			t.Errorf("%s: the last stage is %v-%v bpm, want around %v", tc.name, last.TargetValueLow, last.TargetValueHigh, tc.lastBPM)
+		}
+		if coolDown := steps[len(steps)-1]; coolDown.Intensity != "COOLDOWN" || coolDown.DurationType != "OPEN" {
+			t.Errorf("%s: unexpected cool-down %+v", tc.name, coolDown)
+		}
+	}
+}

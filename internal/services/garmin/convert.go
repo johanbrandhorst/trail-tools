@@ -321,9 +321,11 @@ func weightIn(kilograms float64, unit plans.WeightUnit) plans.Weight {
 const workoutProvider = "trailrunn.ing"
 
 // thresholds are the heart rates of the user's aerobic and anaerobic
-// thresholds, 0 if unknown.
+// thresholds, 0 if unknown, and of the first stage of their last lactate
+// test, which the next one starts at, 0 if they have none.
 type thresholds struct {
 	aerobic, anaerobic int32
+	lactateStart       int32
 }
 
 // trainingWorkout returns a workout as a Training API workout, if it's a
@@ -346,6 +348,12 @@ func trainingWorkout(w *plans.Workout, t thresholds) (*garmin.Workout, bool) {
 		}
 		if len(w.RunBlocks) > 0 {
 			steps = runSteps(w.RunBlocks, t)
+			break
+		}
+		// A lactate test is run in its stages, starting where the last test
+		// did, so the two are comparable.
+		if w.LactateTest {
+			steps = runSteps(plans.LactateTestStagesFrom(t.lactateStart).Blocks(), t)
 			break
 		}
 		step := garmin.WorkoutStep{Type: "WorkoutStep", StepOrder: 1, Intensity: "ACTIVE", DurationType: "OPEN", TargetType: "OPEN"}
