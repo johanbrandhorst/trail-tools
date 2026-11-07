@@ -518,7 +518,8 @@ func (f *fakeMapData) Forecast(_ context.Context, queries []mapdata.ForecastQuer
 }
 
 // HourlyForecast returns light rain from 10 to 12 UTC and otherwise clear
-// weather, at 5 degrees at midnight UTC warming by a degree an hour.
+// weather, at 5 degrees at midnight UTC warming by a degree an hour, which
+// it also feels like.
 func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, end time.Time) ([]mapdata.Weather, error) {
 	f.mu.Lock()
 	f.hourlyForecasts = append(f.hourlyForecasts, point)
@@ -528,6 +529,7 @@ func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, 
 		w := mapdata.Weather{
 			Time:                     hour,
 			TemperatureCelsius:       5 + float64(hour.Hour()),
+			ApparentTemperature:      5 + float64(hour.Hour()),
 			PrecipitationProbability: 10,
 			WindSpeedKMH:             float64(hour.Hour()),
 			IsDay:                    true,

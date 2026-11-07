@@ -195,6 +195,16 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			b.Workout = summarizeDay(during)
 			b.WorkoutStartTime = timestamppb.New(start)
 			b.WorkoutEndTime = timestamppb.New(end)
+			// Fueling is adjusted for the hottest it feels during the run.
+			if w.RunFueling != nil {
+				hottest := during[0].ApparentTemperature
+				for _, h := range during[1:] {
+					hottest = math.Max(hottest, h.ApparentTemperature)
+				}
+				if amounts, ok := w.RunFueling.Amounts(w.ExpectedDuration(), &hottest); ok {
+					b.Fueling = fuelAmountsToProto(amounts)
+				}
+			}
 		}
 		if hourly {
 			// The daytime, and the hours of the workout outside it, like
@@ -276,12 +286,12 @@ func isDaytime(h mapdata.Weather) bool {
 	return hour >= daytimeFirstHour && hour <= daytimeLastHour
 }
 
-// defaultWorkoutDuration is how long a workout without a target duration is
-// taken to last.
+// defaultWorkoutDuration is how long a workout is taken to last if its time
+// can't be estimated: without a target duration or distance.
 const defaultWorkoutDuration = time.Hour
 
 // duringWorkout returns the hours of a day that overlap the workout, from
-// the start of its start window to the end of the window plus its target
+// the start of its start window to the end of the window plus its expected
 // duration, and when that period starts and ends. It returns no hours for
 // workouts without a start time.
 func duringWorkout(w *plans.Workout, hours []mapdata.Weather) (during []mapdata.Weather, start, end time.Time) {
@@ -292,7 +302,7 @@ func duringWorkout(w *plans.Workout, hours []mapdata.Weather) (during []mapdata.
 	if err != nil {
 		return nil, time.Time{}, time.Time{}
 	}
-	duration := time.Duration(w.TargetDurationSeconds) * time.Second
+	duration := w.ExpectedDuration()
 	if duration == 0 {
 		duration = defaultWorkoutDuration
 	}

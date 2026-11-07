@@ -3,6 +3,7 @@ package plan
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -73,6 +74,18 @@ func workoutDetailsFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 		}
 		workout.RunBlocks = blocks
 		workout.LactateTest = run.GetLactateTest()
+		if run.HasFueling() {
+			f := run.GetFueling()
+			workout.RunFueling = &plans.RunFueling{
+				CarbsGramsPerHour: f.GetCarbsGramsPerHour(),
+				FluidMLPerHour:    f.GetFluidMlPerHour(),
+				SodiumMGPerHour:   f.GetSodiumMgPerHour(),
+				Notes:             strings.TrimSpace(f.GetNotes()),
+			}
+			if err := workout.RunFueling.Validate(); err != nil {
+				return invalidArgument("run.fueling: %v", err)
+			}
+		}
 		return parseRouteID("run.route_id", run.GetRouteId(), workout)
 	case plansv1.Workout_CrossTraining_case:
 		ct := w.GetCrossTraining()
@@ -351,6 +364,7 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 			RouteId:                   store.UUIDToString(w.RouteID),
 			Blocks:                    runBlocksToProto(w.RunBlocks),
 			LactateTest:               w.LactateTest,
+			Fueling:                   runFuelingToProto(w),
 		}.Build()
 	case plans.WorkoutTypeCrossTraining:
 		b.CrossTraining = plansv1.CrossTrainingWorkout_builder{
@@ -599,4 +613,34 @@ func locationFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 	}
 	workout.Location = &geo.Point{Lat: lat, Lng: lng}
 	return nil
+}
+
+// runFuelingToProto returns a run's fueling with its amounts at mild
+// temperatures, nil if it has none.
+func runFuelingToProto(w *plans.Workout) *plansv1.RunFueling {
+	f := w.RunFueling
+	if f == nil {
+		return nil
+	}
+	b := plansv1.RunFueling_builder{
+		CarbsGramsPerHour: f.CarbsGramsPerHour,
+		FluidMlPerHour:    f.FluidMLPerHour,
+		SodiumMgPerHour:   f.SodiumMGPerHour,
+		Notes:             f.Notes,
+	}
+	if amounts, ok := f.Amounts(w.ExpectedDuration(), nil); ok {
+		b.Amounts = fuelAmountsToProto(amounts)
+	}
+	return b.Build()
+}
+
+func fuelAmountsToProto(a plans.FuelAmounts) *plansv1.FuelAmounts {
+	return plansv1.FuelAmounts_builder{
+		ExpectedDurationSeconds:    int32(a.ExpectedDuration / time.Second),
+		CarbsGrams:                 a.CarbsGrams,
+		FluidMl:                    a.FluidML,
+		SodiumMg:                   a.SodiumMG,
+		ApparentTemperatureCelsius: a.ApparentTemperatureCelsius,
+		HeatIncreasePercent:        int32(math.Round(a.HeatIncrease * 100)),
+	}.Build()
 }

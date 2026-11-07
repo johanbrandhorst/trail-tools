@@ -268,6 +268,52 @@ message RunWorkout {
   // ends at the lap button. The stages start where the user's last test
   // did, or at 100 bpm, and go to 180 bpm, or at least 5 stages.
   bool lactate_test = 8;
+  // What to eat and drink during the run, as rates per hour like a race
+  // plan's NutritionStrategy. Unset if the run has no fueling plan, like a
+  // short easy run. The amounts to carry are worked out from the rates and
+  // the run's expected time, and raised for the heat in its forecast, see
+  // WorkoutWeather.fueling.
+  RunFueling fueling = 9;
+}
+
+// Fueling and hydration for a run.
+message RunFueling {
+  // Carbohydrate to take in grams per hour, from 0 to 150. 0 if none, e.g.
+  // for a run under 75 minutes, which glycogen covers.
+  double carbs_grams_per_hour = 1;
+  // Fluid to drink in milliliters per hour at mild temperatures, from 0 to
+  // 1500. It's raised for the heat in the forecast. 0 if none.
+  double fluid_ml_per_hour = 2;
+  // Sodium to take in milligrams per hour at mild temperatures, from 0 to
+  // 2000, raised with the fluid in the heat. 0 if none.
+  double sodium_mg_per_hour = 3;
+  // Notes, e.g. what to carry: "Two gels and a 500 ml soft flask, refill
+  // at the creek".
+  string notes = 4;
+  // The amounts for the run's expected time at mild temperatures. Unset if
+  // the run's time can't be estimated: set its target duration, or its
+  // target distance and elevation gain.
+  FuelAmounts amounts = 5 [(mcp.v1.field).output_only = true];
+}
+
+// The amounts to eat and drink during a run.
+message FuelAmounts {
+  // How long the run is expected to take: its target duration, or else its
+  // target distance at 8 km/h plus its elevation gain at 600 m per hour.
+  int32 expected_duration_seconds = 1;
+  // Carbohydrate in grams.
+  double carbs_grams = 2;
+  // Fluid in milliliters.
+  double fluid_ml = 3;
+  // Sodium in milligrams.
+  double sodium_mg = 4;
+  // The highest apparent (feels like) temperature during the run in degrees
+  // Celsius that the amounts are adjusted for. Unset without a forecast.
+  optional double apparent_temperature_celsius = 5;
+  // How much fluid and sodium are raised for the heat, in percent: 5% for
+  // each degree the apparent temperature is above 15 degrees Celsius, up to
+  // 50%. 0 if they aren't.
+  int32 heat_increase_percent = 6;
 }
 
 // A block of a structured run: its steps, done once or repeated.
@@ -756,12 +802,17 @@ message WorkoutWeather {
   // outside it. Only set by GetWorkoutWeather.
   repeated HourWeather hours = 6;
   // The weather during the workout: from the start of its start window to
-  // the end of the window plus the workout's target duration, or an hour if
-  // it has none. Unset for workouts without a start time.
+  // the end of the window plus the workout's expected duration, see
+  // FuelAmounts.expected_duration_seconds, or an hour if it has none. Unset
+  // for workouts without a start time.
   DayWeather workout = 7;
   // When that period starts and ends.
   google.protobuf.Timestamp workout_start_time = 8;
   google.protobuf.Timestamp workout_end_time = 9;
+  // What to eat and drink during a run with a fueling plan, adjusted for the
+  // heat during the workout. Unset for other workouts, and for runs without
+  // a start time or whose time can't be estimated.
+  FuelAmounts fueling = 10;
 }
 
 // The weather of a day.

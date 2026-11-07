@@ -118,13 +118,17 @@ export const workoutDetails = (
   switch (type) {
     case WorkoutType.BASE:
     case WorkoutType.INTENSITY: {
-      // The structure of an existing run is kept: it's edited elsewhere.
+      /*
+       * The structure and fueling of an existing run are kept, unless the
+       * caller replaces them.
+       */
       const existingRun =
         existing?.details.case === "run" ? existing.details.value : undefined;
       return {
         case: "run",
         value: create(RunWorkoutSchema, {
           blocks: existingRun?.blocks ?? [],
+          fueling: existingRun?.fueling,
           intensity:
             type === WorkoutType.BASE ? RunIntensity.BASE : RunIntensity.HARD,
           lactateTest: targets.lactateTest,

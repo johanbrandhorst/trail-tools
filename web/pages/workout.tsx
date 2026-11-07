@@ -1,6 +1,7 @@
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import WorkoutLactateTest from "@components/lactate/workout-lactate-test";
 import Loading from "@components/loading";
+import RunFuelingCard from "@components/plans/run-fueling";
 import RunSteps from "@components/plans/run-steps";
 import WorkoutDialog from "@components/plans/workout-dialog";
 import { Goal, RouteCard } from "@components/plans/workout-goal";
@@ -279,6 +280,13 @@ const WorkoutPage: React.FC = () => {
             threshold={lactateTest ? undefined : threshold}
           />
           {lactateTest && <WorkoutLactateTest workout={workout} />}
+          {workout.details.case === "run" &&
+            workout.details.value.fueling !== undefined && (
+              <RunFuelingCard
+                workout={workout}
+                fueling={workout.details.value.fueling}
+              />
+            )}
           {workout.details.case === "run" &&
             workout.details.value.blocks.length > 0 && (
               <RunSteps blocks={workout.details.value.blocks} />

@@ -335,7 +335,7 @@ type thresholds struct {
 func trainingWorkout(w *plans.Workout, t thresholds) (*garmin.Workout, bool) {
 	gw := &garmin.Workout{
 		WorkoutName:     w.Title,
-		Description:     truncate(w.Description, 1024),
+		Description:     truncate(strings.TrimSpace(fuelingLine(w)+"\n\n"+w.Description), 1024),
 		WorkoutProvider: workoutProvider,
 		WorkoutSourceID: workoutProvider,
 	}
@@ -608,4 +608,32 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return string(r[:n])
+}
+
+// fuelingLine describes what to eat and drink during a run, empty if it has
+// no fueling plan or its time can't be estimated. Garmin's calendar has no
+// forecast, so the amounts are for mild temperatures.
+func fuelingLine(w *plans.Workout) string {
+	if w.RunFueling == nil {
+		return ""
+	}
+	a, ok := w.RunFueling.Amounts(w.ExpectedDuration(), nil)
+	if !ok {
+		return ""
+	}
+	var parts []string
+	if a.CarbsGrams > 0 {
+		parts = append(parts, fmt.Sprintf("%.0f g carbs", a.CarbsGrams))
+	}
+	if a.FluidML > 0 {
+		parts = append(parts, fmt.Sprintf("%.0f ml fluid", a.FluidML))
+	}
+	if a.SodiumMG > 0 {
+		parts = append(parts, fmt.Sprintf("%.0f mg sodium", a.SodiumMG))
+	}
+	line := "Fuel: " + strings.Join(parts, ", ")
+	if w.RunFueling.Notes != "" {
+		line += ". " + w.RunFueling.Notes
+	}
+	return line
 }
