@@ -57,12 +57,25 @@ const WeekDays: React.FC<WeekDaysProps> = ({
           isWithin(day, monthStart, monthEnd);
         const race = goalRacesByDate.get(day);
         const workouts = workoutsByDate.get(day) ?? [];
-        const activities = activitiesByDate.get(day) ?? [];
+        const dayActivities = activitiesByDate.get(day) ?? [];
+        // Activities that completed a workout are shown in its card.
+        const completing = new Map(
+          dayActivities
+            .filter((activity) =>
+              workouts.some(
+                (workout) => workout.completedActivityId === activity.id
+              )
+            )
+            .map((activity) => [activity.id, activity])
+        );
+        const activities = dayActivities.filter(
+          (activity) => !completing.has(activity.id)
+        );
         const isToday = day === now;
         const empty =
           race === undefined &&
           workouts.length === 0 &&
-          activities.length === 0;
+          dayActivities.length === 0;
         let cellClass = "border-gray-200 bg-white";
         if (race !== undefined) {
           cellClass = "border-yellow-400 bg-yellow-50";
@@ -103,6 +116,7 @@ const WeekDays: React.FC<WeekDaysProps> = ({
                 key={workout.id}
                 workout={workout}
                 weather={weather?.get(workout.id)}
+                activity={completing.get(workout.completedActivityId)}
                 onClick={
                   onOpenWorkout === undefined
                     ? undefined

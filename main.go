@@ -896,7 +896,11 @@ func run(
 	mux.Handle("/workouts/", authenticate(planService.DownloadHandler(indexHandler)))
 	// Shared workouts' files are downloaded without signing in.
 	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
-	mux.Handle(plan.CalendarPath, planService.CalendarHandler())
+	// Serve calendar feeds, falling back to the frontend for the calendar
+	// page. Registering /calendar/ makes the mux redirect /calendar to
+	// /calendar/, so the page is served at /calendar explicitly.
+	mux.Handle(plan.CalendarPath, planService.CalendarHandler(indexHandler))
+	mux.Handle("/calendar", indexHandler)
 	mux.Handle("/race-plans/", authenticate(racePlanService.CourseHandler(indexHandler)))
 	// Registering /routes/ makes the mux redirect /routes to /routes/, so
 	// serve the frontend for /routes explicitly.

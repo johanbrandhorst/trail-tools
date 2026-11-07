@@ -90,6 +90,12 @@ func TestCalendarFeed(t *testing.T) {
 	if resp, _ := e.get(feed.GetUrl()+"?format=outlook", ""); resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("an unknown format: %d, want 400", resp.StatusCode)
 	}
+	// Other paths under /calendar/ are the frontend's calendar pages.
+	for _, path := range []string{"/calendar/", "/calendar/2026-11"} {
+		if resp, body := e.get(path, ""); resp.StatusCode != http.StatusOK || string(body) != frontendPage {
+			t.Errorf("%s: got %d %q, want the frontend", path, resp.StatusCode, body)
+		}
+	}
 
 	// For Home Assistant, only workouts with a start time and a duration.
 	resp, body = e.get(feed.GetUrl()+"?format=home-assistant", "")

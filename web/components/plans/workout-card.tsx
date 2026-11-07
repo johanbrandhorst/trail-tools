@@ -1,5 +1,7 @@
+import { activitySummary } from "@components/activities/activity-bits";
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import { CheckCircleIcon, MapIcon } from "@heroicons/react/24/solid";
+import type { Activity } from "gen/activities/v1/activities_pb";
 import type { Workout, WorkoutWeather } from "gen/plans/v1/plans_pb";
 import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { formatHoursMinutes } from "helpers/format";
@@ -13,6 +15,11 @@ interface WorkoutCardProps {
   workout: Workout;
   // The forecast for the workout's day, if there is one.
   weather?: WorkoutWeather | undefined;
+  /**
+   * The activity that completed the workout, shown in its card rather than
+   * as an activity of its own, so the plan and what was done read as one.
+   */
+  activity?: Activity | undefined;
   onClick?: (() => void) | undefined;
 }
 
@@ -48,6 +55,7 @@ const targets = (workout: Workout, capBpm: number | undefined): string => {
 const WorkoutCard: React.FC<WorkoutCardProps> = ({
   workout,
   weather,
+  activity,
   onClick,
 }) => {
   const style = workoutStyle(workout.type);
@@ -70,7 +78,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
           {workoutTargets(workout).routeId !== "" && (
             <MapIcon className="size-3.5 opacity-70" aria-label="Has route" />
           )}
-          {isCompleted(workout) && (
+          {isCompleted(workout) && activity === undefined && (
             <CheckCircleIcon
               className="size-3.5 text-emerald-600"
               aria-label="Completed"
@@ -81,7 +89,17 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
       {detail !== "" && (
         <span className="tabular-nums opacity-80">{detail}</span>
       )}
-      {forecastDay !== undefined && <WeatherBadge day={forecastDay} />}
+      {activity === undefined ? (
+        forecastDay !== undefined && <WeatherBadge day={forecastDay} />
+      ) : (
+        <span
+          className="mt-0.5 flex items-center gap-0.5 font-medium text-emerald-700 tabular-nums"
+          title={activity.name}
+        >
+          <CheckCircleIcon className="size-3.5 shrink-0" aria-label="Done" />
+          {activitySummary(activity)}
+        </span>
+      )}
     </>
   );
   const className = `flex w-full flex-col rounded border-l-4 border px-1.5 py-1 text-left text-[11px] leading-tight ${style.cardClass}`;
