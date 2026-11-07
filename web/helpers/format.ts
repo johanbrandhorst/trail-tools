@@ -32,13 +32,17 @@ export const formatDurationLong = (seconds: number): string => {
   return `${sign}${hours}:${pad(minutes)}:${pad(secs)}`;
 };
 
-// FormatHoursMinutes formats seconds as e.g. "3h 05m".
+/**
+ * FormatHoursMinutes formats seconds as e.g. "3h 05m", or "34 min" under an
+ * hour.
+ */
 export const formatHoursMinutes = (seconds: number): string => {
   const total = Math.round(seconds / 60);
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
+  // A lone "m" would read as meters next to distances and climbs.
   if (hours === 0) {
-    return `${minutes}m`;
+    return `${minutes} min`;
   }
   return `${hours}h ${pad(minutes)}m`;
 };
