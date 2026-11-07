@@ -1,9 +1,41 @@
+import BodyMap from "@components/strength/body-map";
+import { useQuery } from "@connectrpc/connect-query";
+import { skipToken } from "@tanstack/react-query";
 import type { Activity } from "gen/activities/v1/activities_pb";
+import { listExercises } from "gen/plans/v1/exercises-ExerciseService_connectquery";
+import { listWorkouts } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import { formatHoursMinutes, formatKm } from "helpers/format";
 import { sportLabel } from "helpers/labels";
 import { decodePolyline } from "helpers/polyline";
-import React from "react";
+import type { MuscleSet } from "helpers/strength";
+import { workoutMuscles } from "helpers/strength";
+import React, { useMemo } from "react";
 import { Link } from "react-router";
+
+/*
+ * STRENGTH_SPORTS are the sport types of strength training, as the server
+ * links them to strength workouts.
+ */
+const STRENGTH_SPORTS = new Set([
+  "WeightTraining",
+  "Workout",
+  "Crossfit",
+  "HighIntensityIntervalTraining",
+]);
+
+// IsStrength reports whether an activity is strength training.
+export const isStrength = (activity: Activity): boolean =>
+  STRENGTH_SPORTS.has(activity.sportType);
+
+/*
+ * MIN_DISTANCE_METERS is the distance below which an activity, like strength
+ * training, is shown by its time rather than its distance.
+ */
+const MIN_DISTANCE_METERS = 50;
+
+// HasDistance reports whether an activity went anywhere.
+export const hasDistance = (activity: Activity): boolean =>
+  activity.distanceMeters >= MIN_DISTANCE_METERS;
 
 interface ActivityChipProps {
   activity: Activity;
@@ -18,9 +50,15 @@ export const ActivityChip: React.FC<ActivityChipProps> = ({ activity }) => (
   >
     <span className="truncate font-medium">{activity.name}</span>
     <span className="tabular-nums text-gray-500">
-      {formatKm(activity.distanceMeters)}
-      {activity.elevationGainMeters > 0 &&
-        ` · ${Math.round(activity.elevationGainMeters)} m`}
+      {hasDistance(activity) ? (
+        <>
+          {formatKm(activity.distanceMeters)}
+          {activity.elevationGainMeters > 0 &&
+            ` · ${Math.round(activity.elevationGainMeters)} m`}
+        </>
+      ) : (
+        formatHoursMinutes(activity.movingTimeSeconds)
+      )}
     </span>
   </Link>
 );
@@ -91,5 +129,92 @@ export const RouteThumbnail: React.FC<RouteThumbnailProps> = ({
       />
       <circle cx={startX} cy={startY} r={2.5} className="fill-ember" />
     </svg>
+  );
+};
+
+/**
+ * UseActivityMuscles returns the muscles the strength workouts completed by
+ * some activities worked, by activity ID. Activities aren't linked to
+ * workouts, but workouts are to the activity that completed them, so it
+ * lists the workouts of the days of the strength activities.
+ */
+export const useActivityMuscles = (
+  activities: Activity[]
+): Map<string, MuscleSet> => {
+  const dates = activities
+    .filter((activity) => isStrength(activity))
+    .map((activity) => activity.startDateLocal);
+  // Dates are YYYY-MM-DD, which sort as text.
+  dates.sort();
+  const [first] = dates;
+  const last = dates.at(-1);
+  const workouts = useQuery(
+    listWorkouts,
+    first === undefined || last === undefined
+      ? skipToken
+      : { endDate: last, startDate: first }
+  );
+  const exercises = useQuery(
+    listExercises,
+    first === undefined ? skipToken : {}
+  );
+  return useMemo(() => {
+    const result = new Map<string, MuscleSet>();
+    const library = new Map(
+      (exercises.data?.exercises ?? []).map((exercise) => [
+        exercise.id,
+        exercise,
+      ])
+    );
+    for (const workout of workouts.data?.workouts ?? []) {
+      if (
+        workout.completedActivityId === "" ||
+        workout.details.case !== "strength"
+      ) {
+        continue;
+      }
+      const worked = workout.details.value.exercises.flatMap((planned) => {
+        const exercise = library.get(planned.exerciseId);
+        return exercise === undefined ? [] : [exercise];
+      });
+      result.set(workout.completedActivityId, workoutMuscles(worked));
+    }
+    return result;
+  }, [workouts.data, exercises.data]);
+};
+
+interface ActivityThumbnailProps {
+  activity: Activity;
+  // The muscles the activity's strength workout worked, if known.
+  muscles?: MuscleSet | undefined;
+  size?: number;
+}
+
+/**
+ * ActivityThumbnail shows an activity at a glance: its route, or for
+ * strength training, the muscles its workout worked on a small figure.
+ */
+export const ActivityThumbnail: React.FC<ActivityThumbnailProps> = ({
+  activity,
+  muscles,
+  size = 48,
+}) => {
+  if (
+    !isStrength(activity) ||
+    decodePolyline(activity.summaryPolyline).length > 1
+  ) {
+    return <RouteThumbnail polyline={activity.summaryPolyline} size={size} />;
+  }
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded bg-violet-50 p-0.5"
+      style={{ height: size, width: size }}
+    >
+      <BodyMap
+        compact
+        className="h-full"
+        muscles={muscles ?? { primary: [], secondary: [] }}
+      />
+    </div>
   );
 };
