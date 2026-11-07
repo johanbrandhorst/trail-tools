@@ -79,6 +79,14 @@ const RunFuelingCard: React.FC<RunFuelingCardProps> = ({
             <p className="text-lg font-semibold text-gray-900 tabular-nums">
               {amountParts(amounts).join(" · ")}
             </p>
+            {amounts.sweatMl > 0 && (
+              <p className="text-gray-600 tabular-nums">
+                You&apos;ll sweat about {formatFluid(amounts.sweatMl)}
+                {amounts.sodiumLossMg > 0 &&
+                  `, losing ${Math.round(amounts.sodiumLossMg)} mg of sodium`}
+                {amounts.sodiumFromSweat ? ", which the sodium replaces." : "."}
+              </p>
+            )}
             <p className="text-gray-600">
               For about {formatHoursMinutes(amounts.expectedDurationSeconds)}
               {workout.details.case === "run" &&

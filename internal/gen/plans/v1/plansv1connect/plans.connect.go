@@ -72,6 +72,12 @@ const (
 	// TrainingPlanServiceGetWorkoutWeatherProcedure is the procedure name of the TrainingPlanService's
 	// GetWorkoutWeather RPC.
 	TrainingPlanServiceGetWorkoutWeatherProcedure = "/plans.v1.TrainingPlanService/GetWorkoutWeather"
+	// TrainingPlanServiceGetSweatProfileProcedure is the procedure name of the TrainingPlanService's
+	// GetSweatProfile RPC.
+	TrainingPlanServiceGetSweatProfileProcedure = "/plans.v1.TrainingPlanService/GetSweatProfile"
+	// TrainingPlanServiceSetSweatProfileProcedure is the procedure name of the TrainingPlanService's
+	// SetSweatProfile RPC.
+	TrainingPlanServiceSetSweatProfileProcedure = "/plans.v1.TrainingPlanService/SetSweatProfile"
 )
 
 var (
@@ -187,6 +193,20 @@ var (
 			Procedure:  TrainingPlanServiceGetWorkoutWeatherProcedure,
 		}
 	})
+	trainingPlanServiceGetSweatProfileSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("GetSweatProfile"),
+			Procedure:  TrainingPlanServiceGetSweatProfileProcedure,
+		}
+	})
+	trainingPlanServiceSetSweatProfileSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("SetSweatProfile"),
+			Procedure:  TrainingPlanServiceSetSweatProfileProcedure,
+		}
+	})
 )
 
 // TrainingPlanServiceClient is a client for the plans.v1.TrainingPlanService service.
@@ -242,6 +262,12 @@ type TrainingPlanServiceClient interface {
 	// Get the weather forecast for the day of a workout, with the forecast
 	// for each hour of the daytime.
 	GetWorkoutWeather(context.Context, *v1.GetWorkoutWeatherRequest) (*v1.GetWorkoutWeatherResponse, error)
+	// Get how the user sweats, which sets the sodium of runs' fueling.
+	GetSweatProfile(context.Context, *v1.GetSweatProfileRequest) (*v1.GetSweatProfileResponse, error)
+	// Replace how the user sweats. The user usually does this in the web
+	// app's settings, from a sweat test; only change it when they give their
+	// results.
+	SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error)
 }
 
 // NewTrainingPlanServiceClient constructs a client for the plans.v1.TrainingPlanService service.
@@ -303,6 +329,12 @@ type TrainingPlanServiceHandler interface {
 	// Get the weather forecast for the day of a workout, with the forecast
 	// for each hour of the daytime.
 	GetWorkoutWeather(context.Context, *v1.GetWorkoutWeatherRequest) (*v1.GetWorkoutWeatherResponse, error)
+	// Get how the user sweats, which sets the sodium of runs' fueling.
+	GetSweatProfile(context.Context, *v1.GetSweatProfileRequest) (*v1.GetSweatProfileResponse, error)
+	// Replace how the user sweats. The user usually does this in the web
+	// app's settings, from a sweat test; only change it when they give their
+	// results.
+	SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error)
 }
 
 // RegisterTrainingPlanServiceHandler registers svc as the plans.v1.TrainingPlanService
@@ -326,6 +358,8 @@ func RegisterTrainingPlanServiceHandler(server *connect.Server, svc TrainingPlan
 		connect.Method{Spec: trainingPlanServiceDeleteStrengthLogSpec(), Handler: adapter.deleteStrengthLog},
 		connect.Method{Spec: trainingPlanServiceListWorkoutWeatherSpec(), Handler: adapter.listWorkoutWeather},
 		connect.Method{Spec: trainingPlanServiceGetWorkoutWeatherSpec(), Handler: adapter.getWorkoutWeather},
+		connect.Method{Spec: trainingPlanServiceGetSweatProfileSpec(), Handler: adapter.getSweatProfile},
+		connect.Method{Spec: trainingPlanServiceSetSweatProfileSpec(), Handler: adapter.setSweatProfile},
 	)
 }
 
@@ -394,6 +428,14 @@ func (UnimplementedTrainingPlanServiceHandler) ListWorkoutWeather(context.Contex
 
 func (UnimplementedTrainingPlanServiceHandler) GetWorkoutWeather(context.Context, *v1.GetWorkoutWeatherRequest) (*v1.GetWorkoutWeatherResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.GetWorkoutWeather is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) GetSweatProfile(context.Context, *v1.GetSweatProfileRequest) (*v1.GetSweatProfileResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.GetSweatProfile is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.SetSweatProfile is not implemented")
 }
 
 type trainingPlanServiceClient struct {
@@ -523,6 +565,22 @@ func (c *trainingPlanServiceClient) ListWorkoutWeather(ctx context.Context, req 
 func (c *trainingPlanServiceClient) GetWorkoutWeather(ctx context.Context, req *v1.GetWorkoutWeatherRequest) (*v1.GetWorkoutWeatherResponse, error) {
 	var res v1.GetWorkoutWeatherResponse
 	if err := c.client.CallUnary(ctx, trainingPlanServiceGetWorkoutWeatherSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) GetSweatProfile(ctx context.Context, req *v1.GetSweatProfileRequest) (*v1.GetSweatProfileResponse, error) {
+	var res v1.GetSweatProfileResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceGetSweatProfileSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) SetSweatProfile(ctx context.Context, req *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error) {
+	var res v1.SetSweatProfileResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceSetSweatProfileSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -716,6 +774,30 @@ func (h trainingPlanServiceHandler) getWorkoutWeather(ctx context.Context, _ con
 		return err
 	}
 	res, err := h.svc.GetWorkoutWeather(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) getSweatProfile(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetSweatProfileRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetSweatProfile(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) setSweatProfile(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetSweatProfileRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetSweatProfile(ctx, &req)
 	if err != nil {
 		return err
 	}

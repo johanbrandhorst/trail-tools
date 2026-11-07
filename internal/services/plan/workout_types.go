@@ -628,7 +628,7 @@ func runFuelingToProto(w *plans.Workout) *plansv1.RunFueling {
 		SodiumMgPerHour:   f.SodiumMGPerHour,
 		Notes:             f.Notes,
 	}
-	if amounts, ok := f.Amounts(w.ExpectedDuration(), nil); ok {
+	if amounts, ok := w.FuelAmounts(nil); ok {
 		b.Amounts = fuelAmountsToProto(amounts)
 	}
 	return b.Build()
@@ -642,5 +642,8 @@ func fuelAmountsToProto(a plans.FuelAmounts) *plansv1.FuelAmounts {
 		SodiumMg:                   a.SodiumMG,
 		ApparentTemperatureCelsius: a.ApparentTemperatureCelsius,
 		HeatIncreasePercent:        int32(math.Round(a.HeatIncrease * 100)),
+		SweatMl:                    a.SweatML,
+		SodiumLossMg:               a.SodiumLossMG,
+		SodiumFromSweat:            a.SodiumFromSweat,
 	}.Build()
 }

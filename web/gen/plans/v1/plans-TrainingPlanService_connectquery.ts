@@ -134,3 +134,19 @@ export const listWorkoutWeather = TrainingPlanService.method.listWorkoutWeather;
  * @generated from rpc plans.v1.TrainingPlanService.GetWorkoutWeather
  */
 export const getWorkoutWeather = TrainingPlanService.method.getWorkoutWeather;
+
+/**
+ * Get how the user sweats, which sets the sodium of runs' fueling.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.GetSweatProfile
+ */
+export const getSweatProfile = TrainingPlanService.method.getSweatProfile;
+
+/**
+ * Replace how the user sweats. The user usually does this in the web
+ * app's settings, from a sweat test; only change it when they give their
+ * results.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.SetSweatProfile
+ */
+export const setSweatProfile = TrainingPlanService.method.setSweatProfile;

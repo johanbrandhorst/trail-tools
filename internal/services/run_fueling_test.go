@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect/v2"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -137,5 +138,71 @@ func TestUpdateWorkoutField(t *testing.T) {
 	wantCode(t, err, connect.CodeInvalidArgument)
 	if err != nil && !strings.Contains(err.Error(), `with the path "strength"`) {
 		t.Errorf("got %q, want it to say to send the whole strength field", err)
+	}
+}
+
+func TestSweatProfile(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	// Without a profile, it's empty.
+	got, err := e.plans.GetSweatProfile(ctx, &plansv1.GetSweatProfileRequest{})
+	if err != nil || got.GetProfile().HasSodiumMgPerLiter() || got.GetProfile().HasUpdateTime() {
+		t.Fatalf("got %v (%v), want an empty profile", got.GetProfile(), err)
+	}
+	// Mistaken units are refused, saying how to convert.
+	_, err = e.plans.SetSweatProfile(ctx, plansv1.SetSweatProfileRequest_builder{
+		Profile: plansv1.SweatProfile_builder{SodiumMgPerLiter: proto.Float64(45)}.Build(),
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	if err != nil && !strings.Contains(err.Error(), "multiply by 23") {
+		t.Errorf("got %q, want it to say how to convert mmol/L", err)
+	}
+	set, err := e.plans.SetSweatProfile(ctx, plansv1.SetSweatProfileRequest_builder{
+		Profile: plansv1.SweatProfile_builder{SodiumMgPerLiter: proto.Float64(1000)}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatalf("SetSweatProfile: %v", err)
+	}
+	if p := set.GetProfile(); p.GetSodiumMgPerLiter() != 1000 || p.HasRateMlPerHour() || !p.HasUpdateTime() {
+		t.Errorf("got profile %v, want 1000 mg/L with the default rate", p)
+	}
+
+	// A run with carbs but no sodium rate replaces the sodium lost in sweat.
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
+		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: today.Format(time.DateOnly), EndDate: today.AddDate(0, 0, 30).Format(time.DateOnly)}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId: plan.GetPlan().GetId(),
+		Workouts: []*plansv1.Workout{plansv1.Workout_builder{
+			Date: today.AddDate(0, 0, 1).Format(time.DateOnly), StartTime: "12:00", StartWindowMinutes: 15, Title: "Long run",
+			Location: geov1.LatLng_builder{Lat: 0.3, Lng: 0.01}.Build(),
+			Run: plansv1.RunWorkout_builder{
+				Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetDurationSeconds: 3 * 3600,
+				Fueling: plansv1.RunFueling_builder{CarbsGramsPerHour: 60}.Build(),
+			}.Build(),
+		}.Build()},
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateWorkouts: %v", err)
+	}
+	w := created.GetWorkouts()[0]
+	// At mild temperatures: 800 ml an hour for three hours.
+	if a := w.GetRun().GetFueling().GetAmounts(); a.GetSweatMl() != 2400 || a.GetSodiumLossMg() != 2400 || a.GetSodiumMg() != 2400 || !a.GetSodiumFromSweat() {
+		t.Errorf("got amounts %v, want 2400 ml of sweat and its 2400 mg of sodium", a)
+	}
+	// In the forecast, it feels like up to 20 degrees during the run: 25%
+	// more sweat, and the sodium in it.
+	weather, err := e.plans.GetWorkoutWeather(ctx, plansv1.GetWorkoutWeatherRequest_builder{WorkoutId: w.GetId()}.Build())
+	if err != nil {
+		t.Fatalf("GetWorkoutWeather: %v", err)
+	}
+	if a := weather.GetWeather().GetFueling(); a.GetSweatMl() != 3000 || a.GetSodiumMg() != 3000 || !a.GetSodiumFromSweat() {
+		t.Errorf("got amounts in the heat %v, want 3000 ml of sweat and its 3000 mg of sodium", a)
 	}
 }

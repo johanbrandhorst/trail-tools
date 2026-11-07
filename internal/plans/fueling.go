@@ -61,6 +61,39 @@ type FuelAmounts struct {
 	// How much fluid and sodium are raised for the heat, from 0 to
 	// maxHeatIncrease.
 	HeatIncrease float64
+	// From the user's sweat profile, if they have one: how much they're
+	// expected to sweat during the run, and the sodium they lose in it,
+	// 0 if their sweat's sodium is unknown.
+	SweatML      float64
+	SodiumLossMG float64
+	// Whether SodiumMG replaces the sodium lost in sweat, as the run's
+	// fueling has no sodium rate of its own.
+	SodiumFromSweat bool
+}
+
+// FuelAmounts returns the amounts to eat and drink during a run, adjusted
+// for the apparent temperature in degrees Celsius if it's not nil, with the
+// user's sweat losses if they have a sweat profile. Without a sodium rate of
+// the run's own, its sodium replaces what the user loses in sweat. It
+// reports false if the run has no fueling plan, or its time can't be
+// estimated.
+func (w *Workout) FuelAmounts(apparentCelsius *float64) (FuelAmounts, bool) {
+	if w.RunFueling == nil {
+		return FuelAmounts{}, false
+	}
+	a, ok := w.RunFueling.Amounts(w.ExpectedDuration(), apparentCelsius)
+	if !ok || w.Sweat == nil {
+		return a, ok
+	}
+	hours := a.ExpectedDuration.Hours()
+	a.SweatML = math.Round(w.Sweat.SweatRate(apparentCelsius, w.Type == WorkoutTypeIntensity)*hours/50) * 50
+	if w.Sweat.SodiumMGPerLiter > 0 {
+		a.SodiumLossMG = math.Round(a.SweatML/1000*w.Sweat.SodiumMGPerLiter/50) * 50
+		if w.RunFueling.SodiumMGPerHour == 0 {
+			a.SodiumMG, a.SodiumFromSweat = a.SodiumLossMG, true
+		}
+	}
+	return a, true
 }
 
 // HeatIncrease returns how much to raise fluid and sodium for an apparent

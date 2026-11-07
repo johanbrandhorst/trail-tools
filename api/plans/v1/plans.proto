@@ -75,6 +75,12 @@ service TrainingPlanService {
   // Get the weather forecast for the day of a workout, with the forecast
   // for each hour of the daytime.
   rpc GetWorkoutWeather(GetWorkoutWeatherRequest) returns (GetWorkoutWeatherResponse);
+  // Get how the user sweats, which sets the sodium of runs' fueling.
+  rpc GetSweatProfile(GetSweatProfileRequest) returns (GetSweatProfileResponse);
+  // Replace how the user sweats. The user usually does this in the web
+  // app's settings, from a sweat test; only change it when they give their
+  // results.
+  rpc SetSweatProfile(SetSweatProfileRequest) returns (SetSweatProfileResponse);
 }
 
 // A training plan.
@@ -285,7 +291,9 @@ message RunFueling {
   // 1500. It's raised for the heat in the forecast. 0 if none.
   double fluid_ml_per_hour = 2;
   // Sodium to take in milligrams per hour at mild temperatures, from 0 to
-  // 2000, raised with the fluid in the heat. 0 if none.
+  // 2000, raised with the fluid in the heat. 0 if none, or to replace what
+  // the user loses in sweat if they have a SweatProfile with their sweat's
+  // sodium: leave it 0 for that.
   double sodium_mg_per_hour = 3;
   // Notes, e.g. what to carry: "Two gels and a 500 ml soft flask, refill
   // at the creek".
@@ -312,8 +320,19 @@ message FuelAmounts {
   optional double apparent_temperature_celsius = 5;
   // How much fluid and sodium are raised for the heat, in percent: 5% for
   // each degree the apparent temperature is above 15 degrees Celsius, up to
-  // 50%. 0 if they aren't.
+  // 50%. 0 if they aren't. Not applied to sodium from sweat, whose sweat
+  // estimate has the heat already.
   int32 heat_increase_percent = 6;
+  // How much the user is expected to sweat during the run in milliliters,
+  // from their sweat profile, see SweatProfile. 0 if they haven't set one.
+  double sweat_ml = 7;
+  // The sodium the user is expected to lose in that sweat in milligrams. 0
+  // if their sweat's sodium is unknown.
+  double sodium_loss_mg = 8;
+  // Whether sodium_mg replaces the sodium lost in sweat, as the run's
+  // fueling has no sodium rate of its own. Otherwise it's from the run's
+  // rate, and sodium_loss_mg is for comparison.
+  bool sodium_from_sweat = 9;
 }
 
 // A block of a structured run: its steps, done once or repeated.
@@ -867,6 +886,44 @@ message ListWorkoutWeatherRequest {
 message ListWorkoutWeatherResponse {
   // The forecasts of the workouts that have one, in date order.
   repeated WorkoutWeather weather = 1;
+}
+
+// How the user sweats. With it, a run's fueling estimates how much the user
+// sweats on the run, from their sweat rate, the forecast's apparent
+// temperature and how hard the run is, and the sodium they lose in it. A
+// run whose fueling has no sodium rate of its own replaces that sodium.
+message SweatProfile {
+  // How much sodium a liter of the user's sweat has in milligrams, from a
+  // sweat test, from 100 to 4000. Typically 200 to 2000; salty sweaters
+  // are above 1000. Unset if unknown. Tests that report mmol/L: multiply
+  // by 23.
+  optional double sodium_mg_per_liter = 1;
+  // How many milliliters an hour the user sweats running easy at mild
+  // temperatures, from 200 to 3000, e.g. weighed before and after an hour's
+  // run: each kilogram lost is a liter, plus what they drank. Unset if
+  // unmeasured: 800 ml an hour is assumed. It rises 5% for each degree the
+  // run feels above 15 degrees Celsius, up to double, falls 2% for each
+  // degree below, down to 60%, and is 20% higher for hard runs.
+  optional double rate_ml_per_hour = 2;
+  // When the profile was last set. Unset if it never was.
+  google.protobuf.Timestamp update_time = 3 [(mcp.v1.field).output_only = true];
+}
+
+message GetSweatProfileRequest {}
+
+message GetSweatProfileResponse {
+  // The user's sweat profile, empty if they haven't set one.
+  SweatProfile profile = 1;
+}
+
+message SetSweatProfileRequest {
+  // The user's sweat profile, replacing the earlier one.
+  SweatProfile profile = 1;
+}
+
+message SetSweatProfileResponse {
+  // The user's sweat profile.
+  SweatProfile profile = 1;
 }
 
 message GetWorkoutWeatherRequest {

@@ -115,6 +115,9 @@ type Workout struct {
 	LactateTest bool
 	// What to eat and drink during a run. Nil if it has no fueling plan.
 	RunFueling *RunFueling
+	// The user's sweat profile, read with the workout, for the sodium of
+	// runs. Nil if they haven't set one.
+	Sweat *SweatProfile
 	// The token of the workout's share link, empty if it isn't shared.
 	ShareToken string
 	// The exercises of a strength workout, in order. Nil for other types.

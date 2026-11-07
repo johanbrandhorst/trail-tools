@@ -201,7 +201,7 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 				for _, h := range during[1:] {
 					hottest = math.Max(hottest, h.ApparentTemperature)
 				}
-				if amounts, ok := w.RunFueling.Amounts(w.ExpectedDuration(), &hottest); ok {
+				if amounts, ok := w.FuelAmounts(&hottest); ok {
 					b.Fueling = fuelAmountsToProto(amounts)
 				}
 			}
