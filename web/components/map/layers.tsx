@@ -5,7 +5,13 @@ import type {
   LeafletMouseEvent,
 } from "leaflet";
 import * as leaflet from "leaflet";
-import React, { useEffect, useEffectEvent, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useMap } from "./map-view";
 
@@ -164,6 +170,9 @@ const ARROW_MIN_ZOOM = 14;
  */
 const ARROW_SPACING = 90;
 
+// ARROW_BASE_METERS is the shortest spacing of direction arrows along a line.
+const ARROW_BASE_METERS = 25;
+
 // MAX_ARROWS limits the arrows drawn at once, for very long lines.
 const MAX_ARROWS = 300;
 
@@ -179,57 +188,91 @@ interface ArrowMarkersProps {
  */
 export const DirectionArrows: React.FC<ArrowMarkersProps> = ({ positions }) => {
   const map = useMap();
+  // The distance along the line to each of its points, in meters.
+  const distances = useMemo(() => {
+    const result = [0];
+    for (let index = 1; index < positions.length; index++) {
+      const from = positions[index - 1] ?? [0, 0];
+      const to = positions[index] ?? [0, 0];
+      result.push((result.at(-1) ?? 0) + map.distance(from, to));
+    }
+    return result;
+  }, [map, positions]);
   useEffect(() => {
     const group = leaflet.layerGroup().addTo(map);
     const draw = () => {
       group.clearLayers();
-      if (map.getZoom() < ARROW_MIN_ZOOM || positions.length < 2) {
+      const zoom = map.getZoom();
+      const total = distances.at(-1) ?? 0;
+      if (zoom < ARROW_MIN_ZOOM || positions.length < 2 || total === 0) {
         return;
       }
+      /*
+       * The arrows are at whole multiples of a spacing along the line, so
+       * they stay in place as the map zooms: the spacing closest to
+       * ARROW_SPACING on screen of 25 m doubled any number of times, so
+       * zooming in adds arrows between them and zooming out takes every
+       * other away.
+       */
+      const [lat] = positions[0] ?? [0, 0];
+      const metersPerPixel =
+        (40_075_016 * Math.cos((lat * Math.PI) / 180)) / 2 ** (zoom + 8);
+      const spacing =
+        ARROW_BASE_METERS *
+        2 **
+          Math.max(
+            0,
+            Math.round(
+              Math.log2((ARROW_SPACING * metersPerPixel) / ARROW_BASE_METERS)
+            )
+          );
       // Only arrows in or just around the view are drawn.
       const view = map.getBounds().pad(0.2);
-      let previous = map.latLngToLayerPoint(positions[0] ?? [0, 0]);
-      // The first arrow is half a spacing in, away from the start marker.
-      let next = ARROW_SPACING / 2;
-      let travelled = 0;
+      let segment = 1;
       let count = 0;
-      for (const position of positions.slice(1)) {
-        const point = map.latLngToLayerPoint(position);
-        const length = previous.distanceTo(point);
-        // Each arrow due within this segment, as next moves on.
-        while (travelled + length >= next && count < MAX_ARROWS) {
-          if (length === 0) {
-            break;
-          }
-          const along = (next - travelled) / length;
-          const at = map.layerPointToLatLng(
-            previous.add(point.subtract(previous).multiplyBy(along))
-          );
-          if (view.contains(at)) {
-            const angle =
-              (Math.atan2(point.y - previous.y, point.x - previous.x) * 180) /
-              Math.PI;
-            const arrow = document.createElement("div");
-            arrow.className = "direction-arrow";
-            arrow.style.transform = `rotate(${angle}deg)`;
-            group.addLayer(
-              leaflet.marker(at, {
-                icon: leaflet.divIcon({
-                  className: "",
-                  html: arrow,
-                  iconAnchor: [7, 7],
-                  iconSize: [14, 14],
-                }),
-                interactive: false,
-                keyboard: false,
-              })
-            );
-            count += 1;
-          }
-          next += ARROW_SPACING;
+      for (
+        let along = spacing;
+        along < total && count < MAX_ARROWS;
+        along += spacing
+      ) {
+        while ((distances[segment] ?? total) < along) {
+          segment += 1;
         }
-        travelled += length;
-        previous = point;
+        const from = positions[segment - 1];
+        const to = positions[segment];
+        const start = distances[segment - 1] ?? 0;
+        const length = (distances[segment] ?? start) - start;
+        if (from === undefined || to === undefined || length === 0) {
+          continue;
+        }
+        const fraction = (along - start) / length;
+        const at = leaflet.latLng(
+          from[0] + (to[0] - from[0]) * fraction,
+          from[1] + (to[1] - from[1]) * fraction
+        );
+        if (!view.contains(at)) {
+          continue;
+        }
+        const tail = map.latLngToLayerPoint(from);
+        const head = map.latLngToLayerPoint(to);
+        const angle =
+          (Math.atan2(head.y - tail.y, head.x - tail.x) * 180) / Math.PI;
+        const arrow = document.createElement("div");
+        arrow.className = "direction-arrow";
+        arrow.style.transform = `rotate(${angle}deg)`;
+        group.addLayer(
+          leaflet.marker(at, {
+            icon: leaflet.divIcon({
+              className: "",
+              html: arrow,
+              iconAnchor: [7, 7],
+              iconSize: [14, 14],
+            }),
+            interactive: false,
+            keyboard: false,
+          })
+        );
+        count += 1;
       }
     };
     draw();
@@ -238,7 +281,7 @@ export const DirectionArrows: React.FC<ArrowMarkersProps> = ({ positions }) => {
       map.off("zoomend moveend", draw);
       group.remove();
     };
-  }, [map, positions]);
+  }, [map, positions, distances]);
   return null;
 };
 
