@@ -617,7 +617,7 @@ func fuelingLine(w *plans.Workout) string {
 	if w.RunFueling == nil {
 		return ""
 	}
-	a, ok := w.RunFueling.Amounts(w.ExpectedDuration(), nil)
+	a, ok := w.FuelAmounts(nil)
 	if !ok {
 		return ""
 	}

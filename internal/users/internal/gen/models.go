@@ -1652,6 +1652,13 @@ type StrengthLogSet struct {
 	Stiffness   string
 }
 
+type SweatProfile struct {
+	UserID           pgtype.UUID
+	SodiumMgPerLiter pgtype.Float8
+	RateMlPerHour    pgtype.Float8
+	UpdateTime       pgtype.Timestamptz
+}
+
 type TrainingPlan struct {
 	ID          pgtype.UUID
 	UserID      pgtype.UUID

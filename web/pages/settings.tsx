@@ -7,6 +7,7 @@ import Invitations from "@components/settings/invitations";
 import Passkeys from "@components/settings/passkeys";
 import PrivacyZonesCard from "@components/settings/privacy-zones";
 import PublicProfileCard from "@components/settings/public-profile";
+import SweatProfileCard from "@components/settings/sweat-profile";
 import StravaCard from "@components/strava/strava-card";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
@@ -264,6 +265,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => (
       </div>
       <div className="flex flex-col gap-4">
         <PublicProfileCard />
+        <SweatProfileCard />
         <PrivacyZonesCard />
         <CalendarFeedCard />
         <ApiTokens />

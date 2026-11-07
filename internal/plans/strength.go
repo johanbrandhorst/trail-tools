@@ -610,12 +610,14 @@ type workoutReader struct {
 	logExercises []*gen.ListStrengthLogExercisesRow
 	logSets      []*gen.StrengthLogSet
 	home         *HomeEquipment
+	sweat        *SweatProfile
 }
 
 // queue queues the queries of the strength exercises and logs of the
 // workouts f selects. The caller queues the query of the workouts.
 func (wr *workoutReader) queue(ctx context.Context, b *store.Batch, f workoutFilter) {
 	queueHomeEquipment(ctx, b, f.userID, &wr.home)
+	queueSweatProfile(ctx, b, f.userID, &wr.sweat)
 	b.Read(func(db store.Querier) error {
 		var err error
 		wr.exercises, err = gen.New(db).ListWorkoutExercises(ctx, &gen.ListWorkoutExercisesParams{
@@ -727,6 +729,7 @@ func (wr *workoutReader) workouts() []*Workout {
 		if w.Type == WorkoutTypeStrength {
 			w.EquipmentIssues = EquipmentIssues(w.Exercises, wr.home)
 		}
+		w.Sweat = wr.sweat
 		result[i] = w
 	}
 	return result

@@ -433,7 +433,9 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
             <p className="text-xs text-gray-500">
               The amounts to carry are worked out from the run&apos;s time, or
               its distance and climb, and fluid and sodium are raised for the
-              heat in the forecast. Leave empty for no fueling plan.
+              heat in the forecast. Leave empty for no fueling plan. With your
+              sweat sodium in Settings, leave sodium empty to replace what you
+              sweat out.
             </p>
           </fieldset>
         )}
