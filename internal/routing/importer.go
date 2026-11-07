@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/johanbrandhorst/trail-tools/internal/elevation"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/elevation"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 )
 
 // ImportConfig describes an OpenStreetMap import.

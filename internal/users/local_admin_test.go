@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
-	"github.com/johanbrandhorst/trail-tools/internal/users"
+	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
+	"github.com/bs-tools/trailrunn.ing/internal/users"
 )
 
 func TestLocalAdmin(t *testing.T) {

@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bs-tools/trailrunn.ing/internal/activities"
+	"github.com/bs-tools/trailrunn.ing/internal/garmin"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	"github.com/bs-tools/trailrunn.ing/internal/routes"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/activities"
-	"github.com/johanbrandhorst/trail-tools/internal/garmin"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/plans"
-	"github.com/johanbrandhorst/trail-tools/internal/routes"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // RouteRepository reads the routes of workouts.

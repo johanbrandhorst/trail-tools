@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // Thresholds used by the rules.

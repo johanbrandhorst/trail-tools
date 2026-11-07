@@ -7,7 +7,7 @@
 package usersv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1401,9 +1401,9 @@ const file_users_v1_users_proto_rawDesc = "" +
 	"\fUploadAvatar\x12\x1d.users.v1.UploadAvatarRequest\x1a\x1e.users.v1.UploadAvatarResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12U\n" +
 	"\fDeleteAvatar\x12\x1d.users.v1.DeleteAvatarRequest\x1a\x1e.users.v1.DeleteAvatarResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12a\n" +
 	"\x10ListPrivacyZones\x12!.users.v1.ListPrivacyZonesRequest\x1a\".users.v1.ListPrivacyZonesResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12^\n" +
-	"\x0fSetPrivacyZones\x12 .users.v1.SetPrivacyZonesRequest\x1a!.users.v1.SetPrivacyZonesResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa1\x01\n" +
+	"\x0fSetPrivacyZones\x12 .users.v1.SetPrivacyZonesRequest\x1a!.users.v1.SetPrivacyZonesResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x9c\x01\n" +
 	"\fcom.users.v1B\n" +
-	"UsersProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/users/v1;usersv1\xa2\x02\x03UXX\xaa\x02\bUsers.V1\xca\x02\bUsers\\V1\xe2\x02\x14Users\\V1\\GPBMetadata\xea\x02\tUsers::V1b\x06proto3"
+	"UsersProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/users/v1;usersv1\xa2\x02\x03UXX\xaa\x02\bUsers.V1\xca\x02\bUsers\\V1\xe2\x02\x14Users\\V1\\GPBMetadata\xea\x02\tUsers::V1b\x06proto3"
 
 var file_users_v1_users_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_users_v1_users_proto_goTypes = []any{

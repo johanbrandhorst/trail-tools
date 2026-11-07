@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	"github.com/bs-tools/trailrunn.ing/internal/garmin"
 )
 
 // newClient returns a client of a fake Garmin API served by handler.

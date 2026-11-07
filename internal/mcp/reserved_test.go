@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
 )
 
 func TestCheckRemovedFields(t *testing.T) {

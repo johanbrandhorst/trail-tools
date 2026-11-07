@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect/v2"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )

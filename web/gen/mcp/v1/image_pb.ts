@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file mcp/v1/image.proto.
  */
 export const file_mcp_v1_image: GenFile = /*@__PURE__*/
-  fileDesc("ChJtY3AvdjEvaW1hZ2UucHJvdG8SBm1jcC52MSIoCgVJbWFnZRIRCgltaW1lX3R5cGUYASABKAkSDAoEZGF0YRgCIAEoDEKTAQoKY29tLm1jcC52MUIKSW1hZ2VQcm90b1ABWkBnaXRodWIuY29tL2pvaGFuYnJhbmRob3JzdC90cmFpbC10b29scy9pbnRlcm5hbC9nZW4vbWNwL3YxO21jcHYxogIDTVhYqgIGTWNwLlYxygIGTWNwXFYx4gISTWNwXFYxXEdQQk1ldGFkYXRh6gIHTWNwOjpWMWIGcHJvdG8z");
+  fileDesc("ChJtY3AvdjEvaW1hZ2UucHJvdG8SBm1jcC52MSIoCgVJbWFnZRIRCgltaW1lX3R5cGUYASABKAkSDAoEZGF0YRgCIAEoDEKOAQoKY29tLm1jcC52MUIKSW1hZ2VQcm90b1ABWjtnaXRodWIuY29tL2JzLXRvb2xzL3RyYWlscnVubi5pbmcvaW50ZXJuYWwvZ2VuL21jcC92MTttY3B2MaICA01YWKoCBk1jcC5WMcoCBk1jcFxWMeICEk1jcFxWMVxHUEJNZXRhZGF0YeoCB01jcDo6VjFiBnByb3RvMw");
 
 /**
  * An image in a response. MCP tools return the images in a response's

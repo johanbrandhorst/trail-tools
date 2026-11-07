@@ -5,7 +5,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
 	"google.golang.org/protobuf/proto"
 )
 

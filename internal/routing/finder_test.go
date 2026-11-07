@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/routing"
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/routing"
+	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
 )
 
 func TestFinder(t *testing.T) {

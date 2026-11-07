@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
 )
 
 // WebhookPath is the path below which Garmin sends notifications, to a

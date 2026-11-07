@@ -10,11 +10,11 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bs-tools/trailrunn.ing/internal/html"
+	"github.com/bs-tools/trailrunn.ing/internal/photos"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/trips"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/html"
-	"github.com/johanbrandhorst/trail-tools/internal/photos"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/trips"
 )
 
 // PhotoHandler serves photos at /photos/<id>/<size>.jpg, where size is

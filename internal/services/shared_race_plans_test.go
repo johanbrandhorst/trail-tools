@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

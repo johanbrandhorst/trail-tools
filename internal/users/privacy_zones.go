@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/users/internal/gen"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/users/internal/gen"
 )
 
 // PrivacyZone is a circle around a place, like the user's home, within which

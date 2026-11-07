@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/routing"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/routing"
 )
 
 // Router routes paths along mapped trails and roads, such as the routing

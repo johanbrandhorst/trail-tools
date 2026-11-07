@@ -14,14 +14,14 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
+	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	routingv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routing/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/routing"
+	mapdatasvc "github.com/bs-tools/trailrunn.ing/internal/services/mapdata"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
-	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
-	routingv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routing/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/routing"
-	mapdatasvc "github.com/johanbrandhorst/trail-tools/internal/services/mapdata"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // fakeExtracts has two extracts south of 60 degrees, Testland and

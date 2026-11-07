@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
-	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	"google.golang.org/protobuf/proto"
 )
 

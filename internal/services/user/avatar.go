@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	"github.com/johanbrandhorst/trail-tools/internal/blob"
-	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/images"
-	"github.com/johanbrandhorst/trail-tools/internal/users"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/blob"
+	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/images"
+	"github.com/bs-tools/trailrunn.ing/internal/users"
 )
 
 const (

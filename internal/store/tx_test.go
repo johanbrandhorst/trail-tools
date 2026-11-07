@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
 )
 
 func TestReadSnapshot(t *testing.T) {

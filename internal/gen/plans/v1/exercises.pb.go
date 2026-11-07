@@ -7,7 +7,7 @@
 package plansv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -2935,8 +2935,8 @@ const file_plans_v1_exercises_proto_rawDesc = "" +
 	"\x10GetHomeEquipment\x12!.plans.v1.GetHomeEquipmentRequest\x1a\".plans.v1.GetHomeEquipmentResponse\x12Y\n" +
 	"\x10SetHomeEquipment\x12!.plans.v1.SetHomeEquipmentRequest\x1a\".plans.v1.SetHomeEquipmentResponse\x12h\n" +
 	"\x15SearchGarminExercises\x12&.plans.v1.SearchGarminExercisesRequest\x1a'.plans.v1.SearchGarminExercisesResponse\x12S\n" +
-	"\x0eListStockPoses\x12\x1f.plans.v1.ListStockPosesRequest\x1a .plans.v1.ListStockPosesResponseB\xa5\x01\n" +
-	"\fcom.plans.v1B\x0eExercisesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
+	"\x0eListStockPoses\x12\x1f.plans.v1.ListStockPosesRequest\x1a .plans.v1.ListStockPosesResponseB\xa0\x01\n" +
+	"\fcom.plans.v1B\x0eExercisesProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_exercises_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_plans_v1_exercises_proto_msgTypes = make([]protoimpl.MessageInfo, 28)

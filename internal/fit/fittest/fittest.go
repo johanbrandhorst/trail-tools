@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/bs-tools/trailrunn.ing/internal/fit"
 )
 
 // Message is a decoded data message: its global number and the raw bytes of

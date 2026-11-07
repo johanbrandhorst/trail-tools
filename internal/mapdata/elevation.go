@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // Elevation looks up ground elevations, e.g. an elevation.DEM.

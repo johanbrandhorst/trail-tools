@@ -3,7 +3,7 @@ package route
 import (
 	"testing"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // east returns the point meters east of p.

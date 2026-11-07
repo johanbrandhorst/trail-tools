@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	"github.com/johanbrandhorst/trail-tools/internal/fit"
-	"github.com/johanbrandhorst/trail-tools/internal/plans"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/fit"
+	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 )
 
 // unsafeFilenameChars matches characters that are replaced in download file

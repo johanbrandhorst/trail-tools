@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/services/plan"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/services/plan"
 )
 
 func TestSharedWorkout(t *testing.T) {
