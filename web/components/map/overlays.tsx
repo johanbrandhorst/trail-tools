@@ -157,9 +157,7 @@ export const HeatmapOverlay: React.FC<OverlayProps> = ({ viewport }) => {
   }, [map, layer]);
   useEffect(() => {
     if (data !== undefined) {
-      layer.setTracks(
-        data.polylines.map((polyline) => decodePolyline(polyline))
-      );
+      layer.setTracks(data.polylines);
     }
   }, [layer, data]);
 
@@ -172,6 +170,13 @@ export const HeatmapOverlay: React.FC<OverlayProps> = ({ viewport }) => {
  * the canvas rather than drawing it again.
  */
 const HEAT_PADDING = 0.5;
+
+/*
+ * SLICE_MS is how long the heatmap works on drawing in each frame, so that
+ * drawing a thousand tracks never stalls the page: on a phone that can take
+ * seconds.
+ */
+const SLICE_MS = 6;
 
 // MAX_LAT is the latitude spherical Mercator is limited to, as Leaflet's.
 const MAX_LAT = 85.051_128_779_8;
@@ -189,169 +194,265 @@ interface ProjectedTrack {
   maxY: number;
 }
 
+// Drawing is a drawing of the tracks in progress.
+interface Drawing {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  zoom: number;
+  // The drawn area in projected pixels at the zoom.
+  area: leaflet.Bounds;
+  // The next track to draw.
+  next: number;
+}
+
+/**
+ * Project projects a track's points to pixels at a scale, as Leaflet's
+ * spherical Mercator does, inline, without an object for each point.
+ */
+const project = (
+  points: leaflet.LatLngTuple[],
+  scale: number
+): ProjectedTrack => {
+  const xs = new Float64Array(points.length);
+  const ys = new Float64Array(points.length);
+  let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [index, [lat, lng]] of points.entries()) {
+    const px = (lng / 360 + 0.5) * scale;
+    const sin = Math.sin(Math.max(-MAX_LAT, Math.min(MAX_LAT, lat)) * DEGREE);
+    const py = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
+    xs[index] = px;
+    ys[index] = py;
+    minX = Math.min(minX, px);
+    minY = Math.min(minY, py);
+    maxX = Math.max(maxX, px);
+    maxY = Math.max(maxY, py);
+  }
+  return { maxX, maxY, minX, minY, xs, ys };
+};
+
 /**
  * HeatmapLayer draws tracks as thin translucent lines on its own canvas,
- * each stroked on its own so they darken where they overlap. It's much
- * faster than a Leaflet line per track for the thousand tracks of a
- * heatmap: the tracks are projected once per zoom, only those in the
- * canvas are drawn, and the canvas, half a view larger than the view on
- * each side, is only drawn again once the map moves past that or zooms.
+ * each stroked on its own so they darken where they overlap. A thousand
+ * tracks are too many to draw at once without stalling a phone, so:
+ *
+ * - The canvas reaches half a view beyond the view on each side, and is
+ *   only drawn again once the map moves past that or zooms.
+ * - Tracks are decoded and projected only when drawn, once per zoom.
+ * - Drawing is done a few milliseconds per frame into a hidden canvas,
+ *   which replaces the shown one when done, and waits while the map is
+ *   being moved or zoomed, so it never interrupts a gesture.
+ * - Points less than a pixel from the last one drawn are skipped.
+ *
  * It's drawn at one pixel per CSS pixel, which thin translucent lines
  * don't need more than, keeping the canvas small enough for phones.
  */
 class HeatmapLayer extends leaflet.Layer {
-  private tracks: leaflet.LatLngTuple[][] = [];
-  private projected: ProjectedTrack[] = [];
+  private encoded: string[] = [];
+  private decoded: (leaflet.LatLngTuple[] | undefined)[] = [];
+  private projected: (ProjectedTrack | undefined)[] = [];
   private projectedZoom = Number.NaN;
-  private canvas: HTMLCanvasElement | undefined;
-  // The drawn area in projected pixels at the drawn zoom, if drawn.
-  private drawn: leaflet.Bounds | undefined;
-  private drawnZoom = Number.NaN;
+  private shown: HTMLCanvasElement | undefined;
+  // The area and zoom of the shown canvas, if it's drawn.
+  private shownArea: leaflet.Bounds | undefined;
+  private shownZoom = Number.NaN;
+  private drawing: Drawing | undefined;
+  private frame = 0;
+  private moving = false;
   private map: leaflet.Map | undefined;
 
   override onAdd(map: leaflet.Map): this {
-    const canvas = leaflet.DomUtil.create(
-      "canvas",
-      "leaflet-zoom-hide pointer-events-none"
-    );
-    map.getPanes().overlayPane.append(canvas);
-    this.canvas = canvas;
     this.map = map;
-    this.drawn = undefined;
-    map.on("moveend", this.update);
+    this.shown = undefined;
+    this.shownArea = undefined;
+    map.on("movestart zoomstart", this.onMoveStart);
+    map.on("moveend", this.onMoveEnd);
     map.on("resize", this.redraw);
     this.update();
     return this;
   }
 
   override onRemove(map: leaflet.Map): this {
-    map.off("moveend", this.update);
+    map.off("movestart zoomstart", this.onMoveStart);
+    map.off("moveend", this.onMoveEnd);
     map.off("resize", this.redraw);
-    this.canvas?.remove();
-    this.canvas = undefined;
+    cancelAnimationFrame(this.frame);
+    this.drawing = undefined;
+    this.shown?.remove();
+    this.shown = undefined;
     this.map = undefined;
     return this;
   }
 
-  // SetTracks replaces the tracks, and draws them.
-  setTracks(tracks: leaflet.LatLngTuple[][]): void {
-    this.tracks = tracks;
-    this.projectedZoom = Number.NaN;
+  // SetTracks replaces the tracks, as encoded polylines, and draws them.
+  setTracks(encoded: string[]): void {
+    this.encoded = encoded;
+    this.decoded = [];
+    this.projected = [];
+    // A drawing in progress is of the old tracks.
+    this.drawing = undefined;
     this.redraw();
   }
 
-  // Redraw draws the tracks again.
-  private readonly redraw = (): void => {
-    this.drawn = undefined;
+  private readonly onMoveStart = (): void => {
+    this.moving = true;
+  };
+
+  private readonly onMoveEnd = (): void => {
+    this.moving = false;
     this.update();
   };
 
-  // Update draws the tracks if the view isn't within the drawn area.
-  private readonly update = (): void => {
+  // Redraw draws the tracks again.
+  private readonly redraw = (): void => {
+    this.shownArea = undefined;
+    this.update();
+  };
+
+  /**
+   * Update starts drawing if the view isn't within the shown or drawing
+   * area, and carries on drawing if it is.
+   */
+  private update(): void {
     const { map } = this;
-    if (map === undefined || this.canvas === undefined) {
+    if (map === undefined || this.moving) {
       return;
     }
     const zoom = map.getZoom();
     const view = map.getPixelBounds();
+    const covers = (area: leaflet.Bounds | undefined, areaZoom: number) =>
+      area !== undefined && areaZoom === zoom && area.contains(view);
+    if (covers(this.shownArea, this.shownZoom)) {
+      this.drawing = undefined;
+      return;
+    }
+    // Tracks drawn at another zoom would show at the wrong scale.
+    if (this.shownZoom !== zoom) {
+      this.shown?.remove();
+      this.shown = undefined;
+      this.shownArea = undefined;
+    }
     if (
-      this.drawn !== undefined &&
-      zoom === this.drawnZoom &&
-      this.drawn.contains(view)
+      this.drawing === undefined ||
+      !covers(this.drawing.area, this.drawing.zoom)
     ) {
-      return;
+      this.drawing = this.startDrawing(map, zoom, view);
     }
-    this.draw(map, zoom, view);
-  };
-
-  private project(map: leaflet.Map, zoom: number): void {
-    if (zoom === this.projectedZoom) {
-      return;
-    }
-    /*
-     * The tracks are projected as Leaflet's spherical Mercator does, inline,
-     * as map.project's objects for each of hundreds of thousands of points
-     * stall the page.
-     */
-    const scale = map.options.crs?.scale(zoom) ?? 256 * 2 ** zoom;
-    this.projected = this.tracks.map((track) => {
-      const xs = new Float64Array(track.length);
-      const ys = new Float64Array(track.length);
-      let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
-      for (const [index, [lat, lng]] of track.entries()) {
-        const px = (lng / 360 + 0.5) * scale;
-        const sin = Math.sin(
-          Math.max(-MAX_LAT, Math.min(MAX_LAT, lat)) * DEGREE
-        );
-        const py =
-          (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
-        xs[index] = px;
-        ys[index] = py;
-        minX = Math.min(minX, px);
-        minY = Math.min(minY, py);
-        maxX = Math.max(maxX, px);
-        maxY = Math.max(maxY, py);
-      }
-      return { maxX, maxY, minX, minY, xs, ys };
-    });
-    this.projectedZoom = zoom;
+    this.schedule();
   }
 
-  private draw(map: leaflet.Map, zoom: number, view: leaflet.Bounds): void {
-    const { canvas } = this;
-    if (canvas === undefined) {
-      return;
-    }
-    this.project(map, zoom);
+  private startDrawing(
+    map: leaflet.Map,
+    zoom: number,
+    view: leaflet.Bounds
+  ): Drawing | undefined {
     const size = view.getSize();
     const pad = size.multiplyBy(HEAT_PADDING).round();
     const min = view.min?.subtract(pad) ?? leaflet.point(0, 0);
     const width = size.x + 2 * pad.x;
     const height = size.y + 2 * pad.y;
+    const canvas = leaflet.DomUtil.create(
+      "canvas",
+      "leaflet-zoom-hide pointer-events-none"
+    );
     canvas.width = width;
     canvas.height = height;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    /*
-     * The canvas is placed in layer pixels, which are projected pixels less
-     * the map's pixel origin.
-     */
-    leaflet.DomUtil.setPosition(canvas, min.subtract(map.getPixelOrigin()));
     const context = canvas.getContext("2d");
     if (context === null) {
-      return;
+      return undefined;
     }
-    context.clearRect(0, 0, width, height);
     context.strokeStyle = HEAT_COLOR;
     context.globalAlpha = 0.35;
     context.lineWidth = 2;
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    const maxX = min.x + width;
-    const maxY = min.y + height;
-    for (const track of this.projected) {
+    // Rounded joins are much slower to stroke, and thin lines don't show them.
+    context.lineCap = "butt";
+    context.lineJoin = "miter";
+    if (zoom !== this.projectedZoom) {
+      this.projected = [];
+      this.projectedZoom = zoom;
+    }
+    // The map's pixel origin is fixed until the next zoom or reset.
+    leaflet.DomUtil.setPosition(canvas, min.subtract(map.getPixelOrigin()));
+    return {
+      area: leaflet.bounds(min, min.add([width, height])),
+      canvas,
+      context,
+      next: 0,
+      zoom,
+    };
+  }
+
+  private schedule(): void {
+    cancelAnimationFrame(this.frame);
+    this.frame = requestAnimationFrame(this.step);
+  }
+
+  // Step draws tracks for a slice of a frame, and shows the canvas when done.
+  private readonly step = (): void => {
+    const { drawing, map } = this;
+    if (drawing === undefined || map === undefined || this.moving) {
+      return;
+    }
+    const deadline = performance.now() + SLICE_MS;
+    const scale =
+      map.options.crs?.scale(drawing.zoom) ?? 256 * 2 ** drawing.zoom;
+    const { area, context } = drawing;
+    const { min = leaflet.point(0, 0), max = leaflet.point(0, 0) } = area;
+    while (drawing.next < this.encoded.length) {
+      if (performance.now() > deadline) {
+        this.schedule();
+        return;
+      }
+      const index = drawing.next;
+      drawing.next += 1;
+      let track = this.projected[index];
+      if (track === undefined) {
+        let points = this.decoded[index];
+        if (points === undefined) {
+          points = decodePolyline(this.encoded[index] ?? "");
+          this.decoded[index] = points;
+        }
+        track = project(points, scale);
+        this.projected[index] = track;
+      }
       if (
         track.xs.length < 2 ||
         track.maxX < min.x ||
-        track.minX > maxX ||
+        track.minX > max.x ||
         track.maxY < min.y ||
-        track.minY > maxY
+        track.minY > max.y
       ) {
         continue;
       }
+      let lastX = (track.xs[0] ?? 0) - min.x;
+      let lastY = (track.ys[0] ?? 0) - min.y;
       context.beginPath();
-      context.moveTo((track.xs[0] ?? 0) - min.x, (track.ys[0] ?? 0) - min.y);
-      for (let index = 1; index < track.xs.length; index++) {
-        context.lineTo(
-          (track.xs[index] ?? 0) - min.x,
-          (track.ys[index] ?? 0) - min.y
-        );
+      context.moveTo(lastX, lastY);
+      for (let point = 1; point < track.xs.length; point++) {
+        const px = (track.xs[point] ?? 0) - min.x;
+        const py = (track.ys[point] ?? 0) - min.y;
+        // Points within a pixel of the last one drawn don't show.
+        if (
+          Math.abs(px - lastX) >= 1 ||
+          Math.abs(py - lastY) >= 1 ||
+          point === track.xs.length - 1
+        ) {
+          context.lineTo(px, py);
+          lastX = px;
+          lastY = py;
+        }
       }
       context.stroke();
     }
-    this.drawn = leaflet.bounds(min, leaflet.point(maxX, maxY));
-    this.drawnZoom = zoom;
-  }
+    // Done: the new canvas replaces the shown one.
+    map.getPanes().overlayPane.append(drawing.canvas);
+    this.shown?.remove();
+    this.shown = drawing.canvas;
+    this.shownArea = drawing.area;
+    this.shownZoom = drawing.zoom;
+    this.drawing = undefined;
+  };
 }
 
 // TrailsOverlay draws OpenStreetMap trails around the map center.
