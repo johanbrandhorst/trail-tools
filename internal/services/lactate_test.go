@@ -10,12 +10,12 @@ import (
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
-	"github.com/johanbrandhorst/trail-tools/internal/fit/fittest"
-	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
-	lactatesvc "github.com/johanbrandhorst/trail-tools/internal/services/lactate"
+	"github.com/bs-tools/trailrunn.ing/internal/fit/fittest"
+	lactatev1 "github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1/lactatev1connect"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
+	lactatesvc "github.com/bs-tools/trailrunn.ing/internal/services/lactate"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 

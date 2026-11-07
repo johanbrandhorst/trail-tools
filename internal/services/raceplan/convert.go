@@ -3,9 +3,9 @@ package raceplan
 import (
 	"time"
 
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/races"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/races"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

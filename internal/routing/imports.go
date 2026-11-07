@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bs-tools/trailrunn.ing/internal/elevation"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/elevation"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // ImportState is the state of an import.

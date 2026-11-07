@@ -9,13 +9,13 @@ import (
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
-	authv1 "github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/auth/v1/authv1connect"
-	oauthv1 "github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
-	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
+	authv1 "github.com/bs-tools/trailrunn.ing/internal/gen/auth/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/auth/v1/authv1connect"
+	oauthv1 "github.com/bs-tools/trailrunn.ing/internal/gen/oauth/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/oauth/v1/oauthv1connect"
+	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/users/v1/usersv1connect"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 )
 
 // browser is a client that keeps the session cookie, like a browser.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
 )
 
 func TestSegmentFueling(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"connectrpc.com/connect/v2"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/plans"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/plans"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

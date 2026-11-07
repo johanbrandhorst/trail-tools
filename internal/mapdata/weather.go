@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // MaxForecastDays is how far ahead forecasts are available.

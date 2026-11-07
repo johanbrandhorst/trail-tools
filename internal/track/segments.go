@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // ErrNoProfile is returned when suggesting sections for a track without an

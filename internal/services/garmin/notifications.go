@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	"github.com/bs-tools/trailrunn.ing/internal/garmin"
 	"gitlab.com/greyxor/slogor"
 )
 

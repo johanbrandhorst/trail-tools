@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
 )
 
 // SyncPath is the path of the scheduled sync endpoint.

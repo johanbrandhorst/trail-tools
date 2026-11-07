@@ -7,7 +7,7 @@
 package racesv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -2008,9 +2008,9 @@ const file_races_v1_races_proto_rawDesc = "" +
 	"\fGetRaceEvent\x12\x1d.races.v1.GetRaceEventRequest\x1a\x1e.races.v1.GetRaceEventResponse\x12S\n" +
 	"\x0eListRaceEvents\x12\x1f.races.v1.ListRaceEventsRequest\x1a .races.v1.ListRaceEventsResponse\x12V\n" +
 	"\x0fUpdateRaceEvent\x12 .races.v1.UpdateRaceEventRequest\x1a!.races.v1.UpdateRaceEventResponse\x12V\n" +
-	"\x0fDeleteRaceEvent\x12 .races.v1.DeleteRaceEventRequest\x1a!.races.v1.DeleteRaceEventResponseB\xa1\x01\n" +
+	"\x0fDeleteRaceEvent\x12 .races.v1.DeleteRaceEventRequest\x1a!.races.v1.DeleteRaceEventResponseB\x9c\x01\n" +
 	"\fcom.races.v1B\n" +
-	"RacesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
+	"RacesProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
 
 var file_races_v1_races_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_races_v1_races_proto_msgTypes = make([]protoimpl.MessageInfo, 22)

@@ -7,7 +7,7 @@
 package geov1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -2393,9 +2393,9 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\fGetElevation\x12\x1b.geo.v1.GetElevationRequest\x1a\x1c.geo.v1.GetElevationResponse\x12[\n" +
 	"\x12GetPersonalHeatmap\x12!.geo.v1.GetPersonalHeatmapRequest\x1a\".geo.v1.GetPersonalHeatmapResponse\x12[\n" +
 	"\x12ListFamiliarTrails\x12!.geo.v1.ListFamiliarTrailsRequest\x1a\".geo.v1.ListFamiliarTrailsResponse\x12`\n" +
-	"\x11ListHeatmapTracks\x12 .geo.v1.ListHeatmapTracksRequest\x1a!.geo.v1.ListHeatmapTracksResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x91\x01\n" +
+	"\x11ListHeatmapTracks\x12 .geo.v1.ListHeatmapTracksRequest\x1a!.geo.v1.ListHeatmapTracksResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x8c\x01\n" +
 	"\n" +
-	"com.geo.v1B\bGeoProtoP\x01Z@github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1;geov1\xa2\x02\x03GXX\xaa\x02\x06Geo.V1\xca\x02\x06Geo\\V1\xe2\x02\x12Geo\\V1\\GPBMetadata\xea\x02\aGeo::V1b\x06proto3"
+	"com.geo.v1B\bGeoProtoP\x01Z;github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1;geov1\xa2\x02\x03GXX\xaa\x02\x06Geo.V1\xca\x02\x06Geo\\V1\xe2\x02\x12Geo\\V1\\GPBMetadata\xea\x02\aGeo::V1b\x06proto3"
 
 var file_geo_v1_geo_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_geo_v1_geo_proto_msgTypes = make([]protoimpl.MessageInfo, 21)

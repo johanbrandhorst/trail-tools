@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 const (

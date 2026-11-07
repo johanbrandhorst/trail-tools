@@ -7,10 +7,10 @@
 package racesv1
 
 import (
-	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
-	v13 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
-	v12 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
-	v11 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	v13 "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v12 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
+	v11 "github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -4580,8 +4580,8 @@ const file_races_v1_race_reports_proto_rawDesc = "" +
 	"\x11PublishRaceReport\x12\".races.v1.PublishRaceReportRequest\x1a#.races.v1.PublishRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12j\n" +
 	"\x13UnpublishRaceReport\x12$.races.v1.UnpublishRaceReportRequest\x1a%.races.v1.UnpublishRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12p\n" +
 	"\x15ListPublicRaceReports\x12&.races.v1.ListPublicRaceReportsRequest\x1a'.races.v1.ListPublicRaceReportsResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12j\n" +
-	"\x13GetPublicRaceReport\x12$.races.v1.GetPublicRaceReportRequest\x1a%.races.v1.GetPublicRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa7\x01\n" +
-	"\fcom.races.v1B\x10RaceReportsProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
+	"\x13GetPublicRaceReport\x12$.races.v1.GetPublicRaceReportRequest\x1a%.races.v1.GetPublicRaceReportResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa2\x01\n" +
+	"\fcom.races.v1B\x10RaceReportsProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
 
 var file_races_v1_race_reports_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_races_v1_race_reports_proto_msgTypes = make([]protoimpl.MessageInfo, 38)

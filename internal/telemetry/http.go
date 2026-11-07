@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"

@@ -10,9 +10,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/routes"
-	"github.com/johanbrandhorst/trail-tools/internal/routing"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/routes"
+	"github.com/bs-tools/trailrunn.ing/internal/routing"
 	"golang.org/x/sync/errgroup"
 )
 

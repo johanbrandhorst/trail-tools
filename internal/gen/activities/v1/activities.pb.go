@@ -2198,8 +2198,8 @@ const file_activities_v1_activities_proto_rawDesc = "" +
 	"\x0fActivityService\x12]\n" +
 	"\x0eListActivities\x12$.activities.v1.ListActivitiesRequest\x1a%.activities.v1.ListActivitiesResponse\x12T\n" +
 	"\vGetActivity\x12!.activities.v1.GetActivityRequest\x1a\".activities.v1.GetActivityResponse\x12l\n" +
-	"\x13SummarizeActivities\x12).activities.v1.SummarizeActivitiesRequest\x1a*.activities.v1.SummarizeActivitiesResponseB\xc9\x01\n" +
-	"\x11com.activities.v1B\x0fActivitiesProtoP\x01ZNgithub.com/johanbrandhorst/trail-tools/internal/gen/activities/v1;activitiesv1\xa2\x02\x03AXX\xaa\x02\rActivities.V1\xca\x02\rActivities\\V1\xe2\x02\x19Activities\\V1\\GPBMetadata\xea\x02\x0eActivities::V1b\x06proto3"
+	"\x13SummarizeActivities\x12).activities.v1.SummarizeActivitiesRequest\x1a*.activities.v1.SummarizeActivitiesResponseB\xc4\x01\n" +
+	"\x11com.activities.v1B\x0fActivitiesProtoP\x01ZIgithub.com/bs-tools/trailrunn.ing/internal/gen/activities/v1;activitiesv1\xa2\x02\x03AXX\xaa\x02\rActivities.V1\xca\x02\rActivities\\V1\xe2\x02\x19Activities\\V1\\GPBMetadata\xea\x02\x0eActivities::V1b\x06proto3"
 
 var file_activities_v1_activities_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_activities_v1_activities_proto_msgTypes = make([]protoimpl.MessageInfo, 12)

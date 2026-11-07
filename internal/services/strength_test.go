@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/johanbrandhorst/trail-tools/internal/activities"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/activities"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 

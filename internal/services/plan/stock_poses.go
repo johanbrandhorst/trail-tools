@@ -3,7 +3,7 @@ package plan
 import (
 	"context"
 
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
 )
 
 // stockPose is a pose of the stick figure that agents start animations

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
-	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
+	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bs-tools/trailrunn.ing/internal/races/internal/gen"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/races/internal/gen"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // Event groups races that belong together, e.g. a 50 mile race on the

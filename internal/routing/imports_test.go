@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bs-tools/trailrunn.ing/internal/elevation"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/routing"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/elevation"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/routing"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
 )
 
 // createImport creates an import reading an extract that doesn't exist, so
