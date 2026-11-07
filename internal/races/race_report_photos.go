@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/races/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
-	"github.com/bs-tools/trailrunn.ing/internal/trips"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/races/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/trips"
 )
 
 // RaceReportPhoto is a photo of a race report. Photos are located like the

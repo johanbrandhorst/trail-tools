@@ -3,7 +3,7 @@ package garmin_test
 import (
 	"testing"
 
-	"github.com/bs-tools/trailrunn.ing/internal/garmin"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
 )
 
 func TestExerciseCatalog(t *testing.T) {

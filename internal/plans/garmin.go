@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/plans/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/plans/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // GarminWorkout is a workout on the user's Garmin calendar.

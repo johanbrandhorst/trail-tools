@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/authn"
-	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/mapdata"
+	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/mapdata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

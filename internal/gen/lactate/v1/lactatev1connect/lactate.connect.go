@@ -7,7 +7,7 @@ package lactatev1connect
 import (
 	connect "connectrpc.com/connect/v2"
 	context "context"
-	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
 	sync "sync"
 )
 

@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/activities/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/blob"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // Repository stores activities and Strava connections.

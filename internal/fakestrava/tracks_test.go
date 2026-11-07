@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // straightRouter routes in straight lines in its region, except into Howe

@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/blob"
-	"github.com/bs-tools/trailrunn.ing/internal/elevation"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 func writeTile(t *testing.T, dir, name string, size int, sample func(row, col int) int16) {

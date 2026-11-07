@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/activities/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/blob"
-	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // GarminConnection is a user's connection to Garmin Connect.

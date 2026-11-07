@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/elevation"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
 )
 
 // UserAgent identifies the application to the public map data services, as
 // required by their usage policies.
-const UserAgent = "trail-tools/0.1 (+https://github.com/bs-tools/trailrunn.ing)"
+const UserAgent = "trail-tools/0.1 (+https://github.com/johanbrandhorst/trail-tools)"
 
 // Config configures the map data clients. Zero values use the public
 // services.

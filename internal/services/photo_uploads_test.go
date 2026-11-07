@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	tripsv1 "github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1"
+	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

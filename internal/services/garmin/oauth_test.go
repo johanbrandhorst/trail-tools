@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/activities"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	"github.com/bs-tools/trailrunn.ing/internal/garmin"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 func TestOAuthState(t *testing.T) {

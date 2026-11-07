@@ -6,9 +6,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/plans/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/plans/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // SweatProfile is how the user sweats, for their sodium intake on runs.

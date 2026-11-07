@@ -7,7 +7,7 @@
 package lactatev1
 
 import (
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -2247,8 +2247,8 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x16DeleteLactateTestShare\x12).lactate.v1.DeleteLactateTestShareRequest\x1a*.lactate.v1.DeleteLactateTestShareResponse\x12\x83\x01\n" +
 	"\x1aCreateLactateTestRecording\x12-.lactate.v1.CreateLactateTestRecordingRequest\x1a..lactate.v1.CreateLactateTestRecordingResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12z\n" +
 	"\x17GetLactateTestRecording\x12*.lactate.v1.GetLactateTestRecordingRequest\x1a+.lactate.v1.GetLactateTestRecordingResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12h\n" +
-	"\x11RecordLactateTest\x12$.lactate.v1.RecordLactateTestRequest\x1a%.lactate.v1.RecordLactateTestResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xac\x01\n" +
-	"\x0ecom.lactate.v1B\fLactateProtoP\x01ZCgithub.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1;lactatev1\xa2\x02\x03LXX\xaa\x02\n" +
+	"\x11RecordLactateTest\x12$.lactate.v1.RecordLactateTestRequest\x1a%.lactate.v1.RecordLactateTestResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xb1\x01\n" +
+	"\x0ecom.lactate.v1B\fLactateProtoP\x01ZHgithub.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1;lactatev1\xa2\x02\x03LXX\xaa\x02\n" +
 	"Lactate.V1\xca\x02\n" +
 	"Lactate\\V1\xe2\x02\x16Lactate\\V1\\GPBMetadata\xea\x02\vLactate::V1b\x06proto3"
 

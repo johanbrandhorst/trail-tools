@@ -13,12 +13,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bs-tools/trailrunn.ing/internal/elevation"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/routing"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
-	"github.com/bs-tools/trailrunn.ing/internal/telemetry"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/routing"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/telemetry"
 )
 
 // importOSM runs the import-osm command, which loads OpenStreetMap extracts

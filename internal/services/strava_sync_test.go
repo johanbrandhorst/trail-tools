@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/activities"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
-	stravav1 "github.com/bs-tools/trailrunn.ing/internal/gen/strava/v1"
-	tripsv1 "github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1"
-	stravasvc "github.com/bs-tools/trailrunn.ing/internal/services/strava"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
-	"github.com/bs-tools/trailrunn.ing/internal/strava"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	stravav1 "github.com/johanbrandhorst/trail-tools/internal/gen/strava/v1"
+	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	stravasvc "github.com/johanbrandhorst/trail-tools/internal/services/strava"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/strava"
 )
 
 // allActivities is a window of activities' start times that has them all.

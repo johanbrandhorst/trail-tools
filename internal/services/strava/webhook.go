@@ -21,11 +21,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/activities"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
-	"github.com/bs-tools/trailrunn.ing/internal/strava"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/strava"
 )
 
 // WebhookPath is the path under which Strava sends webhook events, to a

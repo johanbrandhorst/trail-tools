@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/authn"
-	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1/plansv1connect"
-	"github.com/bs-tools/trailrunn.ing/internal/html"
-	"github.com/bs-tools/trailrunn.ing/internal/plans"
-	"github.com/bs-tools/trailrunn.ing/internal/routes"
-	"github.com/bs-tools/trailrunn.ing/internal/services/route"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1/plansv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/routes"
+	"github.com/johanbrandhorst/trail-tools/internal/services/route"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 var _ plansv1connect.WorkoutShareServiceHandler = (*Service)(nil)

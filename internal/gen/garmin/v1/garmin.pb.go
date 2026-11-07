@@ -7,7 +7,7 @@
 package garminv1
 
 import (
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1047,8 +1047,8 @@ const file_garmin_v1_garmin_proto_rawDesc = "" +
 	"\x10DisconnectGarmin\x12\".garmin.v1.DisconnectGarminRequest\x1a#.garmin.v1.DisconnectGarminResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12^\n" +
 	"\x11SendRouteToGarmin\x12#.garmin.v1.SendRouteToGarminRequest\x1a$.garmin.v1.SendRouteToGarminResponse\x12j\n" +
 	"\x15RemoveRouteFromGarmin\x12'.garmin.v1.RemoveRouteFromGarminRequest\x1a(.garmin.v1.RemoveRouteFromGarminResponse\x12g\n" +
-	"\x14GetRouteGarminStatus\x12&.garmin.v1.GetRouteGarminStatusRequest\x1a'.garmin.v1.GetRouteGarminStatusResponseB\xa4\x01\n" +
-	"\rcom.garmin.v1B\vGarminProtoP\x01ZAgithub.com/bs-tools/trailrunn.ing/internal/gen/garmin/v1;garminv1\xa2\x02\x03GXX\xaa\x02\tGarmin.V1\xca\x02\tGarmin\\V1\xe2\x02\x15Garmin\\V1\\GPBMetadata\xea\x02\n" +
+	"\x14GetRouteGarminStatus\x12&.garmin.v1.GetRouteGarminStatusRequest\x1a'.garmin.v1.GetRouteGarminStatusResponseB\xa9\x01\n" +
+	"\rcom.garmin.v1B\vGarminProtoP\x01ZFgithub.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1;garminv1\xa2\x02\x03GXX\xaa\x02\tGarmin.V1\xca\x02\tGarmin\\V1\xe2\x02\x15Garmin\\V1\\GPBMetadata\xea\x02\n" +
 	"Garmin::V1b\x06proto3"
 
 var file_garmin_v1_garmin_proto_msgTypes = make([]protoimpl.MessageInfo, 14)

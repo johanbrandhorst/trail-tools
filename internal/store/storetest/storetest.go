@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // EnvVar is the environment variable with the URL of the postgres server to

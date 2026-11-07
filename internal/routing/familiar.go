@@ -6,7 +6,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 const (

@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // testTrack is a track heading north from the equator, with a point every

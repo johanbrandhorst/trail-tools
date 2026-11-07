@@ -3,11 +3,11 @@ package route
 import (
 	"fmt"
 
-	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/routes"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/routes"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

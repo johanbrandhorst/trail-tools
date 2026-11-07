@@ -1,6 +1,6 @@
 package routing
 
-import "github.com/bs-tools/trailrunn.ing/internal/geo"
+import "github.com/johanbrandhorst/trail-tools/internal/geo"
 
 // ReadElements reads OpenStreetMap data from nodes, ways and relations in the
 // order of a PBF extract, as ReadPBF reads an extract.

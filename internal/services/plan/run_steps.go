@@ -3,8 +3,8 @@ package plan
 import (
 	"fmt"
 
-	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
 const (

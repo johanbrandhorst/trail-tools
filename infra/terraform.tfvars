@@ -4,8 +4,8 @@ billing_account = "011594-64C1DB-C0AD77"
 budget_amount   = 1
 budget_currency = "CAD"
 domain          = "trailrunn.ing"
-# The ID of bs-tools/trailrunn.ing, from
-# gh api repos/bs-tools/trailrunn.ing --jq .id
+# The ID of johanbrandhorst/trail-tools, from
+# gh api repos/johanbrandhorst/trail-tools --jq .id
 github_repository_id = "898759618"
 # Add the strava-client-secret and strava-webhook-verify-token secret values
 # before enabling Strava, see the README.

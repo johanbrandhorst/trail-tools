@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	"google.golang.org/protobuf/proto"
 )
 

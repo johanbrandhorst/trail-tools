@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // WebURL is the URL of the fake Strava's website, where activities are at

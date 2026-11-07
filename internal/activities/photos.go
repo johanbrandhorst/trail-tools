@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/activities/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/activities/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // Photo is a photo added to an activity on Strava. Only its metadata is

@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/authn"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	lactatev1 "github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1/lactatev1connect"
-	"github.com/bs-tools/trailrunn.ing/internal/lactate"
-	"github.com/bs-tools/trailrunn.ing/internal/protomask"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/authn"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/lactate"
+	"github.com/johanbrandhorst/trail-tools/internal/protomask"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

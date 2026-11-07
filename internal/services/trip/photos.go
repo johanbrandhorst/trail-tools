@@ -9,12 +9,12 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect/v2"
-	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	tripsv1 "github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/photos"
-	"github.com/bs-tools/trailrunn.ing/internal/track"
-	"github.com/bs-tools/trailrunn.ing/internal/trips"
+	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	tripsv1 "github.com/johanbrandhorst/trail-tools/internal/gen/trips/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
+	"github.com/johanbrandhorst/trail-tools/internal/track"
+	"github.com/johanbrandhorst/trail-tools/internal/trips"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

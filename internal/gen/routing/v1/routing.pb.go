@@ -7,8 +7,8 @@
 package routingv1
 
 import (
-	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1108,8 +1108,8 @@ const file_routing_v1_routing_proto_rawDesc = "" +
 	"GetMapData\x12\x1d.routing.v1.GetMapDataRequest\x1a\x1e.routing.v1.GetMapDataResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12Y\n" +
 	"\fFindExtracts\x12\x1f.routing.v1.FindExtractsRequest\x1a .routing.v1.FindExtractsResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12V\n" +
 	"\vStartImport\x12\x1e.routing.v1.StartImportRequest\x1a\x1f.routing.v1.StartImportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12Y\n" +
-	"\fDeleteRegion\x12\x1f.routing.v1.DeleteRegionRequest\x1a .routing.v1.DeleteRegionResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xac\x01\n" +
-	"\x0ecom.routing.v1B\fRoutingProtoP\x01ZCgithub.com/bs-tools/trailrunn.ing/internal/gen/routing/v1;routingv1\xa2\x02\x03RXX\xaa\x02\n" +
+	"\fDeleteRegion\x12\x1f.routing.v1.DeleteRegionRequest\x1a .routing.v1.DeleteRegionResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xb1\x01\n" +
+	"\x0ecom.routing.v1B\fRoutingProtoP\x01ZHgithub.com/johanbrandhorst/trail-tools/internal/gen/routing/v1;routingv1\xa2\x02\x03RXX\xaa\x02\n" +
 	"Routing.V1\xca\x02\n" +
 	"Routing\\V1\xe2\x02\x16Routing\\V1\\GPBMetadata\xea\x02\vRouting::V1b\x06proto3"
 

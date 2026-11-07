@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/timeouts"
+	"github.com/johanbrandhorst/trail-tools/internal/timeouts"
 )
 
 // result is what a test handler saw.

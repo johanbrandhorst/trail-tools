@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/mapdata"
-	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/mapdata"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
 func TestDaytimeByLocalDay(t *testing.T) {

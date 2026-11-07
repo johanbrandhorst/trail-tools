@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bs-tools/trailrunn.ing/web"
+	"github.com/johanbrandhorst/trail-tools/web"
 )
 
 // bundle is the frontend's bundle embedded in the server.

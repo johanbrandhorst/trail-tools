@@ -7,9 +7,9 @@
 package tripsv1
 
 import (
-	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	v12 "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
-	v11 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	v12 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	v11 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -4521,9 +4521,9 @@ const file_trips_v1_trips_proto_rawDesc = "" +
 	"GetProfile\x12\x1b.trips.v1.GetProfileRequest\x1a\x1c.trips.v1.GetProfileResponse\x12X\n" +
 	"\rUpdateProfile\x12\x1e.trips.v1.UpdateProfileRequest\x1a\x1f.trips.v1.UpdateProfileResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12a\n" +
 	"\x10GetPublicProfile\x12!.trips.v1.GetPublicProfileRequest\x1a\".trips.v1.GetPublicProfileResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12j\n" +
-	"\x13GetPublicTripReport\x12$.trips.v1.GetPublicTripReportRequest\x1a%.trips.v1.GetPublicTripReportResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x9c\x01\n" +
+	"\x13GetPublicTripReport\x12$.trips.v1.GetPublicTripReportRequest\x1a%.trips.v1.GetPublicTripReportResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa1\x01\n" +
 	"\fcom.trips.v1B\n" +
-	"TripsProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1;tripsv1\xa2\x02\x03TXX\xaa\x02\bTrips.V1\xca\x02\bTrips\\V1\xe2\x02\x14Trips\\V1\\GPBMetadata\xea\x02\tTrips::V1b\x06proto3"
+	"TripsProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/trips/v1;tripsv1\xa2\x02\x03TXX\xaa\x02\bTrips.V1\xca\x02\bTrips\\V1\xe2\x02\x14Trips\\V1\\GPBMetadata\xea\x02\tTrips::V1b\x06proto3"
 
 var file_trips_v1_trips_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_trips_v1_trips_proto_msgTypes = make([]protoimpl.MessageInfo, 45)

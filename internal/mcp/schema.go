@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bs-tools/trailrunn.ing/internal/apidesc"
-	mcpv1 "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/johanbrandhorst/trail-tools/internal/apidesc"
+	mcpv1 "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"

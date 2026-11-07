@@ -8,9 +8,9 @@ import (
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
-	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/gen/users/v1/usersv1connect"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
+	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/gen/users/v1/usersv1connect"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 func TestAPITokens(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/races"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/races"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // PlanOutcome is what a race plan planned, and what was recorded on race

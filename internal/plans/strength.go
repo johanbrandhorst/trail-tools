@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/plans/internal/gen"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/johanbrandhorst/trail-tools/internal/plans/internal/gen"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // Muscle is a muscle or muscle group an exercise works, e.g. "glutes".

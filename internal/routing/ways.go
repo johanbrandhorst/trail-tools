@@ -14,9 +14,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/elevation"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/elevation"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // ImportOSM loads OpenStreetMap data into the routing graph as a region,

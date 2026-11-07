@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/fit"
-	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
 // WorkoutPath is the path of a lactate test as a Garmin workout.

@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )

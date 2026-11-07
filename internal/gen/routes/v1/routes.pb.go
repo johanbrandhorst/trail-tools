@@ -7,8 +7,8 @@
 package routesv1
 
 import (
-	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -3805,8 +3805,8 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\vUpdateRoute\x12\x1d.routes.v1.UpdateRouteRequest\x1a\x1e.routes.v1.UpdateRouteResponse\x12L\n" +
 	"\vDeleteRoute\x12\x1d.routes.v1.DeleteRouteRequest\x1a\x1e.routes.v1.DeleteRouteResponse\x12f\n" +
 	"\x12CheckTrackCoverage\x12$.routes.v1.CheckTrackCoverageRequest\x1a%.routes.v1.CheckTrackCoverageResponse\"\x03\x90\x02\x01\x12[\n" +
-	"\x10GetRouteForecast\x12\".routes.v1.GetRouteForecastRequest\x1a#.routes.v1.GetRouteForecastResponseB\xa4\x01\n" +
-	"\rcom.routes.v1B\vRoutesProtoP\x01ZAgithub.com/bs-tools/trailrunn.ing/internal/gen/routes/v1;routesv1\xa2\x02\x03RXX\xaa\x02\tRoutes.V1\xca\x02\tRoutes\\V1\xe2\x02\x15Routes\\V1\\GPBMetadata\xea\x02\n" +
+	"\x10GetRouteForecast\x12\".routes.v1.GetRouteForecastRequest\x1a#.routes.v1.GetRouteForecastResponseB\xa9\x01\n" +
+	"\rcom.routes.v1B\vRoutesProtoP\x01ZFgithub.com/johanbrandhorst/trail-tools/internal/gen/routes/v1;routesv1\xa2\x02\x03RXX\xaa\x02\tRoutes.V1\xca\x02\tRoutes\\V1\xe2\x02\x15Routes\\V1\\GPBMetadata\xea\x02\n" +
 	"Routes::V1b\x06proto3"
 
 var file_routes_v1_routes_proto_enumTypes = make([]protoimpl.EnumInfo, 5)

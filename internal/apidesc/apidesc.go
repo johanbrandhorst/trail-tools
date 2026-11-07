@@ -23,7 +23,7 @@ import (
 
 	// Register the custom option extensions so that they are resolved when
 	// the descriptor set is unmarshaled, rather than left as unknown fields.
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 )
 
 // descriptorSet is a google.protobuf.FileDescriptorSet of all the API files and

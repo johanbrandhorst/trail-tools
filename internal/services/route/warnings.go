@@ -3,9 +3,9 @@ package route
 import (
 	"fmt"
 
-	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/routes"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/routes"
 )
 
 // offMapWarningMeters is how far from a mapped path a waypoint of a routed

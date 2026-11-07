@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // line returns n points north from (46, 7), spacing meters apart.

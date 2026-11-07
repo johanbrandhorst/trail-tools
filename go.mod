@@ -1,4 +1,4 @@
-module github.com/bs-tools/trailrunn.ing
+module github.com/johanbrandhorst/trail-tools
 
 go 1.26.7
 

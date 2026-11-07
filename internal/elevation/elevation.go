@@ -19,9 +19,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/blob"
-	"github.com/bs-tools/trailrunn.ing/internal/errreport"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/blob"
+	"github.com/johanbrandhorst/trail-tools/internal/errreport"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // DefaultURL is the base URL of the elevation tiles: SRTM derived 1x1 degree

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 )
 
 func TestCalendarFeed(t *testing.T) {

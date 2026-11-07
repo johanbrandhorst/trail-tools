@@ -7,8 +7,8 @@
 package plansv1
 
 import (
-	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
-	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
+	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -7496,9 +7496,9 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x12ListWorkoutWeather\x12#.plans.v1.ListWorkoutWeatherRequest\x1a$.plans.v1.ListWorkoutWeatherResponse\x12\\\n" +
 	"\x11GetWorkoutWeather\x12\".plans.v1.GetWorkoutWeatherRequest\x1a#.plans.v1.GetWorkoutWeatherResponse\x12V\n" +
 	"\x0fGetSweatProfile\x12 .plans.v1.GetSweatProfileRequest\x1a!.plans.v1.GetSweatProfileResponse\x12V\n" +
-	"\x0fSetSweatProfile\x12 .plans.v1.SetSweatProfileRequest\x1a!.plans.v1.SetSweatProfileResponseB\x9c\x01\n" +
+	"\x0fSetSweatProfile\x12 .plans.v1.SetSweatProfileRequest\x1a!.plans.v1.SetSweatProfileResponseB\xa1\x01\n" +
 	"\fcom.plans.v1B\n" +
-	"PlansProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
+	"PlansProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
 var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 60)

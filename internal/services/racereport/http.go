@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bs-tools/trailrunn.ing/internal/html"
-	"github.com/bs-tools/trailrunn.ing/internal/photos"
-	"github.com/bs-tools/trailrunn.ing/internal/services/trip"
-	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/html"
+	"github.com/johanbrandhorst/trail-tools/internal/photos"
+	"github.com/johanbrandhorst/trail-tools/internal/services/trip"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // PageHandler serves the frontend for public race reports at

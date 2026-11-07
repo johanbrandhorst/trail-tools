@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"math"
 
-	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
-	"github.com/bs-tools/trailrunn.ing/internal/users"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/users"
 )
 
 // Zone is a circle, like one around the user's home, within which tracks

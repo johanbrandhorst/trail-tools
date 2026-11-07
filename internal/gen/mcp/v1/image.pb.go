@@ -107,10 +107,10 @@ const file_mcp_v1_image_proto_rawDesc = "" +
 	"\x12mcp/v1/image.proto\x12\x06mcp.v1\"8\n" +
 	"\x05Image\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04dataB\x8e\x01\n" +
+	"\x04data\x18\x02 \x01(\fR\x04dataB\x93\x01\n" +
 	"\n" +
 	"com.mcp.v1B\n" +
-	"ImageProtoP\x01Z;github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1;mcpv1\xa2\x02\x03MXX\xaa\x02\x06Mcp.V1\xca\x02\x06Mcp\\V1\xe2\x02\x12Mcp\\V1\\GPBMetadata\xea\x02\aMcp::V1b\x06proto3"
+	"ImageProtoP\x01Z@github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1;mcpv1\xa2\x02\x03MXX\xaa\x02\x06Mcp.V1\xca\x02\x06Mcp\\V1\xe2\x02\x12Mcp\\V1\\GPBMetadata\xea\x02\aMcp::V1b\x06proto3"
 
 var file_mcp_v1_image_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_mcp_v1_image_proto_goTypes = []any{

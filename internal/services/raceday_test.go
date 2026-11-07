@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
-	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/livetrack"
+	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	routesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/livetrack"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

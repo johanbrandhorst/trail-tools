@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
-	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
-	"github.com/bs-tools/trailrunn.ing/internal/races"
-	"github.com/bs-tools/trailrunn.ing/internal/services/raceplan"
+	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
+	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/races"
+	"github.com/johanbrandhorst/trail-tools/internal/services/raceplan"
 )
 
 // testRecording is a recording 1 km longer than a 20 km race, as GPS

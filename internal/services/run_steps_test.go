@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/bs-tools/trailrunn.ing/internal/garmin"
-	garminv1 "github.com/bs-tools/trailrunn.ing/internal/gen/garmin/v1"
-	lactatev1 "github.com/bs-tools/trailrunn.ing/internal/gen/lactate/v1"
-	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	"github.com/johanbrandhorst/trail-tools/internal/garmin"
+	garminv1 "github.com/johanbrandhorst/trail-tools/internal/gen/garmin/v1"
+	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 )
 
 func TestStructuredRun(t *testing.T) {

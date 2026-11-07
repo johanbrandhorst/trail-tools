@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
-	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
+	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
+	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 )
 
 func TestRaceReportSegments(t *testing.T) {

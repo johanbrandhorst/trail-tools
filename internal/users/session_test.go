@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bs-tools/trailrunn.ing/internal/store"
-	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
-	"github.com/bs-tools/trailrunn.ing/internal/users"
+	"github.com/johanbrandhorst/trail-tools/internal/store"
+	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
+	"github.com/johanbrandhorst/trail-tools/internal/users"
 )
 
 func TestSessions(t *testing.T) {

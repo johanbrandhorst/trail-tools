@@ -10,7 +10,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/johanbrandhorst/trail-tools/internal/geo"
 )
 
 // patchMagic starts patch files.
