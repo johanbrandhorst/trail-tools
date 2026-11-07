@@ -19,20 +19,27 @@ const TargetRow: React.FC<TargetRowProps> = ({
   format,
   barClass,
 }) => (
+  /*
+   * The label sits above the values, and each value wraps whole, so three
+   * columns fit a phone without breaking "43.0 km" across lines.
+   */
   <div className="flex min-w-0 flex-col gap-0.5">
-    <div className="flex items-baseline justify-between gap-2 text-xs">
-      <span className="text-gray-500">{label}</span>
-      <span className="tabular-nums text-gray-800">
-        <span className="font-semibold">{format(actual)}</span>
-        {target > 0 && (
-          <span className="text-gray-500"> / {format(target)}</span>
-        )}
-      </span>
-    </div>
+    <span className="text-xs text-gray-500">{label}</span>
+    <span className="text-xs text-gray-800 tabular-nums">
+      <span className="font-semibold whitespace-nowrap">{format(actual)}</span>
+      {target > 0 && (
+        <>
+          {" "}
+          <span className="whitespace-nowrap text-gray-500">
+            / {format(target)}
+          </span>
+        </>
+      )}
+    </span>
     <ProgressBar value={actual} target={target} className={barClass} />
     {planned > 0 && (
       <span className="text-[10px] text-gray-400">
-        {format(planned)} in workouts
+        <span className="whitespace-nowrap">{format(planned)}</span> in workouts
       </span>
     )}
   </div>
