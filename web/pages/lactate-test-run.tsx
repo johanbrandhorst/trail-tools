@@ -56,12 +56,6 @@ import { Link, useNavigate, useParams } from "react-router";
  */
 const SETTINGS_KEY = "trail-tools.lactate-test";
 
-/**
- * BIG_CHANGE_MMOL is how much a reading may change from the last stage's
- * before it's worth measuring again.
- */
-const BIG_CHANGE_MMOL = 1.5;
-
 // Settings are how a guided test is run.
 interface Settings {
   startHeartRate: number;
@@ -124,7 +118,7 @@ const workoutURL = (settings: Settings): string => {
 
 /**
  * UseWakeLock keeps the screen on while active, so a phone doesn't lock
- * during a stage. Browsers without the Screen Wake Lock API are left alone.
+ * between readings. Browsers without the Screen Wake Lock API are left alone.
  */
 const useWakeLock = (active: boolean): void => {
   useEffect(() => {
@@ -150,79 +144,6 @@ const useWakeLock = (active: boolean): void => {
       void lock?.release();
     };
   }, [active]);
-};
-
-// FormatClock formats seconds as m:ss.
-const formatClock = (seconds: number): string => {
-  const whole = Math.max(0, Math.ceil(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
-};
-
-interface TimerProps {
-  minutes: number;
-}
-
-/**
- * Timer counts down a stage, keeping the screen on while it runs, and
- * vibrates when the time is up.
- */
-const Timer: React.FC<TimerProps> = ({ minutes }) => {
-  const [start, setStart] = useState<number | undefined>(undefined);
-  const [now, setNow] = useState(() => Date.now());
-  const remaining =
-    start === undefined ? minutes * 60 : minutes * 60 - (now - start) / 1000;
-  const running = start !== undefined && remaining > 0;
-  useWakeLock(running);
-  useEffect(() => {
-    if (start === undefined) {
-      return undefined;
-    }
-    const interval = globalThis.setInterval(() => {
-      setNow(Date.now());
-    }, 250);
-    return () => {
-      globalThis.clearInterval(interval);
-    };
-  }, [start]);
-  const done = start !== undefined && remaining <= 0;
-  useEffect(() => {
-    if (done && "vibrate" in navigator) {
-      navigator.vibrate([300, 150, 300]);
-    }
-  }, [done]);
-  return (
-    <div className="flex items-center gap-4">
-      <span
-        className={`text-4xl font-semibold tabular-nums ${done ? "text-ember" : "text-gray-900"}`}
-        role="timer"
-      >
-        {done ? "0:00" : formatClock(remaining)}
-      </span>
-      {start === undefined ? (
-        <button
-          type="button"
-          className={secondaryButton}
-          onClick={() => {
-            setNow(Date.now());
-            setStart(Date.now());
-          }}
-        >
-          Start the timer
-        </button>
-      ) : (
-        <button
-          type="button"
-          className={ghostButton}
-          onClick={() => {
-            setStart(undefined);
-          }}
-        >
-          Reset
-        </button>
-      )}
-      {done && <span className="text-sm font-medium">Take a sample now.</span>}
-    </div>
-  );
 };
 
 /**
@@ -320,6 +241,31 @@ const Prepare: React.FC<PrepareProps> = ({
             <li key={item}>{item}</li>
           ))}
         </ul>
+        <p className="mt-3 text-sm text-gray-700">
+          Once the test starts, the screen shows only the heart rate to hold and
+          a box for the reading, for whoever takes the samples:
+        </p>
+        <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-gray-700">
+          {mode === "measure" && (
+            <li>Take a resting sample after a few minutes sitting still.</li>
+          )}
+          <li>
+            Warm up for {WARM_UP_MINUTES} to 20 minutes, very easy and below{" "}
+            {settings.startHeartRate} bpm, until you&apos;re lightly sweating.
+          </li>
+          <li>
+            Hold each stage&apos;s heart rate for {settings.stageMinutes}{" "}
+            minutes, then take a sample, keeping moving if you can.
+          </li>
+        </ol>
+        <details className="mt-3">
+          <summary className="cursor-pointer text-sm font-medium text-gray-700">
+            How to take a sample
+          </summary>
+          <div className="pt-2">
+            <SamplingTips />
+          </div>
+        </details>
       </Card>
       <Card title="Stages">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -458,27 +404,47 @@ const Prepare: React.FC<PrepareProps> = ({
           }
         }}
       >
-        {mode === "measure"
-          ? "Measure your resting lactate"
-          : "Start the warm-up"}
+        Start the test
       </button>
     </div>
   );
 };
 
-interface RestingProps {
+interface EntryProps {
+  // What to hold for the reading: a heart rate, or undefined at rest.
+  targetBpm: number | undefined;
+  // The last reading entered, to check it and undo it.
+  last: { label: string; mmolPerLiter: number } | undefined;
+  // Done reports whether the readings are past the aerobic threshold.
+  done: boolean;
   pending: boolean;
   onSave: (mmolPerLiter: number) => void;
+  onUndo: (() => void) | undefined;
+  onFinish: (() => void) | undefined;
 }
 
-// Resting measures the resting lactate, the test's baseline.
-const Resting: React.FC<RestingProps> = ({ pending, onSave }) => {
+/**
+ * Entry takes a test's readings one at a time, shown big enough to read at a
+ * glance mid-run: the heart rate to hold now, and the lactate to enter for
+ * it. Whoever records the test keeps the time, so there's no timer, and the
+ * next stage follows as soon as a reading is saved.
+ */
+const Entry: React.FC<EntryProps> = ({
+  targetBpm,
+  last,
+  done,
+  pending,
+  onSave,
+  onUndo,
+  onFinish,
+}) => {
+  useWakeLock(true);
   const [reading, setReading] = useState("");
   const value = Number(reading.replace(",", "."));
   return (
-    <Card title="Resting lactate">
+    <Card>
       <form
-        className="flex flex-col gap-4"
+        className="flex flex-col items-center gap-6 py-4"
         onSubmit={(event) => {
           event.preventDefault();
           if (value > 0) {
@@ -486,236 +452,77 @@ const Resting: React.FC<RestingProps> = ({ pending, onSave }) => {
           }
         }}
       >
-        <p className="text-sm text-gray-700">
-          Sit still for a few minutes, then take a sample. It's your baseline,
-          before any exercise.
-        </p>
-        <SamplingTips />
-        <TextField
-          label="Resting lactate (mmol/L)"
-          value={reading}
-          onChange={setReading}
-          inputMode="decimal"
-          autoFocus
-        />
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="submit"
-            className={primaryButton}
-            disabled={pending || !(value > 0)}
+        <div className="text-center">
+          <p className="text-sm font-medium tracking-wide text-gray-500 uppercase">
+            {targetBpm === undefined ? "Now" : "Current HR target"}
+          </p>
+          <p
+            className={`font-bold text-gray-900 tabular-nums ${targetBpm === undefined ? "text-5xl sm:text-6xl" : "text-7xl sm:text-8xl"}`}
           >
-            Save and warm up
-          </button>
-          <button
-            type="button"
-            className={secondaryButton}
-            disabled={pending}
-            onClick={() => {
-              onSave(0);
-            }}
-          >
-            Skip
-          </button>
+            {targetBpm ?? "At rest"}
+          </p>
+          {targetBpm !== undefined && (
+            <p className="text-lg font-medium text-gray-500">bpm</p>
+          )}
         </div>
-      </form>
-    </Card>
-  );
-};
-
-interface StageProps {
-  test: LactateTest;
-  settings: Settings;
-  pending: boolean;
-  onSave: (stages: LactateStage[]) => void;
-}
-
-/**
- * Stage runs the test's next stage: holding a heart rate for the stage's
- * length, then entering the reading.
- */
-const Stage: React.FC<StageProps> = ({ test, settings, pending, onSave }) => {
-  const target = nextHeartRate(
-    test.stages,
-    settings.startHeartRate,
-    settings.stepBpm
-  );
-  const [heartRate, setHeartRate] = useState(String(target));
-  const [reading, setReading] = useState("");
-  const heartRateValue = Number(heartRate);
-  const value = Number(reading.replace(",", "."));
-  const valid =
-    Number.isInteger(heartRateValue) && heartRateValue > 0 && value > 0;
-  return (
-    <Card title={`Stage ${test.stages.length + 1} · ${target} bpm`}>
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (valid) {
-            onSave([
-              ...test.stages,
-              create(LactateStageSchema, {
-                heartRateBpm: heartRateValue,
-                lactateMmolPerLiter: value,
-              }),
-            ]);
-          }
-        }}
-      >
-        <p className="text-sm text-gray-700">
-          Bring your heart rate to {target} bpm, and hold it there for{" "}
-          {settings.stageMinutes} minutes. Then take a sample, keeping moving if
-          you can.
-        </p>
-        <Timer minutes={settings.stageMinutes} />
-        <div className="grid grid-cols-2 gap-3">
-          <TextField
-            label="Heart rate held (bpm)"
-            value={heartRate}
-            onChange={setHeartRate}
-            inputMode="numeric"
-          />
-          <TextField
-            label="Lactate (mmol/L)"
-            value={reading}
-            onChange={setReading}
+        <label className="flex w-full max-w-xs flex-col gap-2 text-center">
+          <span className="text-sm font-medium text-gray-700">
+            Lactate (mmol/L)
+          </span>
+          <input
+            className={`${inputClass} py-3 text-center text-4xl font-semibold tabular-nums`}
             inputMode="decimal"
+            enterKeyHint="done"
+            autoFocus
+            value={reading}
+            onChange={(event) => {
+              setReading(event.target.value);
+            }}
           />
-        </div>
+        </label>
         <button
           type="submit"
-          className={`${primaryButton} self-start`}
-          disabled={pending || !valid}
+          className={`${primaryButton} w-full max-w-xs justify-center py-3 text-lg`}
+          disabled={pending || !(value > 0)}
         >
-          {pending ? "Saving…" : "Save the reading"}
+          {pending ? "Saving…" : "Save"}
         </button>
-        <details>
-          <summary className="cursor-pointer text-sm font-medium text-gray-700">
-            How to take a sample
-          </summary>
-          <div className="pt-2">
-            <SamplingTips />
+        {(last !== undefined || onFinish !== undefined) && (
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-gray-600 tabular-nums">
+            {last !== undefined && (
+              <span>
+                Last: {last.label}, {formatMmol(last.mmolPerLiter)}
+              </span>
+            )}
+            {onUndo !== undefined && (
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending}
+                onClick={onUndo}
+              >
+                Undo
+              </button>
+            )}
+            {onFinish !== undefined && (
+              <button
+                type="button"
+                className={done ? primaryButton : secondaryButton}
+                disabled={pending}
+                onClick={onFinish}
+              >
+                {done ? "Past the threshold: finish" : "Finish the test"}
+              </button>
+            )}
           </div>
-        </details>
+        )}
       </form>
     </Card>
   );
 };
 
-interface ReadingProps {
-  test: LactateTest;
-  settings: Settings;
-  onNext: () => void;
-  onRedo: () => void;
-  onFinish: () => void;
-}
-
-// Reading shows the last stage's reading, and what to do next.
-const Reading: React.FC<ReadingProps> = ({
-  test,
-  settings,
-  onNext,
-  onRedo,
-  onFinish,
-}) => {
-  const last = test.stages.at(-1);
-  const previous = test.stages.at(-2);
-  if (last === undefined) {
-    return null;
-  }
-  const done = pastThreshold(test.restingLactateMmolPerLiter, test.stages);
-  const bigChange =
-    previous !== undefined &&
-    Math.abs(last.lactateMmolPerLiter - previous.lactateMmolPerLiter) >=
-      BIG_CHANGE_MMOL;
-  const next = nextHeartRate(
-    test.stages,
-    settings.startHeartRate,
-    settings.stepBpm
-  );
-  return (
-    <Card
-      title={`${formatMmol(last.lactateMmolPerLiter)} at ${last.heartRateBpm} bpm`}
-    >
-      <div className="flex flex-col gap-3 text-sm text-gray-700">
-        {bigChange && (
-          <p>
-            That's a big change from the last stage. If it looks wrong, hold the
-            same heart rate and measure again.
-          </p>
-        )}
-        {done ? (
-          <p>
-            Your lactate is past every definition of your aerobic threshold, so
-            the test is done. Cool down easy
-            {test.anaerobicThresholdHeartRateBpm === 0 &&
-              ", or run more stages until your lactate passes 4 mmol/L to find your anaerobic threshold too"}
-            .
-          </p>
-        ) : (
-          <p>Next, raise your heart rate to {next} bpm.</p>
-        )}
-        {test.aerobicThresholdHeartRateBpm > 0 && (
-          <p className="font-medium text-gray-900">
-            Your aerobic threshold: {test.aerobicThresholdHeartRateBpm} bpm.
-          </p>
-        )}
-        {test.anaerobicThresholdHeartRateBpm > 0 && (
-          <p className="font-medium text-gray-900">
-            Your anaerobic threshold: {test.anaerobicThresholdHeartRateBpm} bpm.
-          </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={primaryButton}
-            onClick={done ? onFinish : onNext}
-          >
-            {done ? "Finish the test" : `Start the ${next} bpm stage`}
-          </button>
-          <button
-            type="button"
-            className={secondaryButton}
-            onClick={done ? onNext : onFinish}
-          >
-            {done ? "Run another stage" : "Finish the test"}
-          </button>
-          <button type="button" className={ghostButton} onClick={onRedo}>
-            Measure again
-          </button>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-// Readings lists the test's readings so far.
-const Readings: React.FC<{ test: LactateTest }> = ({ test }) => (
-  <ul className="flex flex-col gap-1 text-sm text-gray-700 tabular-nums">
-    {test.restingLactateMmolPerLiter > 0 && (
-      <li>At rest: {formatMmol(test.restingLactateMmolPerLiter)}</li>
-    )}
-    {test.stages.map((stage) => (
-      <li key={stage.heartRateBpm}>
-        {stage.heartRateBpm} bpm: {formatMmol(stage.lactateMmolPerLiter)}
-      </li>
-    ))}
-  </ul>
-);
-
 // Phase is the step of a guided test.
-type Phase = "prepare" | "resting" | "warm-up" | "stage" | "reading";
-
-/**
- * ContinuedPhase returns the phase a continued test starts at: its next
- * stage, or the warm-up if it has none yet.
- */
-const continuedPhase = (test: LactateTest | undefined): Phase | undefined => {
-  if (test === undefined) {
-    return undefined;
-  }
-  return test.stages.length === 0 ? "warm-up" : "stage";
-};
+type Phase = "prepare" | "resting" | "stage";
 
 export interface GuidedTestProps {
   // The test so far, or undefined until it's created.
@@ -732,9 +539,8 @@ export interface GuidedTestProps {
 }
 
 /**
- * GuidedTest guides a lactate test as it's run: the checklist, the resting
- * reading, the warm-up, and each stage, saving each reading as it's entered,
- * so the test can be continued later.
+ * GuidedTest guides a lactate test: the checklist and settings, then the
+ * readings, saving each as it's entered, so the test can be continued later.
  */
 export const GuidedTest: React.FC<GuidedTestProps> = ({
   test: loaded,
@@ -756,20 +562,11 @@ export const GuidedTest: React.FC<GuidedTestProps> = ({
     ...DEFAULT_SETTINGS,
     startHeartRate: lastStart ?? DEFAULT_SETTINGS.startHeartRate,
   };
+  // A continued test goes straight to its next stage.
   const [chosenPhase, setPhase] = useState<Phase | undefined>(
     loaded === undefined ? "prepare" : undefined
   );
-  const phase = chosenPhase ?? continuedPhase(loaded);
-
-  const saveStages = (current: LactateTest, stages: LactateStage[]): void => {
-    save(current, stages)
-      .then(() => {
-        setPhase(stages.length > current.stages.length ? "reading" : "stage");
-      })
-      .catch(() => {
-        // The error is shown below, and the stage can be saved again.
-      });
-  };
+  const phase = chosenPhase ?? "stage";
 
   let content: React.ReactNode = null;
   if (phase === "prepare") {
@@ -787,10 +584,9 @@ export const GuidedTest: React.FC<GuidedTestProps> = ({
             setPhase("resting");
             return;
           }
-          // Without a resting reading to take, the warm-up is next.
           createTest(baseline.mode === "known" ? baseline.mmolPerLiter : 0)
             .then(() => {
-              setPhase("warm-up");
+              setPhase("stage");
             })
             .catch(() => {
               // The error is shown below, and the test can be started again.
@@ -800,67 +596,79 @@ export const GuidedTest: React.FC<GuidedTestProps> = ({
     );
   } else if (phase === "resting") {
     content = (
-      <Resting
+      <Entry
+        targetBpm={undefined}
+        last={undefined}
+        done={false}
         pending={pending}
         onSave={(mmolPerLiter) => {
           createTest(mmolPerLiter)
             .then(() => {
-              setPhase("warm-up");
+              setPhase("stage");
             })
             .catch(() => {
               // The error is shown below, and the reading can be saved again.
             });
         }}
+        onUndo={undefined}
+        onFinish={undefined}
       />
     );
-  } else if (loaded !== undefined && phase === "warm-up") {
-    content = (
-      <Card title="Warm up">
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-gray-700">
-            Warm up for {WARM_UP_MINUTES} to 20 minutes, very easy and below{" "}
-            {settings.startHeartRate} bpm, until you're lightly sweating.
-          </p>
-          <Timer minutes={WARM_UP_MINUTES} />
-          <button
-            type="button"
-            className={`${primaryButton} self-start`}
-            onClick={() => {
-              setPhase("stage");
-            }}
-          >
-            Start the first stage
-          </button>
-        </div>
-      </Card>
+  } else if (loaded !== undefined) {
+    const lastStage = loaded.stages.at(-1);
+    let last: EntryProps["last"] = undefined;
+    if (lastStage !== undefined) {
+      last = {
+        label: `${lastStage.heartRateBpm} bpm`,
+        mmolPerLiter: lastStage.lactateMmolPerLiter,
+      };
+    } else if (loaded.restingLactateMmolPerLiter > 0) {
+      last = {
+        label: "at rest",
+        mmolPerLiter: loaded.restingLactateMmolPerLiter,
+      };
+    }
+    const targetBpm = nextHeartRate(
+      loaded.stages,
+      settings.startHeartRate,
+      settings.stepBpm
     );
-  } else if (loaded !== undefined && phase === "stage") {
+    const saveStages = (stages: LactateStage[]): void => {
+      save(loaded, stages).catch(() => {
+        // The error is shown below, and the reading can be saved again.
+      });
+    };
     content = (
-      <Stage
-        // A new stage starts with empty inputs and a reset timer.
+      <Entry
+        // A new stage starts with an empty input.
         key={loaded.stages.length}
-        test={loaded}
-        settings={settings}
+        targetBpm={targetBpm}
+        last={last}
+        done={pastThreshold(loaded.restingLactateMmolPerLiter, loaded.stages)}
         pending={pending}
-        onSave={(stages) => {
-          saveStages(loaded, stages);
+        onSave={(mmolPerLiter) => {
+          saveStages([
+            ...loaded.stages,
+            create(LactateStageSchema, {
+              heartRateBpm: targetBpm,
+              lactateMmolPerLiter: mmolPerLiter,
+            }),
+          ]);
         }}
-      />
-    );
-  } else if (loaded !== undefined && phase === "reading") {
-    content = (
-      <Reading
-        test={loaded}
-        settings={settings}
-        onNext={() => {
-          setPhase("stage");
-        }}
-        onRedo={() => {
-          saveStages(loaded, loaded.stages.slice(0, -1));
-        }}
-        onFinish={() => {
-          onFinish(loaded);
-        }}
+        onUndo={
+          lastStage === undefined
+            ? undefined
+            : () => {
+                saveStages(loaded.stages.slice(0, -1));
+              }
+        }
+        onFinish={
+          lastStage === undefined
+            ? undefined
+            : () => {
+                onFinish(loaded);
+              }
+        }
       />
     );
   }
@@ -869,12 +677,6 @@ export const GuidedTest: React.FC<GuidedTestProps> = ({
     <div className="flex flex-col gap-4">
       {content}
       <ErrorText error={error} />
-      {loaded !== undefined &&
-        (loaded.restingLactateMmolPerLiter > 0 || loaded.stages.length > 0) && (
-          <Card title="Readings">
-            <Readings test={loaded} />
-          </Card>
-        )}
     </div>
   );
 };
@@ -935,7 +737,7 @@ const LactateTestRunPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl">
       <PageHeader
         title="Lactate test"
         subtitle={

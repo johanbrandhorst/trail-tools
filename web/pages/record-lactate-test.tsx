@@ -169,7 +169,7 @@ const RecordLactateTestPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl">
       <PageHeader
         title={`Lactate test for ${ownerName}`}
         subtitle={`The readings are saved to ${ownerName}'s lactate tests as you enter them. The link works until ${formatTimestamp(expireTime)}.`}
