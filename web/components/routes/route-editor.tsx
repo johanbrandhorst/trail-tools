@@ -2,6 +2,7 @@ import ElevationProfile from "@components/charts/elevation-profile";
 import ExploreControls from "@components/map/explore-controls";
 import type { LabelMarker } from "@components/map/layers";
 import {
+  DirectionArrows,
   DistanceMarkers,
   FitBounds,
   HoverMarker,
@@ -482,6 +483,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                 onHover={setMapHover}
               />
             )}
+            <DirectionArrows positions={pathTuples} />
             <DistanceMarkers markers={kmMarkers} />
             {geometryEditable && (
               <>

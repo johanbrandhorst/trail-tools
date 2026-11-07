@@ -3,6 +3,7 @@ import SendRoute from "@components/garmin/send-route";
 import ExploreControls from "@components/map/explore-controls";
 import type { LabelMarker } from "@components/map/layers";
 import {
+  DirectionArrows,
   DistanceMarkers,
   FitBounds,
   HoverMarker,
@@ -119,6 +120,7 @@ const RouteViewer: React.FC<RouteViewerProps> = ({ route, onEdit }) => {
                 onHover={setMapHover}
               />
             )}
+            <DirectionArrows positions={tuples} />
             <DistanceMarkers markers={kmMarkers} />
             {start !== undefined && (
               <PointMarker position={start} color="#16a34a" tooltip="Start" />
