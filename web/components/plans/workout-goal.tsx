@@ -1,6 +1,11 @@
 import ElevationProfile from "@components/charts/elevation-profile";
 import type { AerobicThreshold } from "@components/lactate/lactate-utils";
-import { FitBounds, PointMarker, PolylineLayer } from "@components/map/layers";
+import {
+  DirectionArrows,
+  FitBounds,
+  PointMarker,
+  PolylineLayer,
+} from "@components/map/layers";
 import MapView from "@components/map/map-view";
 import { toTuples } from "@components/routes/route-geometry";
 import Card from "@components/ui/card";
@@ -165,6 +170,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({
             {tuples.length > 1 && (
               <PolylineLayer positions={tuples} color="#d2601a" weight={4} />
             )}
+            <DirectionArrows positions={tuples} />
             {start !== undefined && (
               <PointMarker position={start} color="#111111" tooltip="Start" />
             )}
