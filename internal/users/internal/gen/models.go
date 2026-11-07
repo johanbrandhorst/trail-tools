@@ -1153,6 +1153,7 @@ type LactateTest struct {
 	StageLactatesMmolPerLiter  []float64
 	CreateTime                 pgtype.Timestamptz
 	UpdateTime                 pgtype.Timestamptz
+	WorkoutID                  pgtype.UUID
 }
 
 type LactateTestShare struct {
@@ -1163,6 +1164,7 @@ type LactateTestShare struct {
 	TestID         pgtype.UUID
 	ExpireTime     pgtype.Timestamptz
 	CreateTime     pgtype.Timestamptz
+	WorkoutID      pgtype.UUID
 }
 
 type OAuthAuthorizationCode struct {
@@ -1746,6 +1748,7 @@ type Workout struct {
 	RunBlocks                 json.RawMessage
 	ShareToken                pgtype.Text
 	LinkDismissed             bool
+	LactateTest               bool
 }
 
 type WorkoutExercise struct {

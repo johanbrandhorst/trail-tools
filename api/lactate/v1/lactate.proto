@@ -103,6 +103,11 @@ message LactateTest {
   // comparison, starting with 4 mmol/L. Dmax is left out for tests of fewer
   // than four stages, or whose lactate doesn't curve upward.
   repeated ThresholdEstimate anaerobic_threshold_estimates = 12 [(mcp.v1.field).output_only = true];
+  // The ID of the workout the test was run in, if any: a run of the user's
+  // training plan marked as a lactate test, see RunWorkout.lactate_test in
+  // TrainingPlanService. Empty if none. Tests recorded with a recording link
+  // for a workout are linked to it.
+  string workout_id = 13;
   // When the test was created.
   google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];
   // When the test was last updated.
@@ -214,9 +219,16 @@ message LactateTestShare {
   google.protobuf.Timestamp expire_time = 5 [(mcp.v1.field).output_only = true];
   // When the link was created.
   google.protobuf.Timestamp create_time = 6 [(mcp.v1.field).output_only = true];
+  // The ID of the workout the test is for, if any. Empty if none.
+  string workout_id = 7 [(mcp.v1.field).output_only = true];
 }
 
-message CreateLactateTestShareRequest {}
+message CreateLactateTestShareRequest {
+  // The ID of the workout the test is for, if any: the recorded test is
+  // linked to it. A run of the user's training plan marked as a lactate
+  // test. Empty for a test without a workout.
+  string workout_id = 1;
+}
 
 message CreateLactateTestShareResponse {
   // The created link, with its URL.

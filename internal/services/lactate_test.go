@@ -13,6 +13,7 @@ import (
 	"github.com/johanbrandhorst/trail-tools/internal/fit/fittest"
 	lactatev1 "github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1"
 	"github.com/johanbrandhorst/trail-tools/internal/gen/lactate/v1/lactatev1connect"
+	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
 	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
 	lactatesvc "github.com/johanbrandhorst/trail-tools/internal/services/lactate"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -336,4 +337,79 @@ func TestLactateTestRecordingLinks(t *testing.T) {
 	wantCode(t, err, connect.CodeNotFound)
 	_, err = recorderClient(e, "", "").CreateLactateTestShare(ctx, &lactatev1.CreateLactateTestShareRequest{})
 	wantCode(t, err, connect.CodeUnauthenticated)
+}
+
+func TestLactateTestForWorkout(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+
+	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
+		Plan: plansv1.TrainingPlan_builder{Name: "Base", StartDate: "2026-11-02", EndDate: "2026-11-30"}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId: plan.GetPlan().GetId(),
+		Workouts: []*plansv1.Workout{plansv1.Workout_builder{
+			Date: "2026-11-10", Title: "Lactate test",
+			Run: plansv1.RunWorkout_builder{Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, LactateTest: true}.Build(),
+		}.Build()},
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateWorkouts: %v", err)
+	}
+	workout := created.GetWorkouts()[0]
+	if !workout.GetRun().GetLactateTest() {
+		t.Fatalf("got run %v, want a lactate test", workout.GetRun())
+	}
+
+	// A recording link for the workout links the recorded test to it,
+	// whatever workout the recorder sends.
+	share, err := e.lactate.CreateLactateTestShare(ctx, lactatev1.CreateLactateTestShareRequest_builder{WorkoutId: workout.GetId()}.Build())
+	if err != nil {
+		t.Fatalf("CreateLactateTestShare: %v", err)
+	}
+	if share.GetShare().GetWorkoutId() != workout.GetId() {
+		t.Errorf("got link %v, want it for the workout", share.GetShare())
+	}
+	friend := recorderClient(e, openRecordingLink(t, e, share.GetShare().GetUrl(), ""), "")
+	recorded, err := friend.RecordLactateTest(ctx, lactatev1.RecordLactateTestRequest_builder{
+		Test: lactatev1.LactateTest_builder{Date: "2026-11-10", WorkoutId: share.GetShare().GetId(), Stages: stages([]int32{110}, []float64{1.2})}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatalf("RecordLactateTest: %v", err)
+	}
+	if recorded.GetTest().GetWorkoutId() != workout.GetId() {
+		t.Errorf("the recorded test is for workout %q, want %q", recorded.GetTest().GetWorkoutId(), workout.GetId())
+	}
+
+	// The user can link a test they run themselves.
+	own, err := e.lactate.CreateLactateTest(ctx, lactatev1.CreateLactateTestRequest_builder{
+		Test: lactatev1.LactateTest_builder{Date: "2026-11-10", WorkoutId: workout.GetId()}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatalf("CreateLactateTest: %v", err)
+	}
+	if own.GetTest().GetWorkoutId() != workout.GetId() {
+		t.Errorf("got test %v, want it for the workout", own.GetTest())
+	}
+
+	// Other users can't link to the user's workouts.
+	_, err = e.otherLactate.CreateLactateTest(ctx, lactatev1.CreateLactateTestRequest_builder{
+		Test: lactatev1.LactateTest_builder{Date: "2026-11-10", WorkoutId: workout.GetId()}.Build(),
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	_, err = e.otherLactate.CreateLactateTestShare(ctx, lactatev1.CreateLactateTestShareRequest_builder{WorkoutId: workout.GetId()}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+
+	// Deleting the workout keeps its tests.
+	if _, err := e.plans.DeleteWorkouts(ctx, plansv1.DeleteWorkoutsRequest_builder{PlanId: plan.GetPlan().GetId(), Ids: []string{workout.GetId()}}.Build()); err != nil {
+		t.Fatalf("DeleteWorkouts: %v", err)
+	}
+	got, err := e.lactate.GetLactateTest(ctx, lactatev1.GetLactateTestRequest_builder{Id: own.GetTest().GetId()}.Build())
+	if err != nil || got.GetTest().GetWorkoutId() != "" {
+		t.Errorf("after deleting the workout got test %v (%v), want it without a workout", got.GetTest(), err)
+	}
 }

@@ -98,6 +98,7 @@ type LactateTest struct {
 	xxx_hidden_ThresholdEstimates             *[]*ThresholdEstimate  `protobuf:"bytes,8,rep,name=threshold_estimates,json=thresholdEstimates,proto3"`
 	xxx_hidden_AnaerobicThresholdHeartRateBpm int32                  `protobuf:"varint,11,opt,name=anaerobic_threshold_heart_rate_bpm,json=anaerobicThresholdHeartRateBpm,proto3"`
 	xxx_hidden_AnaerobicThresholdEstimates    *[]*ThresholdEstimate  `protobuf:"bytes,12,rep,name=anaerobic_threshold_estimates,json=anaerobicThresholdEstimates,proto3"`
+	xxx_hidden_WorkoutId                      string                 `protobuf:"bytes,13,opt,name=workout_id,json=workoutId,proto3"`
 	xxx_hidden_CreateTime                     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3"`
 	xxx_hidden_UpdateTime                     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3"`
 	unknownFields                             protoimpl.UnknownFields
@@ -205,6 +206,13 @@ func (x *LactateTest) GetAnaerobicThresholdEstimates() []*ThresholdEstimate {
 	return nil
 }
 
+func (x *LactateTest) GetWorkoutId() string {
+	if x != nil {
+		return x.xxx_hidden_WorkoutId
+	}
+	return ""
+}
+
 func (x *LactateTest) GetCreateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_CreateTime
@@ -257,6 +265,10 @@ func (x *LactateTest) SetAnaerobicThresholdHeartRateBpm(v int32) {
 
 func (x *LactateTest) SetAnaerobicThresholdEstimates(v []*ThresholdEstimate) {
 	x.xxx_hidden_AnaerobicThresholdEstimates = &v
+}
+
+func (x *LactateTest) SetWorkoutId(v string) {
+	x.xxx_hidden_WorkoutId = v
 }
 
 func (x *LactateTest) SetCreateTime(v *timestamppb.Timestamp) {
@@ -323,6 +335,11 @@ type LactateTest_builder struct {
 	// comparison, starting with 4 mmol/L. Dmax is left out for tests of fewer
 	// than four stages, or whose lactate doesn't curve upward.
 	AnaerobicThresholdEstimates []*ThresholdEstimate
+	// The ID of the workout the test was run in, if any: a run of the user's
+	// training plan marked as a lactate test, see RunWorkout.lactate_test in
+	// TrainingPlanService. Empty if none. Tests recorded with a recording link
+	// for a workout are linked to it.
+	WorkoutId string
 	// When the test was created.
 	CreateTime *timestamppb.Timestamp
 	// When the test was last updated.
@@ -343,6 +360,7 @@ func (b0 LactateTest_builder) Build() *LactateTest {
 	x.xxx_hidden_ThresholdEstimates = &b.ThresholdEstimates
 	x.xxx_hidden_AnaerobicThresholdHeartRateBpm = b.AnaerobicThresholdHeartRateBpm
 	x.xxx_hidden_AnaerobicThresholdEstimates = &b.AnaerobicThresholdEstimates
+	x.xxx_hidden_WorkoutId = b.WorkoutId
 	x.xxx_hidden_CreateTime = b.CreateTime
 	x.xxx_hidden_UpdateTime = b.UpdateTime
 	return m0
@@ -1160,6 +1178,7 @@ type LactateTestShare struct {
 	xxx_hidden_TestId     string                 `protobuf:"bytes,4,opt,name=test_id,json=testId,proto3"`
 	xxx_hidden_ExpireTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expire_time,json=expireTime,proto3"`
 	xxx_hidden_CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3"`
+	xxx_hidden_WorkoutId  string                 `protobuf:"bytes,7,opt,name=workout_id,json=workoutId,proto3"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -1231,6 +1250,13 @@ func (x *LactateTestShare) GetCreateTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *LactateTestShare) GetWorkoutId() string {
+	if x != nil {
+		return x.xxx_hidden_WorkoutId
+	}
+	return ""
+}
+
 func (x *LactateTestShare) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -1253,6 +1279,10 @@ func (x *LactateTestShare) SetExpireTime(v *timestamppb.Timestamp) {
 
 func (x *LactateTestShare) SetCreateTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_CreateTime = v
+}
+
+func (x *LactateTestShare) SetWorkoutId(v string) {
+	x.xxx_hidden_WorkoutId = v
 }
 
 func (x *LactateTestShare) HasExpireTime() bool {
@@ -1294,6 +1324,8 @@ type LactateTestShare_builder struct {
 	ExpireTime *timestamppb.Timestamp
 	// When the link was created.
 	CreateTime *timestamppb.Timestamp
+	// The ID of the workout the test is for, if any. Empty if none.
+	WorkoutId string
 }
 
 func (b0 LactateTestShare_builder) Build() *LactateTestShare {
@@ -1306,13 +1338,15 @@ func (b0 LactateTestShare_builder) Build() *LactateTestShare {
 	x.xxx_hidden_TestId = b.TestId
 	x.xxx_hidden_ExpireTime = b.ExpireTime
 	x.xxx_hidden_CreateTime = b.CreateTime
+	x.xxx_hidden_WorkoutId = b.WorkoutId
 	return m0
 }
 
 type CreateLactateTestShareRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_WorkoutId string                 `protobuf:"bytes,1,opt,name=workout_id,json=workoutId,proto3"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CreateLactateTestShareRequest) Reset() {
@@ -1340,15 +1374,31 @@ func (x *CreateLactateTestShareRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+func (x *CreateLactateTestShareRequest) GetWorkoutId() string {
+	if x != nil {
+		return x.xxx_hidden_WorkoutId
+	}
+	return ""
+}
+
+func (x *CreateLactateTestShareRequest) SetWorkoutId(v string) {
+	x.xxx_hidden_WorkoutId = v
+}
+
 type CreateLactateTestShareRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	// The ID of the workout the test is for, if any: the recorded test is
+	// linked to it. A run of the user's training plan marked as a lactate
+	// test. Empty for a test without a workout.
+	WorkoutId string
 }
 
 func (b0 CreateLactateTestShareRequest_builder) Build() *CreateLactateTestShareRequest {
 	m0 := &CreateLactateTestShareRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
+	x.xxx_hidden_WorkoutId = b.WorkoutId
 	return m0
 }
 
@@ -2090,7 +2140,7 @@ var File_lactate_v1_lactate_proto protoreflect.FileDescriptor
 const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\n" +
 	"\x18lactate/v1/lactate.proto\x12\n" +
-	"lactate.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\xf8\x05\n" +
+	"lactate.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14mcp/v1/options.proto\"\x97\x06\n" +
 	"\vLactateTest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04date\x18\x02 \x01(\tR\x04date\x12\x14\n" +
@@ -2101,7 +2151,9 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	" aerobic_threshold_heart_rate_bpm\x18\a \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x1caerobicThresholdHeartRateBpm\x12V\n" +
 	"\x13threshold_estimates\x18\b \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x12thresholdEstimates\x12R\n" +
 	"\"anaerobic_threshold_heart_rate_bpm\x18\v \x01(\x05B\x06\xaa\x9f\x19\x02\b\x01R\x1eanaerobicThresholdHeartRateBpm\x12i\n" +
-	"\x1danaerobic_threshold_estimates\x18\f \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x1banaerobicThresholdEstimates\x12C\n" +
+	"\x1danaerobic_threshold_estimates\x18\f \x03(\v2\x1d.lactate.v1.ThresholdEstimateB\x06\xaa\x9f\x19\x02\b\x01R\x1banaerobicThresholdEstimates\x12\x1d\n" +
+	"\n" +
+	"workout_id\x18\r \x01(\tR\tworkoutId\x12C\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
 	"createTime\x12C\n" +
 	"\vupdate_time\x18\n" +
@@ -2135,7 +2187,7 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\x04test\x18\x01 \x01(\v2\x17.lactate.v1.LactateTestR\x04test\"*\n" +
 	"\x18DeleteLactateTestRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1b\n" +
-	"\x19DeleteLactateTestResponse\"\x8f\x02\n" +
+	"\x19DeleteLactateTestResponse\"\xb6\x02\n" +
 	"\x10LactateTestShare\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x02id\x12\x18\n" +
 	"\x03url\x18\x02 \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\x03url\x12\x1e\n" +
@@ -2144,8 +2196,12 @@ const file_lactate_v1_lactate_proto_rawDesc = "" +
 	"\vexpire_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
 	"expireTime\x12C\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
-	"createTime\"\x1f\n" +
-	"\x1dCreateLactateTestShareRequest\"T\n" +
+	"createTime\x12%\n" +
+	"\n" +
+	"workout_id\x18\a \x01(\tB\x06\xaa\x9f\x19\x02\b\x01R\tworkoutId\">\n" +
+	"\x1dCreateLactateTestShareRequest\x12\x1d\n" +
+	"\n" +
+	"workout_id\x18\x01 \x01(\tR\tworkoutId\"T\n" +
 	"\x1eCreateLactateTestShareResponse\x122\n" +
 	"\x05share\x18\x01 \x01(\v2\x1c.lactate.v1.LactateTestShareR\x05share\"\x1e\n" +
 	"\x1cListLactateTestSharesRequest\"U\n" +

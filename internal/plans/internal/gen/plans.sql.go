@@ -111,7 +111,8 @@ insert into workouts (
   location_lat,
   location_lng,
   location_name,
-  run_blocks
+  run_blocks,
+  lactate_test
 )
 select
   w.id,
@@ -131,7 +132,8 @@ select
   case when w.has_location then w.location_lat end,
   case when w.has_location then w.location_lng end,
   w.location_name,
-  nullif(w.run_blocks, '')::jsonb
+  nullif(w.run_blocks, '')::jsonb,
+  w.lactate_test
 from (
   select
     unnest($2::uuid[]) as id,
@@ -155,9 +157,10 @@ from (
     unnest($17::double precision[]) as location_lng,
     unnest($18::text[]) as location_name,
     -- Empty for runs without structure.
-    unnest($19::text[]) as run_blocks
+    unnest($19::text[]) as run_blocks,
+    unnest($20::boolean[]) as lactate_test
 ) w
-returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed
+returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed, lactate_test
 `
 
 type CreateWorkoutsParams struct {
@@ -180,6 +183,7 @@ type CreateWorkoutsParams struct {
 	LocationLngs               []float64
 	LocationNames              []string
 	RunBlocks                  []string
+	LactateTests               []bool
 }
 
 func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams) ([]*Workout, error) {
@@ -203,6 +207,7 @@ func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams)
 		arg.LocationLngs,
 		arg.LocationNames,
 		arg.RunBlocks,
+		arg.LactateTests,
 	)
 	if err != nil {
 		return nil, err
@@ -233,6 +238,7 @@ func (q *Queries) CreateWorkouts(ctx context.Context, arg *CreateWorkoutsParams)
 			&i.RunBlocks,
 			&i.ShareToken,
 			&i.LinkDismissed,
+			&i.LactateTest,
 		); err != nil {
 			return nil, err
 		}
@@ -394,7 +400,7 @@ func (q *Queries) GetTrainingPlan(ctx context.Context, arg *GetTrainingPlanParam
 }
 
 const getWorkout = `-- name: GetWorkout :one
-select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes, w.location_lat, w.location_lng, w.location_name, w.run_blocks, w.share_token, w.link_dismissed from workouts w
+select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes, w.location_lat, w.location_lng, w.location_name, w.run_blocks, w.share_token, w.link_dismissed, w.lactate_test from workouts w
 join training_plans p on p.id = w.plan_id
 where w.id = $1 and p.user_id = $2
 `
@@ -429,6 +435,7 @@ func (q *Queries) GetWorkout(ctx context.Context, arg *GetWorkoutParams) (*Worko
 		&i.RunBlocks,
 		&i.ShareToken,
 		&i.LinkDismissed,
+		&i.LactateTest,
 	)
 	return &i, err
 }
@@ -575,7 +582,7 @@ func (q *Queries) ListTrainingPlans(ctx context.Context, userID pgtype.UUID) ([]
 }
 
 const listUserWorkouts = `-- name: ListUserWorkouts :many
-select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes, w.location_lat, w.location_lng, w.location_name, w.run_blocks, w.share_token, w.link_dismissed from workouts w
+select w.id, w.plan_id, w.date, w.type, w.title, w.description, w.target_distance_meters, w.target_elevation_gain_meters, w.target_duration_seconds, w.target_terrain, w.route_id, w.completed_activity_id, w.create_time, w.start_time, w.start_window_minutes, w.location_lat, w.location_lng, w.location_name, w.run_blocks, w.share_token, w.link_dismissed, w.lactate_test from workouts w
 join training_plans p on p.id = w.plan_id
 where p.user_id = $1
   and ($2::date is null or w.date >= $2::date)
@@ -620,6 +627,7 @@ func (q *Queries) ListUserWorkouts(ctx context.Context, arg *ListUserWorkoutsPar
 			&i.RunBlocks,
 			&i.ShareToken,
 			&i.LinkDismissed,
+			&i.LactateTest,
 		); err != nil {
 			return nil, err
 		}
@@ -632,7 +640,7 @@ func (q *Queries) ListUserWorkouts(ctx context.Context, arg *ListUserWorkoutsPar
 }
 
 const listWorkouts = `-- name: ListWorkouts :many
-select id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed from workouts
+select id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed, lactate_test from workouts
 where plan_id = $1
   and ($2::date is null or date >= $2::date)
   and ($3::date is null or date <= $3::date)
@@ -676,6 +684,7 @@ func (q *Queries) ListWorkouts(ctx context.Context, arg *ListWorkoutsParams) ([]
 			&i.RunBlocks,
 			&i.ShareToken,
 			&i.LinkDismissed,
+			&i.LactateTest,
 		); err != nil {
 			return nil, err
 		}
@@ -808,9 +817,10 @@ update workouts set
   location_lat = $14,
   location_lng = $15,
   location_name = $16,
-  run_blocks = nullif($17::text, '')::jsonb
+  run_blocks = nullif($17::text, '')::jsonb,
+  lactate_test = $18
 where id = $1
-returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed
+returning id, plan_id, date, type, title, description, target_distance_meters, target_elevation_gain_meters, target_duration_seconds, target_terrain, route_id, completed_activity_id, create_time, start_time, start_window_minutes, location_lat, location_lng, location_name, run_blocks, share_token, link_dismissed, lactate_test
 `
 
 type UpdateWorkoutParams struct {
@@ -831,6 +841,7 @@ type UpdateWorkoutParams struct {
 	LocationLng               pgtype.Float8
 	LocationName              string
 	RunBlocks                 string
+	LactateTest               bool
 }
 
 func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (*Workout, error) {
@@ -852,6 +863,7 @@ func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (
 		arg.LocationLng,
 		arg.LocationName,
 		arg.RunBlocks,
+		arg.LactateTest,
 	)
 	var i Workout
 	err := row.Scan(
@@ -876,6 +888,7 @@ func (q *Queries) UpdateWorkout(ctx context.Context, arg *UpdateWorkoutParams) (
 		&i.RunBlocks,
 		&i.ShareToken,
 		&i.LinkDismissed,
+		&i.LactateTest,
 	)
 	return &i, err
 }

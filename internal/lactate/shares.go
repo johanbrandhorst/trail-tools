@@ -22,7 +22,10 @@ type Share struct {
 	// nil until one does.
 	RecorderSHA256 []byte
 	// The recorded test, invalid until the first reading is saved.
-	TestID     pgtype.UUID
+	TestID pgtype.UUID
+	// The workout the test is for, invalid if none. The recorded test is
+	// linked to it.
+	WorkoutID  pgtype.UUID
 	ExpireTime time.Time
 	CreateTime time.Time
 }
@@ -34,12 +37,17 @@ type Recording struct {
 	OwnerName string
 }
 
-// CreateShare stores a new share with the SHA-256 hash of its link's token.
-func (r *Repository) CreateShare(ctx context.Context, userID pgtype.UUID, tokenSHA256 []byte, expireTime time.Time) (*Share, error) {
+// CreateShare stores a new share with the SHA-256 hash of its link's token,
+// for a test run in a workout if workoutID is valid.
+func (r *Repository) CreateShare(ctx context.Context, userID pgtype.UUID, tokenSHA256 []byte, expireTime time.Time, workoutID pgtype.UUID) (*Share, error) {
+	if err := r.checkWorkout(ctx, userID, workoutID); err != nil {
+		return nil, err
+	}
 	s, err := r.q.CreateLactateTestShare(ctx, &gen.CreateLactateTestShareParams{
 		UserID:      userID,
 		TokenSHA256: tokenSHA256,
 		ExpireTime:  pgtype.Timestamptz{Time: expireTime, Valid: true},
+		WorkoutID:   workoutID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lactate test share: %w", err)
@@ -113,6 +121,7 @@ func (r *Repository) GetRecording(ctx context.Context, recorderSHA256 []byte) (*
 			TokenSHA256:    row.TokenSHA256,
 			RecorderSHA256: row.RecorderSHA256,
 			TestID:         row.TestID,
+			WorkoutID:      row.WorkoutID,
 			ExpireTime:     row.ExpireTime,
 			CreateTime:     row.CreateTime,
 		}),
@@ -134,6 +143,7 @@ func shareFromDB(s *gen.LactateTestShare) *Share {
 		UserID:         s.UserID,
 		RecorderSHA256: s.RecorderSHA256,
 		TestID:         s.TestID,
+		WorkoutID:      s.WorkoutID,
 		ExpireTime:     s.ExpireTime.Time,
 		CreateTime:     s.CreateTime.Time,
 	}

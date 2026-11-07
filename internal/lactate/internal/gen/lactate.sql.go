@@ -18,11 +18,12 @@ insert into lactate_tests (
   notes,
   resting_lactate_mmol_per_liter,
   stage_heart_rates_bpm,
-  stage_lactates_mmol_per_liter
+  stage_lactates_mmol_per_liter,
+  workout_id
 ) values (
-  $1, $2, $3, $4, $5, $6
+  $1, $2, $3, $4, $5, $6, $7
 )
-returning id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time
+returning id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time, workout_id
 `
 
 type CreateLactateTestParams struct {
@@ -32,6 +33,7 @@ type CreateLactateTestParams struct {
 	RestingLactateMmolPerLiter pgtype.Float8
 	StageHeartRatesBpm         []int32
 	StageLactatesMmolPerLiter  []float64
+	WorkoutID                  pgtype.UUID
 }
 
 func (q *Queries) CreateLactateTest(ctx context.Context, arg *CreateLactateTestParams) (*LactateTest, error) {
@@ -42,6 +44,7 @@ func (q *Queries) CreateLactateTest(ctx context.Context, arg *CreateLactateTestP
 		arg.RestingLactateMmolPerLiter,
 		arg.StageHeartRatesBpm,
 		arg.StageLactatesMmolPerLiter,
+		arg.WorkoutID,
 	)
 	var i LactateTest
 	err := row.Scan(
@@ -54,24 +57,31 @@ func (q *Queries) CreateLactateTest(ctx context.Context, arg *CreateLactateTestP
 		&i.StageLactatesMmolPerLiter,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.WorkoutID,
 	)
 	return &i, err
 }
 
 const createLactateTestShare = `-- name: CreateLactateTestShare :one
-insert into lactate_test_shares (user_id, token_sha256, expire_time)
-values ($1, $2, $3)
-returning id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time
+insert into lactate_test_shares (user_id, token_sha256, expire_time, workout_id)
+values ($1, $2, $3, $4)
+returning id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time, workout_id
 `
 
 type CreateLactateTestShareParams struct {
 	UserID      pgtype.UUID
 	TokenSHA256 []byte
 	ExpireTime  pgtype.Timestamptz
+	WorkoutID   pgtype.UUID
 }
 
 func (q *Queries) CreateLactateTestShare(ctx context.Context, arg *CreateLactateTestShareParams) (*LactateTestShare, error) {
-	row := q.db.QueryRow(ctx, createLactateTestShare, arg.UserID, arg.TokenSHA256, arg.ExpireTime)
+	row := q.db.QueryRow(ctx, createLactateTestShare,
+		arg.UserID,
+		arg.TokenSHA256,
+		arg.ExpireTime,
+		arg.WorkoutID,
+	)
 	var i LactateTestShare
 	err := row.Scan(
 		&i.ID,
@@ -81,6 +91,7 @@ func (q *Queries) CreateLactateTestShare(ctx context.Context, arg *CreateLactate
 		&i.TestID,
 		&i.ExpireTime,
 		&i.CreateTime,
+		&i.WorkoutID,
 	)
 	return &i, err
 }
@@ -122,7 +133,7 @@ func (q *Queries) DeleteLactateTestShare(ctx context.Context, arg *DeleteLactate
 }
 
 const getLactateTest = `-- name: GetLactateTest :one
-select id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time from lactate_tests
+select id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time, workout_id from lactate_tests
 where id = $1 and user_id = $2
 `
 
@@ -144,12 +155,13 @@ func (q *Queries) GetLactateTest(ctx context.Context, arg *GetLactateTestParams)
 		&i.StageLactatesMmolPerLiter,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.WorkoutID,
 	)
 	return &i, err
 }
 
 const getLactateTestRecording = `-- name: GetLactateTestRecording :one
-select s.id, s.user_id, s.token_sha256, s.recorder_sha256, s.test_id, s.expire_time, s.create_time, u.name as owner_name from lactate_test_shares s
+select s.id, s.user_id, s.token_sha256, s.recorder_sha256, s.test_id, s.expire_time, s.create_time, s.workout_id, u.name as owner_name from lactate_test_shares s
 join passkey_users u on u.id = s.user_id
 where s.recorder_sha256 = $1 and s.expire_time > now()
 `
@@ -162,6 +174,7 @@ type GetLactateTestRecordingRow struct {
 	TestID         pgtype.UUID
 	ExpireTime     pgtype.Timestamptz
 	CreateTime     pgtype.Timestamptz
+	WorkoutID      pgtype.UUID
 	OwnerName      string
 }
 
@@ -176,13 +189,14 @@ func (q *Queries) GetLactateTestRecording(ctx context.Context, recorderSha256 []
 		&i.TestID,
 		&i.ExpireTime,
 		&i.CreateTime,
+		&i.WorkoutID,
 		&i.OwnerName,
 	)
 	return &i, err
 }
 
 const getLactateTestShareByToken = `-- name: GetLactateTestShareByToken :one
-select id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time from lactate_test_shares
+select id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time, workout_id from lactate_test_shares
 where token_sha256 = $1 and expire_time > now()
 `
 
@@ -197,12 +211,13 @@ func (q *Queries) GetLactateTestShareByToken(ctx context.Context, tokenSha256 []
 		&i.TestID,
 		&i.ExpireTime,
 		&i.CreateTime,
+		&i.WorkoutID,
 	)
 	return &i, err
 }
 
 const listLactateTestShares = `-- name: ListLactateTestShares :many
-select id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time from lactate_test_shares
+select id, user_id, token_sha256, recorder_sha256, test_id, expire_time, create_time, workout_id from lactate_test_shares
 where user_id = $1 and expire_time > now()
 order by create_time desc
 `
@@ -224,6 +239,7 @@ func (q *Queries) ListLactateTestShares(ctx context.Context, userID pgtype.UUID)
 			&i.TestID,
 			&i.ExpireTime,
 			&i.CreateTime,
+			&i.WorkoutID,
 		); err != nil {
 			return nil, err
 		}
@@ -236,7 +252,7 @@ func (q *Queries) ListLactateTestShares(ctx context.Context, userID pgtype.UUID)
 }
 
 const listLactateTests = `-- name: ListLactateTests :many
-select id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time from lactate_tests
+select id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time, workout_id from lactate_tests
 where user_id = $1
 order by date desc, create_time desc
 `
@@ -260,6 +276,7 @@ func (q *Queries) ListLactateTests(ctx context.Context, userID pgtype.UUID) ([]*
 			&i.StageLactatesMmolPerLiter,
 			&i.CreateTime,
 			&i.UpdateTime,
+			&i.WorkoutID,
 		); err != nil {
 			return nil, err
 		}
@@ -290,6 +307,27 @@ func (q *Queries) OpenLactateTestShare(ctx context.Context, arg *OpenLactateTest
 	return result.RowsAffected(), nil
 }
 
+const ownsWorkout = `-- name: OwnsWorkout :one
+select exists (
+  select 1 from workouts w
+  join training_plans p on p.id = w.plan_id
+  where w.id = $1 and p.user_id = $2
+)
+`
+
+type OwnsWorkoutParams struct {
+	ID     pgtype.UUID
+	UserID pgtype.UUID
+}
+
+// Reports whether the workout exists and is in one of the user's plans.
+func (q *Queries) OwnsWorkout(ctx context.Context, arg *OwnsWorkoutParams) (bool, error) {
+	row := q.db.QueryRow(ctx, ownsWorkout, arg.ID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const setLactateTestShareTest = `-- name: SetLactateTestShareTest :exec
 update lactate_test_shares set test_id = $2
 where id = $1
@@ -312,9 +350,10 @@ update lactate_tests set
   resting_lactate_mmol_per_liter = $5,
   stage_heart_rates_bpm = $6,
   stage_lactates_mmol_per_liter = $7,
+  workout_id = $8,
   update_time = now()
 where id = $1 and user_id = $2
-returning id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time
+returning id, user_id, date, notes, resting_lactate_mmol_per_liter, stage_heart_rates_bpm, stage_lactates_mmol_per_liter, create_time, update_time, workout_id
 `
 
 type UpdateLactateTestParams struct {
@@ -325,6 +364,7 @@ type UpdateLactateTestParams struct {
 	RestingLactateMmolPerLiter pgtype.Float8
 	StageHeartRatesBpm         []int32
 	StageLactatesMmolPerLiter  []float64
+	WorkoutID                  pgtype.UUID
 }
 
 func (q *Queries) UpdateLactateTest(ctx context.Context, arg *UpdateLactateTestParams) (*LactateTest, error) {
@@ -336,6 +376,7 @@ func (q *Queries) UpdateLactateTest(ctx context.Context, arg *UpdateLactateTestP
 		arg.RestingLactateMmolPerLiter,
 		arg.StageHeartRatesBpm,
 		arg.StageLactatesMmolPerLiter,
+		arg.WorkoutID,
 	)
 	var i LactateTest
 	err := row.Scan(
@@ -348,6 +389,7 @@ func (q *Queries) UpdateLactateTest(ctx context.Context, arg *UpdateLactateTestP
 		&i.StageLactatesMmolPerLiter,
 		&i.CreateTime,
 		&i.UpdateTime,
+		&i.WorkoutID,
 	)
 	return &i, err
 }

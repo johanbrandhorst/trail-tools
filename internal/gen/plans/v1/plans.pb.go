@@ -1558,6 +1558,7 @@ type RunWorkout struct {
 	xxx_hidden_TargetTerrain             v1.Terrain             `protobuf:"varint,5,opt,name=target_terrain,json=targetTerrain,proto3,enum=geo.v1.Terrain"`
 	xxx_hidden_RouteId                   string                 `protobuf:"bytes,6,opt,name=route_id,json=routeId,proto3"`
 	xxx_hidden_Blocks                    *[]*RunBlock           `protobuf:"bytes,7,rep,name=blocks,proto3"`
+	xxx_hidden_LactateTest               bool                   `protobuf:"varint,8,opt,name=lactate_test,json=lactateTest,proto3"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -1638,6 +1639,13 @@ func (x *RunWorkout) GetBlocks() []*RunBlock {
 	return nil
 }
 
+func (x *RunWorkout) GetLactateTest() bool {
+	if x != nil {
+		return x.xxx_hidden_LactateTest
+	}
+	return false
+}
+
 func (x *RunWorkout) SetIntensity(v RunIntensity) {
 	x.xxx_hidden_Intensity = v
 }
@@ -1666,6 +1674,10 @@ func (x *RunWorkout) SetBlocks(v []*RunBlock) {
 	x.xxx_hidden_Blocks = &v
 }
 
+func (x *RunWorkout) SetLactateTest(v bool) {
+	x.xxx_hidden_LactateTest = v
+}
+
 type RunWorkout_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1687,6 +1699,13 @@ type RunWorkout_builder struct {
 	// outside their targets. At most 20 blocks, and 50 steps in all, counting
 	// each block's steps once however often it's repeated.
 	Blocks []*RunBlock
+	// Whether the run is a blood lactate test: stages of a few minutes at
+	// rising heart rates, with the lactate measured after each, to find the
+	// aerobic threshold. See LactateTestService. Its workout page starts the
+	// test, or creates a link for someone else to record it, and the test is
+	// linked to the workout. Plan it as a base run without blocks: the
+	// stages are chosen when the test starts.
+	LactateTest bool
 }
 
 func (b0 RunWorkout_builder) Build() *RunWorkout {
@@ -1700,6 +1719,7 @@ func (b0 RunWorkout_builder) Build() *RunWorkout {
 	x.xxx_hidden_TargetTerrain = b.TargetTerrain
 	x.xxx_hidden_RouteId = b.RouteId
 	x.xxx_hidden_Blocks = &b.Blocks
+	x.xxx_hidden_LactateTest = b.LactateTest
 	return m0
 }
 
@@ -6335,7 +6355,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x04rest\x18\x11 \x01(\v2\x11.plans.v1.RestDayH\x00R\x04restB\t\n" +
 	"\adetailsJ\x04\b\a\x10\bJ\x04\b\b\x10\tJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
-	"\x10\vJ\x04\b\v\x10\fR\x16target_distance_metersR\x1ctarget_elevation_gain_metersR\x17target_duration_secondsR\x0etarget_terrainR\broute_id\"\xf0\x02\n" +
+	"\x10\vJ\x04\b\v\x10\fR\x16target_distance_metersR\x1ctarget_elevation_gain_metersR\x17target_duration_secondsR\x0etarget_terrainR\broute_id\"\x93\x03\n" +
 	"\n" +
 	"RunWorkout\x124\n" +
 	"\tintensity\x18\x01 \x01(\x0e2\x16.plans.v1.RunIntensityR\tintensity\x124\n" +
@@ -6344,7 +6364,8 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x17target_duration_seconds\x18\x04 \x01(\x05R\x15targetDurationSeconds\x126\n" +
 	"\x0etarget_terrain\x18\x05 \x01(\x0e2\x0f.geo.v1.TerrainR\rtargetTerrain\x12\x19\n" +
 	"\broute_id\x18\x06 \x01(\tR\arouteId\x12*\n" +
-	"\x06blocks\x18\a \x03(\v2\x12.plans.v1.RunBlockR\x06blocks\"M\n" +
+	"\x06blocks\x18\a \x03(\v2\x12.plans.v1.RunBlockR\x06blocks\x12!\n" +
+	"\flactate_test\x18\b \x01(\bR\vlactateTest\"M\n" +
 	"\bRunBlock\x12\x18\n" +
 	"\arepeats\x18\x01 \x01(\x05R\arepeats\x12'\n" +
 	"\x05steps\x18\x02 \x03(\v2\x11.plans.v1.RunStepR\x05steps\"\x90\x02\n" +

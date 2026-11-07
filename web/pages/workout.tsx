@@ -1,4 +1,5 @@
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
+import WorkoutLactateTest from "@components/lactate/workout-lactate-test";
 import Loading from "@components/loading";
 import RunSteps from "@components/plans/run-steps";
 import WorkoutDialog from "@components/plans/workout-dialog";
@@ -195,6 +196,8 @@ const WorkoutPage: React.FC = () => {
   const style = workoutStyle(workout.type);
   const planPath = `/plans/${workout.planId}?month=${workout.date.slice(0, 7)}`;
 
+  const lactateTest =
+    workout.details.case === "run" && workout.details.value.lactateTest;
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
       <Link
@@ -270,7 +273,12 @@ const WorkoutPage: React.FC = () => {
       </header>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Goal workout={workout} threshold={threshold} />
+          {/* A lactate test climbs past the threshold on purpose. */}
+          <Goal
+            workout={workout}
+            threshold={lactateTest ? undefined : threshold}
+          />
+          {lactateTest && <WorkoutLactateTest workout={workout} />}
           {workout.details.case === "run" &&
             workout.details.value.blocks.length > 0 && (
               <RunSteps blocks={workout.details.value.blocks} />

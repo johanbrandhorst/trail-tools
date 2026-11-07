@@ -48,7 +48,7 @@ import { today } from "helpers/dates";
 import { invalidateServices } from "helpers/query";
 import { readStorage, writeStorage } from "helpers/storage";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 /**
  * SETTINGS_KEY stores the guided test's settings, so the next test is run the
@@ -684,6 +684,9 @@ export const GuidedTest: React.FC<GuidedTestProps> = ({
 // LactateTestRunPage runs one of the user's lactate tests, or a new one.
 const LactateTestRunPage: React.FC = () => {
   const { id } = useParams();
+  // The workout a new test is run in, from the workout's page.
+  const [searchParams] = useSearchParams();
+  const workoutId = searchParams.get("workout") ?? "";
   const queryClient = useQueryClient();
   const transport = useTransport();
   const navigate = useNavigate();
@@ -756,7 +759,11 @@ const LactateTestRunPage: React.FC = () => {
         error={createTest.error ?? update.error}
         create={async (mmolPerLiter) => {
           await createTest.mutateAsync({
-            test: { date: today(), restingLactateMmolPerLiter: mmolPerLiter },
+            test: {
+              date: today(),
+              restingLactateMmolPerLiter: mmolPerLiter,
+              workoutId,
+            },
           });
         }}
         saveStages={async (current, stages) => {

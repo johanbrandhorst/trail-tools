@@ -5,9 +5,10 @@ insert into lactate_tests (
   notes,
   resting_lactate_mmol_per_liter,
   stage_heart_rates_bpm,
-  stage_lactates_mmol_per_liter
+  stage_lactates_mmol_per_liter,
+  workout_id
 ) values (
-  $1, $2, $3, $4, $5, $6
+  $1, $2, $3, $4, $5, $6, $7
 )
 returning *;
 
@@ -27,6 +28,7 @@ update lactate_tests set
   resting_lactate_mmol_per_liter = $5,
   stage_heart_rates_bpm = $6,
   stage_lactates_mmol_per_liter = $7,
+  workout_id = $8,
   update_time = now()
 where id = $1 and user_id = $2
 returning *;
@@ -36,8 +38,8 @@ delete from lactate_tests
 where id = $1 and user_id = $2;
 
 -- name: CreateLactateTestShare :one
-insert into lactate_test_shares (user_id, token_sha256, expire_time)
-values ($1, $2, $3)
+insert into lactate_test_shares (user_id, token_sha256, expire_time, workout_id)
+values ($1, $2, $3, $4)
 returning *;
 
 -- name: ListLactateTestShares :many
@@ -66,3 +68,11 @@ where s.recorder_sha256 = $1 and s.expire_time > now();
 -- name: SetLactateTestShareTest :exec
 update lactate_test_shares set test_id = $2
 where id = $1;
+
+-- name: OwnsWorkout :one
+-- Reports whether the workout exists and is in one of the user's plans.
+select exists (
+  select 1 from workouts w
+  join training_plans p on p.id = w.plan_id
+  where w.id = $1 and p.user_id = $2
+);

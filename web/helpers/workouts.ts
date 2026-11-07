@@ -19,12 +19,15 @@ export interface WorkoutTargets {
   terrain: Terrain;
   // Empty if the workout has no route.
   routeId: string;
+  // Whether a run is a lactate test.
+  lactateTest: boolean;
 }
 
 const NO_TARGETS: WorkoutTargets = {
   distanceMeters: 0,
   durationSeconds: 0,
   elevationGainMeters: 0,
+  lactateTest: false,
   routeId: "",
   terrain: Terrain.UNSPECIFIED,
 };
@@ -38,6 +41,7 @@ export const workoutTargets = (workout: Workout): WorkoutTargets => {
         distanceMeters: details.value.targetDistanceMeters,
         durationSeconds: details.value.targetDurationSeconds,
         elevationGainMeters: details.value.targetElevationGainMeters,
+        lactateTest: details.value.lactateTest,
         routeId: details.value.routeId,
         terrain: details.value.targetTerrain,
       };
@@ -114,11 +118,16 @@ export const workoutDetails = (
   switch (type) {
     case WorkoutType.BASE:
     case WorkoutType.INTENSITY: {
+      // The structure of an existing run is kept: it's edited elsewhere.
+      const existingRun =
+        existing?.details.case === "run" ? existing.details.value : undefined;
       return {
         case: "run",
         value: create(RunWorkoutSchema, {
+          blocks: existingRun?.blocks ?? [],
           intensity:
             type === WorkoutType.BASE ? RunIntensity.BASE : RunIntensity.HARD,
+          lactateTest: targets.lactateTest,
           routeId: targets.routeId,
           targetDistanceMeters: targets.distanceMeters,
           targetDurationSeconds: targets.durationSeconds,

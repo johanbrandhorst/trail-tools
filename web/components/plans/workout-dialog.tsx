@@ -107,6 +107,7 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
   );
   const [terrain, setTerrain] = useState(String(stored?.terrain ?? 0));
   const [routeId, setRouteId] = useState(stored?.routeId ?? "");
+  const [lactateTest, setLactateTest] = useState(stored?.lactateTest ?? false);
   const [completedId, setCompletedId] = useState(
     workout?.completedActivityId ?? ""
   );
@@ -174,6 +175,7 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       distanceMeters: distanceMeters,
       durationSeconds: durationSeconds,
       elevationGainMeters: vertMeters,
+      lactateTest,
       routeId: hasRoute(workoutType) ? routeId : "",
       terrain: targetTerrain,
     };
@@ -366,6 +368,25 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
               placeholder="1:30"
             />
           </div>
+        )}
+        {isRun && (
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={lactateTest}
+              onChange={(event) => {
+                setLactateTest(event.target.checked);
+              }}
+            />
+            <span>
+              Lactate test
+              <span className="block text-xs text-gray-500">
+                The workout page starts the test, or sends a link for someone
+                else to record it, and keeps its result.
+              </span>
+            </span>
+          </label>
         )}
         {selectedType === WorkoutType.STRENGTH && (
           <p className="text-sm text-gray-600">

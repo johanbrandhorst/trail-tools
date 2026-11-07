@@ -46,7 +46,7 @@ type TestRepository interface {
 	ListTests(ctx context.Context, userID pgtype.UUID) ([]*lactate.Test, error)
 	UpdateTest(ctx context.Context, test *lactate.Test) (*lactate.Test, error)
 	DeleteTest(ctx context.Context, userID, testID pgtype.UUID) error
-	CreateShare(ctx context.Context, userID pgtype.UUID, tokenSHA256 []byte, expireTime time.Time) (*lactate.Share, error)
+	CreateShare(ctx context.Context, userID pgtype.UUID, tokenSHA256 []byte, expireTime time.Time, workoutID pgtype.UUID) (*lactate.Share, error)
 	ListShares(ctx context.Context, userID pgtype.UUID) ([]*lactate.Share, error)
 	DeleteShare(ctx context.Context, userID, shareID pgtype.UUID) error
 	GetShareByToken(ctx context.Context, tokenSHA256 []byte) (*lactate.Share, error)
@@ -184,13 +184,31 @@ func testFromProto(userID pgtype.UUID, t *lactatev1.LactateTest) (*lactate.Test,
 		}
 		stages[i] = lactate.Stage{HeartRateBPM: heartRate, LactateMmolPerLiter: mmol}
 	}
+	workoutID, err := workoutIDFromProto(t.GetWorkoutId())
+	if err != nil {
+		return nil, err
+	}
 	return &lactate.Test{
 		UserID:                     userID,
 		Date:                       date,
 		Notes:                      strings.TrimSpace(t.GetNotes()),
 		RestingLactateMmolPerLiter: resting,
 		Stages:                     stages,
+		WorkoutID:                  workoutID,
 	}, nil
+}
+
+// workoutIDFromProto parses the ID of the workout a test is for, invalid if
+// it's empty.
+func workoutIDFromProto(id string) (pgtype.UUID, error) {
+	if id == "" {
+		return pgtype.UUID{}, nil
+	}
+	workoutID, err := store.StringToUUID(id)
+	if err != nil {
+		return pgtype.UUID{}, connect.Errorf(connect.CodeInvalidArgument, "invalid workout_id: %v", err).WithCause(err)
+	}
+	return workoutID, nil
 }
 
 func validLactate(mmolPerLiter float64) bool {
@@ -243,6 +261,7 @@ func TestToProto(t *lactate.Test) *lactatev1.LactateTest {
 		ThresholdEstimates:             estimates,
 		AnaerobicThresholdHeartRateBpm: t.HeartRateAt(lactate.AnaerobicThresholdMmolPerLiter),
 		AnaerobicThresholdEstimates:    anaerobic,
+		WorkoutId:                      store.UUIDToString(t.WorkoutID),
 		CreateTime:                     timestamppb.New(t.CreateTime),
 		UpdateTime:                     timestamppb.New(t.UpdateTime),
 	}.Build()
@@ -251,6 +270,9 @@ func TestToProto(t *lactate.Test) *lactatev1.LactateTest {
 func (s *Service) toConnectError(ctx context.Context, err error, msg string) error {
 	if connectErr := (*connect.Error)(nil); errors.As(err, &connectErr) {
 		return connectErr
+	}
+	if errors.Is(err, lactate.ErrWorkoutNotFound) {
+		return connect.NewError(connect.CodeInvalidArgument, "workout_id: no such workout in your training plans; get the ID from TrainingPlanService.ListWorkouts")
 	}
 	if errors.Is(err, store.ErrNotFound) {
 		return connect.NewError(connect.CodeNotFound, "lactate test not found")
