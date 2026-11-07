@@ -1,5 +1,5 @@
 import Loading from "@components/loading";
-import { TerrainBar } from "@components/routes/route-stats";
+import { TerrainBar, TerrainLegend } from "@components/routes/route-stats";
 import { Badge, EmptyState, PageHeader } from "@components/ui/misc";
 import QueryError from "@components/ui/query-error";
 import { cardClass, primaryButton } from "@components/ui/styles";
@@ -35,52 +35,55 @@ const RoutesPage: React.FC = () => {
     );
   } else {
     content = (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {data.routes.map((route) => (
-          <Link
-            key={route.id}
-            to={`/routes/${route.id}`}
-            className={`${cardClass} flex flex-col gap-2 p-4 hover:border-brand-400`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <h2 className="font-semibold text-gray-900">{route.name}</h2>
-              <Badge>{routeSourceLabel(route.source)}</Badge>
-            </div>
-            {route.stats !== undefined && (
-              <div className="flex gap-4 text-sm text-gray-700 tabular-nums">
-                <span>
-                  <span className="font-semibold">
-                    {formatKm(route.stats.distanceMeters)}
-                  </span>
-                </span>
-                <span>
-                  <span className="font-semibold">
-                    {formatMeters(route.stats.elevationGainMeters)}
-                  </span>{" "}
-                  gain
-                </span>
-                <span className="text-gray-500">
-                  max {Math.round(route.stats.maxElevationMeters)} m
-                </span>
+      <div className="flex flex-col gap-3">
+        <TerrainLegend />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {data.routes.map((route) => (
+            <Link
+              key={route.id}
+              to={`/routes/${route.id}`}
+              className={`${cardClass} flex flex-col gap-2 p-4 hover:border-brand-400`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="font-semibold text-gray-900">{route.name}</h2>
+                <Badge>{routeSourceLabel(route.source)}</Badge>
               </div>
-            )}
-            {route.stats !== undefined && (
-              <TerrainBar
-                terrain={route.stats.terrain}
-                showLegend={false}
-                className="h-2"
-              />
-            )}
-            {route.description !== "" && (
-              <p className="line-clamp-2 text-sm text-gray-500">
-                {route.description}
+              {route.stats !== undefined && (
+                <div className="flex gap-4 text-sm text-gray-700 tabular-nums">
+                  <span>
+                    <span className="font-semibold">
+                      {formatKm(route.stats.distanceMeters)}
+                    </span>
+                  </span>
+                  <span>
+                    <span className="font-semibold">
+                      {formatMeters(route.stats.elevationGainMeters)}
+                    </span>{" "}
+                    gain
+                  </span>
+                  <span className="text-gray-500">
+                    max {Math.round(route.stats.maxElevationMeters)} m
+                  </span>
+                </div>
+              )}
+              {route.stats !== undefined && (
+                <TerrainBar
+                  terrain={route.stats.terrain}
+                  showLegend={false}
+                  className="h-2"
+                />
+              )}
+              {route.description !== "" && (
+                <p className="line-clamp-2 text-sm text-gray-500">
+                  {route.description}
+                </p>
+              )}
+              <p className="mt-auto text-xs text-gray-400">
+                Updated {formatTimestamp(route.updateTime)}
               </p>
-            )}
-            <p className="mt-auto text-xs text-gray-400">
-              Updated {formatTimestamp(route.updateTime)}
-            </p>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     );
   }

@@ -10,6 +10,7 @@ import React, {
   useState,
 } from "react";
 
+import { enableOneFingerZoom } from "./one-finger-zoom";
 import { MAX_ZOOM, addTileLayers } from "./tile-layers";
 
 const MapContext = createContext<LeafletMap | null>(null);
@@ -112,6 +113,7 @@ const MapView: React.FC<MapViewProps> = ({
     };
     instance.on("blur", disableWheelZoom);
     container.addEventListener("mouseleave", disableWheelZoom);
+    const disableOneFingerZoom = enableOneFingerZoom(instance);
     addTileLayers(instance);
     leaflet.control.scale({ imperial: false }).addTo(instance);
     if (rememberView) {
@@ -131,6 +133,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       container.removeEventListener("mouseleave", disableWheelZoom);
       container.removeEventListener("pointerdown", enableWheelZoom);
+      disableOneFingerZoom();
       instance.remove();
       setMap(null);
     };

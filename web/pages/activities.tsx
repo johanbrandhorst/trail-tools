@@ -1,4 +1,8 @@
-import { RouteThumbnail } from "@components/activities/activity-bits";
+import {
+  ActivityThumbnail,
+  hasDistance,
+  useActivityMuscles,
+} from "@components/activities/activity-bits";
 import Loading from "@components/loading";
 import { SelectField, TextField } from "@components/ui/fields";
 import type { SelectOption } from "@components/ui/fields";
@@ -100,6 +104,9 @@ const ActivitiesPage: React.FC = () => {
       refetchInterval: 60 * 1000,
     }
   );
+  const muscles = useActivityMuscles(
+    data?.pages.flatMap((page) => page.activities) ?? []
+  );
 
   let content: React.ReactNode = null;
   if (isPending) {
@@ -139,7 +146,10 @@ const ActivitiesPage: React.FC = () => {
                   to={`/activities/${activity.id}`}
                   className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
                 >
-                  <RouteThumbnail polyline={activity.summaryPolyline} />
+                  <ActivityThumbnail
+                    activity={activity}
+                    muscles={muscles.get(activity.id)}
+                  />
                   <div className="min-w-0 grow">
                     <p className="truncate font-medium text-gray-900">
                       {activity.name}
@@ -160,9 +170,15 @@ const ActivitiesPage: React.FC = () => {
                   </div>
                   <div className="grid shrink-0 grid-cols-2 gap-x-4 text-right text-sm text-gray-800 tabular-nums sm:grid-cols-4">
                     <span className="font-semibold">
-                      {formatKm(activity.distanceMeters)}
+                      {hasDistance(activity)
+                        ? formatKm(activity.distanceMeters)
+                        : formatHoursMinutes(activity.movingTimeSeconds)}
                     </span>
-                    <span>{Math.round(activity.elevationGainMeters)} m</span>
+                    <span>
+                      {hasDistance(activity)
+                        ? `${Math.round(activity.elevationGainMeters)} m`
+                        : ""}
+                    </span>
                     <span className="hidden sm:inline">
                       {formatHoursMinutes(activity.movingTimeSeconds)}
                     </span>

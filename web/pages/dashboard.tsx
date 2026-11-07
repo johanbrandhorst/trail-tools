@@ -1,4 +1,8 @@
-import { RouteThumbnail } from "@components/activities/activity-bits";
+import {
+  ActivityThumbnail,
+  hasDistance,
+  useActivityMuscles,
+} from "@components/activities/activity-bits";
 import VolumeChart from "@components/charts/volume-chart";
 import GarminCard from "@components/garmin/garmin-card";
 import Loading from "@components/loading";
@@ -316,6 +320,7 @@ const RecentActivitiesCard: React.FC = () => {
   const { isPending, isError, data, error } = useQuery(listActivities, {
     pageSize: 8,
   });
+  const muscles = useActivityMuscles(data?.activities ?? []);
   let content: React.ReactNode = null;
   if (isPending) {
     content = <Loading />;
@@ -340,7 +345,11 @@ const RecentActivitiesCard: React.FC = () => {
               to={`/activities/${activity.id}`}
               className="flex items-center gap-3 py-2 hover:bg-gray-50"
             >
-              <RouteThumbnail polyline={activity.summaryPolyline} size={40} />
+              <ActivityThumbnail
+                activity={activity}
+                muscles={muscles.get(activity.id)}
+                size={40}
+              />
               <div className="min-w-0 grow">
                 <p className="truncate text-sm font-medium text-gray-900">
                   {activity.name}
@@ -351,11 +360,17 @@ const RecentActivitiesCard: React.FC = () => {
                 </p>
               </div>
               <div className="shrink-0 text-right text-xs text-gray-700 tabular-nums">
-                <p>{formatKm(activity.distanceMeters)}</p>
-                <p className="text-gray-500">
-                  {Math.round(activity.elevationGainMeters)} m ·{" "}
-                  {formatHoursMinutes(activity.movingTimeSeconds)}
-                </p>
+                {hasDistance(activity) ? (
+                  <>
+                    <p>{formatKm(activity.distanceMeters)}</p>
+                    <p className="text-gray-500">
+                      {Math.round(activity.elevationGainMeters)} m ·{" "}
+                      {formatHoursMinutes(activity.movingTimeSeconds)}
+                    </p>
+                  </>
+                ) : (
+                  <p>{formatHoursMinutes(activity.movingTimeSeconds)}</p>
+                )}
               </div>
             </Link>
           </li>

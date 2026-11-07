@@ -184,12 +184,24 @@ interface FigureProps {
   regions: Region[];
   muscles: MuscleSet;
   label: string;
+  compact?: boolean;
 }
 
 // Figure draws one view of the body with its muscles colored.
-const Figure: React.FC<FigureProps> = ({ regions, muscles, label }) => (
-  <figure className="flex flex-col items-center gap-1">
-    <svg viewBox="12 0 76 170" className="h-56 w-auto" aria-hidden="true">
+const Figure: React.FC<FigureProps> = ({
+  regions,
+  muscles,
+  label,
+  compact = false,
+}) => (
+  <figure
+    className={`flex flex-col items-center gap-1 ${compact ? "h-full" : ""}`}
+  >
+    <svg
+      viewBox="12 0 76 170"
+      className={`${compact ? "h-full" : "h-56"} w-auto`}
+      aria-hidden="true"
+    >
       {regions.map((region, index) => {
         let fill = region.muscle === undefined ? BODY_FILL : MUSCLE_FILL;
         if (
@@ -215,13 +227,20 @@ const Figure: React.FC<FigureProps> = ({ regions, muscles, label }) => (
         );
       })}
     </svg>
-    <figcaption className="text-xs text-gray-500">{label}</figcaption>
+    {!compact && (
+      <figcaption className="text-xs text-gray-500">{label}</figcaption>
+    )}
   </figure>
 );
 
 interface BodyMapProps {
   muscles: MuscleSet;
   className?: string;
+  /*
+   * Draw the figures without captions, filling the height, e.g. for a
+   * thumbnail.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -229,7 +248,11 @@ interface BodyMapProps {
  * behind: those worked hardest in a strong color, and those also worked in
  * a light one.
  */
-const BodyMap: React.FC<BodyMapProps> = ({ muscles, className = "" }) => {
+const BodyMap: React.FC<BodyMapProps> = ({
+  muscles,
+  className = "",
+  compact = false,
+}) => {
   const description = [
     muscles.primary.length > 0
       ? `Worked hardest: ${muscles.primary.map(muscleLabel).join(", ")}.`
@@ -244,10 +267,15 @@ const BodyMap: React.FC<BodyMapProps> = ({ muscles, className = "" }) => {
     <div
       role="img"
       aria-label={description === "" ? "No muscles set" : description}
-      className={`flex justify-center gap-6 ${className}`}
+      className={`flex justify-center ${compact ? "gap-0.5" : "gap-6"} ${className}`}
     >
-      <Figure regions={FRONT} muscles={muscles} label="Front" />
-      <Figure regions={BACK} muscles={muscles} label="Back" />
+      <Figure
+        regions={FRONT}
+        muscles={muscles}
+        label="Front"
+        compact={compact}
+      />
+      <Figure regions={BACK} muscles={muscles} label="Back" compact={compact} />
     </div>
   );
 };
