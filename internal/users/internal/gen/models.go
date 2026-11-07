@@ -1749,6 +1749,7 @@ type Workout struct {
 	ShareToken                pgtype.Text
 	LinkDismissed             bool
 	LactateTest               bool
+	RunFueling                json.RawMessage
 }
 
 type WorkoutExercise struct {

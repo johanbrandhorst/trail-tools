@@ -113,6 +113,8 @@ type Workout struct {
 	RunBlocks []RunBlock
 	// Whether a run is a lactate test, run in stages of rising heart rate.
 	LactateTest bool
+	// What to eat and drink during a run. Nil if it has no fueling plan.
+	RunFueling *RunFueling
 	// The token of the workout's share link, empty if it isn't shared.
 	ShareToken string
 	// The exercises of a strength workout, in order. Nil for other types.
@@ -390,6 +392,7 @@ func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.U
 		params.LocationNames = append(params.LocationNames, w.LocationName)
 		params.RunBlocks = append(params.RunBlocks, runBlocksToDB(w.RunBlocks))
 		params.LactateTests = append(params.LactateTests, w.LactateTest)
+		params.RunFuelings = append(params.RunFuelings, runFuelingToDB(w.RunFueling))
 	}
 	var wr workoutReader
 	err := r.db.Transact(ctx, func(b *store.Batch) error {
@@ -511,6 +514,7 @@ func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *W
 				LocationName:              w.LocationName,
 				RunBlocks:                 runBlocksToDB(w.RunBlocks),
 				LactateTest:               w.LactateTest,
+				RunFueling:                runFuelingToDB(w.RunFueling),
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
 				return store.ErrNotFound
@@ -644,6 +648,7 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		LocationName:              w.LocationName,
 		RunBlocks:                 runBlocksFromDB(w.RunBlocks),
 		LactateTest:               w.LactateTest,
+		RunFueling:                runFuelingFromDB(w.RunFueling),
 		ShareToken:                w.ShareToken.String,
 	}
 	if w.LocationLat.Valid && w.LocationLng.Valid {

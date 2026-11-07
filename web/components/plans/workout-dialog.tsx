@@ -1,3 +1,4 @@
+import { create as createMessage } from "@bufbuild/protobuf";
 import { SelectField, TextAreaField, TextField } from "@components/ui/fields";
 import type { SelectOption } from "@components/ui/fields";
 import Modal from "@components/ui/modal";
@@ -18,7 +19,11 @@ import {
   updateWorkout,
 } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import type { Workout } from "gen/plans/v1/plans_pb";
-import { TrainingPlanService, WorkoutType } from "gen/plans/v1/plans_pb";
+import {
+  RunFuelingSchema,
+  TrainingPlanService,
+  WorkoutType,
+} from "gen/plans/v1/plans_pb";
 import { listRoutes } from "gen/routes/v1/routes-RouteService_connectquery";
 import { isDateString, isWithin } from "helpers/dates";
 import { formatKm } from "helpers/format";
@@ -108,6 +113,17 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
   const [terrain, setTerrain] = useState(String(stored?.terrain ?? 0));
   const [routeId, setRouteId] = useState(stored?.routeId ?? "");
   const [lactateTest, setLactateTest] = useState(stored?.lactateTest ?? false);
+  const storedFueling =
+    workout?.details.case === "run" ? workout.details.value.fueling : undefined;
+  const [carbs, setCarbs] = useState(
+    numberInput(storedFueling?.carbsGramsPerHour ?? 0)
+  );
+  const [fluid, setFluid] = useState(
+    numberInput(storedFueling?.fluidMlPerHour ?? 0)
+  );
+  const [sodium, setSodium] = useState(
+    numberInput(storedFueling?.sodiumMgPerHour ?? 0)
+  );
   const [completedId, setCompletedId] = useState(
     workout?.completedActivityId ?? ""
   );
@@ -167,6 +183,13 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       setValidation("Duration must be in the format h:mm.");
       return;
     }
+    const rates = [carbs, fluid, sodium].map((value) =>
+      value.trim() === "" ? 0 : Number(value)
+    );
+    if (rates.some((rate) => !Number.isFinite(rate) || rate < 0)) {
+      setValidation("Fueling rates must be positive numbers.");
+      return;
+    }
     setValidation("");
     const workoutType: WorkoutType = Number(type);
     const targetTerrain: Terrain = Number(terrain);
@@ -180,6 +203,19 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       terrain: targetTerrain,
     };
     const details = workoutDetails(workoutType, targets, workout);
+    if (details.case === "run") {
+      // A run without rates has no fueling plan; its notes are kept.
+      const [carbsRate = 0, fluidRate = 0, sodiumRate = 0] = rates;
+      details.value.fueling =
+        carbsRate === 0 && fluidRate === 0 && sodiumRate === 0
+          ? undefined
+          : createMessage(RunFuelingSchema, {
+              carbsGramsPerHour: carbsRate,
+              fluidMlPerHour: fluidRate,
+              notes: storedFueling?.notes ?? "",
+              sodiumMgPerHour: sodiumRate,
+            });
+    }
     const fields = {
       completedActivityId: completedId,
       date,
@@ -368,6 +404,38 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
               placeholder="1:30"
             />
           </div>
+        )}
+        {isRun && (
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-sm font-medium text-gray-700">
+              Fueling per hour
+            </legend>
+            <div className="grid grid-cols-3 gap-3">
+              <TextField
+                label="Carbs (g)"
+                value={carbs}
+                onChange={setCarbs}
+                inputMode="numeric"
+              />
+              <TextField
+                label="Fluid (ml)"
+                value={fluid}
+                onChange={setFluid}
+                inputMode="numeric"
+              />
+              <TextField
+                label="Sodium (mg)"
+                value={sodium}
+                onChange={setSodium}
+                inputMode="numeric"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              The amounts to carry are worked out from the run&apos;s time, or
+              its distance and climb, and fluid and sodium are raised for the
+              heat in the forecast. Leave empty for no fueling plan.
+            </p>
+          </fieldset>
         )}
         {isRun && (
           <label className="flex items-start gap-2 text-sm text-gray-700">
