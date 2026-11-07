@@ -895,10 +895,14 @@ message CreateWorkoutsResponse {
 message UpdateWorkoutRequest {
   // The workout to update. The ID must be set.
   Workout workout = 1;
-  // The fields to update, e.g. "title,strength". The kind of workout is
-  // updated as a whole: "run" replaces the run's targets and route, and
-  // "strength" its exercises, keeping its log. If empty, all fields are
-  // replaced.
+  // The fields to update, e.g. "title,strength". "run" replaces the whole
+  // run: its targets, route, blocks and fueling. To change part of it,
+  // name the field within it with a dot, e.g. "run.lactate_test" or
+  // "run.fueling.carbs_grams_per_hour", and send only that field: the rest
+  // is kept. "strength" replaces the exercises and groups, keeping the log.
+  // A path into a kind of workout the workout isn't, like "strength.groups"
+  // on a run, is refused: change its kind by sending the whole field. If
+  // empty, all fields are replaced.
   google.protobuf.FieldMask update_mask = 2;
 }
 

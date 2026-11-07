@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect/v2"
 	geov1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
 	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func TestRunFueling(t *testing.T) {
@@ -88,5 +89,53 @@ func TestRunFueling(t *testing.T) {
 		if err != nil && !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: got %q, want it to say %q", name, err, tc.want)
 		}
+	}
+}
+
+func TestUpdateWorkoutField(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	ctx := context.Background()
+	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
+		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: "2026-11-02", EndDate: "2026-11-30"}.Build(),
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := []*plansv1.RunBlock{plansv1.RunBlock_builder{Repeats: 6, Steps: []*plansv1.RunStep{
+		plansv1.RunStep_builder{Kind: plansv1.RunStepKind_RUN_STEP_KIND_RUN, DurationSeconds: 180}.Build(),
+	}}.Build()}
+	created, err := e.plans.CreateWorkouts(ctx, plansv1.CreateWorkoutsRequest_builder{
+		PlanId: plan.GetPlan().GetId(),
+		Workouts: []*plansv1.Workout{plansv1.Workout_builder{Date: "2026-11-10", Title: "Stages", Run: plansv1.RunWorkout_builder{
+			Intensity: plansv1.RunIntensity_RUN_INTENSITY_BASE, TargetDurationSeconds: 3600, Blocks: blocks,
+		}.Build()}.Build()},
+	}.Build())
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := created.GetWorkouts()[0].GetId()
+
+	// One field of the run changes, sending only it.
+	updated, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: id, Run: plansv1.RunWorkout_builder{LactateTest: true}.Build()}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"run.lactateTest"}},
+	}.Build())
+	if err != nil {
+		t.Fatalf("UpdateWorkout: %v", err)
+	}
+	run := updated.GetWorkout().GetRun()
+	if !run.GetLactateTest() || len(run.GetBlocks()) != 1 || run.GetTargetDurationSeconds() != 3600 || run.GetIntensity() != plansv1.RunIntensity_RUN_INTENSITY_BASE {
+		t.Errorf("got run %v, want a lactate test with its blocks and targets kept", run)
+	}
+
+	// A field of another kind of workout is refused, saying what to do.
+	_, err = e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout:    plansv1.Workout_builder{Id: id}.Build(),
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"strength.target_duration_seconds"}},
+	}.Build())
+	wantCode(t, err, connect.CodeInvalidArgument)
+	if err != nil && !strings.Contains(err.Error(), `with the path "strength"`) {
+		t.Errorf("got %q, want it to say to send the whole strength field", err)
 	}
 }

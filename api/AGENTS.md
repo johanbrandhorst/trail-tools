@@ -48,7 +48,10 @@ STANDARD lint rules, and `make buf-format` formats the files.
   comments ("Maximum 400."), and check them in the service.
 - Updates take the resource and a `google.protobuf.FieldMask update_mask`,
   documented as "The fields to update, e.g. "date,course_route_id". If empty,
-  all fields are replaced." The service applies it with `internal/protomask`.
+  all fields are replaced." The service applies it with `internal/protomask`,
+  which also takes dotted paths into message fields, like "run.lactate_test",
+  so agents can change one field without resending the message around it.
+  Document them where a resource has message fields worth updating in part.
 - List methods return everything, in a documented order, unless the list can
   grow large: then page with `page_size`, `page_token` and `next_page_token`,
   like `ListActivities`.
