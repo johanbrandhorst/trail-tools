@@ -1,7 +1,7 @@
 import { Stat } from "@components/ui/misc";
 import type { RouteStats, TerrainShare } from "gen/routes/v1/routes_pb";
 import { formatKm, formatMeters, formatPercent } from "helpers/format";
-import { terrainStyle } from "helpers/labels";
+import { TERRAIN_STYLES, terrainStyle } from "helpers/labels";
 import React from "react";
 
 interface TerrainBarProps {
@@ -64,6 +64,25 @@ export const TerrainBar: React.FC<TerrainBarProps> = ({
     </div>
   );
 };
+
+/**
+ * TerrainLegend names the colors of terrain bars shown without their own
+ * legend, like those of a list of routes.
+ */
+export const TerrainLegend: React.FC = () => (
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600">
+    <span className="font-medium">Terrain:</span>
+    {TERRAIN_STYLES.map((style) => (
+      <span key={style.label} className="inline-flex items-center gap-1">
+        <span
+          className="inline-block size-2.5 rounded-sm"
+          style={{ backgroundColor: style.color }}
+        />
+        {style.label}
+      </span>
+    ))}
+  </div>
+);
 
 interface RouteStatsPanelProps {
   stats: RouteStats | undefined;
