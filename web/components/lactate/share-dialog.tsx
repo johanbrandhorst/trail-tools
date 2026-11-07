@@ -23,6 +23,8 @@ import React from "react";
 import { Link } from "react-router";
 
 interface ShareDialogProps {
+  // The workout the test is for, to link the recorded test to it, if any.
+  workoutId?: string;
   onClose: () => void;
 }
 
@@ -31,7 +33,10 @@ interface ShareDialogProps {
  * the user, like a friend holding the lactate meter, and lists the links
  * that still work.
  */
-const ShareDialog: React.FC<ShareDialogProps> = ({ onClose }) => {
+const ShareDialog: React.FC<ShareDialogProps> = ({
+  workoutId = "",
+  onClose,
+}) => {
   const queryClient = useQueryClient();
   const shares = useQuery(listLactateTestShares, {});
   const createShare = useMutation(createLactateTestShare, {
@@ -61,7 +66,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ onClose }) => {
             className={`${primaryButton} self-start`}
             disabled={createShare.isPending}
             onClick={() => {
-              createShare.mutate({});
+              createShare.mutate({ workoutId });
             }}
           >
             {createShare.isPending ? "Creating…" : "Create a link"}

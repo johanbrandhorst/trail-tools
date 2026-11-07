@@ -44,7 +44,9 @@ type Test struct {
 	// The resting blood lactate in mmol/L, 0 if not measured.
 	RestingLactateMmolPerLiter float64
 	// The stages, in the order they were run.
-	Stages     []Stage
+	Stages []Stage
+	// The workout the test was run in, invalid if none.
+	WorkoutID  pgtype.UUID
 	CreateTime time.Time
 	UpdateTime time.Time
 }
@@ -197,8 +199,31 @@ func NewRepository(log *slog.Logger, db *store.DB) (*Repository, error) {
 	}, nil
 }
 
+// ErrWorkoutNotFound is returned when a test or share is linked to a
+// workout that isn't in one of the user's plans.
+var ErrWorkoutNotFound = errors.New("workout not found")
+
+// checkWorkout returns ErrWorkoutNotFound unless the workout, if valid, is in
+// one of the user's plans. The foreign key only checks that it exists.
+func (r *Repository) checkWorkout(ctx context.Context, userID, workoutID pgtype.UUID) error {
+	if !workoutID.Valid {
+		return nil
+	}
+	owns, err := r.q.OwnsWorkout(ctx, &gen.OwnsWorkoutParams{ID: workoutID, UserID: userID})
+	if err != nil {
+		return fmt.Errorf("failed to check the workout: %w", err)
+	}
+	if !owns {
+		return ErrWorkoutNotFound
+	}
+	return nil
+}
+
 // CreateTest stores a new test.
 func (r *Repository) CreateTest(ctx context.Context, test *Test) (*Test, error) {
+	if err := r.checkWorkout(ctx, test.UserID, test.WorkoutID); err != nil {
+		return nil, err
+	}
 	heartRates, lactates := stageColumns(test.Stages)
 	dbTest, err := r.q.CreateLactateTest(ctx, &gen.CreateLactateTestParams{
 		UserID:                     test.UserID,
@@ -207,6 +232,7 @@ func (r *Repository) CreateTest(ctx context.Context, test *Test) (*Test, error) 
 		RestingLactateMmolPerLiter: restingToDB(test.RestingLactateMmolPerLiter),
 		StageHeartRatesBpm:         heartRates,
 		StageLactatesMmolPerLiter:  lactates,
+		WorkoutID:                  test.WorkoutID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lactate test: %w", err)
@@ -241,6 +267,9 @@ func (r *Repository) ListTests(ctx context.Context, userID pgtype.UUID) ([]*Test
 
 // UpdateTest replaces a test.
 func (r *Repository) UpdateTest(ctx context.Context, test *Test) (*Test, error) {
+	if err := r.checkWorkout(ctx, test.UserID, test.WorkoutID); err != nil {
+		return nil, err
+	}
 	heartRates, lactates := stageColumns(test.Stages)
 	dbTest, err := r.q.UpdateLactateTest(ctx, &gen.UpdateLactateTestParams{
 		ID:                         test.ID,
@@ -250,6 +279,7 @@ func (r *Repository) UpdateTest(ctx context.Context, test *Test) (*Test, error) 
 		RestingLactateMmolPerLiter: restingToDB(test.RestingLactateMmolPerLiter),
 		StageHeartRatesBpm:         heartRates,
 		StageLactatesMmolPerLiter:  lactates,
+		WorkoutID:                  test.WorkoutID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -298,6 +328,7 @@ func testFromDB(t *gen.LactateTest) *Test {
 		Notes:                      t.Notes,
 		RestingLactateMmolPerLiter: t.RestingLactateMmolPerLiter.Float64,
 		Stages:                     stages,
+		WorkoutID:                  t.WorkoutID,
 		CreateTime:                 t.CreateTime.Time,
 		UpdateTime:                 t.UpdateTime.Time,
 	}

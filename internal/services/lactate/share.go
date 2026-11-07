@@ -53,13 +53,17 @@ func RecorderMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Service) CreateLactateTestShare(ctx context.Context, _ *lactatev1.CreateLactateTestShareRequest) (*lactatev1.CreateLactateTestShareResponse, error) {
+func (s *Service) CreateLactateTestShare(ctx context.Context, req *lactatev1.CreateLactateTestShareRequest) (*lactatev1.CreateLactateTestShareResponse, error) {
 	userID, ok := authn.GetUserID(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeUnauthenticated, "")
 	}
+	workoutID, err := workoutIDFromProto(req.GetWorkoutId())
+	if err != nil {
+		return nil, err
+	}
 	token := rand.Text()
-	share, err := s.tests.CreateShare(ctx, userID, hashSecret(token), s.nowFn().Add(shareLifetime))
+	share, err := s.tests.CreateShare(ctx, userID, hashSecret(token), s.nowFn().Add(shareLifetime), workoutID)
 	if err != nil {
 		return nil, s.toConnectError(ctx, err, "failed to create lactate test share")
 	}
@@ -198,6 +202,8 @@ func (s *Service) RecordLactateTest(ctx context.Context, req *lactatev1.RecordLa
 	if err != nil {
 		return nil, err
 	}
+	// The recorder can't choose the workout: the test is for the link's.
+	test.WorkoutID = recording.WorkoutID
 	var saved *lactate.Test
 	if recording.TestID.Valid {
 		test.ID = recording.TestID
@@ -238,6 +244,7 @@ func shareToProto(share *lactate.Share) *lactatev1.LactateTestShare {
 		Id:         store.UUIDToString(share.ID),
 		Opened:     share.RecorderSHA256 != nil,
 		TestId:     store.UUIDToString(share.TestID),
+		WorkoutId:  store.UUIDToString(share.WorkoutID),
 		ExpireTime: timestamppb.New(share.ExpireTime),
 		CreateTime: timestamppb.New(share.CreateTime),
 	}.Build()

@@ -152,9 +152,16 @@ const LactateTestPage: React.FC = () => {
       <PageHeader
         title={`Lactate test · ${formatDate(test.date)}`}
         subtitle={
-          <Link to="/lactate-tests" className={linkClass}>
-            All lactate tests
-          </Link>
+          <span className="flex flex-wrap gap-x-3">
+            <Link to="/lactate-tests" className={linkClass}>
+              All lactate tests
+            </Link>
+            {test.workoutId !== "" && (
+              <Link to={`/workouts/${test.workoutId}`} className={linkClass}>
+                The planned workout
+              </Link>
+            )}
+          </span>
         }
         actions={
           <div className="flex flex-wrap gap-2">
