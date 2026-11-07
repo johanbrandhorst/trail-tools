@@ -128,8 +128,12 @@ export const CopyField: React.FC<CopyFieldProps> = ({
       }, 1500);
     });
   };
+  /*
+   * It shrinks to its container, scrolling a long value, rather than
+   * widening a column or dialog to the value's width.
+   */
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex w-full min-w-0 items-start gap-2">
       {multiline ? (
         <pre className="min-w-0 grow overflow-x-auto rounded-md bg-gray-900 p-3 font-mono text-xs text-gray-100">
           {value}
@@ -141,7 +145,7 @@ export const CopyField: React.FC<CopyFieldProps> = ({
       )}
       <button
         type="button"
-        className={secondaryButton}
+        className={`${secondaryButton} shrink-0`}
         onClick={copy}
         aria-label="Copy to clipboard"
       >
