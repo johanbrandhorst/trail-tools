@@ -141,6 +141,10 @@ type env struct {
 // consentPage stands in for the frontend's OAuth consent page.
 const consentPage = "consent page"
 
+// frontendPage is what the test server answers for the frontend's pages
+// under paths the server also serves files at.
+const frontendPage = "frontend"
+
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	ctx := context.Background()
@@ -273,7 +277,10 @@ func newEnv(t *testing.T) *env {
 	mux.Handle("/routes/", routeService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle("/workouts/", planService.DownloadHandler(http.NotFoundHandler()))
 	mux.Handle(plan.ShareDownloadPath, planService.ShareDownloadHandler())
-	mux.Handle(plan.CalendarPath, planService.CalendarHandler())
+	// The frontend's calendar pages answer with frontendPage.
+	mux.Handle(plan.CalendarPath, planService.CalendarHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, frontendPage)
+	})))
 	mux.Handle("/race-plans/", racePlanService.CourseHandler(http.NotFoundHandler()))
 	e.imports = &fakeImportRunner{}
 	srv3 := connect.NewServer()

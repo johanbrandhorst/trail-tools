@@ -130,9 +130,15 @@ func calendarToken(r *http.Request) string {
 
 // CalendarHandler serves calendar feeds, without signing in: the token
 // identifies the user. Calendar apps refresh often, so it takes two
-// round trips to the database.
-func (s *Service) CalendarHandler() http.Handler {
+// round trips to the database. Paths under CalendarPath that aren't feeds
+// are passed to next, so the frontend serves its calendar pages.
+func (s *Service) CalendarHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		file := strings.TrimPrefix(r.URL.Path, CalendarPath)
+		if file != calendarBasicAuthFile && !strings.HasSuffix(file, ".ics") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		ctx := r.Context()
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
