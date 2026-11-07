@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"connectrpc.com/connect/v2"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/protomask"
+	"github.com/bs-tools/trailrunn.ing/internal/races"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/protomask"
-	"github.com/johanbrandhorst/trail-tools/internal/races"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

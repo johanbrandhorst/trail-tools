@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/bs-tools/trailrunn.ing/internal/fit"
 )
 
 // CoursePointType is the kind of a course point, as numbered in the FIT

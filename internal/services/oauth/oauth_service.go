@@ -8,14 +8,14 @@ import (
 	"log/slog"
 
 	"connectrpc.com/connect/v2"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
+	oauthv1 "github.com/bs-tools/trailrunn.ing/internal/gen/oauth/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/oauth/v1/oauthv1connect"
+	"github.com/bs-tools/trailrunn.ing/internal/oauth"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/users"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
-	oauthv1 "github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/oauth/v1/oauthv1connect"
-	"github.com/johanbrandhorst/trail-tools/internal/oauth"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/users"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

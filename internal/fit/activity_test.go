@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/bs-tools/trailrunn.ing/internal/fit"
 )
 
 // The test files are written by Garmin's FIT SDK for JavaScript, as watches

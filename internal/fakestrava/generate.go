@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
 )
 
 // historyDays is how many days of activities the athlete has, up to today.

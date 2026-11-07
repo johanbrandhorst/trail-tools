@@ -7,8 +7,8 @@
 package plansv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
-	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -949,8 +949,8 @@ const file_plans_v1_shares_proto_rawDesc = "" +
 	"\x10GetSharedWorkout\x12!.plans.v1.GetSharedWorkoutRequest\x1a\".plans.v1.GetSharedWorkoutResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12^\n" +
 	"\x0fGetCalendarFeed\x12 .plans.v1.GetCalendarFeedRequest\x1a!.plans.v1.GetCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12g\n" +
 	"\x12CreateCalendarFeed\x12#.plans.v1.CreateCalendarFeedRequest\x1a$.plans.v1.CreateCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12g\n" +
-	"\x12DeleteCalendarFeed\x12#.plans.v1.DeleteCalendarFeedRequest\x1a$.plans.v1.DeleteCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa2\x01\n" +
-	"\fcom.plans.v1B\vSharesProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
+	"\x12DeleteCalendarFeed\x12#.plans.v1.DeleteCalendarFeedRequest\x1a$.plans.v1.DeleteCalendarFeedResponse\"\x06\xa2\x9f\x19\x02\b\x01B\x9d\x01\n" +
+	"\fcom.plans.v1B\vSharesProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_shares_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_plans_v1_shares_proto_goTypes = []any{

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
-	"github.com/johanbrandhorst/trail-tools/internal/geo"
-	"github.com/johanbrandhorst/trail-tools/internal/races"
-	"github.com/johanbrandhorst/trail-tools/internal/services/route"
+	"github.com/bs-tools/trailrunn.ing/internal/geo"
+	"github.com/bs-tools/trailrunn.ing/internal/races"
+	"github.com/bs-tools/trailrunn.ing/internal/services/route"
 )
 
 // CourseHandler serves the course of a race plan as a FIT course for Garmin

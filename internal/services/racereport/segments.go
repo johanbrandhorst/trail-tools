@@ -9,13 +9,13 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect/v2"
+	"github.com/bs-tools/trailrunn.ing/internal/activities"
+	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
+	racesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/races/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/races"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/track"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/activities"
-	activitiesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/activities/v1"
-	racesv1 "github.com/johanbrandhorst/trail-tools/internal/gen/races/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/races"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/track"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // Activities' streams and Strava's raw responses about them are stored in

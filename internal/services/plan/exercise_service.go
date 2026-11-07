@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/errreport"
+	"github.com/bs-tools/trailrunn.ing/internal/garmin"
+	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1/plansv1connect"
+	"github.com/bs-tools/trailrunn.ing/internal/plans"
+	"github.com/bs-tools/trailrunn.ing/internal/protomask"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/authn"
-	"github.com/johanbrandhorst/trail-tools/internal/errreport"
-	"github.com/johanbrandhorst/trail-tools/internal/garmin"
-	plansv1 "github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1"
-	"github.com/johanbrandhorst/trail-tools/internal/gen/plans/v1/plansv1connect"
-	"github.com/johanbrandhorst/trail-tools/internal/plans"
-	"github.com/johanbrandhorst/trail-tools/internal/protomask"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

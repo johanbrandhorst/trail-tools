@@ -7,7 +7,7 @@
 package plansv1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -388,8 +388,8 @@ const file_plans_v1_equipment_proto_rawDesc = "" +
 	"WeightUnit\x12\x1b\n" +
 	"\x17WEIGHT_UNIT_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15WEIGHT_UNIT_KILOGRAMS\x10\x01\x12\x16\n" +
-	"\x12WEIGHT_UNIT_POUNDS\x10\x02B\xa5\x01\n" +
-	"\fcom.plans.v1B\x0eEquipmentProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
+	"\x12WEIGHT_UNIT_POUNDS\x10\x02B\xa0\x01\n" +
+	"\fcom.plans.v1B\x0eEquipmentProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_equipment_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_plans_v1_equipment_proto_msgTypes = make([]protoimpl.MessageInfo, 2)

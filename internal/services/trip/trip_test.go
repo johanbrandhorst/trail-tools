@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/trips"
+	"github.com/bs-tools/trailrunn.ing/internal/trips"
 )
 
 func TestSlugify(t *testing.T) {

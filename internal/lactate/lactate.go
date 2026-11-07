@@ -10,10 +10,10 @@ import (
 	"math"
 	"time"
 
+	"github.com/bs-tools/trailrunn.ing/internal/lactate/internal/gen"
+	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/johanbrandhorst/trail-tools/internal/lactate/internal/gen"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
 )
 
 // AerobicThresholdMmolPerLiter is the blood lactate at the aerobic threshold,

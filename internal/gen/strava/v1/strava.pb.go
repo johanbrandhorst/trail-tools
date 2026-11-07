@@ -7,7 +7,7 @@
 package stravav1
 
 import (
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -833,8 +833,8 @@ const file_strava_v1_strava_proto_rawDesc = "" +
 	"\n" +
 	"SyncStrava\x12\x1c.strava.v1.SyncStravaRequest\x1a\x1d.strava.v1.SyncStravaResponse\x12W\n" +
 	"\fSyncActivity\x12\x1e.strava.v1.SyncActivityRequest\x1a\x1f.strava.v1.SyncActivityResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12c\n" +
-	"\x10DisconnectStrava\x12\".strava.v1.DisconnectStravaRequest\x1a#.strava.v1.DisconnectStravaResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa9\x01\n" +
-	"\rcom.strava.v1B\vStravaProtoP\x01ZFgithub.com/johanbrandhorst/trail-tools/internal/gen/strava/v1;stravav1\xa2\x02\x03SXX\xaa\x02\tStrava.V1\xca\x02\tStrava\\V1\xe2\x02\x15Strava\\V1\\GPBMetadata\xea\x02\n" +
+	"\x10DisconnectStrava\x12\".strava.v1.DisconnectStravaRequest\x1a#.strava.v1.DisconnectStravaResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa4\x01\n" +
+	"\rcom.strava.v1B\vStravaProtoP\x01ZAgithub.com/bs-tools/trailrunn.ing/internal/gen/strava/v1;stravav1\xa2\x02\x03SXX\xaa\x02\tStrava.V1\xca\x02\tStrava\\V1\xe2\x02\x15Strava\\V1\\GPBMetadata\xea\x02\n" +
 	"Strava::V1b\x06proto3"
 
 var file_strava_v1_strava_proto_enumTypes = make([]protoimpl.EnumInfo, 1)

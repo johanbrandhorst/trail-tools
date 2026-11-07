@@ -7,9 +7,9 @@
 package racesv1
 
 import (
-	v1 "github.com/johanbrandhorst/trail-tools/internal/gen/geo/v1"
-	_ "github.com/johanbrandhorst/trail-tools/internal/gen/mcp/v1"
-	v11 "github.com/johanbrandhorst/trail-tools/internal/gen/routes/v1"
+	v1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
+	_ "github.com/bs-tools/trailrunn.ing/internal/gen/mcp/v1"
+	v11 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -6038,8 +6038,8 @@ const file_races_v1_race_plans_proto_rawDesc = "" +
 	"\x11GetSharedRacePlan\x12\".races.v1.GetSharedRacePlanRequest\x1a#.races.v1.GetSharedRacePlanResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12Y\n" +
 	"\x10GetRaceDayStatus\x12!.races.v1.GetRaceDayStatusRequest\x1a\".races.v1.GetRaceDayStatusResponse\x12P\n" +
 	"\rUpdateRaceDay\x12\x1e.races.v1.UpdateRaceDayRequest\x1a\x1f.races.v1.UpdateRaceDayResponse\x12_\n" +
-	"\x12SetCheckpointSplit\x12#.races.v1.SetCheckpointSplitRequest\x1a$.races.v1.SetCheckpointSplitResponseB\xa5\x01\n" +
-	"\fcom.races.v1B\x0eRacePlansProtoP\x01ZDgithub.com/johanbrandhorst/trail-tools/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
+	"\x12SetCheckpointSplit\x12#.races.v1.SetCheckpointSplitRequest\x1a$.races.v1.SetCheckpointSplitResponseB\xa0\x01\n" +
+	"\fcom.races.v1B\x0eRacePlansProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/races/v1;racesv1\xa2\x02\x03RXX\xaa\x02\bRaces.V1\xca\x02\bRaces\\V1\xe2\x02\x14Races\\V1\\GPBMetadata\xea\x02\tRaces::V1b\x06proto3"
 
 var file_races_v1_race_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_races_v1_race_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 43)

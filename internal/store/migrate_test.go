@@ -7,10 +7,10 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/bs-tools/trailrunn.ing/internal/store"
+	"github.com/bs-tools/trailrunn.ing/internal/store/storetest"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/jackc/pgx/v5"
-	"github.com/johanbrandhorst/trail-tools/internal/store"
-	"github.com/johanbrandhorst/trail-tools/internal/store/storetest"
 )
 
 func TestMigrateRecovers(t *testing.T) {

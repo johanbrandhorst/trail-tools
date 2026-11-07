@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johanbrandhorst/trail-tools/internal/strava"
+	"github.com/bs-tools/trailrunn.ing/internal/strava"
 )
 
 // newClient returns a fake Strava served by a test server and a Strava client

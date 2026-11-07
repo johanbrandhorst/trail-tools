@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect/v2"
-	usersv1 "github.com/johanbrandhorst/trail-tools/internal/gen/users/v1"
+	usersv1 "github.com/bs-tools/trailrunn.ing/internal/gen/users/v1"
 )
 
 // pngImage returns a PNG of a solid colour.
