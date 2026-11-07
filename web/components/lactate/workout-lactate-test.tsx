@@ -43,6 +43,12 @@ const WorkoutLactateTest: React.FC<WorkoutLactateTestProps> = ({ workout }) => {
             lactate meter, so they can enter the readings on theirs. Either way
             the test is saved with this workout.
           </p>
+          <p className="text-xs text-gray-500">
+            On your Garmin calendar, the run has the test&apos;s stages,
+            starting where your last test did: your watch keeps you in each
+            stage&apos;s heart rate range, and waits for the lap button after
+            each sample.
+          </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"

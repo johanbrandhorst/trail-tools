@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/johanbrandhorst/trail-tools/internal/fit"
+	"github.com/johanbrandhorst/trail-tools/internal/plans"
 )
 
 // WorkoutPath is the path of a lactate test as a Garmin workout.
 const WorkoutPath = "/lactate-tests/workout.fit"
 
 // workoutWarmUp is how long the workout's warm-up lasts.
-const workoutWarmUp = 15 * time.Minute
+const workoutWarmUp = plans.LactateTestWarmUpMinutes * time.Minute
 
 // workoutParam is a query parameter of the workout, with its default and
 // bounds.
@@ -23,13 +24,14 @@ type workoutParam struct {
 	fallback, min, max int
 }
 
-// The workout's query parameters, matching the guided test's settings.
+// The workout's query parameters, matching the guided test's settings, and
+// by default the stages of planned tests on the Garmin calendar.
 var (
-	startParam   = workoutParam{"start", 100, 60, 200}
-	stepParam    = workoutParam{"step", 10, 2, 30}
-	endParam     = workoutParam{"end", 180, 60, 220}
-	minutesParam = workoutParam{"minutes", 4, 1, 20}
-	rangeParam   = workoutParam{"range", 5, 1, 15}
+	startParam   = workoutParam{"start", int(plans.DefaultLactateTestStages.StartBPM), 60, 200}
+	stepParam    = workoutParam{"step", int(plans.DefaultLactateTestStages.StepBPM), 2, 30}
+	endParam     = workoutParam{"end", int(plans.DefaultLactateTestStages.EndBPM), 60, 220}
+	minutesParam = workoutParam{"minutes", int(plans.DefaultLactateTestStages.StageMinutes), 1, 20}
+	rangeParam   = workoutParam{"range", int(plans.DefaultLactateTestStages.RangeBPM), 1, 15}
 )
 
 // get returns the parameter's value in the query, or its default if unset.

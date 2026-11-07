@@ -136,14 +136,15 @@ func NewSyncer(log *slog.Logger, report *errreport.Reporter, client Client, acti
 }
 
 // ThresholdRepository lists the user's lactate tests, for the heart rates of
-// structured runs' targets relative to their thresholds.
+// structured runs' targets relative to their thresholds, and of the stages
+// of planned lactate tests.
 type ThresholdRepository interface {
 	ListTests(ctx context.Context, userID pgtype.UUID) ([]*lactate.Test, error)
 }
 
 // userThresholds returns the heart rates of the user's aerobic and
 // anaerobic thresholds, from their latest lactate tests that found them, 0
-// if unknown.
+// if unknown, and the first stage of their latest test with stages.
 func (s *Syncer) userThresholds(ctx context.Context, userID pgtype.UUID) (thresholds, error) {
 	var t thresholds
 	if s.thresholds == nil {
@@ -160,6 +161,9 @@ func (s *Syncer) userThresholds(ctx context.Context, userID pgtype.UUID) (thresh
 		}
 		if t.anaerobic == 0 {
 			t.anaerobic = test.HeartRateAt(lactate.AnaerobicThresholdMmolPerLiter)
+		}
+		if t.lactateStart == 0 && len(test.Stages) > 0 {
+			t.lactateStart = test.Stages[0].HeartRateBPM
 		}
 	}
 	return t, nil
