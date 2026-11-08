@@ -44,6 +44,12 @@ const degrees = (celsius: number): string => `${Math.round(celsius)}°`;
 // RAIN_SHOWN is the chance of precipitation from which it's mentioned.
 const RAIN_SHOWN = 40;
 
+/**
+ * HEAVY_NEW_SNOW_CM is the snow in 3 days from which it's highlighted:
+ * about when avalanche forecasters expect the danger to rise.
+ */
+const HEAVY_NEW_SNOW_CM = 30;
+
 // DaySummary describes a day's weather in words.
 const daySummary = (day: DayWeather): string => {
   const parts = [
@@ -193,6 +199,9 @@ const HourCell: React.FC<HourCellProps> = ({ hour, workout }) => (
     >
       {hour.precipitationProbability}%
     </span>
+    {hour.snowfallCm >= 0.1 && (
+      <span className="text-sky-700">❄ {hour.snowfallCm.toFixed(1)}</span>
+    )}
     <span className="text-gray-500">
       {Math.round(hour.windSpeedKmh)}{" "}
       {compassDirection(hour.windDirectionDegrees)}
@@ -257,6 +266,31 @@ export const WeatherForecast: React.FC<{ weather: WorkoutWeather }> = ({
               {Math.round(day.maxWindGustsKmh)}
             </dd>
           </div>
+          {day.minFreezingLevelMeters > 0 && (
+            <div>
+              <dt className="text-xs text-gray-500">Freezing level</dt>
+              <dd className="font-medium text-gray-900">
+                from {Math.round(day.minFreezingLevelMeters)} m
+              </dd>
+            </div>
+          )}
+          {(day.maxSnowDepthCm >= 1 || day.snowfallPast72HoursCm >= 1) && (
+            <div>
+              <dt className="text-xs text-gray-500">Snow</dt>
+              <dd className="font-medium text-gray-900">
+                <span
+                  className={
+                    day.snowfallPast72HoursCm >= HEAVY_NEW_SNOW_CM
+                      ? "text-sky-700"
+                      : ""
+                  }
+                >
+                  {Math.round(day.snowfallPast72HoursCm)} cm new in 3 days
+                </span>{" "}
+                · {Math.round(day.maxSnowDepthCm)} cm deep
+              </dd>
+            </div>
+          )}
         </dl>
       </div>
       {weather.hours.length > 0 && (

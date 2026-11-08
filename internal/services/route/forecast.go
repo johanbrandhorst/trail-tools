@@ -210,6 +210,8 @@ func forecastPointToProto(sample forecastSample, t time.Time, w mapdata.Weather)
 		IsDay:                           w.IsDay,
 		WeatherCode:                     int32(w.WeatherCode),
 		WeatherDescription:              mapdata.WeatherDescription(w.WeatherCode),
+		SnowDepthCm:                     w.SnowDepthMeters * 100,
+		SnowfallPast_72HoursCm:          w.SnowfallPast72HoursCM,
 	}.Build()
 }
 
@@ -254,6 +256,27 @@ var forecastHazards = []forecastHazard{
 		detail: func(_ forecastSample, w mapdata.Weather) string {
 			if w.SnowfallCM >= 0.5 {
 				return fmt.Sprintf("%.1f cm/h", w.SnowfallCM)
+			}
+			return ""
+		},
+	},
+	{
+		// About 30 cm of new snow in three days is when avalanche
+		// forecasters expect the danger to rise.
+		title: "Heavy recent snowfall, check the avalanche forecast",
+		detail: func(_ forecastSample, w mapdata.Weather) string {
+			if w.SnowfallPast72HoursCM >= 30 {
+				return fmt.Sprintf("%.0f cm in the past 3 days", w.SnowfallPast72HoursCM)
+			}
+			return ""
+		},
+	},
+	{
+		// Rain soaks and weakens the snowpack, a cause of wet avalanches.
+		title: "Rain on snow",
+		detail: func(_ forecastSample, w mapdata.Weather) string {
+			if w.PrecipitationMM >= 1 && w.SnowfallCM < 0.5 && w.SnowDepthMeters >= 0.1 {
+				return fmt.Sprintf("%.1f mm/h on %.0f cm of snow", w.PrecipitationMM, w.SnowDepthMeters*100)
 			}
 			return ""
 		},

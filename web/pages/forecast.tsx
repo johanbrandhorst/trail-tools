@@ -96,127 +96,163 @@ interface ForecastTableProps {
   onHover: (index: number | null) => void;
 }
 
-const ForecastTable: React.FC<ForecastTableProps> = ({ points, onHover }) => (
-  <div className="-mx-4 overflow-x-auto px-4">
-    <table className={tableClass}>
-      <thead>
-        <tr>
-          <th className={thClass}>Time</th>
-          <th className={`${thClass} text-right`}>Km</th>
-          <th className={`${thClass} text-right`}>Elev</th>
-          <th className={thClass}>Weather</th>
-          <th className={`${thClass} text-right`}>Temp</th>
-          <th className={`${thClass} text-right`}>Precip</th>
-          <th className={thClass}>Wind / gusts km/h</th>
-          <th className={`${thClass} text-right`}>0°C level</th>
-          <th className={`${thClass} text-right`}>UV</th>
-          <th className={thClass} />
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
-        {points.map((point, index) => {
-          const kind = forecastKindLabel(point.kind);
-          const belowFreezing =
-            point.freezingLevelMeters > 0 &&
-            point.freezingLevelMeters < point.elevationMeters;
-          return (
-            <tr
-              key={`${point.distanceMeters}-${point.kind}`}
-              className="hover:bg-gray-50"
-              onMouseEnter={() => {
-                onHover(index);
-              }}
-              onMouseLeave={() => {
-                onHover(null);
-              }}
-            >
-              <td className={`${tdClass} whitespace-nowrap`}>
-                <span className="font-medium">{formatClock(point.time)}</span>
-                {kind !== "" && (
-                  <Badge className="ml-1 bg-gray-100 text-gray-700 ring-gray-300">
-                    {kind}
-                  </Badge>
-                )}
-              </td>
-              <td className={`${tdClass} text-right tabular-nums`}>
-                {(point.distanceMeters / 1000).toFixed(1)}
-              </td>
-              <td className={`${tdClass} text-right tabular-nums`}>
-                {Math.round(point.elevationMeters)}
-              </td>
-              <td className={tdClass}>
-                <span className="flex items-center gap-1.5">
-                  <span className="text-lg leading-none" aria-hidden="true">
-                    {weatherSymbol(point.weatherCode, point.isDay)}
+/**
+ * HEAVY_NEW_SNOW_CM is the snow in 3 days from which it's highlighted:
+ * about when avalanche forecasters expect the danger to rise.
+ */
+const HEAVY_NEW_SNOW_CM = 30;
+
+/**
+ * ForecastTable lists the forecast points. The snow columns are only shown
+ * when there's snow on the route, so summer forecasts stay narrow.
+ */
+const ForecastTable: React.FC<ForecastTableProps> = ({ points, onHover }) => {
+  const snowy = points.some(
+    (point) => point.snowDepthCm >= 1 || point.snowfallPast72HoursCm >= 1
+  );
+  return (
+    <div className="-mx-4 overflow-x-auto px-4">
+      <table className={tableClass}>
+        <thead>
+          <tr>
+            <th className={thClass}>Time</th>
+            <th className={`${thClass} text-right`}>Km</th>
+            <th className={`${thClass} text-right`}>Elev</th>
+            <th className={thClass}>Weather</th>
+            <th className={`${thClass} text-right`}>Temp</th>
+            <th className={`${thClass} text-right`}>Precip</th>
+            <th className={thClass}>Wind / gusts km/h</th>
+            <th className={`${thClass} text-right`}>0°C level</th>
+            {snowy && (
+              <>
+                <th className={`${thClass} text-right`}>Snow depth</th>
+                <th className={`${thClass} text-right`}>New snow 3 days</th>
+              </>
+            )}
+            <th className={`${thClass} text-right`}>UV</th>
+            <th className={thClass} />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {points.map((point, index) => {
+            const kind = forecastKindLabel(point.kind);
+            const belowFreezing =
+              point.freezingLevelMeters > 0 &&
+              point.freezingLevelMeters < point.elevationMeters;
+            return (
+              <tr
+                key={`${point.distanceMeters}-${point.kind}`}
+                className="hover:bg-gray-50"
+                onMouseEnter={() => {
+                  onHover(index);
+                }}
+                onMouseLeave={() => {
+                  onHover(null);
+                }}
+              >
+                <td className={`${tdClass} whitespace-nowrap`}>
+                  <span className="font-medium">{formatClock(point.time)}</span>
+                  {kind !== "" && (
+                    <Badge className="ml-1 bg-gray-100 text-gray-700 ring-gray-300">
+                      {kind}
+                    </Badge>
+                  )}
+                </td>
+                <td className={`${tdClass} text-right tabular-nums`}>
+                  {(point.distanceMeters / 1000).toFixed(1)}
+                </td>
+                <td className={`${tdClass} text-right tabular-nums`}>
+                  {Math.round(point.elevationMeters)}
+                </td>
+                <td className={tdClass}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-lg leading-none" aria-hidden="true">
+                      {weatherSymbol(point.weatherCode, point.isDay)}
+                    </span>
+                    <span className="text-xs">{point.weatherDescription}</span>
                   </span>
-                  <span className="text-xs">{point.weatherDescription}</span>
-                </span>
-              </td>
-              <td
-                className={`${tdClass} text-right whitespace-nowrap tabular-nums`}
-              >
-                <span
-                  className={`font-semibold ${temperatureClass(point.temperatureCelsius)}`}
+                </td>
+                <td
+                  className={`${tdClass} text-right whitespace-nowrap tabular-nums`}
                 >
-                  {point.temperatureCelsius.toFixed(0)}°
-                </span>
-                <span className="text-xs text-gray-500">
-                  {" "}
-                  feels {point.apparentTemperatureCelsius.toFixed(0)}°
-                </span>
-              </td>
-              <td
-                className={`${tdClass} text-right whitespace-nowrap tabular-nums`}
-              >
-                <span
-                  className={
-                    point.precipitationProbabilityPercent >= 50
-                      ? "font-semibold text-blue-700"
-                      : ""
-                  }
-                >
-                  {point.precipitationProbabilityPercent}%
-                </span>
-                <span className="text-xs text-gray-500">
-                  {" "}
-                  {point.precipitationMm.toFixed(1)} mm
-                </span>
-                {point.snowfallCm > 0 && (
-                  <span className="block text-xs text-sky-700">
-                    {point.snowfallCm.toFixed(1)} cm snow
+                  <span
+                    className={`font-semibold ${temperatureClass(point.temperatureCelsius)}`}
+                  >
+                    {point.temperatureCelsius.toFixed(0)}°
                   </span>
+                  <span className="text-xs text-gray-500">
+                    {" "}
+                    feels {point.apparentTemperatureCelsius.toFixed(0)}°
+                  </span>
+                </td>
+                <td
+                  className={`${tdClass} text-right whitespace-nowrap tabular-nums`}
+                >
+                  <span
+                    className={
+                      point.precipitationProbabilityPercent >= 50
+                        ? "font-semibold text-blue-700"
+                        : ""
+                    }
+                  >
+                    {point.precipitationProbabilityPercent}%
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {" "}
+                    {point.precipitationMm.toFixed(1)} mm
+                  </span>
+                  {point.snowfallCm > 0 && (
+                    <span className="block text-xs text-sky-700">
+                      {point.snowfallCm.toFixed(1)} cm snow
+                    </span>
+                  )}
+                </td>
+                <td className={tdClass}>
+                  <Wind point={point} />
+                </td>
+                <td
+                  className={`${tdClass} text-right tabular-nums ${belowFreezing ? "font-semibold text-sky-700" : ""}`}
+                >
+                  {point.freezingLevelMeters > 0
+                    ? `${Math.round(point.freezingLevelMeters)} m`
+                    : "–"}
+                </td>
+                {snowy && (
+                  <>
+                    <td className={`${tdClass} text-right tabular-nums`}>
+                      {Math.round(point.snowDepthCm)} cm
+                    </td>
+                    <td
+                      className={`${tdClass} text-right tabular-nums ${point.snowfallPast72HoursCm >= HEAVY_NEW_SNOW_CM ? "font-semibold text-sky-700" : ""}`}
+                    >
+                      {Math.round(point.snowfallPast72HoursCm)} cm
+                    </td>
+                  </>
                 )}
-              </td>
-              <td className={tdClass}>
-                <Wind point={point} />
-              </td>
-              <td
-                className={`${tdClass} text-right tabular-nums ${belowFreezing ? "font-semibold text-sky-700" : ""}`}
-              >
-                {point.freezingLevelMeters > 0
-                  ? `${Math.round(point.freezingLevelMeters)} m`
-                  : "–"}
-              </td>
-              <td className={`${tdClass} text-right tabular-nums`}>
-                {point.uvIndex.toFixed(0)}
-              </td>
-              <td className={tdClass}>
-                {point.isDay ? (
-                  <SunIcon className="size-4 text-amber-500" aria-label="Day" />
-                ) : (
-                  <MoonIcon
-                    className="size-4 text-indigo-700"
-                    aria-label="Night"
-                  />
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
+                <td className={`${tdClass} text-right tabular-nums`}>
+                  {point.uvIndex.toFixed(0)}
+                </td>
+                <td className={tdClass}>
+                  {point.isDay ? (
+                    <SunIcon
+                      className="size-4 text-amber-500"
+                      aria-label="Day"
+                    />
+                  ) : (
+                    <MoonIcon
+                      className="size-4 text-indigo-700"
+                      aria-label="Night"
+                    />
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 interface ForecastResultProps {
   forecast: GetRouteForecastResponse;

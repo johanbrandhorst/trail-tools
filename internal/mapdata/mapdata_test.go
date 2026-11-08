@@ -72,8 +72,29 @@ func TestHourlyForecast(t *testing.T) {
 	var query url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		query = r.URL.Query()
-		first := start.Add(-7 * time.Hour).Unix()
-		fmt.Fprintf(w, `{"utc_offset_seconds":-25200,"hourly":{"time":[%d,%d],"temperature_2m":[4.5,null],"weather_code":[61,3],"is_day":[0,1]}}`, first, first+3600)
+		// Four local days at -7:00, from three days before start: snowing
+		// 1 cm an hour the day before start, and as deep as the hour's
+		// index in centimeters.
+		first := start.AddDate(0, 0, -3).Add(7 * time.Hour)
+		var times, temperatures, codes, isDay, snowfall, depth []string
+		for i := range 4 * 24 {
+			times = append(times, fmt.Sprint(first.Add(time.Duration(i)*time.Hour).Unix()))
+			temperature, snow := "4.5", "0"
+			if i == 3*24+1 {
+				temperature = "null"
+			}
+			if i >= 2*24 && i < 3*24 {
+				snow = "1"
+			}
+			temperatures = append(temperatures, temperature)
+			codes = append(codes, "61")
+			isDay = append(isDay, fmt.Sprint(i%2))
+			snowfall = append(snowfall, snow)
+			depth = append(depth, fmt.Sprint(float64(i)/100))
+		}
+		fmt.Fprintf(w, `{"utc_offset_seconds":-25200,"hourly":{"time":[%s],"temperature_2m":[%s],"weather_code":[%s],"is_day":[%s],"snowfall":[%s],"snow_depth":[%s]}}`,
+			strings.Join(times, ","), strings.Join(temperatures, ","), strings.Join(codes, ","), strings.Join(isDay, ","),
+			strings.Join(snowfall, ","), strings.Join(depth, ","))
 	}))
 	t.Cleanup(srv.Close)
 	client := mapdata.New(mapdata.Config{ForecastURL: srv.URL, HTTPClient: srv.Client(), Elevation: &fakeElevation{}})
@@ -81,16 +102,23 @@ func TestHourlyForecast(t *testing.T) {
 	if err != nil {
 		t.Fatalf("HourlyForecast: %v", err)
 	}
-	// The dates are local dates, and the end is the end of the forecast.
+	// The dates are local dates, starting three days early for the recent
+	// snowfall, and the end is the end of the forecast.
 	wantEnd := time.Now().UTC().AddDate(0, 0, mapdata.MaxForecastDays-1).Format(time.DateOnly)
-	if query.Get("start_date") != start.Format(time.DateOnly) || query.Get("end_date") != wantEnd ||
-		query.Get("timezone") != "auto" || query.Has("elevation") || query.Get("latitude") != "49.70000" {
+	if query.Get("start_date") != start.AddDate(0, 0, -3).Format(time.DateOnly) || query.Get("end_date") != wantEnd ||
+		query.Get("timezone") != "auto" || query.Has("elevation") || query.Get("latitude") != "49.70000" ||
+		!strings.Contains(query.Get("hourly"), "snow_depth") {
 		t.Errorf("unexpected query %v", query)
 	}
-	if len(weather) != 2 || weather[0].TemperatureCelsius != 4.5 || weather[0].WeatherCode != 61 || weather[0].IsDay ||
+	// Only the hours from start are returned.
+	if len(weather) != 24 || weather[0].TemperatureCelsius != 4.5 || weather[0].WeatherCode != 61 || weather[0].IsDay ||
 		weather[0].UTCOffset != -7*time.Hour || !weather[1].IsDay || weather[1].TemperatureCelsius != 0 ||
-		!weather[1].Time.Equal(start.Add(-6*time.Hour)) {
-		t.Errorf("unexpected weather %+v", weather)
+		!weather[0].Time.Equal(start.Add(7*time.Hour)) {
+		t.Fatalf("unexpected weather %+v", weather)
+	}
+	// At local midnight, the day before's 24 cm fell in the past 72 hours.
+	if w := weather[0]; w.SnowfallPast72HoursCM != 24 || math.Abs(w.SnowDepthMeters-0.72) > 1e-9 {
+		t.Errorf("got %v cm in 72 hours and %v m deep, want 24 cm and 0.72 m", w.SnowfallPast72HoursCM, w.SnowDepthMeters)
 	}
 	// Dates past the end of the forecast aren't requested.
 	query = nil
