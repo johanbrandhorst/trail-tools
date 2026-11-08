@@ -1,4 +1,5 @@
 import AvalancheForecastView from "@components/forecast/avalanche-forecast";
+import TouringVerdictView from "@components/forecast/touring-verdict";
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import WorkoutLactateTest from "@components/lactate/workout-lactate-test";
 import Loading from "@components/loading";
@@ -33,7 +34,12 @@ import { getRoute } from "gen/routes/v1/routes-RouteService_connectquery";
 import { addDays, today } from "helpers/dates";
 import { formatDate } from "helpers/format";
 import { styleOfWorkout } from "helpers/labels";
-import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
+import {
+  isCompleted,
+  isSkiTour,
+  startWindow,
+  workoutTargets,
+} from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -63,8 +69,8 @@ const noForecast = (date: string): string => {
 };
 
 /**
- * WeatherCard shows the forecast for the workout's day, and the avalanche
- * forecast of ski tours.
+ * WeatherCard shows the forecast for the workout's day, and for ski tours
+ * the verdict by the user's touring limits and the avalanche forecast.
  */
 const WeatherCard: React.FC<{ workout: Workout }> = ({ workout }) => {
   const outside = outdoors(workout);
@@ -109,6 +115,11 @@ const WeatherCard: React.FC<{ workout: Workout }> = ({ workout }) => {
       >
         {content}
       </Card>
+      {isSkiTour(workout) && weather.data?.weather !== undefined && (
+        <Card title="Go or no-go">
+          <TouringVerdictView verdict={weather.data.weather.touringVerdict} />
+        </Card>
+      )}
       {avalanche !== undefined && (
         <Card title="Avalanche forecast">
           <AvalancheForecastView forecast={avalanche} date={workout.date} />

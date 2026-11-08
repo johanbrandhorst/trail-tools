@@ -236,12 +236,18 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			}
 		}
 		if w.CrossTrainingSport == plans.CrossTrainingSportSkiTouring {
-			tours = append(tours, skiTour{index: len(result), point: g.location.point, date: date})
+			tour := skiTour{index: len(result), point: g.location.point, date: date, hours: during}
+			if len(during) == 0 {
+				tour.hours = daytime
+			}
+			tours = append(tours, tour)
 		}
 		result = append(result, &b)
 	}
 	warnings := s.windWarnings(ctx, windyWorkouts)
-	s.addAvalancheForecasts(ctx, tours, result)
+	if err := s.addSkiTourForecasts(ctx, userID, tours, result); err != nil {
+		return nil, err
+	}
 	built := make([]*plansv1.WorkoutWeather, len(result))
 	for i, b := range result {
 		if warning := warnings[i]; warning != nil {
@@ -268,49 +274,80 @@ type skiTour struct {
 	point geo.Point
 	// The workout's date, YYYY-MM-DD.
 	date string
+	// The hours of the workout, or of the daytime for a workout without a
+	// start time, which are checked against the user's touring limits.
+	hours []mapdata.Weather
 }
 
-// addAvalancheForecasts adds the avalanche forecasts of ski tours to their
-// weather, with a warning if the danger is High or above on their day.
-// Forecasts are fetched at once, as each can be a request to Avalanche
-// Canada. Without one, as outside the forecast areas or when it's
+// addSkiTourForecasts adds the avalanche forecasts of ski tours to their
+// weather, with a warning if the danger is High or above on their day, and
+// a verdict from checking them against the user's touring limits, if they
+// have any. Forecasts are fetched at once, as each can be a request to
+// Avalanche Canada. Without one, as outside the forecast areas or when it's
 // unavailable, the weather goes without.
-func (s *Service) addAvalancheForecasts(ctx context.Context, tours []skiTour, result []*plansv1.WorkoutWeather_builder) {
-	if s.avalanches == nil || len(tours) == 0 {
-		return
+func (s *Service) addSkiTourForecasts(ctx context.Context, userID pgtype.UUID, tours []skiTour, result []*plansv1.WorkoutWeather_builder) error {
+	if len(tours) == 0 {
+		return nil
 	}
 	forecasts := make([]*avalanche.Forecast, len(tours))
+	var limits *plans.TouringLimits
+	var limitsErr error
 	var wg sync.WaitGroup
-	for i, tour := range tours {
-		wg.Go(func() {
-			f, err := s.avalanches.Forecast(ctx, tour.point)
-			if err != nil {
-				s.report.Report(ctx, "Failed to get an avalanche forecast, forecasting a ski tour without it", err)
-				return
-			}
-			forecasts[i] = f
-		})
+	wg.Go(func() {
+		limits, limitsErr = s.plans.GetTouringLimits(ctx, userID)
+	})
+	if s.avalanches != nil {
+		for i, tour := range tours {
+			wg.Go(func() {
+				f, err := s.avalanches.Forecast(ctx, tour.point)
+				if err != nil {
+					s.report.Report(ctx, "Failed to get an avalanche forecast, forecasting a ski tour without it", err)
+					return
+				}
+				forecasts[i] = f
+			})
+		}
 	}
 	wg.Wait()
+	if limitsErr != nil {
+		return s.toConnectError(ctx, limitsErr, "failed to get touring limits")
+	}
 	for i, tour := range tours {
-		f := forecasts[i]
-		if f == nil {
-			continue
-		}
 		b := result[tour.index]
-		b.AvalancheForecast = route.AvalancheForecastToProto(f)
-		day, ok := f.Day(tour.date)
-		if !ok {
-			continue
+		conditions := touringConditions(tour.hours)
+		if f := forecasts[i]; f != nil {
+			b.AvalancheForecast = route.AvalancheForecastToProto(f)
+			if day, ok := f.Day(tour.date); ok {
+				conditions.Avalanche = &day
+				if message := f.Warning(day); message != "" {
+					b.Warnings = append(b.Warnings, plansv1.WeatherWarning_builder{
+						Kind:               plansv1.WeatherWarningKind_WEATHER_WARNING_KIND_AVALANCHE_DANGER,
+						Message:            message,
+						MaxAvalancheDanger: route.AvalancheDangerToProto(day.Max()),
+					}.Build())
+				}
+			}
 		}
-		if message := f.Warning(day); message != "" {
-			b.Warnings = append(b.Warnings, plansv1.WeatherWarning_builder{
-				Kind:               plansv1.WeatherWarningKind_WEATHER_WARNING_KIND_AVALANCHE_DANGER,
-				Message:            message,
-				MaxAvalancheDanger: route.AvalancheDangerToProto(day.Max()),
-			}.Build())
+		if limits != nil && !limits.Empty() {
+			b.TouringVerdict = route.TouringVerdictToProto(limits.Evaluate(conditions))
 		}
 	}
+	return nil
+}
+
+// touringConditions returns the weather of a tour's hours to check against
+// the user's touring limits: the strongest gusts, the highest freezing
+// level, and the snow of the 72 hours before the first hour.
+func touringConditions(hours []mapdata.Weather) plans.TouringConditions {
+	var c plans.TouringConditions
+	if len(hours) > 0 {
+		c.SnowfallPast72HoursCM = hours[0].SnowfallPast72HoursCM
+	}
+	for _, h := range hours {
+		c.MaxWindGustsKMH = max(c.MaxWindGustsKMH, h.WindGustsKMH)
+		c.MaxFreezingLevelMeters = max(c.MaxFreezingLevelMeters, h.FreezingLevelMeters)
+	}
+	return c
 }
 
 // routePath returns the path of a route, nil for no route or a route that

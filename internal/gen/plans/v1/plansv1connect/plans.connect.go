@@ -78,6 +78,12 @@ const (
 	// TrainingPlanServiceSetSweatProfileProcedure is the procedure name of the TrainingPlanService's
 	// SetSweatProfile RPC.
 	TrainingPlanServiceSetSweatProfileProcedure = "/plans.v1.TrainingPlanService/SetSweatProfile"
+	// TrainingPlanServiceGetTouringLimitsProcedure is the procedure name of the TrainingPlanService's
+	// GetTouringLimits RPC.
+	TrainingPlanServiceGetTouringLimitsProcedure = "/plans.v1.TrainingPlanService/GetTouringLimits"
+	// TrainingPlanServiceSetTouringLimitsProcedure is the procedure name of the TrainingPlanService's
+	// SetTouringLimits RPC.
+	TrainingPlanServiceSetTouringLimitsProcedure = "/plans.v1.TrainingPlanService/SetTouringLimits"
 )
 
 var (
@@ -207,6 +213,20 @@ var (
 			Procedure:  TrainingPlanServiceSetSweatProfileProcedure,
 		}
 	})
+	trainingPlanServiceGetTouringLimitsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("GetTouringLimits"),
+			Procedure:  TrainingPlanServiceGetTouringLimitsProcedure,
+		}
+	})
+	trainingPlanServiceSetTouringLimitsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_plans_v1_plans_proto.Services().ByName("TrainingPlanService").Methods().ByName("SetTouringLimits"),
+			Procedure:  TrainingPlanServiceSetTouringLimitsProcedure,
+		}
+	})
 )
 
 // TrainingPlanServiceClient is a client for the plans.v1.TrainingPlanService service.
@@ -270,6 +290,13 @@ type TrainingPlanServiceClient interface {
 	// app's settings, from a sweat test; only change it when they give their
 	// results.
 	SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error)
+	// Get the user's own limits for ski touring, which the forecasts of ski
+	// tours are checked against for a go, caution or no-go verdict.
+	GetTouringLimits(context.Context, *v1.GetTouringLimitsRequest) (*v1.GetTouringLimitsResponse, error)
+	// Replace the user's touring limits. The user usually sets these in the
+	// web app's settings. They're the user's own rules: only set them to
+	// what the user says, never to values you chose.
+	SetTouringLimits(context.Context, *v1.SetTouringLimitsRequest) (*v1.SetTouringLimitsResponse, error)
 }
 
 // NewTrainingPlanServiceClient constructs a client for the plans.v1.TrainingPlanService service.
@@ -339,6 +366,13 @@ type TrainingPlanServiceHandler interface {
 	// app's settings, from a sweat test; only change it when they give their
 	// results.
 	SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error)
+	// Get the user's own limits for ski touring, which the forecasts of ski
+	// tours are checked against for a go, caution or no-go verdict.
+	GetTouringLimits(context.Context, *v1.GetTouringLimitsRequest) (*v1.GetTouringLimitsResponse, error)
+	// Replace the user's touring limits. The user usually sets these in the
+	// web app's settings. They're the user's own rules: only set them to
+	// what the user says, never to values you chose.
+	SetTouringLimits(context.Context, *v1.SetTouringLimitsRequest) (*v1.SetTouringLimitsResponse, error)
 }
 
 // RegisterTrainingPlanServiceHandler registers svc as the plans.v1.TrainingPlanService
@@ -364,6 +398,8 @@ func RegisterTrainingPlanServiceHandler(server *connect.Server, svc TrainingPlan
 		connect.Method{Spec: trainingPlanServiceGetWorkoutWeatherSpec(), Handler: adapter.getWorkoutWeather},
 		connect.Method{Spec: trainingPlanServiceGetSweatProfileSpec(), Handler: adapter.getSweatProfile},
 		connect.Method{Spec: trainingPlanServiceSetSweatProfileSpec(), Handler: adapter.setSweatProfile},
+		connect.Method{Spec: trainingPlanServiceGetTouringLimitsSpec(), Handler: adapter.getTouringLimits},
+		connect.Method{Spec: trainingPlanServiceSetTouringLimitsSpec(), Handler: adapter.setTouringLimits},
 	)
 }
 
@@ -440,6 +476,14 @@ func (UnimplementedTrainingPlanServiceHandler) GetSweatProfile(context.Context, 
 
 func (UnimplementedTrainingPlanServiceHandler) SetSweatProfile(context.Context, *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.SetSweatProfile is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) GetTouringLimits(context.Context, *v1.GetTouringLimitsRequest) (*v1.GetTouringLimitsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.GetTouringLimits is not implemented")
+}
+
+func (UnimplementedTrainingPlanServiceHandler) SetTouringLimits(context.Context, *v1.SetTouringLimitsRequest) (*v1.SetTouringLimitsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "plans.v1.TrainingPlanService.SetTouringLimits is not implemented")
 }
 
 type trainingPlanServiceClient struct {
@@ -585,6 +629,22 @@ func (c *trainingPlanServiceClient) GetSweatProfile(ctx context.Context, req *v1
 func (c *trainingPlanServiceClient) SetSweatProfile(ctx context.Context, req *v1.SetSweatProfileRequest) (*v1.SetSweatProfileResponse, error) {
 	var res v1.SetSweatProfileResponse
 	if err := c.client.CallUnary(ctx, trainingPlanServiceSetSweatProfileSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) GetTouringLimits(ctx context.Context, req *v1.GetTouringLimitsRequest) (*v1.GetTouringLimitsResponse, error) {
+	var res v1.GetTouringLimitsResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceGetTouringLimitsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *trainingPlanServiceClient) SetTouringLimits(ctx context.Context, req *v1.SetTouringLimitsRequest) (*v1.SetTouringLimitsResponse, error) {
+	var res v1.SetTouringLimitsResponse
+	if err := c.client.CallUnary(ctx, trainingPlanServiceSetTouringLimitsSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -802,6 +862,30 @@ func (h trainingPlanServiceHandler) setSweatProfile(ctx context.Context, _ conne
 		return err
 	}
 	res, err := h.svc.SetSweatProfile(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) getTouringLimits(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetTouringLimitsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetTouringLimits(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h trainingPlanServiceHandler) setTouringLimits(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetTouringLimitsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetTouringLimits(ctx, &req)
 	if err != nil {
 		return err
 	}

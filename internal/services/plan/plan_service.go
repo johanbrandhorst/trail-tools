@@ -28,6 +28,8 @@ var _ plansv1connect.TrainingPlanServiceHandler = (*Service)(nil)
 type PlanRepository interface {
 	GetSweatProfile(ctx context.Context, userID pgtype.UUID) (*plans.SweatProfile, error)
 	SetSweatProfile(ctx context.Context, userID pgtype.UUID, p *plans.SweatProfile) (*plans.SweatProfile, error)
+	GetTouringLimits(ctx context.Context, userID pgtype.UUID) (*plans.TouringLimits, error)
+	SetTouringLimits(ctx context.Context, userID pgtype.UUID, l *plans.TouringLimits) (*plans.TouringLimits, error)
 	CreateTrainingPlan(ctx context.Context, plan *plans.TrainingPlan) (*plans.TrainingPlan, error)
 	GetTrainingPlan(ctx context.Context, userID, planID pgtype.UUID) (*plans.TrainingPlan, error)
 	ListTrainingPlans(ctx context.Context, userID pgtype.UUID) ([]*plans.TrainingPlan, error)

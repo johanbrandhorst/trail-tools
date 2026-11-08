@@ -41,6 +41,8 @@ type Service struct {
 	legs       *legCache
 	// Gets avalanche forecasts, nil if there are none.
 	avalanches Avalanches
+	// Gets the user's touring limits, nil if there are none.
+	touringLimits TouringLimitsSource
 }
 
 // NewService creates a new Service.

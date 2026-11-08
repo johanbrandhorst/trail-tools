@@ -16,6 +16,7 @@ import (
 	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	"github.com/bs-tools/trailrunn.ing/internal/geo"
 	"github.com/bs-tools/trailrunn.ing/internal/mapdata"
+	"github.com/bs-tools/trailrunn.ing/internal/plans"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -35,7 +36,8 @@ type forecastSample struct {
 }
 
 func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteForecastRequest) (*routesv1.GetRouteForecastResponse, error) {
-	if _, ok := authn.GetUserID(ctx); !ok {
+	userID, ok := authn.GetUserID(ctx)
+	if !ok {
 		return nil, connect.NewError(connect.CodeUnauthenticated, "")
 	}
 	msg := req
@@ -82,12 +84,20 @@ func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteFo
 	for i, sample := range samples {
 		queries[i] = mapdata.ForecastQuery{Point: sample.point, Time: start.Add(sample.elapsed)}
 	}
-	// The avalanche forecast is fetched while the weather is.
+	// The avalanche forecast and the user's touring limits are fetched
+	// while the weather is.
 	var avalancheForecast *avalanche.Forecast
+	var limits *plans.TouringLimits
+	var limitsErr error
 	var wg sync.WaitGroup
 	if s.avalanches != nil {
 		wg.Go(func() {
 			avalancheForecast = s.avalancheForecast(ctx, HighestPoint(points))
+		})
+	}
+	if msg.GetSkiTour() && s.touringLimits != nil {
+		wg.Go(func() {
+			limits, limitsErr = s.touringLimits.GetTouringLimits(ctx, userID)
 		})
 	}
 	weather, err := s.mapData.Forecast(ctx, queries)
@@ -95,12 +105,19 @@ func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteFo
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err.Error()).WithCause(err)
 	}
+	if limitsErr != nil {
+		return nil, s.toConnectError(ctx, limitsErr, "failed to get touring limits")
+	}
 
 	forecastPoints := make([]*routesv1.ForecastPoint, len(samples))
 	for i, sample := range samples {
 		forecastPoints[i] = forecastPointToProto(sample, queries[i].Time, weather[i])
 	}
 	stats := geo.ComputeStats(points, nil)
+	var verdict *geov1.TouringVerdict
+	if limits != nil && !limits.Empty() {
+		verdict = TouringVerdictToProto(limits.Evaluate(routeTouringConditions(avalancheForecast, weather)))
+	}
 	return routesv1.GetRouteForecastResponse_builder{
 		Points:              forecastPoints,
 		FinishTime:          timestamppb.New(start.Add(duration)),
@@ -110,7 +127,44 @@ func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteFo
 		Warnings:            append(forecastWarnings(samples, weather), avalancheWarnings(avalancheForecast, weather)...),
 		Path:                PathToProto(points, maxForecastPathPoints),
 		AvalancheForecast:   AvalancheForecastToProto(avalancheForecast),
+		TouringVerdict:      verdict,
 	}.Build(), nil
+}
+
+// routeTouringConditions returns the conditions along a route to check
+// against the user's touring limits: the strongest gusts and highest
+// freezing level at its forecast points, the most new snow at any of them,
+// and the avalanche danger of the route's day with the highest danger. If
+// the avalanche forecast doesn't cover one of the route's days, the danger
+// is unknown.
+func routeTouringConditions(f *avalanche.Forecast, weather []mapdata.Weather) plans.TouringConditions {
+	var c plans.TouringConditions
+	covered := f != nil
+	for _, w := range weather {
+		c.MaxWindGustsKMH = max(c.MaxWindGustsKMH, w.WindGustsKMH)
+		c.MaxFreezingLevelMeters = max(c.MaxFreezingLevelMeters, w.FreezingLevelMeters)
+		c.SnowfallPast72HoursCM = max(c.SnowfallPast72HoursCM, w.SnowfallPast72HoursCM)
+		if !covered {
+			continue
+		}
+		day, ok := f.Day(localDate(w))
+		if !ok {
+			covered = false
+			continue
+		}
+		if c.Avalanche == nil || day.Max() > c.Avalanche.Max() {
+			c.Avalanche = &day
+		}
+	}
+	if !covered {
+		c.Avalanche = nil
+	}
+	return c
+}
+
+// localDate returns the local date of a forecast hour, YYYY-MM-DD.
+func localDate(w mapdata.Weather) string {
+	return w.Time.UTC().Add(w.UTCOffset).Format(time.DateOnly)
 }
 
 // avalancheForecast returns the avalanche forecast at a point, nil if
@@ -134,7 +188,7 @@ func avalancheWarnings(f *avalanche.Forecast, weather []mapdata.Weather) []strin
 	var warnings []string
 	seen := make(map[string]bool)
 	for _, w := range weather {
-		date := w.Time.UTC().Add(w.UTCOffset).Format(time.DateOnly)
+		date := localDate(w)
 		if seen[date] {
 			continue
 		}

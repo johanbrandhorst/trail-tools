@@ -5264,6 +5264,7 @@ type WorkoutWeather struct {
 	xxx_hidden_Fueling           *FuelAmounts           `protobuf:"bytes,10,opt,name=fueling,proto3"`
 	xxx_hidden_Warnings          *[]*WeatherWarning     `protobuf:"bytes,11,rep,name=warnings,proto3"`
 	xxx_hidden_AvalancheForecast *v1.AvalancheForecast  `protobuf:"bytes,12,opt,name=avalanche_forecast,json=avalancheForecast,proto3"`
+	xxx_hidden_TouringVerdict    *v1.TouringVerdict     `protobuf:"bytes,13,opt,name=touring_verdict,json=touringVerdict,proto3"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -5381,6 +5382,13 @@ func (x *WorkoutWeather) GetAvalancheForecast() *v1.AvalancheForecast {
 	return nil
 }
 
+func (x *WorkoutWeather) GetTouringVerdict() *v1.TouringVerdict {
+	if x != nil {
+		return x.xxx_hidden_TouringVerdict
+	}
+	return nil
+}
+
 func (x *WorkoutWeather) SetWorkoutId(v string) {
 	x.xxx_hidden_WorkoutId = v
 }
@@ -5427,6 +5435,10 @@ func (x *WorkoutWeather) SetWarnings(v []*WeatherWarning) {
 
 func (x *WorkoutWeather) SetAvalancheForecast(v *v1.AvalancheForecast) {
 	x.xxx_hidden_AvalancheForecast = v
+}
+
+func (x *WorkoutWeather) SetTouringVerdict(v *v1.TouringVerdict) {
+	x.xxx_hidden_TouringVerdict = v
 }
 
 func (x *WorkoutWeather) HasLocation() bool {
@@ -5478,6 +5490,13 @@ func (x *WorkoutWeather) HasAvalancheForecast() bool {
 	return x.xxx_hidden_AvalancheForecast != nil
 }
 
+func (x *WorkoutWeather) HasTouringVerdict() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TouringVerdict != nil
+}
+
 func (x *WorkoutWeather) ClearLocation() {
 	x.xxx_hidden_Location = nil
 }
@@ -5504,6 +5523,10 @@ func (x *WorkoutWeather) ClearFueling() {
 
 func (x *WorkoutWeather) ClearAvalancheForecast() {
 	x.xxx_hidden_AvalancheForecast = nil
+}
+
+func (x *WorkoutWeather) ClearTouringVerdict() {
+	x.xxx_hidden_TouringVerdict = nil
 }
 
 type WorkoutWeather_builder struct {
@@ -5544,6 +5567,10 @@ type WorkoutWeather_builder struct {
 	// check that the workout's date is among them. See
 	// geo.v1.GeoService.GetAvalancheForecast.
 	AvalancheForecast *v1.AvalancheForecast
+	// For ski tours, the forecast checked against the user's touring limits,
+	// during the workout if it has a start time, or else the daytime. Unset
+	// for other workouts, and if the user hasn't set any limits.
+	TouringVerdict *v1.TouringVerdict
 }
 
 func (b0 WorkoutWeather_builder) Build() *WorkoutWeather {
@@ -5562,6 +5589,7 @@ func (b0 WorkoutWeather_builder) Build() *WorkoutWeather {
 	x.xxx_hidden_Fueling = b.Fueling
 	x.xxx_hidden_Warnings = &b.Warnings
 	x.xxx_hidden_AvalancheForecast = b.AvalancheForecast
+	x.xxx_hidden_TouringVerdict = b.TouringVerdict
 	return m0
 }
 
@@ -6691,6 +6719,473 @@ func (b0 SetSweatProfileResponse_builder) Build() *SetSweatProfileResponse {
 	return m0
 }
 
+// The user's own limits for ski touring: the conditions they won't tour
+// in. The forecasts of ski tours are checked against them: beyond a limit
+// is a no-go, and close to one, or without the data to check one, a
+// caution. Unset limits aren't checked.
+type TouringLimits struct {
+	state                                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_MaxAvalancheDangerAlpine        v1.AvalancheDanger     `protobuf:"varint,1,opt,name=max_avalanche_danger_alpine,json=maxAvalancheDangerAlpine,proto3,enum=geo.v1.AvalancheDanger"`
+	xxx_hidden_MaxAvalancheDangerTreeline      v1.AvalancheDanger     `protobuf:"varint,2,opt,name=max_avalanche_danger_treeline,json=maxAvalancheDangerTreeline,proto3,enum=geo.v1.AvalancheDanger"`
+	xxx_hidden_MaxAvalancheDangerBelowTreeline v1.AvalancheDanger     `protobuf:"varint,3,opt,name=max_avalanche_danger_below_treeline,json=maxAvalancheDangerBelowTreeline,proto3,enum=geo.v1.AvalancheDanger"`
+	xxx_hidden_MaxWindGustsKmh                 float64                `protobuf:"fixed64,4,opt,name=max_wind_gusts_kmh,json=maxWindGustsKmh,proto3,oneof"`
+	xxx_hidden_MaxFreezingLevelMeters          float64                `protobuf:"fixed64,5,opt,name=max_freezing_level_meters,json=maxFreezingLevelMeters,proto3,oneof"`
+	xxx_hidden_MaxSnowfallPast_72HoursCm       float64                `protobuf:"fixed64,6,opt,name=max_snowfall_past_72_hours_cm,json=maxSnowfallPast72HoursCm,proto3,oneof"`
+	xxx_hidden_UpdateTime                      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3"`
+	XXX_raceDetectHookData                     protoimpl.RaceDetectHookData
+	XXX_presence                               [1]uint32
+	unknownFields                              protoimpl.UnknownFields
+	sizeCache                                  protoimpl.SizeCache
+}
+
+func (x *TouringLimits) Reset() {
+	*x = TouringLimits{}
+	mi := &file_plans_v1_plans_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TouringLimits) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TouringLimits) ProtoMessage() {}
+
+func (x *TouringLimits) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TouringLimits) GetMaxAvalancheDangerAlpine() v1.AvalancheDanger {
+	if x != nil {
+		return x.xxx_hidden_MaxAvalancheDangerAlpine
+	}
+	return v1.AvalancheDanger(0)
+}
+
+func (x *TouringLimits) GetMaxAvalancheDangerTreeline() v1.AvalancheDanger {
+	if x != nil {
+		return x.xxx_hidden_MaxAvalancheDangerTreeline
+	}
+	return v1.AvalancheDanger(0)
+}
+
+func (x *TouringLimits) GetMaxAvalancheDangerBelowTreeline() v1.AvalancheDanger {
+	if x != nil {
+		return x.xxx_hidden_MaxAvalancheDangerBelowTreeline
+	}
+	return v1.AvalancheDanger(0)
+}
+
+func (x *TouringLimits) GetMaxWindGustsKmh() float64 {
+	if x != nil {
+		return x.xxx_hidden_MaxWindGustsKmh
+	}
+	return 0
+}
+
+func (x *TouringLimits) GetMaxFreezingLevelMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_MaxFreezingLevelMeters
+	}
+	return 0
+}
+
+func (x *TouringLimits) GetMaxSnowfallPast_72HoursCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_MaxSnowfallPast_72HoursCm
+	}
+	return 0
+}
+
+func (x *TouringLimits) GetUpdateTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_UpdateTime
+	}
+	return nil
+}
+
+func (x *TouringLimits) SetMaxAvalancheDangerAlpine(v v1.AvalancheDanger) {
+	x.xxx_hidden_MaxAvalancheDangerAlpine = v
+}
+
+func (x *TouringLimits) SetMaxAvalancheDangerTreeline(v v1.AvalancheDanger) {
+	x.xxx_hidden_MaxAvalancheDangerTreeline = v
+}
+
+func (x *TouringLimits) SetMaxAvalancheDangerBelowTreeline(v v1.AvalancheDanger) {
+	x.xxx_hidden_MaxAvalancheDangerBelowTreeline = v
+}
+
+func (x *TouringLimits) SetMaxWindGustsKmh(v float64) {
+	x.xxx_hidden_MaxWindGustsKmh = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *TouringLimits) SetMaxFreezingLevelMeters(v float64) {
+	x.xxx_hidden_MaxFreezingLevelMeters = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+}
+
+func (x *TouringLimits) SetMaxSnowfallPast_72HoursCm(v float64) {
+	x.xxx_hidden_MaxSnowfallPast_72HoursCm = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *TouringLimits) SetUpdateTime(v *timestamppb.Timestamp) {
+	x.xxx_hidden_UpdateTime = v
+}
+
+func (x *TouringLimits) HasMaxWindGustsKmh() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *TouringLimits) HasMaxFreezingLevelMeters() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *TouringLimits) HasMaxSnowfallPast_72HoursCm() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *TouringLimits) HasUpdateTime() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_UpdateTime != nil
+}
+
+func (x *TouringLimits) ClearMaxWindGustsKmh() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_MaxWindGustsKmh = 0
+}
+
+func (x *TouringLimits) ClearMaxFreezingLevelMeters() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_MaxFreezingLevelMeters = 0
+}
+
+func (x *TouringLimits) ClearMaxSnowfallPast_72HoursCm() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_MaxSnowfallPast_72HoursCm = 0
+}
+
+func (x *TouringLimits) ClearUpdateTime() {
+	x.xxx_hidden_UpdateTime = nil
+}
+
+type TouringLimits_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The highest avalanche danger the user will tour in, per elevation
+	// band. Unspecified for no limit.
+	MaxAvalancheDangerAlpine        v1.AvalancheDanger
+	MaxAvalancheDangerTreeline      v1.AvalancheDanger
+	MaxAvalancheDangerBelowTreeline v1.AvalancheDanger
+	// The strongest gusts the user will tour in, in kilometers per hour,
+	// from 10 to 200. Within 10 km/h of it is a caution.
+	MaxWindGustsKmh *float64
+	// The highest freezing level the user will tour under, in meters, from
+	// 100 to 6000: warming makes wet avalanches and loose snow likely.
+	// Within 200 m of it is a caution.
+	MaxFreezingLevelMeters *float64
+	// The most snow fallen in the 72 hours before a tour the user will tour
+	// in, in centimeters, from 1 to 300: new snow makes avalanches likely.
+	// Within 5 cm of it is a caution.
+	MaxSnowfallPast_72HoursCm *float64
+	// When the limits were last set. Unset if they never were.
+	UpdateTime *timestamppb.Timestamp
+}
+
+func (b0 TouringLimits_builder) Build() *TouringLimits {
+	m0 := &TouringLimits{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_MaxAvalancheDangerAlpine = b.MaxAvalancheDangerAlpine
+	x.xxx_hidden_MaxAvalancheDangerTreeline = b.MaxAvalancheDangerTreeline
+	x.xxx_hidden_MaxAvalancheDangerBelowTreeline = b.MaxAvalancheDangerBelowTreeline
+	if b.MaxWindGustsKmh != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		x.xxx_hidden_MaxWindGustsKmh = *b.MaxWindGustsKmh
+	}
+	if b.MaxFreezingLevelMeters != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_MaxFreezingLevelMeters = *b.MaxFreezingLevelMeters
+	}
+	if b.MaxSnowfallPast_72HoursCm != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_MaxSnowfallPast_72HoursCm = *b.MaxSnowfallPast_72HoursCm
+	}
+	x.xxx_hidden_UpdateTime = b.UpdateTime
+	return m0
+}
+
+type GetTouringLimitsRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTouringLimitsRequest) Reset() {
+	*x = GetTouringLimitsRequest{}
+	mi := &file_plans_v1_plans_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTouringLimitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTouringLimitsRequest) ProtoMessage() {}
+
+func (x *GetTouringLimitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type GetTouringLimitsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 GetTouringLimitsRequest_builder) Build() *GetTouringLimitsRequest {
+	m0 := &GetTouringLimitsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type GetTouringLimitsResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Limits *TouringLimits         `protobuf:"bytes,1,opt,name=limits,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GetTouringLimitsResponse) Reset() {
+	*x = GetTouringLimitsResponse{}
+	mi := &file_plans_v1_plans_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTouringLimitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTouringLimitsResponse) ProtoMessage() {}
+
+func (x *GetTouringLimitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GetTouringLimitsResponse) GetLimits() *TouringLimits {
+	if x != nil {
+		return x.xxx_hidden_Limits
+	}
+	return nil
+}
+
+func (x *GetTouringLimitsResponse) SetLimits(v *TouringLimits) {
+	x.xxx_hidden_Limits = v
+}
+
+func (x *GetTouringLimitsResponse) HasLimits() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Limits != nil
+}
+
+func (x *GetTouringLimitsResponse) ClearLimits() {
+	x.xxx_hidden_Limits = nil
+}
+
+type GetTouringLimitsResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The user's touring limits, empty if they haven't set any.
+	Limits *TouringLimits
+}
+
+func (b0 GetTouringLimitsResponse_builder) Build() *GetTouringLimitsResponse {
+	m0 := &GetTouringLimitsResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Limits = b.Limits
+	return m0
+}
+
+type SetTouringLimitsRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Limits *TouringLimits         `protobuf:"bytes,1,opt,name=limits,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SetTouringLimitsRequest) Reset() {
+	*x = SetTouringLimitsRequest{}
+	mi := &file_plans_v1_plans_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTouringLimitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTouringLimitsRequest) ProtoMessage() {}
+
+func (x *SetTouringLimitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetTouringLimitsRequest) GetLimits() *TouringLimits {
+	if x != nil {
+		return x.xxx_hidden_Limits
+	}
+	return nil
+}
+
+func (x *SetTouringLimitsRequest) SetLimits(v *TouringLimits) {
+	x.xxx_hidden_Limits = v
+}
+
+func (x *SetTouringLimitsRequest) HasLimits() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Limits != nil
+}
+
+func (x *SetTouringLimitsRequest) ClearLimits() {
+	x.xxx_hidden_Limits = nil
+}
+
+type SetTouringLimitsRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The user's touring limits, replacing the earlier ones.
+	Limits *TouringLimits
+}
+
+func (b0 SetTouringLimitsRequest_builder) Build() *SetTouringLimitsRequest {
+	m0 := &SetTouringLimitsRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Limits = b.Limits
+	return m0
+}
+
+type SetTouringLimitsResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Limits *TouringLimits         `protobuf:"bytes,1,opt,name=limits,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SetTouringLimitsResponse) Reset() {
+	*x = SetTouringLimitsResponse{}
+	mi := &file_plans_v1_plans_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTouringLimitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTouringLimitsResponse) ProtoMessage() {}
+
+func (x *SetTouringLimitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plans_v1_plans_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SetTouringLimitsResponse) GetLimits() *TouringLimits {
+	if x != nil {
+		return x.xxx_hidden_Limits
+	}
+	return nil
+}
+
+func (x *SetTouringLimitsResponse) SetLimits(v *TouringLimits) {
+	x.xxx_hidden_Limits = v
+}
+
+func (x *SetTouringLimitsResponse) HasLimits() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Limits != nil
+}
+
+func (x *SetTouringLimitsResponse) ClearLimits() {
+	x.xxx_hidden_Limits = nil
+}
+
+type SetTouringLimitsResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The user's touring limits.
+	Limits *TouringLimits
+}
+
+func (b0 SetTouringLimitsResponse_builder) Build() *SetTouringLimitsResponse {
+	m0 := &SetTouringLimitsResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Limits = b.Limits
+	return m0
+}
+
 type GetWorkoutWeatherRequest struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_WorkoutId string                 `protobuf:"bytes,1,opt,name=workout_id,json=workoutId,proto3"`
@@ -6700,7 +7195,7 @@ type GetWorkoutWeatherRequest struct {
 
 func (x *GetWorkoutWeatherRequest) Reset() {
 	*x = GetWorkoutWeatherRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[49]
+	mi := &file_plans_v1_plans_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6712,7 +7207,7 @@ func (x *GetWorkoutWeatherRequest) String() string {
 func (*GetWorkoutWeatherRequest) ProtoMessage() {}
 
 func (x *GetWorkoutWeatherRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[49]
+	mi := &file_plans_v1_plans_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6758,7 +7253,7 @@ type GetWorkoutWeatherResponse struct {
 
 func (x *GetWorkoutWeatherResponse) Reset() {
 	*x = GetWorkoutWeatherResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[50]
+	mi := &file_plans_v1_plans_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6770,7 +7265,7 @@ func (x *GetWorkoutWeatherResponse) String() string {
 func (*GetWorkoutWeatherResponse) ProtoMessage() {}
 
 func (x *GetWorkoutWeatherResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[50]
+	mi := &file_plans_v1_plans_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6829,7 +7324,7 @@ type CreateWorkoutsRequest struct {
 
 func (x *CreateWorkoutsRequest) Reset() {
 	*x = CreateWorkoutsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[51]
+	mi := &file_plans_v1_plans_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6841,7 +7336,7 @@ func (x *CreateWorkoutsRequest) String() string {
 func (*CreateWorkoutsRequest) ProtoMessage() {}
 
 func (x *CreateWorkoutsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[51]
+	mi := &file_plans_v1_plans_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6903,7 +7398,7 @@ type CreateWorkoutsResponse struct {
 
 func (x *CreateWorkoutsResponse) Reset() {
 	*x = CreateWorkoutsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[52]
+	mi := &file_plans_v1_plans_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6915,7 +7410,7 @@ func (x *CreateWorkoutsResponse) String() string {
 func (*CreateWorkoutsResponse) ProtoMessage() {}
 
 func (x *CreateWorkoutsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[52]
+	mi := &file_plans_v1_plans_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6964,7 +7459,7 @@ type UpdateWorkoutRequest struct {
 
 func (x *UpdateWorkoutRequest) Reset() {
 	*x = UpdateWorkoutRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[53]
+	mi := &file_plans_v1_plans_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6976,7 +7471,7 @@ func (x *UpdateWorkoutRequest) String() string {
 func (*UpdateWorkoutRequest) ProtoMessage() {}
 
 func (x *UpdateWorkoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[53]
+	mi := &file_plans_v1_plans_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7065,7 +7560,7 @@ type UpdateWorkoutResponse struct {
 
 func (x *UpdateWorkoutResponse) Reset() {
 	*x = UpdateWorkoutResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[54]
+	mi := &file_plans_v1_plans_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7077,7 +7572,7 @@ func (x *UpdateWorkoutResponse) String() string {
 func (*UpdateWorkoutResponse) ProtoMessage() {}
 
 func (x *UpdateWorkoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[54]
+	mi := &file_plans_v1_plans_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7135,7 +7630,7 @@ type DeleteWorkoutsRequest struct {
 
 func (x *DeleteWorkoutsRequest) Reset() {
 	*x = DeleteWorkoutsRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[55]
+	mi := &file_plans_v1_plans_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7147,7 +7642,7 @@ func (x *DeleteWorkoutsRequest) String() string {
 func (*DeleteWorkoutsRequest) ProtoMessage() {}
 
 func (x *DeleteWorkoutsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[55]
+	mi := &file_plans_v1_plans_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7206,7 +7701,7 @@ type DeleteWorkoutsResponse struct {
 
 func (x *DeleteWorkoutsResponse) Reset() {
 	*x = DeleteWorkoutsResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[56]
+	mi := &file_plans_v1_plans_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7218,7 +7713,7 @@ func (x *DeleteWorkoutsResponse) String() string {
 func (*DeleteWorkoutsResponse) ProtoMessage() {}
 
 func (x *DeleteWorkoutsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[56]
+	mi := &file_plans_v1_plans_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7251,7 +7746,7 @@ type SetStrengthLogRequest struct {
 
 func (x *SetStrengthLogRequest) Reset() {
 	*x = SetStrengthLogRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[57]
+	mi := &file_plans_v1_plans_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7263,7 +7758,7 @@ func (x *SetStrengthLogRequest) String() string {
 func (*SetStrengthLogRequest) ProtoMessage() {}
 
 func (x *SetStrengthLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[57]
+	mi := &file_plans_v1_plans_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7334,7 +7829,7 @@ type SetStrengthLogResponse struct {
 
 func (x *SetStrengthLogResponse) Reset() {
 	*x = SetStrengthLogResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[58]
+	mi := &file_plans_v1_plans_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7346,7 +7841,7 @@ func (x *SetStrengthLogResponse) String() string {
 func (*SetStrengthLogResponse) ProtoMessage() {}
 
 func (x *SetStrengthLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[58]
+	mi := &file_plans_v1_plans_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7403,7 +7898,7 @@ type DeleteStrengthLogRequest struct {
 
 func (x *DeleteStrengthLogRequest) Reset() {
 	*x = DeleteStrengthLogRequest{}
-	mi := &file_plans_v1_plans_proto_msgTypes[59]
+	mi := &file_plans_v1_plans_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7415,7 +7910,7 @@ func (x *DeleteStrengthLogRequest) String() string {
 func (*DeleteStrengthLogRequest) ProtoMessage() {}
 
 func (x *DeleteStrengthLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[59]
+	mi := &file_plans_v1_plans_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7460,7 +7955,7 @@ type DeleteStrengthLogResponse struct {
 
 func (x *DeleteStrengthLogResponse) Reset() {
 	*x = DeleteStrengthLogResponse{}
-	mi := &file_plans_v1_plans_proto_msgTypes[60]
+	mi := &file_plans_v1_plans_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7472,7 +7967,7 @@ func (x *DeleteStrengthLogResponse) String() string {
 func (*DeleteStrengthLogResponse) ProtoMessage() {}
 
 func (x *DeleteStrengthLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plans_v1_plans_proto_msgTypes[60]
+	mi := &file_plans_v1_plans_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7703,7 +8198,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x11GetWorkoutRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"A\n" +
 	"\x12GetWorkoutResponse\x12+\n" +
-	"\aworkout\x18\x01 \x01(\v2\x11.plans.v1.WorkoutR\aworkout\"\xff\x04\n" +
+	"\aworkout\x18\x01 \x01(\v2\x11.plans.v1.WorkoutR\aworkout\"\xc0\x05\n" +
 	"\x0eWorkoutWeather\x12\x1d\n" +
 	"\n" +
 	"workout_id\x18\x01 \x01(\tR\tworkoutId\x12\x12\n" +
@@ -7718,7 +8213,8 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\afueling\x18\n" +
 	" \x01(\v2\x15.plans.v1.FuelAmountsR\afueling\x124\n" +
 	"\bwarnings\x18\v \x03(\v2\x18.plans.v1.WeatherWarningR\bwarnings\x12H\n" +
-	"\x12avalanche_forecast\x18\f \x01(\v2\x19.geo.v1.AvalancheForecastR\x11avalancheForecast\"\x8a\x02\n" +
+	"\x12avalanche_forecast\x18\f \x01(\v2\x19.geo.v1.AvalancheForecastR\x11avalancheForecast\x12?\n" +
+	"\x0ftouring_verdict\x18\r \x01(\v2\x16.geo.v1.TouringVerdictR\x0etouringVerdict\"\x8a\x02\n" +
 	"\x0eWeatherWarning\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.plans.v1.WeatherWarningKindR\x04kind\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12+\n" +
@@ -7776,7 +8272,26 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x16SetSweatProfileRequest\x120\n" +
 	"\aprofile\x18\x01 \x01(\v2\x16.plans.v1.SweatProfileR\aprofile\"K\n" +
 	"\x17SetSweatProfileResponse\x120\n" +
-	"\aprofile\x18\x01 \x01(\v2\x16.plans.v1.SweatProfileR\aprofile\"9\n" +
+	"\aprofile\x18\x01 \x01(\v2\x16.plans.v1.SweatProfileR\aprofile\"\xfe\x04\n" +
+	"\rTouringLimits\x12V\n" +
+	"\x1bmax_avalanche_danger_alpine\x18\x01 \x01(\x0e2\x17.geo.v1.AvalancheDangerR\x18maxAvalancheDangerAlpine\x12Z\n" +
+	"\x1dmax_avalanche_danger_treeline\x18\x02 \x01(\x0e2\x17.geo.v1.AvalancheDangerR\x1amaxAvalancheDangerTreeline\x12e\n" +
+	"#max_avalanche_danger_below_treeline\x18\x03 \x01(\x0e2\x17.geo.v1.AvalancheDangerR\x1fmaxAvalancheDangerBelowTreeline\x120\n" +
+	"\x12max_wind_gusts_kmh\x18\x04 \x01(\x01H\x00R\x0fmaxWindGustsKmh\x88\x01\x01\x12>\n" +
+	"\x19max_freezing_level_meters\x18\x05 \x01(\x01H\x01R\x16maxFreezingLevelMeters\x88\x01\x01\x12D\n" +
+	"\x1dmax_snowfall_past_72_hours_cm\x18\x06 \x01(\x01H\x02R\x18maxSnowfallPast72HoursCm\x88\x01\x01\x12C\n" +
+	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\n" +
+	"updateTimeB\x15\n" +
+	"\x13_max_wind_gusts_kmhB\x1c\n" +
+	"\x1a_max_freezing_level_metersB \n" +
+	"\x1e_max_snowfall_past_72_hours_cm\"\x19\n" +
+	"\x17GetTouringLimitsRequest\"K\n" +
+	"\x18GetTouringLimitsResponse\x12/\n" +
+	"\x06limits\x18\x01 \x01(\v2\x17.plans.v1.TouringLimitsR\x06limits\"J\n" +
+	"\x17SetTouringLimitsRequest\x12/\n" +
+	"\x06limits\x18\x01 \x01(\v2\x17.plans.v1.TouringLimitsR\x06limits\"K\n" +
+	"\x18SetTouringLimitsResponse\x12/\n" +
+	"\x06limits\x18\x01 \x01(\v2\x17.plans.v1.TouringLimitsR\x06limits\"9\n" +
 	"\x18GetWorkoutWeatherRequest\x12\x1d\n" +
 	"\n" +
 	"workout_id\x18\x01 \x01(\tR\tworkoutId\"O\n" +
@@ -7884,7 +8399,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x12WeatherWarningKind\x12$\n" +
 	" WEATHER_WARNING_KIND_UNSPECIFIED\x10\x00\x12'\n" +
 	"#WEATHER_WARNING_KIND_WIND_IN_FOREST\x10\x01\x12)\n" +
-	"%WEATHER_WARNING_KIND_AVALANCHE_DANGER\x10\x022\xd7\f\n" +
+	"%WEATHER_WARNING_KIND_AVALANCHE_DANGER\x10\x022\x8d\x0e\n" +
 	"\x13TrainingPlanService\x12_\n" +
 	"\x12CreateTrainingPlan\x12#.plans.v1.CreateTrainingPlanRequest\x1a$.plans.v1.CreateTrainingPlanResponse\x12V\n" +
 	"\x0fGetTrainingPlan\x12 .plans.v1.GetTrainingPlanRequest\x1a!.plans.v1.GetTrainingPlanResponse\x12\\\n" +
@@ -7904,12 +8419,14 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x12ListWorkoutWeather\x12#.plans.v1.ListWorkoutWeatherRequest\x1a$.plans.v1.ListWorkoutWeatherResponse\x12\\\n" +
 	"\x11GetWorkoutWeather\x12\".plans.v1.GetWorkoutWeatherRequest\x1a#.plans.v1.GetWorkoutWeatherResponse\x12V\n" +
 	"\x0fGetSweatProfile\x12 .plans.v1.GetSweatProfileRequest\x1a!.plans.v1.GetSweatProfileResponse\x12V\n" +
-	"\x0fSetSweatProfile\x12 .plans.v1.SetSweatProfileRequest\x1a!.plans.v1.SetSweatProfileResponseB\x9c\x01\n" +
+	"\x0fSetSweatProfile\x12 .plans.v1.SetSweatProfileRequest\x1a!.plans.v1.SetSweatProfileResponse\x12Y\n" +
+	"\x10GetTouringLimits\x12!.plans.v1.GetTouringLimitsRequest\x1a\".plans.v1.GetTouringLimitsResponse\x12Y\n" +
+	"\x10SetTouringLimits\x12!.plans.v1.SetTouringLimitsRequest\x1a\".plans.v1.SetTouringLimitsResponseB\x9c\x01\n" +
 	"\fcom.plans.v1B\n" +
 	"PlansProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
 var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
-var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
+var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_plans_v1_plans_proto_goTypes = []any{
 	(PeriodGranularity)(0),             // 0: plans.v1.PeriodGranularity
 	(WorkoutType)(0),                   // 1: plans.v1.WorkoutType
@@ -7973,147 +8490,165 @@ var file_plans_v1_plans_proto_goTypes = []any{
 	(*GetSweatProfileResponse)(nil),    // 59: plans.v1.GetSweatProfileResponse
 	(*SetSweatProfileRequest)(nil),     // 60: plans.v1.SetSweatProfileRequest
 	(*SetSweatProfileResponse)(nil),    // 61: plans.v1.SetSweatProfileResponse
-	(*GetWorkoutWeatherRequest)(nil),   // 62: plans.v1.GetWorkoutWeatherRequest
-	(*GetWorkoutWeatherResponse)(nil),  // 63: plans.v1.GetWorkoutWeatherResponse
-	(*CreateWorkoutsRequest)(nil),      // 64: plans.v1.CreateWorkoutsRequest
-	(*CreateWorkoutsResponse)(nil),     // 65: plans.v1.CreateWorkoutsResponse
-	(*UpdateWorkoutRequest)(nil),       // 66: plans.v1.UpdateWorkoutRequest
-	(*UpdateWorkoutResponse)(nil),      // 67: plans.v1.UpdateWorkoutResponse
-	(*DeleteWorkoutsRequest)(nil),      // 68: plans.v1.DeleteWorkoutsRequest
-	(*DeleteWorkoutsResponse)(nil),     // 69: plans.v1.DeleteWorkoutsResponse
-	(*SetStrengthLogRequest)(nil),      // 70: plans.v1.SetStrengthLogRequest
-	(*SetStrengthLogResponse)(nil),     // 71: plans.v1.SetStrengthLogResponse
-	(*DeleteStrengthLogRequest)(nil),   // 72: plans.v1.DeleteStrengthLogRequest
-	(*DeleteStrengthLogResponse)(nil),  // 73: plans.v1.DeleteStrengthLogResponse
-	(*timestamppb.Timestamp)(nil),      // 74: google.protobuf.Timestamp
-	(*v1.LatLng)(nil),                  // 75: geo.v1.LatLng
-	(v1.Terrain)(0),                    // 76: geo.v1.Terrain
-	(Equipment)(0),                     // 77: plans.v1.Equipment
-	(*Weight)(nil),                     // 78: plans.v1.Weight
-	(*fieldmaskpb.FieldMask)(nil),      // 79: google.protobuf.FieldMask
-	(*v1.AvalancheForecast)(nil),       // 80: geo.v1.AvalancheForecast
-	(v1.AvalancheDanger)(0),            // 81: geo.v1.AvalancheDanger
+	(*TouringLimits)(nil),              // 62: plans.v1.TouringLimits
+	(*GetTouringLimitsRequest)(nil),    // 63: plans.v1.GetTouringLimitsRequest
+	(*GetTouringLimitsResponse)(nil),   // 64: plans.v1.GetTouringLimitsResponse
+	(*SetTouringLimitsRequest)(nil),    // 65: plans.v1.SetTouringLimitsRequest
+	(*SetTouringLimitsResponse)(nil),   // 66: plans.v1.SetTouringLimitsResponse
+	(*GetWorkoutWeatherRequest)(nil),   // 67: plans.v1.GetWorkoutWeatherRequest
+	(*GetWorkoutWeatherResponse)(nil),  // 68: plans.v1.GetWorkoutWeatherResponse
+	(*CreateWorkoutsRequest)(nil),      // 69: plans.v1.CreateWorkoutsRequest
+	(*CreateWorkoutsResponse)(nil),     // 70: plans.v1.CreateWorkoutsResponse
+	(*UpdateWorkoutRequest)(nil),       // 71: plans.v1.UpdateWorkoutRequest
+	(*UpdateWorkoutResponse)(nil),      // 72: plans.v1.UpdateWorkoutResponse
+	(*DeleteWorkoutsRequest)(nil),      // 73: plans.v1.DeleteWorkoutsRequest
+	(*DeleteWorkoutsResponse)(nil),     // 74: plans.v1.DeleteWorkoutsResponse
+	(*SetStrengthLogRequest)(nil),      // 75: plans.v1.SetStrengthLogRequest
+	(*SetStrengthLogResponse)(nil),     // 76: plans.v1.SetStrengthLogResponse
+	(*DeleteStrengthLogRequest)(nil),   // 77: plans.v1.DeleteStrengthLogRequest
+	(*DeleteStrengthLogResponse)(nil),  // 78: plans.v1.DeleteStrengthLogResponse
+	(*timestamppb.Timestamp)(nil),      // 79: google.protobuf.Timestamp
+	(*v1.LatLng)(nil),                  // 80: geo.v1.LatLng
+	(v1.Terrain)(0),                    // 81: geo.v1.Terrain
+	(Equipment)(0),                     // 82: plans.v1.Equipment
+	(*Weight)(nil),                     // 83: plans.v1.Weight
+	(*fieldmaskpb.FieldMask)(nil),      // 84: google.protobuf.FieldMask
+	(*v1.AvalancheForecast)(nil),       // 85: geo.v1.AvalancheForecast
+	(*v1.TouringVerdict)(nil),          // 86: geo.v1.TouringVerdict
+	(v1.AvalancheDanger)(0),            // 87: geo.v1.AvalancheDanger
 }
 var file_plans_v1_plans_proto_depIdxs = []int32{
-	74, // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
-	74, // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
-	0,  // 2: plans.v1.PlanPeriod.granularity:type_name -> plans.v1.PeriodGranularity
-	1,  // 3: plans.v1.Workout.type:type_name -> plans.v1.WorkoutType
-	75, // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
-	16, // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
-	23, // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
-	26, // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
-	24, // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
-	25, // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
-	2,  // 10: plans.v1.RunWorkout.intensity:type_name -> plans.v1.RunIntensity
-	76, // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
-	19, // 12: plans.v1.RunWorkout.blocks:type_name -> plans.v1.RunBlock
-	17, // 13: plans.v1.RunWorkout.fueling:type_name -> plans.v1.RunFueling
-	18, // 14: plans.v1.RunFueling.amounts:type_name -> plans.v1.FuelAmounts
-	20, // 15: plans.v1.RunBlock.steps:type_name -> plans.v1.RunStep
-	3,  // 16: plans.v1.RunStep.kind:type_name -> plans.v1.RunStepKind
-	21, // 17: plans.v1.RunStep.heart_rate:type_name -> plans.v1.HeartRateTarget
-	22, // 18: plans.v1.RunStep.pace:type_name -> plans.v1.PaceTarget
-	4,  // 19: plans.v1.HeartRateTarget.reference:type_name -> plans.v1.HeartRateReference
-	5,  // 20: plans.v1.CrossTrainingWorkout.sport:type_name -> plans.v1.CrossTrainingSport
-	29, // 21: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
-	30, // 22: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
-	28, // 23: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
-	27, // 24: plans.v1.StrengthWorkout.groups:type_name -> plans.v1.ExerciseGroup
-	6,  // 25: plans.v1.ExerciseGroup.kind:type_name -> plans.v1.ExerciseGroupKind
-	77, // 26: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
-	78, // 27: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
-	78, // 28: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
-	74, // 29: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
-	7,  // 30: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
-	31, // 31: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
-	32, // 32: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
-	8,  // 33: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
-	9,  // 34: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
-	10, // 35: plans.v1.LoggedExercise.stiffness:type_name -> plans.v1.Stiffness
-	78, // 36: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
-	8,  // 37: plans.v1.LoggedSet.effort:type_name -> plans.v1.ExerciseEffort
-	10, // 38: plans.v1.LoggedSet.stiffness:type_name -> plans.v1.Stiffness
-	13, // 39: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	13, // 40: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	13, // 41: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	14, // 42: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
-	13, // 43: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
-	13, // 44: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	79, // 45: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 46: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	14, // 47: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
-	14, // 48: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
-	0,  // 49: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
-	15, // 50: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	15, // 51: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
-	75, // 52: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
-	11, // 53: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
-	53, // 54: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
-	54, // 55: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
-	53, // 56: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
-	74, // 57: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
-	74, // 58: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
-	18, // 59: plans.v1.WorkoutWeather.fueling:type_name -> plans.v1.FuelAmounts
-	52, // 60: plans.v1.WorkoutWeather.warnings:type_name -> plans.v1.WeatherWarning
-	80, // 61: plans.v1.WorkoutWeather.avalanche_forecast:type_name -> geo.v1.AvalancheForecast
-	12, // 62: plans.v1.WeatherWarning.kind:type_name -> plans.v1.WeatherWarningKind
-	81, // 63: plans.v1.WeatherWarning.max_avalanche_danger:type_name -> geo.v1.AvalancheDanger
-	74, // 64: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
-	51, // 65: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	74, // 66: plans.v1.SweatProfile.update_time:type_name -> google.protobuf.Timestamp
-	57, // 67: plans.v1.GetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
-	57, // 68: plans.v1.SetSweatProfileRequest.profile:type_name -> plans.v1.SweatProfile
-	57, // 69: plans.v1.SetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
-	51, // 70: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	15, // 71: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
-	15, // 72: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	15, // 73: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
-	79, // 74: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
-	15, // 75: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
-	30, // 76: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
-	15, // 77: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
-	33, // 78: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
-	35, // 79: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
-	37, // 80: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
-	39, // 81: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
-	41, // 82: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
-	43, // 83: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
-	45, // 84: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
-	47, // 85: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
-	49, // 86: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
-	64, // 87: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
-	66, // 88: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
-	68, // 89: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
-	70, // 90: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
-	72, // 91: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
-	55, // 92: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
-	62, // 93: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
-	58, // 94: plans.v1.TrainingPlanService.GetSweatProfile:input_type -> plans.v1.GetSweatProfileRequest
-	60, // 95: plans.v1.TrainingPlanService.SetSweatProfile:input_type -> plans.v1.SetSweatProfileRequest
-	34, // 96: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
-	36, // 97: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
-	38, // 98: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
-	40, // 99: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
-	42, // 100: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
-	44, // 101: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
-	46, // 102: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
-	48, // 103: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
-	50, // 104: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
-	65, // 105: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
-	67, // 106: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
-	69, // 107: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
-	71, // 108: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
-	73, // 109: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
-	56, // 110: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
-	63, // 111: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
-	59, // 112: plans.v1.TrainingPlanService.GetSweatProfile:output_type -> plans.v1.GetSweatProfileResponse
-	61, // 113: plans.v1.TrainingPlanService.SetSweatProfile:output_type -> plans.v1.SetSweatProfileResponse
-	96, // [96:114] is the sub-list for method output_type
-	78, // [78:96] is the sub-list for method input_type
-	78, // [78:78] is the sub-list for extension type_name
-	78, // [78:78] is the sub-list for extension extendee
-	0,  // [0:78] is the sub-list for field type_name
+	79,  // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
+	79,  // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
+	0,   // 2: plans.v1.PlanPeriod.granularity:type_name -> plans.v1.PeriodGranularity
+	1,   // 3: plans.v1.Workout.type:type_name -> plans.v1.WorkoutType
+	80,  // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
+	16,  // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
+	23,  // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
+	26,  // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
+	24,  // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
+	25,  // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
+	2,   // 10: plans.v1.RunWorkout.intensity:type_name -> plans.v1.RunIntensity
+	81,  // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
+	19,  // 12: plans.v1.RunWorkout.blocks:type_name -> plans.v1.RunBlock
+	17,  // 13: plans.v1.RunWorkout.fueling:type_name -> plans.v1.RunFueling
+	18,  // 14: plans.v1.RunFueling.amounts:type_name -> plans.v1.FuelAmounts
+	20,  // 15: plans.v1.RunBlock.steps:type_name -> plans.v1.RunStep
+	3,   // 16: plans.v1.RunStep.kind:type_name -> plans.v1.RunStepKind
+	21,  // 17: plans.v1.RunStep.heart_rate:type_name -> plans.v1.HeartRateTarget
+	22,  // 18: plans.v1.RunStep.pace:type_name -> plans.v1.PaceTarget
+	4,   // 19: plans.v1.HeartRateTarget.reference:type_name -> plans.v1.HeartRateReference
+	5,   // 20: plans.v1.CrossTrainingWorkout.sport:type_name -> plans.v1.CrossTrainingSport
+	29,  // 21: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
+	30,  // 22: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
+	28,  // 23: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
+	27,  // 24: plans.v1.StrengthWorkout.groups:type_name -> plans.v1.ExerciseGroup
+	6,   // 25: plans.v1.ExerciseGroup.kind:type_name -> plans.v1.ExerciseGroupKind
+	82,  // 26: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
+	83,  // 27: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
+	83,  // 28: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
+	79,  // 29: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
+	7,   // 30: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
+	31,  // 31: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
+	32,  // 32: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
+	8,   // 33: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
+	9,   // 34: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
+	10,  // 35: plans.v1.LoggedExercise.stiffness:type_name -> plans.v1.Stiffness
+	83,  // 36: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
+	8,   // 37: plans.v1.LoggedSet.effort:type_name -> plans.v1.ExerciseEffort
+	10,  // 38: plans.v1.LoggedSet.stiffness:type_name -> plans.v1.Stiffness
+	13,  // 39: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	13,  // 40: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	13,  // 41: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	14,  // 42: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
+	13,  // 43: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
+	13,  // 44: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	84,  // 45: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13,  // 46: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	14,  // 47: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
+	14,  // 48: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
+	0,   // 49: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
+	15,  // 50: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	15,  // 51: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
+	80,  // 52: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
+	11,  // 53: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
+	53,  // 54: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
+	54,  // 55: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
+	53,  // 56: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
+	79,  // 57: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
+	79,  // 58: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
+	18,  // 59: plans.v1.WorkoutWeather.fueling:type_name -> plans.v1.FuelAmounts
+	52,  // 60: plans.v1.WorkoutWeather.warnings:type_name -> plans.v1.WeatherWarning
+	85,  // 61: plans.v1.WorkoutWeather.avalanche_forecast:type_name -> geo.v1.AvalancheForecast
+	86,  // 62: plans.v1.WorkoutWeather.touring_verdict:type_name -> geo.v1.TouringVerdict
+	12,  // 63: plans.v1.WeatherWarning.kind:type_name -> plans.v1.WeatherWarningKind
+	87,  // 64: plans.v1.WeatherWarning.max_avalanche_danger:type_name -> geo.v1.AvalancheDanger
+	79,  // 65: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
+	51,  // 66: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	79,  // 67: plans.v1.SweatProfile.update_time:type_name -> google.protobuf.Timestamp
+	57,  // 68: plans.v1.GetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
+	57,  // 69: plans.v1.SetSweatProfileRequest.profile:type_name -> plans.v1.SweatProfile
+	57,  // 70: plans.v1.SetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
+	87,  // 71: plans.v1.TouringLimits.max_avalanche_danger_alpine:type_name -> geo.v1.AvalancheDanger
+	87,  // 72: plans.v1.TouringLimits.max_avalanche_danger_treeline:type_name -> geo.v1.AvalancheDanger
+	87,  // 73: plans.v1.TouringLimits.max_avalanche_danger_below_treeline:type_name -> geo.v1.AvalancheDanger
+	79,  // 74: plans.v1.TouringLimits.update_time:type_name -> google.protobuf.Timestamp
+	62,  // 75: plans.v1.GetTouringLimitsResponse.limits:type_name -> plans.v1.TouringLimits
+	62,  // 76: plans.v1.SetTouringLimitsRequest.limits:type_name -> plans.v1.TouringLimits
+	62,  // 77: plans.v1.SetTouringLimitsResponse.limits:type_name -> plans.v1.TouringLimits
+	51,  // 78: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	15,  // 79: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
+	15,  // 80: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	15,  // 81: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
+	84,  // 82: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
+	15,  // 83: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
+	30,  // 84: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
+	15,  // 85: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
+	33,  // 86: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
+	35,  // 87: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
+	37,  // 88: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
+	39,  // 89: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
+	41,  // 90: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
+	43,  // 91: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
+	45,  // 92: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
+	47,  // 93: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
+	49,  // 94: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
+	69,  // 95: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
+	71,  // 96: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
+	73,  // 97: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
+	75,  // 98: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
+	77,  // 99: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
+	55,  // 100: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
+	67,  // 101: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
+	58,  // 102: plans.v1.TrainingPlanService.GetSweatProfile:input_type -> plans.v1.GetSweatProfileRequest
+	60,  // 103: plans.v1.TrainingPlanService.SetSweatProfile:input_type -> plans.v1.SetSweatProfileRequest
+	63,  // 104: plans.v1.TrainingPlanService.GetTouringLimits:input_type -> plans.v1.GetTouringLimitsRequest
+	65,  // 105: plans.v1.TrainingPlanService.SetTouringLimits:input_type -> plans.v1.SetTouringLimitsRequest
+	34,  // 106: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
+	36,  // 107: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
+	38,  // 108: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
+	40,  // 109: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
+	42,  // 110: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
+	44,  // 111: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
+	46,  // 112: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
+	48,  // 113: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
+	50,  // 114: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
+	70,  // 115: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
+	72,  // 116: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
+	74,  // 117: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
+	76,  // 118: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
+	78,  // 119: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
+	56,  // 120: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
+	68,  // 121: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
+	59,  // 122: plans.v1.TrainingPlanService.GetSweatProfile:output_type -> plans.v1.GetSweatProfileResponse
+	61,  // 123: plans.v1.TrainingPlanService.SetSweatProfile:output_type -> plans.v1.SetSweatProfileResponse
+	64,  // 124: plans.v1.TrainingPlanService.GetTouringLimits:output_type -> plans.v1.GetTouringLimitsResponse
+	66,  // 125: plans.v1.TrainingPlanService.SetTouringLimits:output_type -> plans.v1.SetTouringLimitsResponse
+	106, // [106:126] is the sub-list for method output_type
+	86,  // [86:106] is the sub-list for method input_type
+	86,  // [86:86] is the sub-list for extension type_name
+	86,  // [86:86] is the sub-list for extension extendee
+	0,   // [0:86] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_plans_proto_init() }
@@ -8136,13 +8671,14 @@ func file_plans_v1_plans_proto_init() {
 	}
 	file_plans_v1_plans_proto_msgTypes[14].OneofWrappers = []any{}
 	file_plans_v1_plans_proto_msgTypes[44].OneofWrappers = []any{}
+	file_plans_v1_plans_proto_msgTypes[49].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_plans_proto_rawDesc), len(file_plans_v1_plans_proto_rawDesc)),
 			NumEnums:      13,
-			NumMessages:   61,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

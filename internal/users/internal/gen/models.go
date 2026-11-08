@@ -1660,6 +1660,17 @@ type SweatProfile struct {
 	UpdateTime       pgtype.Timestamptz
 }
 
+type TouringLimit struct {
+	UserID                          pgtype.UUID
+	MaxAvalancheDangerAlpine        pgtype.Int2
+	MaxAvalancheDangerTreeline      pgtype.Int2
+	MaxAvalancheDangerBelowTreeline pgtype.Int2
+	MaxWindGustsKmh                 pgtype.Float8
+	MaxFreezingLevelMeters          pgtype.Float8
+	MaxSnowfallPast72HoursCm        pgtype.Float8
+	UpdateTime                      pgtype.Timestamptz
+}
+
 type TrainingPlan struct {
 	ID          pgtype.UUID
 	UserID      pgtype.UUID
