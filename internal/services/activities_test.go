@@ -58,6 +58,10 @@ type fakeStrava struct {
 	failStreams map[int64]bool
 	// The number of activities fetched.
 	activityCalls int
+	// The number of activities fetched within a request marked with
+	// webhookRequest, so a test can count a webhook's own fetches apart
+	// from those of a sync running in the background.
+	webhookActivityCalls int
 	// If set, each refresh replaces the refresh token, and refreshing with
 	// a replaced one fails as if access was revoked, as Strava may. The
 	// current refresh token is validRefreshToken, or any if unset.
@@ -158,10 +162,17 @@ func (f *fakeStrava) ListActivities(_ context.Context, token string, before time
 	return result[:min(perPage, len(result))], nil
 }
 
-func (f *fakeStrava) GetActivity(_ context.Context, _ string, id int64) (*strava.Activity, error) {
+// webhookRequest marks the context of a test's webhook requests, see
+// fakeStrava.webhookActivityCalls.
+type webhookRequest struct{}
+
+func (f *fakeStrava) GetActivity(ctx context.Context, _ string, id int64) (*strava.Activity, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.activityCalls++
+	if ctx.Value(webhookRequest{}) != nil {
+		f.webhookActivityCalls++
+	}
 	for _, a := range f.activities {
 		if a.ID == id {
 			detail := *a
