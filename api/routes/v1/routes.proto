@@ -497,4 +497,10 @@ message GetRouteForecastResponse {
   repeated string warnings = 6;
   // The path of the route, downsampled for display.
   repeated RoutePoint path = 7;
+  // The avalanche forecast at the route's highest point, unset if there is
+  // none: forecasts only cover Canada's mountains in winter, see
+  // GeoService.GetAvalancheForecast. Its days may not reach the route's
+  // date, as they only cover the next three. Danger rated High or above
+  // on the route's days is also among the warnings.
+  geo.v1.AvalancheForecast avalanche_forecast = 8;
 }

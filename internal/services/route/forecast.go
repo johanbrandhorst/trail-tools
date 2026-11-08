@@ -6,10 +6,12 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect/v2"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/avalanche"
 	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
 	routesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1"
 	"github.com/bs-tools/trailrunn.ing/internal/geo"
@@ -80,7 +82,16 @@ func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteFo
 	for i, sample := range samples {
 		queries[i] = mapdata.ForecastQuery{Point: sample.point, Time: start.Add(sample.elapsed)}
 	}
+	// The avalanche forecast is fetched while the weather is.
+	var avalancheForecast *avalanche.Forecast
+	var wg sync.WaitGroup
+	if s.avalanches != nil {
+		wg.Go(func() {
+			avalancheForecast = s.avalancheForecast(ctx, HighestPoint(points))
+		})
+	}
 	weather, err := s.mapData.Forecast(ctx, queries)
+	wg.Wait()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnavailable, err.Error()).WithCause(err)
 	}
@@ -96,9 +107,45 @@ func (s *Service) GetRouteForecast(ctx context.Context, req *routesv1.GetRouteFo
 		DurationSeconds:     int32(duration.Seconds()),
 		DistanceMeters:      stats.DistanceMeters,
 		ElevationGainMeters: stats.ElevationGainMeters,
-		Warnings:            forecastWarnings(samples, weather),
+		Warnings:            append(forecastWarnings(samples, weather), avalancheWarnings(avalancheForecast, weather)...),
 		Path:                PathToProto(points, maxForecastPathPoints),
+		AvalancheForecast:   AvalancheForecastToProto(avalancheForecast),
 	}.Build(), nil
+}
+
+// avalancheForecast returns the avalanche forecast at a point, nil if
+// there is none or it's unavailable: the weather forecast is still useful
+// without it.
+func (s *Service) avalancheForecast(ctx context.Context, point geo.Point) *avalanche.Forecast {
+	f, err := s.avalanches.Forecast(ctx, point)
+	if err != nil {
+		s.report.Report(ctx, "Failed to get an avalanche forecast, forecasting the route without it", err)
+		return nil
+	}
+	return f
+}
+
+// avalancheWarnings warns about High or Extreme avalanche danger on the
+// local days the route is forecast for.
+func avalancheWarnings(f *avalanche.Forecast, weather []mapdata.Weather) []string {
+	if f == nil {
+		return nil
+	}
+	var warnings []string
+	seen := make(map[string]bool)
+	for _, w := range weather {
+		date := w.Time.UTC().Add(w.UTCOffset).Format(time.DateOnly)
+		if seen[date] {
+			continue
+		}
+		seen[date] = true
+		if day, ok := f.Day(date); ok {
+			if warning := f.Warning(day); warning != "" {
+				warnings = append(warnings, warning)
+			}
+		}
+	}
+	return warnings
 }
 
 // forecastPath returns the path to forecast, with elevations.

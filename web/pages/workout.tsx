@@ -1,3 +1,4 @@
+import AvalancheForecastView from "@components/forecast/avalanche-forecast";
 import { useAerobicThreshold } from "@components/lactate/use-aerobic-threshold";
 import WorkoutLactateTest from "@components/lactate/workout-lactate-test";
 import Loading from "@components/loading";
@@ -61,7 +62,10 @@ const noForecast = (date: string): string => {
   return "Add a route to the workout, or sync an activity from Strava, for a forecast where you run.";
 };
 
-// WeatherCard shows the forecast for the workout's day.
+/**
+ * WeatherCard shows the forecast for the workout's day, and the avalanche
+ * forecast of ski tours.
+ */
 const WeatherCard: React.FC<{ workout: Workout }> = ({ workout }) => {
   const outside = outdoors(workout);
   const weather = useQuery(
@@ -87,22 +91,30 @@ const WeatherCard: React.FC<{ workout: Workout }> = ({ workout }) => {
         <WeatherForecast weather={weather.data.weather} />
       );
   }
+  const avalanche = weather.data?.weather?.avalancheForecast;
   return (
-    <Card
-      title="Weather"
-      actions={
-        workoutTargets(workout).routeId !== "" && (
-          <Link
-            to={`/forecast?route=${workoutTargets(workout).routeId}&start=${workout.date}T07:00`}
-            className={`${linkClass} text-sm`}
-          >
-            Forecast along the route
-          </Link>
-        )
-      }
-    >
-      {content}
-    </Card>
+    <>
+      <Card
+        title="Weather"
+        actions={
+          workoutTargets(workout).routeId !== "" && (
+            <Link
+              to={`/forecast?route=${workoutTargets(workout).routeId}&start=${workout.date}T07:00`}
+              className={`${linkClass} text-sm`}
+            >
+              Forecast along the route
+            </Link>
+          )
+        }
+      >
+        {content}
+      </Card>
+      {avalanche !== undefined && (
+        <Card title="Avalanche forecast">
+          <AvalancheForecastView forecast={avalanche} date={workout.date} />
+        </Card>
+      )}
+    </>
   );
 };
 

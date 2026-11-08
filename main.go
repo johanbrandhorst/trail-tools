@@ -23,6 +23,7 @@ import (
 	"github.com/bs-tools/trailrunn.ing/internal/activities"
 	"github.com/bs-tools/trailrunn.ing/internal/apilimit"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/avalanche"
 	"github.com/bs-tools/trailrunn.ing/internal/blob"
 	"github.com/bs-tools/trailrunn.ing/internal/cloudrun"
 	"github.com/bs-tools/trailrunn.ing/internal/cloudscheduler"
@@ -96,6 +97,10 @@ const (
 	garminTimeout    = 60 * time.Second
 	liveTrackTimeout = 20 * time.Second
 	geofabrikTimeout = 2 * time.Minute
+	// avalancheTimeout bounds getting an avalanche forecast, which a
+	// route's weather forecast waits for: it's a small response, and the
+	// weather is useful without it.
+	avalancheTimeout = 10 * time.Second
 )
 
 // Timeouts of incoming requests. Cloud Run lets a request run for 15
@@ -676,12 +681,18 @@ func run(
 	activityService := activity.NewService(log, report, activityRepo, lactateRepo, stravaWebURL)
 	stravaService := stravasvc.NewService(log, report, activityRepo, stravaSyncer, stravaOAuth, stravaWebURL)
 	garminService := garminsvc.NewService(report, activityRepo, garminSyncer)
+	// Avalanche forecasts are shared by the services, so they share their
+	// cache too.
+	avalanches := avalanche.New(avalanche.DefaultURL, telemetry.NewClient(avalancheTimeout))
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
+	routeService.SetAvalanches(avalanches)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
+	geoService.SetAvalanches(avalanches)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
 	planService.SetSharing(planRepo, baseURL)
 	planService.SetCalendars(planRepo)
 	planService.SetForests(routing.NewFinder(db))
+	planService.SetAvalanches(avalanches)
 	if garminSyncer != nil {
 		// Changed workouts of the coming days go on the Garmin calendar
 		// right away.

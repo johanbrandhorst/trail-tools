@@ -64,6 +64,19 @@ export const getPersonalHeatmap = GeoService.method.getPersonalHeatmap;
 export const listFamiliarTrails = GeoService.method.listFamiliarTrails;
 
 /**
+ * Get the current avalanche forecast for a point, from Avalanche Canada,
+ * which also publishes the forecasts of Parks Canada, Kananaskis Country
+ * and Avalanche Québec. Forecasts only cover Canada's mountains, and only
+ * in winter: elsewhere, or in summer, there is none. Check it before ski
+ * tours and winter routes in avalanche terrain, tell the user the danger
+ * and problems for their day, credit the forecaster and link to the full
+ * forecast, which says more than this summary.
+ *
+ * @generated from rpc geo.v1.GeoService.GetAvalancheForecast
+ */
+export const getAvalancheForecast = GeoService.method.getAvalancheForecast;
+
+/**
  * List the parts of the user's GPS tracks inside a bounding box, simplified,
  * for drawing them as a heatmap.
  *

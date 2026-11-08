@@ -12,6 +12,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"github.com/bs-tools/trailrunn.ing/internal/activities"
 	"github.com/bs-tools/trailrunn.ing/internal/apilimit"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/avalanche"
 	"github.com/bs-tools/trailrunn.ing/internal/blob"
 	"github.com/bs-tools/trailrunn.ing/internal/errreport"
 	activitiesv1 "github.com/bs-tools/trailrunn.ing/internal/gen/activities/v1"
@@ -88,6 +90,7 @@ type env struct {
 	srv           *httptest.Server
 	mapData       *fakeMapData
 	router        *fakeRouter
+	avalanches    *fakeAvalanches
 	activities    *activities.Repository
 	syncer        *stravasvc.Syncer
 	strava        *fakeStrava
@@ -179,7 +182,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := &env{t: t, db: db, mapData: &fakeMapData{}, router: &fakeRouter{}, activities: activityRepo, activityBlobs: activityBlobs, strava: newFakeStrava()}
+	e := &env{t: t, db: db, mapData: &fakeMapData{}, router: &fakeRouter{}, avalanches: &fakeAvalanches{}, activities: activityRepo, activityBlobs: activityBlobs, strava: newFakeStrava()}
 	e.userID = storetest.NewUser(t, db)
 	_, e.token, err = userRepo.CreateAPIToken(ctx, e.userID, "test")
 	if err != nil {
@@ -213,11 +216,14 @@ func newEnv(t *testing.T) *env {
 	activityService := activity.NewService(log, report, activityRepo, lactateRepo, strava.WebURL)
 	stravaService := stravasvc.NewService(log, report, activityRepo, e.syncer, nil, strava.WebURL)
 	routeService := route.NewService(log, report, routeRepo, activityRepo, e.router, e.mapData)
+	routeService.SetAvalanches(e.avalanches)
 	geoService := geosvc.NewService(log, report, e.mapData, e.mapData, activityRepo)
+	geoService.SetAvalanches(e.avalanches)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
 	planService.SetSharing(planRepo, "https://trail.example")
 	planService.SetCalendars(planRepo)
 	planService.SetForests(routing.NewFinder(e.db))
+	planService.SetAvalanches(e.avalanches)
 	e.garmin = newFakeGarmin()
 	// Notifications are handled when tests say, as by the scheduled
 	// sync the trigger runs.
@@ -603,6 +609,61 @@ func (f *fakeMapData) FindFeatures(_ context.Context, center geo.Point, radius f
 		{ID: 1, Kind: geo.FeaturePeak, Name: "Far Peak", Point: geo.Point{Lat: center.Lat + 0.01, Lng: center.Lng, Ele: 1234}},
 		{ID: 2, Kind: geo.FeatureWater, Point: geo.Point{Lat: center.Lat + 0.001, Lng: center.Lng, Ele: math.NaN()}},
 	}, nil
+}
+
+// fakeAvalanches forecasts avalanches west of longitude -115, the
+// Canadian Rockies and further west, and fails at longitude -100. Its
+// forecast covers today and the next two days in UTC: Considerable today,
+// High in the alpine tomorrow, and Moderate the day after.
+type fakeAvalanches struct {
+	mu sync.Mutex
+	// The points forecasts were asked for.
+	points []geo.Point
+}
+
+func (f *fakeAvalanches) Forecast(_ context.Context, point geo.Point) (*avalanche.Forecast, error) {
+	f.mu.Lock()
+	f.points = append(f.points, point)
+	f.mu.Unlock()
+	switch {
+	case point.Lng == -100:
+		return nil, errors.New("avalanche forecasts are down")
+	case point.Lng > -115:
+		return nil, nil
+	}
+	today := time.Now().UTC()
+	rating := func(d avalanche.Danger) avalanche.Rating {
+		return avalanche.Rating{Danger: d, Description: d.String()}
+	}
+	day := func(days int, alpine, treeline avalanche.Danger) avalanche.Day {
+		return avalanche.Day{
+			Date:   today.AddDate(0, 0, days).Format(time.DateOnly),
+			Alpine: rating(alpine), Treeline: rating(treeline), BelowTreeline: rating(avalanche.DangerModerate),
+		}
+	}
+	return &avalanche.Forecast{
+		Title:      "Glacier",
+		Forecaster: "Parks Canada",
+		URL:        "https://avalanche.ca/forecasts/glacier",
+		IssueTime:  today.Add(-time.Hour),
+		Highlights: "New snow and wind have built fresh wind slabs.",
+		Days: []avalanche.Day{
+			day(0, avalanche.DangerConsiderable, avalanche.DangerConsiderable),
+			day(1, avalanche.DangerHigh, avalanche.DangerConsiderable),
+			day(2, avalanche.DangerModerate, avalanche.DangerModerate),
+		},
+		Problems: []avalanche.Problem{{
+			Type: "windslab", Name: "Wind Slab", Elevations: []string{"Alpine"}, Aspects: []string{"N", "NE"},
+			Likelihood: "Likely", MinSize: 1, MaxSize: 2.5,
+		}},
+	}, nil
+}
+
+// requestedPoints returns the points forecasts were asked for.
+func (f *fakeAvalanches) requestedPoints() []geo.Point {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.points)
 }
 
 // fakeLiveTrack returns a fixed position for a session.

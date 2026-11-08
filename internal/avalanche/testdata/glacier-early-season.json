@@ -1,0 +1,153 @@
+{
+    "id": "d42d6196-fc93-41e3-b8ba-56884d620b2f_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+    "slug": "d42d6196-fc93-41e3-b8ba-56884d620b2f_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+    "url": "https://avalanche.ca/forecasts/d42d6196-fc93-41e3-b8ba-56884d620b2f_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+    "type": "avalancheforecast",
+    "area": {
+        "id": "b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+        "name": "b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+        "bbox": null
+    },
+    "report": {
+        "id": "d42d6196-fc93-41e3-b8ba-56884d620b2f_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+        "forecaster": "Parks Canada",
+        "dateIssued": "2026-10-28T23:00:00.000Z",
+        "validUntil": "2026-11-10T23:00:00.000Z",
+        "timezone": "America/Vancouver",
+        "title": "Glacier",
+        "highlights": "<p>With the transition to fall, snow has started to accumulate at upper elevations. There have been small avalanches on smooth alpine slopes during recent snowfalls.</p><p>Pack a transceiver, probe &amp; shovel and factor avalanches into your trip if you are travelling in the high country.</p><p>Daily avalanche hazard forecasts begin in November.</p>",
+        "confidence": {
+            "rating": {
+                "value": "moderate",
+                "display": "Moderate"
+            }
+        },
+        "summaries": [
+            {
+                "type": {
+                    "value": "snowpack-summary",
+                    "display": "Snowpack Summary"
+                },
+                "content": " <p>With cooler fall temps, snow is starting to accumulate in the alpine.  Be cautious in areas where the ground is smooth under the snow, and where wind deposits have created localized pockets of deep snow.</p>"
+            },
+            {
+                "type": {
+                    "value": "weather-summary",
+                    "display": "Weather Summary"
+                },
+                "content": " <p>For current conditions check the telemetry stations by clicking on the weather station icons on the Avalanche Canada map page.</p><p>For a weather forecast we recommend Environment Canada's forecast for <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://weather.gc.ca/en/location/index.html?coords=51.301,-117.521\">Roger's Pass</a></p><p>For a weather maps, graphics and satellite images check the <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://avalanche.ca/weather/forecast\">Mountain Weather Forecast</a></p><p>For a technical forecast check out SpotWx or Windy</p>"
+            }
+        ],
+        "dangerRatings": [
+            {
+                "date": {
+                    "value": "2026-10-29T23:00:00Z",
+                    "display": "Thursday"
+                },
+                "ratings": {
+                    "alp": {
+                        "display": "Alpine",
+                        "rating": {
+                            "value": "earlyseason",
+                            "display": "Early Season"
+                        }
+                    },
+                    "tln": {
+                        "display": "Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    },
+                    "btl": {
+                        "display": "Below Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    }
+                }
+            },
+            {
+                "date": {
+                    "value": "2026-10-30T23:00:00Z",
+                    "display": "Friday"
+                },
+                "ratings": {
+                    "alp": {
+                        "display": "Alpine",
+                        "rating": {
+                            "value": "earlyseason",
+                            "display": "Early Season"
+                        }
+                    },
+                    "tln": {
+                        "display": "Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    },
+                    "btl": {
+                        "display": "Below Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    }
+                }
+            },
+            {
+                "date": {
+                    "value": "2026-10-31T23:00:00Z",
+                    "display": "Saturday"
+                },
+                "ratings": {
+                    "alp": {
+                        "display": "Alpine",
+                        "rating": {
+                            "value": "earlyseason",
+                            "display": "Early Season"
+                        }
+                    },
+                    "tln": {
+                        "display": "Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    },
+                    "btl": {
+                        "display": "Below Treeline",
+                        "rating": {
+                            "value": "offseason",
+                            "display": "Summer Conditions"
+                        }
+                    }
+                }
+            }
+        ],
+        "problems": [],
+        "terrainAndTravelAdvice": [],
+        "message": null,
+        "season": null,
+        "comment": null,
+        "isFullTranslation": true
+    },
+    "version": 1,
+    "owner": {
+        "value": "parks-glacier",
+        "display": "Parks Canada",
+        "isExternal": false,
+        "url": "Parks Canada"
+    },
+    "notifications": [
+        {
+            "type": "info",
+            "content": "<p>Large areas of Glacier National Park are CLOSED for avalanche control using EXPLOSIVES. <a href=\"https://www.pc.gc.ca/apps/Rogers-Pass\">Real Time Area Status</a> - <a href=\"https://www.pc.gc.ca/en/pn-np/bc/glacier/visit/hiver-winter/ski\">Winter Permit Information</a></p>"
+        }
+    ],
+    "media": {
+        "images": []
+    }
+}

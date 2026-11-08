@@ -1,9 +1,10 @@
-import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { timestampDate, timestampFromDate } from "@bufbuild/protobuf/wkt";
 import ElevationProfile from "@components/charts/elevation-profile";
 import type {
   ProfileMarker,
   ProfilePoint,
 } from "@components/charts/elevation-profile";
+import AvalancheForecastView from "@components/forecast/avalanche-forecast";
 import ForecastMarkers from "@components/forecast/forecast-markers";
 import {
   defaultStart,
@@ -41,6 +42,7 @@ import type {
   ForecastPoint,
   GetRouteForecastResponse,
 } from "gen/routes/v1/routes_pb";
+import { toDateString } from "helpers/dates";
 import { formatHoursMinutes, formatKm, formatMeters } from "helpers/format";
 import { parseNumber } from "helpers/parse";
 import {
@@ -332,6 +334,18 @@ const ForecastResult: React.FC<ForecastResultProps> = ({ forecast }) => {
           />
         </MapView>
       </div>
+      {forecast.avalancheForecast !== undefined && (
+        <Card title="Avalanche forecast">
+          <AvalancheForecastView
+            forecast={forecast.avalancheForecast}
+            date={
+              first?.time === undefined
+                ? undefined
+                : toDateString(timestampDate(first.time))
+            }
+          />
+        </Card>
+      )}
       <Card title="Profile with forecast times">
         <ElevationProfile
           points={forecast.path}

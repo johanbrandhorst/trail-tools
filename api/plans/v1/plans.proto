@@ -852,6 +852,12 @@ message WorkoutWeather {
   // about before going: suggest changing the route or the day. Empty if
   // there are none.
   repeated WeatherWarning warnings = 11;
+  // The avalanche forecast for ski tours, at the forecast's location. Unset
+  // for other workouts, and where there is none: forecasts only cover
+  // Canada's mountains in winter. Its days only cover the next three, so
+  // check that the workout's date is among them. See
+  // geo.v1.GeoService.GetAvalancheForecast.
+  geo.v1.AvalancheForecast avalanche_forecast = 12;
 }
 
 // WeatherWarningKind is the kind of danger a weather warning is about.
@@ -865,6 +871,9 @@ enum WeatherWarningKind {
   // of its location are. Forests come from OpenStreetMap, so they are only
   // known in the regions whose map data has been imported.
   WEATHER_WARNING_KIND_WIND_IN_FOREST = 1;
+  // The avalanche danger on the day of a ski tour is High or Extreme in an
+  // elevation band, when travel in avalanche terrain is not recommended.
+  WEATHER_WARNING_KIND_AVALANCHE_DANGER = 2;
 }
 
 // A danger in the forecast for a workout.
@@ -881,6 +890,8 @@ message WeatherWarning {
   // How many meters of the workout's route are in forest. 0 for workouts
   // without a route, whose surroundings are mostly forest instead.
   double forest_distance_meters = 4;
+  // The highest danger rated on the day, for avalanche warnings.
+  geo.v1.AvalancheDanger max_avalanche_danger = 5;
 }
 
 // The weather of a day.

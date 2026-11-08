@@ -39,6 +39,8 @@ type Service struct {
 	router     Router
 	mapData    MapData
 	legs       *legCache
+	// Gets avalanche forecasts, nil if there are none.
+	avalanches Avalanches
 }
 
 // NewService creates a new Service.

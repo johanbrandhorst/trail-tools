@@ -1,0 +1,34 @@
+{
+    "id": "",
+    "slug": "",
+    "url": "",
+    "type": "",
+    "area": {
+        "id": "",
+        "name": "",
+        "bbox": null
+    },
+    "report": {
+        "id": "",
+        "forecaster": "",
+        "dateIssued": "",
+        "validUntil": null,
+        "title": "",
+        "highlights": "",
+        "summaries": null,
+        "dangerRatings": null,
+        "problems": null,
+        "terrainAndTravelAdvice": null,
+        "message": null,
+        "season": null,
+        "comment": null,
+        "isFullTranslation": false
+    },
+    "version": 0,
+    "owner": {
+        "value": "",
+        "display": "",
+        "isExternal": false,
+        "url": ""
+    }
+}
