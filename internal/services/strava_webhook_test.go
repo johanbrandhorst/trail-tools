@@ -271,13 +271,22 @@ func TestStravaWebhookAuthentication(t *testing.T) {
 		ev := fmt.Sprintf(`{"aspect_type": "create", "event_time": 1757232000, "object_id": %d, "object_type": "activity",
 			"owner_id": 7, "subscription_id": %d, "updates": {}}`, activityID, subscriptionID)
 		rec := httptest.NewRecorder()
-		webhook.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, strings.NewReader(ev)))
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(ev))
+		webhook.ServeHTTP(rec, req.WithContext(context.WithValue(req.Context(), webhookRequest{}, true)))
 		return rec.Code
 	}
+	// The activities the webhook fetched itself. An event whose sync is slow
+	// falls back to syncing soon, and that sync fetches activities in the
+	// background, which aren't the webhook's.
 	activityCalls := func() int {
 		e.strava.mu.Lock()
 		defer e.strava.mu.Unlock()
-		return e.strava.activityCalls
+		return e.strava.webhookActivityCalls
+	}
+	listings := func() int {
+		e.strava.mu.Lock()
+		defer e.strava.mu.Unlock()
+		return len(e.strava.listed)
 	}
 
 	// Events without the secret path, or of another subscription, are
@@ -312,6 +321,10 @@ func TestStravaWebhookAuthentication(t *testing.T) {
 	if n := activityCalls(); n != limit {
 		t.Fatalf("got %d activities fetched, want %d", n, limit)
 	}
+	// Wait for any sync an event fell back to, so the listings below are
+	// only those of the one sync for the events beyond the limit.
+	e.waitForSync()
+	before := listings()
 	for range 5 {
 		if got := post(callbackURL, 100, 1000); got != http.StatusOK {
 			t.Fatalf("got status %d beyond the limit, want 200 so Strava doesn't send it again", got)
@@ -321,11 +334,14 @@ func TestStravaWebhookAuthentication(t *testing.T) {
 	if conn.GetSyncState() != stravav1.SyncState_SYNC_STATE_IDLE || conn.GetActivityCount() != 3 || !conn.HasLastSyncTime() {
 		t.Errorf("got connection %v, want it synced instead", conn)
 	}
-	e.strava.mu.Lock()
-	listed := len(e.strava.listed)
-	e.strava.mu.Unlock()
-	// A sync lists the activities, and the empty page after them.
-	if listed != 2 {
-		t.Errorf("got %d listings, want one sync for the events beyond the limit", listed)
+	// A first sync lists the activities, and the empty page after them. After
+	// a sync an event fell back to, it lists only the empty page of newer
+	// ones.
+	want := 2
+	if before > 0 {
+		want = 1
+	}
+	if listed := listings() - before; listed != want {
+		t.Errorf("got %d listings, want %d from one sync for the events beyond the limit", listed, want)
 	}
 }
