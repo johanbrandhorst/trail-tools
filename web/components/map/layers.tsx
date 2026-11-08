@@ -14,6 +14,7 @@ import React, {
 } from "react";
 
 import { useMap } from "./map-view";
+import { overlayLayer, setOverlayVisible } from "./tile-layers";
 
 /**
  * TextElement wraps text in an element, so that it can be passed to Leaflet
@@ -441,4 +442,49 @@ export const useViewport = (): Viewport => {
     };
   }, [map]);
   return viewport;
+};
+
+interface OverlayVisibilityProps {
+  // The overlay's ID, like SLOPE_OVERLAY_ID.
+  id: string;
+  visible: boolean;
+  // Called when the user shows or hides the overlay in the layers control.
+  onChange: (visible: boolean) => void;
+}
+
+/**
+ * OverlayVisibility shows or hides one of the map's overlays from outside
+ * the layers control, and reports when the user changes it there, keeping
+ * the two in step.
+ */
+export const OverlayVisibility: React.FC<OverlayVisibilityProps> = ({
+  id,
+  visible,
+  onChange,
+}) => {
+  const map = useMap();
+  const changed = useEffectEvent(onChange);
+  useEffect(() => {
+    setOverlayVisible(map, id, visible);
+  }, [map, id, visible]);
+  useEffect(() => {
+    const layer = overlayLayer(map, id);
+    const onAdd = (event: leaflet.LayersControlEvent) => {
+      if (event.layer === layer) {
+        changed(true);
+      }
+    };
+    const onRemove = (event: leaflet.LayersControlEvent) => {
+      if (event.layer === layer) {
+        changed(false);
+      }
+    };
+    map.on("overlayadd", onAdd);
+    map.on("overlayremove", onRemove);
+    return () => {
+      map.off("overlayadd", onAdd);
+      map.off("overlayremove", onRemove);
+    };
+  }, [map, id]);
+  return null;
 };

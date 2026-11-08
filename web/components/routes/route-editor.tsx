@@ -7,9 +7,11 @@ import {
   FitBounds,
   HoverMarker,
   MapClick,
+  OverlayVisibility,
 } from "@components/map/layers";
 import MapView from "@components/map/map-view";
 import RoutePath from "@components/map/route-path";
+import { SLOPE_OVERLAY_ID } from "@components/map/tile-layers";
 import WaypointMarkers from "@components/map/waypoint-markers";
 import Card from "@components/ui/card";
 import { TextAreaField, TextField } from "@components/ui/fields";
@@ -60,6 +62,7 @@ import {
 } from "./route-geometry";
 import { RouteStatsPanel } from "./route-stats";
 import RouteWarnings from "./route-warnings";
+import TouringPlanner from "./touring-planner";
 
 export interface RouteDraft {
   name: string;
@@ -219,6 +222,9 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
   const [profileHover, setProfileHover] = useState<number | null>(null);
   const [mapHover, setMapHover] = useState<number | null>(null);
   const [validation, setValidation] = useState("");
+  // Whether ski tour planning is open, and the slope angle overlay with it.
+  const [planning, setPlanning] = useState(false);
+  const [slopeShown, setSlopeShown] = useState(false);
   const requestRef = useRef(0);
   const shape = history.present;
 
@@ -508,6 +514,13 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
               </>
             )}
             <HoverMarker position={hoverPosition} />
+            {planning && (
+              <OverlayVisibility
+                id={SLOPE_OVERLAY_ID}
+                visible={slopeShown}
+                onChange={setSlopeShown}
+              />
+            )}
             {route !== undefined && (
               <FitBounds positions={fitTuples} fitKey={route.id} />
             )}
@@ -573,6 +586,36 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
         <Card title="Statistics">
           <RouteStatsPanel stats={shownPreview?.stats} />
         </Card>
+        {points.length > 1 && (
+          <Card title="Ski tour planning">
+            {planning ? (
+              <TouringPlanner
+                points={points}
+                routeId={route?.id ?? ""}
+                slopeShown={slopeShown}
+                onSlopeShownChange={setSlopeShown}
+              />
+            ) : (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-gray-600">
+                  Check the route&apos;s conditions for a day: the freezing
+                  level, new snow, wind and avalanche danger, against your
+                  touring limits, with slope angles on the map.
+                </p>
+                <button
+                  type="button"
+                  className={secondaryButton}
+                  onClick={() => {
+                    setPlanning(true);
+                    setSlopeShown(true);
+                  }}
+                >
+                  Plan a ski tour
+                </button>
+              </div>
+            )}
+          </Card>
+        )}
         {geometryEditable && (
           <Card title={`Waypoints (${shape.waypoints.length})`}>
             {shape.waypoints.length === 0 ? (
