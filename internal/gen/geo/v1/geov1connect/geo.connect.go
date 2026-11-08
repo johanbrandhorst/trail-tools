@@ -39,6 +39,9 @@ const (
 	// GeoServiceListFamiliarTrailsProcedure is the procedure name of the GeoService's
 	// ListFamiliarTrails RPC.
 	GeoServiceListFamiliarTrailsProcedure = "/geo.v1.GeoService/ListFamiliarTrails"
+	// GeoServiceGetAvalancheForecastProcedure is the procedure name of the GeoService's
+	// GetAvalancheForecast RPC.
+	GeoServiceGetAvalancheForecastProcedure = "/geo.v1.GeoService/GetAvalancheForecast"
 	// GeoServiceListHeatmapTracksProcedure is the procedure name of the GeoService's ListHeatmapTracks
 	// RPC.
 	GeoServiceListHeatmapTracksProcedure = "/geo.v1.GeoService/ListHeatmapTracks"
@@ -87,6 +90,13 @@ var (
 			Procedure:  GeoServiceListFamiliarTrailsProcedure,
 		}
 	})
+	geoServiceGetAvalancheForecastSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_geo_v1_geo_proto.Services().ByName("GeoService").Methods().ByName("GetAvalancheForecast"),
+			Procedure:  GeoServiceGetAvalancheForecastProcedure,
+		}
+	})
 	geoServiceListHeatmapTracksSpec = sync.OnceValue(func() connect.Spec {
 		return connect.Spec{
 			StreamType: connect.StreamTypeUnary,
@@ -127,6 +137,14 @@ type GeoServiceClient interface {
 	// HEATMAP or TRAIL profile. Only areas whose map data has been imported
 	// can be searched.
 	ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error)
+	// Get the current avalanche forecast for a point, from Avalanche Canada,
+	// which also publishes the forecasts of Parks Canada, Kananaskis Country
+	// and Avalanche Québec. Forecasts only cover Canada's mountains, and only
+	// in winter: elsewhere, or in summer, there is none. Check it before ski
+	// tours and winter routes in avalanche terrain, tell the user the danger
+	// and problems for their day, credit the forecaster and link to the full
+	// forecast, which says more than this summary.
+	GetAvalancheForecast(context.Context, *v1.GetAvalancheForecastRequest) (*v1.GetAvalancheForecastResponse, error)
 	// List the parts of the user's GPS tracks inside a bounding box, simplified,
 	// for drawing them as a heatmap.
 	ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error)
@@ -169,6 +187,14 @@ type GeoServiceHandler interface {
 	// HEATMAP or TRAIL profile. Only areas whose map data has been imported
 	// can be searched.
 	ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error)
+	// Get the current avalanche forecast for a point, from Avalanche Canada,
+	// which also publishes the forecasts of Parks Canada, Kananaskis Country
+	// and Avalanche Québec. Forecasts only cover Canada's mountains, and only
+	// in winter: elsewhere, or in summer, there is none. Check it before ski
+	// tours and winter routes in avalanche terrain, tell the user the danger
+	// and problems for their day, credit the forecaster and link to the full
+	// forecast, which says more than this summary.
+	GetAvalancheForecast(context.Context, *v1.GetAvalancheForecastRequest) (*v1.GetAvalancheForecastResponse, error)
 	// List the parts of the user's GPS tracks inside a bounding box, simplified,
 	// for drawing them as a heatmap.
 	ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error)
@@ -184,6 +210,7 @@ func RegisterGeoServiceHandler(server *connect.Server, svc GeoServiceHandler) {
 		connect.Method{Spec: geoServiceGetElevationSpec(), Handler: adapter.getElevation},
 		connect.Method{Spec: geoServiceGetPersonalHeatmapSpec(), Handler: adapter.getPersonalHeatmap},
 		connect.Method{Spec: geoServiceListFamiliarTrailsSpec(), Handler: adapter.listFamiliarTrails},
+		connect.Method{Spec: geoServiceGetAvalancheForecastSpec(), Handler: adapter.getAvalancheForecast},
 		connect.Method{Spec: geoServiceListHeatmapTracksSpec(), Handler: adapter.listHeatmapTracks},
 	)
 }
@@ -213,6 +240,10 @@ func (UnimplementedGeoServiceHandler) GetPersonalHeatmap(context.Context, *v1.Ge
 
 func (UnimplementedGeoServiceHandler) ListFamiliarTrails(context.Context, *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "geo.v1.GeoService.ListFamiliarTrails is not implemented")
+}
+
+func (UnimplementedGeoServiceHandler) GetAvalancheForecast(context.Context, *v1.GetAvalancheForecastRequest) (*v1.GetAvalancheForecastResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "geo.v1.GeoService.GetAvalancheForecast is not implemented")
 }
 
 func (UnimplementedGeoServiceHandler) ListHeatmapTracks(context.Context, *v1.ListHeatmapTracksRequest) (*v1.ListHeatmapTracksResponse, error) {
@@ -266,6 +297,14 @@ func (c *geoServiceClient) GetPersonalHeatmap(ctx context.Context, req *v1.GetPe
 func (c *geoServiceClient) ListFamiliarTrails(ctx context.Context, req *v1.ListFamiliarTrailsRequest) (*v1.ListFamiliarTrailsResponse, error) {
 	var res v1.ListFamiliarTrailsResponse
 	if err := c.client.CallUnary(ctx, geoServiceListFamiliarTrailsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *geoServiceClient) GetAvalancheForecast(ctx context.Context, req *v1.GetAvalancheForecastRequest) (*v1.GetAvalancheForecastResponse, error) {
+	var res v1.GetAvalancheForecastResponse
+	if err := c.client.CallUnary(ctx, geoServiceGetAvalancheForecastSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -347,6 +386,18 @@ func (h geoServiceHandler) listFamiliarTrails(ctx context.Context, _ connect.Spe
 		return err
 	}
 	res, err := h.svc.ListFamiliarTrails(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h geoServiceHandler) getAvalancheForecast(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetAvalancheForecastRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetAvalancheForecast(ctx, &req)
 	if err != nil {
 		return err
 	}

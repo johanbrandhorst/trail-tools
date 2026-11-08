@@ -17,6 +17,7 @@ import (
 	"github.com/bs-tools/trailrunn.ing/internal/plans"
 	"github.com/bs-tools/trailrunn.ing/internal/protomask"
 	"github.com/bs-tools/trailrunn.ing/internal/services/activity"
+	"github.com/bs-tools/trailrunn.ing/internal/services/route"
 	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -66,6 +67,8 @@ type Service struct {
 	calendars CalendarRepository
 	// Looks up forests for wind warnings, nil if there are none.
 	forests ForestSource
+	// Gets the avalanche forecasts of ski tours, nil if there are none.
+	avalanches route.Avalanches
 }
 
 // WorkoutsChangedFunc is told about changes to the user's workouts, on the

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package geo.v1;
 
+import "google/protobuf/timestamp.proto";
 import "mcp/v1/options.proto";
 
 // GeoService provides tools for exploring the area around a location. Map data
@@ -39,6 +40,14 @@ service GeoService {
   // HEATMAP or TRAIL profile. Only areas whose map data has been imported
   // can be searched.
   rpc ListFamiliarTrails(ListFamiliarTrailsRequest) returns (ListFamiliarTrailsResponse);
+  // Get the current avalanche forecast for a point, from Avalanche Canada,
+  // which also publishes the forecasts of Parks Canada, Kananaskis Country
+  // and Avalanche Québec. Forecasts only cover Canada's mountains, and only
+  // in winter: elsewhere, or in summer, there is none. Check it before ski
+  // tours and winter routes in avalanche terrain, tell the user the danger
+  // and problems for their day, credit the forecaster and link to the full
+  // forecast, which says more than this summary.
+  rpc GetAvalancheForecast(GetAvalancheForecastRequest) returns (GetAvalancheForecastResponse);
   // List the parts of the user's GPS tracks inside a bounding box, simplified,
   // for drawing them as a heatmap.
   rpc ListHeatmapTracks(ListHeatmapTracksRequest) returns (ListHeatmapTracksResponse) {
@@ -307,4 +316,111 @@ message GetPersonalHeatmapResponse {
   // them, so only the most recent (up to 1,000) were. Use a smaller area or
   // date range to count them all.
   bool truncated = 4;
+}
+
+message GetAvalancheForecastRequest {
+  // The point to get the forecast for.
+  LatLng location = 1;
+}
+
+message GetAvalancheForecastResponse {
+  // The forecast for the point's area, unset if there is none.
+  AvalancheForecast forecast = 1;
+}
+
+// A danger rating of the North American Public Avalanche Danger Scale. The
+// numbers are the scale's levels, so higher is more dangerous.
+enum AvalancheDanger {
+  // Not rated, e.g. early in the season, in spring conditions or without
+  // enough information: see the rating's description, and expect
+  // avalanches anyway.
+  AVALANCHE_DANGER_UNSPECIFIED = 0;
+  // 1 - Low: generally safe avalanche conditions. Watch for unstable snow
+  // on isolated terrain features.
+  AVALANCHE_DANGER_LOW = 1;
+  // 2 - Moderate: heightened avalanche conditions on specific terrain
+  // features. Evaluate snow and terrain carefully.
+  AVALANCHE_DANGER_MODERATE = 2;
+  // 3 - Considerable: dangerous avalanche conditions. Careful snowpack
+  // evaluation, cautious route-finding and conservative decision-making
+  // are essential.
+  AVALANCHE_DANGER_CONSIDERABLE = 3;
+  // 4 - High: very dangerous avalanche conditions. Travel in avalanche
+  // terrain is not recommended.
+  AVALANCHE_DANGER_HIGH = 4;
+  // 5 - Extreme: avoid all avalanche terrain.
+  AVALANCHE_DANGER_EXTREME = 5;
+}
+
+// The danger rating of an elevation band.
+message AvalancheDangerRating {
+  // The danger, unspecified if not rated.
+  AvalancheDanger danger = 1;
+  // How the forecast names the rating, e.g. "3 - Considerable" or "Early
+  // Season".
+  string description = 2;
+}
+
+// The danger ratings of a day, by elevation band.
+message AvalancheDangerDay {
+  // The date (YYYY-MM-DD), local to the forecast's area.
+  string date = 1;
+  // Above treeline: open, often glaciated terrain.
+  AvalancheDangerRating alpine = 2;
+  // Near treeline: the transition from forest to the alpine.
+  AvalancheDangerRating treeline = 3;
+  // Below treeline: forested terrain.
+  AvalancheDangerRating below_treeline = 4;
+}
+
+// A kind of avalanche to expect.
+message AvalancheProblem {
+  // The problem's identifier, e.g. "windslab", "stormslab",
+  // "persistentslab", "deeppersistentslab", "wetslab", "wetloose",
+  // "dryloose" or "cornice".
+  string type = 1;
+  // Its name, e.g. "Wind Slab".
+  string name = 2;
+  // The elevation bands it's found in, e.g. "Alpine", "Treeline" and
+  // "Below Treeline".
+  repeated string elevations = 3;
+  // The aspects of the slopes it's found on, in compass order, e.g. "N",
+  // "NE".
+  repeated string aspects = 4;
+  // How likely avalanches are, e.g. "Possible to likely".
+  string likelihood = 5;
+  // The expected sizes on the Canadian destructive size scale, from 1
+  // (relatively harmless to people) through 2 (could bury, injure or kill
+  // a person) and 3 (could bury and destroy a car) to 5, in half steps. 0
+  // if not given.
+  double min_size = 6;
+  double max_size = 7;
+  // The forecaster's description of the problem.
+  string comment = 8;
+}
+
+// An avalanche forecast for an area, for the next three days.
+message AvalancheForecast {
+  // The name of the forecast's area, e.g. "Glacier".
+  string title = 1;
+  // Who wrote the forecast, e.g. "Avalanche Canada" or "Parks Canada".
+  // Credit them when showing it.
+  string forecaster = 2;
+  // The full forecast on avalanche.ca. Link to it when showing the
+  // forecast.
+  string url = 3;
+  // When the forecast was issued.
+  google.protobuf.Timestamp issue_time = 4;
+  // When it expires, unset if not given.
+  google.protobuf.Timestamp valid_until_time = 5;
+  // The forecast's summary.
+  string highlights = 6;
+  // The forecaster's confidence, e.g. "Moderate", empty if not rated.
+  string confidence = 7;
+  // The danger ratings of each day, in date order.
+  repeated AvalancheDangerDay days = 8;
+  // The avalanche problems to expect, the most important first.
+  repeated AvalancheProblem problems = 9;
+  // Advice on choosing terrain and traveling in it.
+  repeated string travel_advice = 10;
 }

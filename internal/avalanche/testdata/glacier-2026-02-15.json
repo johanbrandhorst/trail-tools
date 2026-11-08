@@ -1,0 +1,590 @@
+{
+ "id": "d377da4d-e325-49a0-9469-82a089593558_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+ "slug": "d377da4d-e325-49a0-9469-82a089593558_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+ "url": "https://avalanche.ca/forecasts/d377da4d-e325-49a0-9469-82a089593558_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+ "type": "avalancheforecast",
+ "area": {
+  "id": "b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+  "name": "b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+  "bbox": null
+ },
+ "report": {
+  "id": "d377da4d-e325-49a0-9469-82a089593558_b2a14eb464567902bcdf5b0cf1efe870416fee4de1d80d5b1f6d9cbc1b3bd73a",
+  "forecaster": "Parks Canada",
+  "dateIssued": "2026-02-15T00:00:00Z",
+  "validUntil": "2026-02-16T00:00:00Z",
+  "timezone": "America/Vancouver",
+  "title": "Glacier",
+  "highlights": "<p>New snow and wind has built fresh windslabs, be cautious as you transition in to open terrain.</p><p>Keep the persistent slab problem on your mind at treeline and below - be especially cautious if you are exploring areas that don't see regular traffic.</p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>",
+  "confidence": {
+   "rating": {
+    "value": "moderate",
+    "display": "Moderate"
+   },
+   "statements": [
+    "We are confident that there are persistent slabs in the snowpack, but uncertain about how likely they are to trigger.",
+    "We are uncertain due to the variability of wind effect on the snowpack."
+   ]
+  },
+  "summaries": [
+   {
+    "type": {
+     "value": "avalanche-summary",
+     "display": "Avalanche Summary"
+    },
+    "content": " <p>On Saturday new snow and wind triggered a natural avalanche cycle. A field team observed a size 2.5 from the Frequent flyer path, which stepped down to the Jan 26th layer on the fan, as well as several size 2s from the N side of Cheops. There were also several size 1.5-2s in the steep terrain of the highway corridor.</p><p>On Friday, a team remotely triggered 2 size 1.5s between 1600-1850m, on the Jan 26th layer. This was in infrequently travelled terrain below the Avalanche Glacier.</p>"
+   },
+   {
+    "type": {
+     "value": "snowpack-summary",
+     "display": "Snowpack Summary"
+    },
+    "content": " <p>A sneaky 20-30cm of new snow fell Saturday, bringing this weeks totals up to 50-60cm. </p><p>Gusty alpine winds continue to build fresh windslabs in exposed terrain.</p><p>There are several crusts in the upper snowpack from the springlike temps and sunshine we've had in the past 2 weeks.</p><p>The Jan 26th layer of surface hoar, facets, and a crust, is buried down 45-80cm. The largest surface hoar is preserved in sheltered areas below treeline.</p><p>Below this the snowpack is well settled/strong.</p>"
+   },
+   {
+    "type": {
+     "value": "weather-summary",
+     "display": "Weather Summary"
+    },
+    "content": " <p>A week ridge brings clearing skies and valley fog.</p><p><strong>Tonight: </strong>Clear periods. Alpine low -10°C. Light West ridgetop winds.</p><p><strong>Sun: </strong>Sunny periods. High -10 °C. Freezing level (FZL) valley bottom. Light SW wind.</p><p><strong>Mon:</strong> Isolated flurries. Low -11 °C, High -7 °C. Gusty moderate SW wind.</p><p><strong>Tue:</strong> Flurries (3-5cm). Low -17 °C, High -9 °C. Light variable wind.</p>"
+   }
+  ],
+  "dangerRatings": [
+   {
+    "date": {
+     "value": "2026-02-16T00:00:00Z",
+     "display": "Sunday"
+    },
+    "ratings": {
+     "alp": {
+      "display": "Alpine",
+      "rating": {
+       "value": "considerable",
+       "display": "3 - Considerable"
+      }
+     },
+     "tln": {
+      "display": "Treeline",
+      "rating": {
+       "value": "considerable",
+       "display": "3 - Considerable"
+      }
+     },
+     "btl": {
+      "display": "Below Treeline",
+      "rating": {
+       "value": "considerable",
+       "display": "3 - Considerable"
+      }
+     }
+    }
+   },
+   {
+    "date": {
+     "value": "2026-02-17T00:00:00Z",
+     "display": "Monday"
+    },
+    "ratings": {
+     "alp": {
+      "display": "Alpine",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     },
+     "tln": {
+      "display": "Treeline",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     },
+     "btl": {
+      "display": "Below Treeline",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     }
+    }
+   },
+   {
+    "date": {
+     "value": "2026-02-18T00:00:00Z",
+     "display": "Tuesday"
+    },
+    "ratings": {
+     "alp": {
+      "display": "Alpine",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     },
+     "tln": {
+      "display": "Treeline",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     },
+     "btl": {
+      "display": "Below Treeline",
+      "rating": {
+       "value": "moderate",
+       "display": "2 - Moderate"
+      }
+     }
+    }
+   }
+  ],
+  "problems": [
+   {
+    "type": {
+     "value": "windslab",
+     "display": "Wind Slab"
+    },
+    "comment": "<p>Moderate southerly winds have loaded lee features near ridgetop. Be careful as you transition into wind-affected terrain. Wind slabs may be most reactive in areas where they sit over a crust.</p>",
+    "factors": [
+     {
+      "type": {
+       "value": "elevation",
+       "display": "What Elevation?"
+      },
+      "graphic": {
+       "id": "elevation-0-1-1_en",
+       "url": "https://assets.avalanche.ca/images/Elevation/Elevation-0-1-1_EN.png",
+       "alt": " Treeline, Alpine"
+      }
+     },
+     {
+      "type": {
+       "value": "aspect",
+       "display": "Which Slopes?"
+      },
+      "graphic": {
+       "id": "aspect-1-1-1-1-1-1-1-1_en",
+       "url": "https://assets.avalanche.ca/images/Compass/compass-1-1-1-1-1-1-1-1_EN.png",
+       "alt": " North, Northeast, East, Southeast, south, Southwest, West, Northwest"
+      }
+     },
+     {
+      "type": {
+       "value": "likelihood",
+       "display": "Chances of Avalanches?"
+      },
+      "graphic": {
+       "id": "likelihood-possible_en",
+       "url": "https://assets.avalanche.ca/images/Likelihood/Likelihood-3_EN.png",
+       "alt": " Possible"
+      }
+     },
+     {
+      "type": {
+       "value": "size",
+       "display": "Expected Size?"
+      },
+      "graphic": {
+       "id": "size-1-3_en",
+       "url": "https://assets.avalanche.ca/images/size/Size-1-3_EN.png",
+       "alt": " Small - Large"
+      }
+     }
+    ],
+    "data": {
+     "elevations": [
+      {
+       "value": "alp",
+       "display": "Alpine"
+      },
+      {
+       "value": "tln",
+       "display": "Treeline"
+      }
+     ],
+     "aspects": [
+      {
+       "value": "e",
+       "display": "East"
+      },
+      {
+       "value": "se",
+       "display": "Southeast"
+      },
+      {
+       "value": "s",
+       "display": "s"
+      },
+      {
+       "value": "sw",
+       "display": "Southwest"
+      },
+      {
+       "value": "w",
+       "display": "West"
+      },
+      {
+       "value": "nw",
+       "display": "Northwest"
+      },
+      {
+       "value": "n",
+       "display": "North"
+      },
+      {
+       "value": "ne",
+       "display": "Northeast"
+      }
+     ],
+     "aspectElevations": [
+      "nw_alp",
+      "n_alp",
+      "ne_alp",
+      "e_alp",
+      "se_alp",
+      "s_alp",
+      "sw_alp",
+      "w_alp",
+      "nw_tln",
+      "n_tln",
+      "ne_tln",
+      "e_tln"
+     ],
+     "likelihood": {
+      "value": "possible",
+      "display": "possible"
+     },
+     "expectedSize": {
+      "min": "1.0",
+      "max": "2.0"
+     }
+    }
+   },
+   {
+    "type": {
+     "value": "persistentslab",
+     "display": "Persistent Slab"
+    },
+    "comment": "<p>A layer of <a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://migrate.avalanche.ca/glossary/terms/surface-hoar\">surface hoar</a> (up to 40mm below treeline) is buried 50-80cm deep and sits on a crust.</p><p>Use caution in terrain that has not seen recent rider traffic and areas that are more off the beaten path - this is where triggering is most likely.</p><p></p><p></p>",
+    "factors": [
+     {
+      "type": {
+       "value": "elevation",
+       "display": "What Elevation?"
+      },
+      "graphic": {
+       "id": "elevation-1-1-0_en",
+       "url": "https://assets.avalanche.ca/images/Elevation/Elevation-1-1-0_EN.png",
+       "alt": " belowTreeline, Treeline"
+      }
+     },
+     {
+      "type": {
+       "value": "aspect",
+       "display": "Which Slopes?"
+      },
+      "graphic": {
+       "id": "aspect-1-1-1-1-1-1-1-1_en",
+       "url": "https://assets.avalanche.ca/images/Compass/compass-1-1-1-1-1-1-1-1_EN.png",
+       "alt": " North, Northeast, East, Southeast, south, Southwest, West, Northwest"
+      }
+     },
+     {
+      "type": {
+       "value": "likelihood",
+       "display": "Chances of Avalanches?"
+      },
+      "graphic": {
+       "id": "likelihood-possible_en",
+       "url": "https://assets.avalanche.ca/images/Likelihood/Likelihood-3_EN.png",
+       "alt": " Possible"
+      }
+     },
+     {
+      "type": {
+       "value": "size",
+       "display": "Expected Size?"
+      },
+      "graphic": {
+       "id": "size-1-4_en",
+       "url": "https://assets.avalanche.ca/images/size/Size-1-4_EN.png",
+       "alt": " Small - Large"
+      }
+     }
+    ],
+    "data": {
+     "elevations": [
+      {
+       "value": "tln",
+       "display": "Treeline"
+      },
+      {
+       "value": "btl",
+       "display": "Below Treeline"
+      }
+     ],
+     "aspects": [
+      {
+       "value": "ne",
+       "display": "Northeast"
+      },
+      {
+       "value": "e",
+       "display": "East"
+      },
+      {
+       "value": "se",
+       "display": "Southeast"
+      },
+      {
+       "value": "w",
+       "display": "West"
+      },
+      {
+       "value": "sw",
+       "display": "Southwest"
+      },
+      {
+       "value": "s",
+       "display": "s"
+      },
+      {
+       "value": "nw",
+       "display": "Northwest"
+      },
+      {
+       "value": "n",
+       "display": "North"
+      }
+     ],
+     "aspectElevations": [
+      "nw_tln",
+      "n_tln",
+      "ne_tln",
+      "e_tln",
+      "nw_btl",
+      "n_btl",
+      "ne_btl",
+      "e_btl",
+      "se_btl",
+      "w_btl",
+      "sw_btl",
+      "s_btl"
+     ],
+     "likelihood": {
+      "value": "possible",
+      "display": "possible"
+     },
+     "expectedSize": {
+      "min": "1.0",
+      "max": "2.5"
+     }
+    }
+   },
+   {
+    "type": {
+     "value": "dryloose",
+     "display": "Dry Loose"
+    },
+    "comment": "<p>Watch for loose snow avalanches and fast moving sluff in steep terrain.</p>",
+    "factors": [
+     {
+      "type": {
+       "value": "elevation",
+       "display": "What Elevation?"
+      },
+      "graphic": {
+       "id": "elevation-1-1-1_en",
+       "url": "https://assets.avalanche.ca/images/Elevation/Elevation-1-1-1_EN.png",
+       "alt": " belowTreeline, Treeline, Alpine"
+      }
+     },
+     {
+      "type": {
+       "value": "aspect",
+       "display": "Which Slopes?"
+      },
+      "graphic": {
+       "id": "aspect-1-1-1-1-1-1-1-1_en",
+       "url": "https://assets.avalanche.ca/images/Compass/compass-1-1-1-1-1-1-1-1_EN.png",
+       "alt": " North, Northeast, East, Southeast, south, Southwest, West, Northwest"
+      }
+     },
+     {
+      "type": {
+       "value": "likelihood",
+       "display": "Chances of Avalanches?"
+      },
+      "graphic": {
+       "id": "likelihood-likely_en",
+       "url": "https://assets.avalanche.ca/images/Likelihood/Likelihood-5_EN.png",
+       "alt": " Likely"
+      }
+     },
+     {
+      "type": {
+       "value": "size",
+       "display": "Expected Size?"
+      },
+      "graphic": {
+       "id": "size-1-3_en",
+       "url": "https://assets.avalanche.ca/images/size/Size-1-3_EN.png",
+       "alt": " Small - Large"
+      }
+     }
+    ],
+    "data": {
+     "elevations": [
+      {
+       "value": "btl",
+       "display": "Below Treeline"
+      },
+      {
+       "value": "tln",
+       "display": "Treeline"
+      },
+      {
+       "value": "alp",
+       "display": "Alpine"
+      }
+     ],
+     "aspects": [
+      {
+       "value": "s",
+       "display": "s"
+      },
+      {
+       "value": "sw",
+       "display": "Southwest"
+      },
+      {
+       "value": "w",
+       "display": "West"
+      },
+      {
+       "value": "nw",
+       "display": "Northwest"
+      },
+      {
+       "value": "n",
+       "display": "North"
+      },
+      {
+       "value": "ne",
+       "display": "Northeast"
+      },
+      {
+       "value": "e",
+       "display": "East"
+      },
+      {
+       "value": "se",
+       "display": "Southeast"
+      }
+     ],
+     "aspectElevations": [
+      "n_btl",
+      "n_tln",
+      "n_alp",
+      "ne_btl",
+      "ne_tln",
+      "ne_alp",
+      "e_btl",
+      "e_tln",
+      "e_alp",
+      "se_btl",
+      "se_tln",
+      "se_alp",
+      "s_btl",
+      "s_tln",
+      "s_alp",
+      "sw_btl",
+      "sw_tln",
+      "sw_alp",
+      "w_btl",
+      "w_tln",
+      "w_alp",
+      "nw_btl",
+      "nw_tln",
+      "nw_alp"
+     ],
+     "likelihood": {
+      "value": "likely",
+      "display": "likely"
+     },
+     "expectedSize": {
+      "min": "1.0",
+      "max": "2.0"
+     }
+    }
+   }
+  ],
+  "terrainAndTravelAdvice": [
+   "Look for signs of instability: whumphing, hollow sounds, shooting cracks, and recent avalanches.",
+   "Watch for newly formed and reactive wind slabs as you transition into wind-affected terrain.",
+   "Approach steep and open slopes at and below treeline cautiously, as buried surface hoar may exist.",
+   "Use caution above cliffs and terrain traps where even small avalanches may have severe consequences."
+  ],
+  "message": null,
+  "season": null,
+  "comment": null,
+  "isFullTranslation": true
+ },
+ "version": 1,
+ "owner": {
+  "value": "parks-glacier",
+  "display": "Parks Canada",
+  "isExternal": false,
+  "url": "Parks Canada"
+ },
+ "notifications": [
+  {
+   "type": "info",
+   "content": "<p>Large areas of Glacier National Park are CLOSED for avalanche control using EXPLOSIVES. <a href=\"https://www.pc.gc.ca/apps/Rogers-Pass\">Real Time Area Status</a> - <a href=\"https://www.pc.gc.ca/en/pn-np/bc/glacier/visit/hiver-winter/ski\">Winter Permit Information</a></p>"
+  },
+  {
+   "type": "warning",
+   "content": "This is an archived avalanche bulletin."
+  }
+ ],
+ "media": {
+  "images": [
+   {
+    "id": "f7fcb33c-544c-44e7-a5b1-50d363bff666",
+    "url": "http://res.cloudinary.com/forecasts/image/upload/v1771027060/prod/parks/glacier/yptbbops9bflvxtsulaj.jpg",
+    "width": 1275,
+    "height": 2100,
+    "credit": "",
+    "caption": "<p>Profile and test results focusing on the Jan 26th surface hoar.</p>",
+    "tag": "snowpack",
+    "isArchived": false,
+    "altText": "Avalanche Basin",
+    "dateTaken": "2026-02-13T23:57:46.988Z"
+   },
+   {
+    "id": "e63d4fd0-8670-41f3-b6c9-b051002f69bf",
+    "url": "http://res.cloudinary.com/forecasts/image/upload/v1771025252/prod/parks/glacier/qe8unron4rsflh79uxke.jpg",
+    "width": 842,
+    "height": 1058,
+    "credit": "",
+    "caption": "<p>SE aspect at 1930m, Mt Fidelity.</p>",
+    "tag": "avalanche",
+    "isArchived": false,
+    "altText": "Skier triggering of the Jan 26th surface hoar.",
+    "dateTaken": "2026-02-09T23:28:04.777Z"
+   },
+   {
+    "id": "81b4bb94-e7c0-47ce-90a1-a7648e8b2aae",
+    "url": "http://res.cloudinary.com/forecasts/image/upload/v1770421436/prod/parks/glacier/l2ignd6hqewu8ycgflgq.jpg",
+    "width": 3024,
+    "height": 4032,
+    "credit": "",
+    "caption": "<p>Large surface hoar crystals buried 20-60 cm deep found in snow pits between 1600-1900m on Feb 6th.</p>",
+    "tag": "snowpack",
+    "isArchived": false,
+    "altText": "Large surface hoar crystals buried 20-60 cm deep found in snow pits between 1600-1900m on Feb 6th.",
+    "dateTaken": "2026-02-06T19:07:50Z"
+   }
+  ]
+ }
+}

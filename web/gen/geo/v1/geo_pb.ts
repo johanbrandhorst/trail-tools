@@ -4,6 +4,8 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_mcp_v1_options } from "../../mcp/v1/options_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -11,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file geo/v1/geo.proto.
  */
 export const file_geo_v1_geo: GenFile = /*@__PURE__*/
-  fileDesc("ChBnZW8vdjEvZ2VvLnByb3RvEgZnZW8udjEiIgoGTGF0TG5nEgsKA2xhdBgBIAEoARILCgNsbmcYAiABKAEiRwoLQm91bmRpbmdCb3gSDQoFc291dGgYASABKAESDAoEd2VzdBgCIAEoARINCgVub3J0aBgDIAEoARIMCgRlYXN0GAQgASgBIjMKE1NlYXJjaFBsYWNlc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSDQoFbGltaXQYAiABKAUifAoFUGxhY2USDAoEbmFtZRgBIAEoCRIgCghsb2NhdGlvbhgCIAEoCzIOLmdlby52MS5MYXRMbmcSEAoIY2F0ZWdvcnkYAyABKAkSDAoEdHlwZRgEIAEoCRIjCgZib3VuZHMYBSABKAsyEy5nZW8udjEuQm91bmRpbmdCb3giNQoUU2VhcmNoUGxhY2VzUmVzcG9uc2USHQoGcGxhY2VzGAEgAygLMg0uZ2VvLnYxLlBsYWNlIpYBChFGaW5kVHJhaWxzUmVxdWVzdBIeCgZjZW50ZXIYASABKAsyDi5nZW8udjEuTGF0TG5nEhUKDXJhZGl1c19tZXRlcnMYAiABKAESDQoFbGltaXQYAyABKAUSGAoQaW5jbHVkZV9nZW9tZXRyeRgEIAEoCBIhChlnZW9tZXRyeV90b2xlcmFuY2VfbWV0ZXJzGAUgASgBIr0CCgVUcmFpbBIOCgZvc21faWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdoaWdod2F5GAMgASgJEg8KB3N1cmZhY2UYBCABKAkSEQoJc2FjX3NjYWxlGAUgASgJEiAKB3RlcnJhaW4YBiABKA4yDy5nZW8udjEuVGVycmFpbhIVCg1sZW5ndGhfbWV0ZXJzGAcgASgBEh0KBXN0YXJ0GAggASgLMg4uZ2VvLnYxLkxhdExuZxIbCgNlbmQYCSABKAsyDi5nZW8udjEuTGF0TG5nEiUKDW5lYXJlc3RfcG9pbnQYCiABKAsyDi5nZW8udjEuTGF0TG5nEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgLIAEoARIgCghnZW9tZXRyeRgMIAMoCzIOLmdlby52MS5MYXRMbmciMwoSRmluZFRyYWlsc1Jlc3BvbnNlEh0KBnRyYWlscxgBIAMoCzINLmdlby52MS5UcmFpbCKPAQobRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0Eh4KBmNlbnRlchgBIAEoCzIOLmdlby52MS5MYXRMbmcSFQoNcmFkaXVzX21ldGVycxgCIAEoARIqCgVraW5kcxgDIAMoDjIbLmdlby52MS5Qb2ludE9mSW50ZXJlc3RLaW5kEg0KBWxpbWl0GAQgASgFIrsBCg9Qb2ludE9mSW50ZXJlc3QSDgoGb3NtX2lkGAEgASgJEikKBGtpbmQYAiABKA4yGy5nZW8udjEuUG9pbnRPZkludGVyZXN0S2luZBIMCgRuYW1lGAMgASgJEiAKCGxvY2F0aW9uGAQgASgLMg4uZ2VvLnYxLkxhdExuZxIYChBlbGV2YXRpb25fbWV0ZXJzGAUgASgBEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgGIAEoASJHChxGaW5kUG9pbnRzT2ZJbnRlcmVzdFJlc3BvbnNlEicKBnBvaW50cxgBIAMoCzIXLmdlby52MS5Qb2ludE9mSW50ZXJlc3QiNQoTR2V0RWxldmF0aW9uUmVxdWVzdBIeCgZwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nIjEKFEdldEVsZXZhdGlvblJlc3BvbnNlEhkKEWVsZXZhdGlvbnNfbWV0ZXJzGAEgAygBIo8BChlHZXRQZXJzb25hbEhlYXRtYXBSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBIYChBjZWxsX3NpemVfbWV0ZXJzGAIgASgBEhIKCnN0YXJ0X2RhdGUYAyABKAkSEAoIZW5kX2RhdGUYBCABKAkSDQoFbGltaXQYBSABKAUiRQoLSGVhdG1hcENlbGwSHgoGY2VudGVyGAEgASgLMg4uZ2VvLnYxLkxhdExuZxIWCg5hY3Rpdml0eV9jb3VudBgCIAEoBSJ1ChlMaXN0RmFtaWxpYXJUcmFpbHNSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBISCgpzdGFydF9kYXRlGAIgASgJEhAKCGVuZF9kYXRlGAMgASgJEg0KBWxpbWl0GAQgASgFImAKDUZhbWlsaWFyVHJhaWwSHAoFdHJhaWwYASABKAsyDS5nZW8udjEuVHJhaWwSFgoOYWN0aXZpdHlfY291bnQYAiABKAUSGQoRcnVuX2xlbmd0aF9tZXRlcnMYAyABKAEiVgoaTGlzdEZhbWlsaWFyVHJhaWxzUmVzcG9uc2USJQoGdHJhaWxzGAEgAygLMhUuZ2VvLnYxLkZhbWlsaWFyVHJhaWwSEQoJdHJ1bmNhdGVkGAIgASgIIlkKGExpc3RIZWF0bWFwVHJhY2tzUmVxdWVzdBIjCgZib3VuZHMYASABKAsyEy5nZW8udjEuQm91bmRpbmdCb3gSGAoQdG9sZXJhbmNlX21ldGVycxgCIAEoASJBChlMaXN0SGVhdG1hcFRyYWNrc1Jlc3BvbnNlEhEKCXBvbHlsaW5lcxgBIAMoCRIRCgl0cnVuY2F0ZWQYAiABKAgihQEKGkdldFBlcnNvbmFsSGVhdG1hcFJlc3BvbnNlEiIKBWNlbGxzGAEgAygLMhMuZ2VvLnYxLkhlYXRtYXBDZWxsEhgKEGNlbGxfc2l6ZV9tZXRlcnMYAiABKAESFgoOYWN0aXZpdHlfY291bnQYAyABKAUSEQoJdHJ1bmNhdGVkGAQgASgIKnMKB1RlcnJhaW4SFwoTVEVSUkFJTl9VTlNQRUNJRklFRBAAEhEKDVRFUlJBSU5fUEFWRUQQARISCg5URVJSQUlOX0dSQVZFTBACEhEKDVRFUlJBSU5fVFJBSUwQAxIVChFURVJSQUlOX1RFQ0hOSUNBTBAEKtsCChNQb2ludE9mSW50ZXJlc3RLaW5kEiYKIlBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVU5TUEVDSUZJRUQQABIfChtQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1BFQUsQARIgChxQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1dBVEVSEAISIgoeUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9QQVJLSU5HEAMSJAogUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9WSUVXUE9JTlQQBBIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NIRUxURVIQBRIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1RPSUxFVFMQBhIhCh1QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NBRERMRRAHEiQKIFBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVFJBSUxIRUFEEAgy5gQKCkdlb1NlcnZpY2USSQoMU2VhcmNoUGxhY2VzEhsuZ2VvLnYxLlNlYXJjaFBsYWNlc1JlcXVlc3QaHC5nZW8udjEuU2VhcmNoUGxhY2VzUmVzcG9uc2USQwoKRmluZFRyYWlscxIZLmdlby52MS5GaW5kVHJhaWxzUmVxdWVzdBoaLmdlby52MS5GaW5kVHJhaWxzUmVzcG9uc2USYQoURmluZFBvaW50c09mSW50ZXJlc3QSIy5nZW8udjEuRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0GiQuZ2VvLnYxLkZpbmRQb2ludHNPZkludGVyZXN0UmVzcG9uc2USSQoMR2V0RWxldmF0aW9uEhsuZ2VvLnYxLkdldEVsZXZhdGlvblJlcXVlc3QaHC5nZW8udjEuR2V0RWxldmF0aW9uUmVzcG9uc2USWwoSR2V0UGVyc29uYWxIZWF0bWFwEiEuZ2VvLnYxLkdldFBlcnNvbmFsSGVhdG1hcFJlcXVlc3QaIi5nZW8udjEuR2V0UGVyc29uYWxIZWF0bWFwUmVzcG9uc2USWwoSTGlzdEZhbWlsaWFyVHJhaWxzEiEuZ2VvLnYxLkxpc3RGYW1pbGlhclRyYWlsc1JlcXVlc3QaIi5nZW8udjEuTGlzdEZhbWlsaWFyVHJhaWxzUmVzcG9uc2USYAoRTGlzdEhlYXRtYXBUcmFja3MSIC5nZW8udjEuTGlzdEhlYXRtYXBUcmFja3NSZXF1ZXN0GiEuZ2VvLnYxLkxpc3RIZWF0bWFwVHJhY2tzUmVzcG9uc2UiBqKfGQIIAUKMAQoKY29tLmdlby52MUIIR2VvUHJvdG9QAVo7Z2l0aHViLmNvbS9icy10b29scy90cmFpbHJ1bm4uaW5nL2ludGVybmFsL2dlbi9nZW8vdjE7Z2VvdjGiAgNHWFiqAgZHZW8uVjHKAgZHZW9cVjHiAhJHZW9cVjFcR1BCTWV0YWRhdGHqAgdHZW86OlYxYgZwcm90bzM", [file_mcp_v1_options]);
+  fileDesc("ChBnZW8vdjEvZ2VvLnByb3RvEgZnZW8udjEiIgoGTGF0TG5nEgsKA2xhdBgBIAEoARILCgNsbmcYAiABKAEiRwoLQm91bmRpbmdCb3gSDQoFc291dGgYASABKAESDAoEd2VzdBgCIAEoARINCgVub3J0aBgDIAEoARIMCgRlYXN0GAQgASgBIjMKE1NlYXJjaFBsYWNlc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSDQoFbGltaXQYAiABKAUifAoFUGxhY2USDAoEbmFtZRgBIAEoCRIgCghsb2NhdGlvbhgCIAEoCzIOLmdlby52MS5MYXRMbmcSEAoIY2F0ZWdvcnkYAyABKAkSDAoEdHlwZRgEIAEoCRIjCgZib3VuZHMYBSABKAsyEy5nZW8udjEuQm91bmRpbmdCb3giNQoUU2VhcmNoUGxhY2VzUmVzcG9uc2USHQoGcGxhY2VzGAEgAygLMg0uZ2VvLnYxLlBsYWNlIpYBChFGaW5kVHJhaWxzUmVxdWVzdBIeCgZjZW50ZXIYASABKAsyDi5nZW8udjEuTGF0TG5nEhUKDXJhZGl1c19tZXRlcnMYAiABKAESDQoFbGltaXQYAyABKAUSGAoQaW5jbHVkZV9nZW9tZXRyeRgEIAEoCBIhChlnZW9tZXRyeV90b2xlcmFuY2VfbWV0ZXJzGAUgASgBIr0CCgVUcmFpbBIOCgZvc21faWQYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdoaWdod2F5GAMgASgJEg8KB3N1cmZhY2UYBCABKAkSEQoJc2FjX3NjYWxlGAUgASgJEiAKB3RlcnJhaW4YBiABKA4yDy5nZW8udjEuVGVycmFpbhIVCg1sZW5ndGhfbWV0ZXJzGAcgASgBEh0KBXN0YXJ0GAggASgLMg4uZ2VvLnYxLkxhdExuZxIbCgNlbmQYCSABKAsyDi5nZW8udjEuTGF0TG5nEiUKDW5lYXJlc3RfcG9pbnQYCiABKAsyDi5nZW8udjEuTGF0TG5nEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgLIAEoARIgCghnZW9tZXRyeRgMIAMoCzIOLmdlby52MS5MYXRMbmciMwoSRmluZFRyYWlsc1Jlc3BvbnNlEh0KBnRyYWlscxgBIAMoCzINLmdlby52MS5UcmFpbCKPAQobRmluZFBvaW50c09mSW50ZXJlc3RSZXF1ZXN0Eh4KBmNlbnRlchgBIAEoCzIOLmdlby52MS5MYXRMbmcSFQoNcmFkaXVzX21ldGVycxgCIAEoARIqCgVraW5kcxgDIAMoDjIbLmdlby52MS5Qb2ludE9mSW50ZXJlc3RLaW5kEg0KBWxpbWl0GAQgASgFIrsBCg9Qb2ludE9mSW50ZXJlc3QSDgoGb3NtX2lkGAEgASgJEikKBGtpbmQYAiABKA4yGy5nZW8udjEuUG9pbnRPZkludGVyZXN0S2luZBIMCgRuYW1lGAMgASgJEiAKCGxvY2F0aW9uGAQgASgLMg4uZ2VvLnYxLkxhdExuZxIYChBlbGV2YXRpb25fbWV0ZXJzGAUgASgBEiMKG2Rpc3RhbmNlX2Zyb21fY2VudGVyX21ldGVycxgGIAEoASJHChxGaW5kUG9pbnRzT2ZJbnRlcmVzdFJlc3BvbnNlEicKBnBvaW50cxgBIAMoCzIXLmdlby52MS5Qb2ludE9mSW50ZXJlc3QiNQoTR2V0RWxldmF0aW9uUmVxdWVzdBIeCgZwb2ludHMYASADKAsyDi5nZW8udjEuTGF0TG5nIjEKFEdldEVsZXZhdGlvblJlc3BvbnNlEhkKEWVsZXZhdGlvbnNfbWV0ZXJzGAEgAygBIo8BChlHZXRQZXJzb25hbEhlYXRtYXBSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBIYChBjZWxsX3NpemVfbWV0ZXJzGAIgASgBEhIKCnN0YXJ0X2RhdGUYAyABKAkSEAoIZW5kX2RhdGUYBCABKAkSDQoFbGltaXQYBSABKAUiRQoLSGVhdG1hcENlbGwSHgoGY2VudGVyGAEgASgLMg4uZ2VvLnYxLkxhdExuZxIWCg5hY3Rpdml0eV9jb3VudBgCIAEoBSJ1ChlMaXN0RmFtaWxpYXJUcmFpbHNSZXF1ZXN0EiMKBmJvdW5kcxgBIAEoCzITLmdlby52MS5Cb3VuZGluZ0JveBISCgpzdGFydF9kYXRlGAIgASgJEhAKCGVuZF9kYXRlGAMgASgJEg0KBWxpbWl0GAQgASgFImAKDUZhbWlsaWFyVHJhaWwSHAoFdHJhaWwYASABKAsyDS5nZW8udjEuVHJhaWwSFgoOYWN0aXZpdHlfY291bnQYAiABKAUSGQoRcnVuX2xlbmd0aF9tZXRlcnMYAyABKAEiVgoaTGlzdEZhbWlsaWFyVHJhaWxzUmVzcG9uc2USJQoGdHJhaWxzGAEgAygLMhUuZ2VvLnYxLkZhbWlsaWFyVHJhaWwSEQoJdHJ1bmNhdGVkGAIgASgIIlkKGExpc3RIZWF0bWFwVHJhY2tzUmVxdWVzdBIjCgZib3VuZHMYASABKAsyEy5nZW8udjEuQm91bmRpbmdCb3gSGAoQdG9sZXJhbmNlX21ldGVycxgCIAEoASJBChlMaXN0SGVhdG1hcFRyYWNrc1Jlc3BvbnNlEhEKCXBvbHlsaW5lcxgBIAMoCRIRCgl0cnVuY2F0ZWQYAiABKAgihQEKGkdldFBlcnNvbmFsSGVhdG1hcFJlc3BvbnNlEiIKBWNlbGxzGAEgAygLMhMuZ2VvLnYxLkhlYXRtYXBDZWxsEhgKEGNlbGxfc2l6ZV9tZXRlcnMYAiABKAESFgoOYWN0aXZpdHlfY291bnQYAyABKAUSEQoJdHJ1bmNhdGVkGAQgASgIIj8KG0dldEF2YWxhbmNoZUZvcmVjYXN0UmVxdWVzdBIgCghsb2NhdGlvbhgBIAEoCzIOLmdlby52MS5MYXRMbmciSwocR2V0QXZhbGFuY2hlRm9yZWNhc3RSZXNwb25zZRIrCghmb3JlY2FzdBgBIAEoCzIZLmdlby52MS5BdmFsYW5jaGVGb3JlY2FzdCJVChVBdmFsYW5jaGVEYW5nZXJSYXRpbmcSJwoGZGFuZ2VyGAEgASgOMhcuZ2VvLnYxLkF2YWxhbmNoZURhbmdlchITCgtkZXNjcmlwdGlvbhgCIAEoCSK5AQoSQXZhbGFuY2hlRGFuZ2VyRGF5EgwKBGRhdGUYASABKAkSLQoGYWxwaW5lGAIgASgLMh0uZ2VvLnYxLkF2YWxhbmNoZURhbmdlclJhdGluZxIvCgh0cmVlbGluZRgDIAEoCzIdLmdlby52MS5BdmFsYW5jaGVEYW5nZXJSYXRpbmcSNQoOYmVsb3dfdHJlZWxpbmUYBCABKAsyHS5nZW8udjEuQXZhbGFuY2hlRGFuZ2VyUmF0aW5nIpwBChBBdmFsYW5jaGVQcm9ibGVtEgwKBHR5cGUYASABKAkSDAoEbmFtZRgCIAEoCRISCgplbGV2YXRpb25zGAMgAygJEg8KB2FzcGVjdHMYBCADKAkSEgoKbGlrZWxpaG9vZBgFIAEoCRIQCghtaW5fc2l6ZRgGIAEoARIQCghtYXhfc2l6ZRgHIAEoARIPCgdjb21tZW50GAggASgJIr4CChFBdmFsYW5jaGVGb3JlY2FzdBINCgV0aXRsZRgBIAEoCRISCgpmb3JlY2FzdGVyGAIgASgJEgsKA3VybBgDIAEoCRIuCgppc3N1ZV90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChB2YWxpZF91bnRpbF90aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpoaWdobGlnaHRzGAYgASgJEhIKCmNvbmZpZGVuY2UYByABKAkSKAoEZGF5cxgIIAMoCzIaLmdlby52MS5BdmFsYW5jaGVEYW5nZXJEYXkSKgoIcHJvYmxlbXMYCSADKAsyGC5nZW8udjEuQXZhbGFuY2hlUHJvYmxlbRIVCg10cmF2ZWxfYWR2aWNlGAogAygJKnMKB1RlcnJhaW4SFwoTVEVSUkFJTl9VTlNQRUNJRklFRBAAEhEKDVRFUlJBSU5fUEFWRUQQARISCg5URVJSQUlOX0dSQVZFTBACEhEKDVRFUlJBSU5fVFJBSUwQAxIVChFURVJSQUlOX1RFQ0hOSUNBTBAEKtsCChNQb2ludE9mSW50ZXJlc3RLaW5kEiYKIlBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVU5TUEVDSUZJRUQQABIfChtQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1BFQUsQARIgChxQT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1dBVEVSEAISIgoeUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9QQVJLSU5HEAMSJAogUE9JTlRfT0ZfSU5URVJFU1RfS0lORF9WSUVXUE9JTlQQBBIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NIRUxURVIQBRIiCh5QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1RPSUxFVFMQBhIhCh1QT0lOVF9PRl9JTlRFUkVTVF9LSU5EX1NBRERMRRAHEiQKIFBPSU5UX09GX0lOVEVSRVNUX0tJTkRfVFJBSUxIRUFEEAgqyAEKD0F2YWxhbmNoZURhbmdlchIgChxBVkFMQU5DSEVfREFOR0VSX1VOU1BFQ0lGSUVEEAASGAoUQVZBTEFOQ0hFX0RBTkdFUl9MT1cQARIdChlBVkFMQU5DSEVfREFOR0VSX01PREVSQVRFEAISIQodQVZBTEFOQ0hFX0RBTkdFUl9DT05TSURFUkFCTEUQAxIZChVBVkFMQU5DSEVfREFOR0VSX0hJR0gQBBIcChhBVkFMQU5DSEVfREFOR0VSX0VYVFJFTUUQBTLJBQoKR2VvU2VydmljZRJJCgxTZWFyY2hQbGFjZXMSGy5nZW8udjEuU2VhcmNoUGxhY2VzUmVxdWVzdBocLmdlby52MS5TZWFyY2hQbGFjZXNSZXNwb25zZRJDCgpGaW5kVHJhaWxzEhkuZ2VvLnYxLkZpbmRUcmFpbHNSZXF1ZXN0GhouZ2VvLnYxLkZpbmRUcmFpbHNSZXNwb25zZRJhChRGaW5kUG9pbnRzT2ZJbnRlcmVzdBIjLmdlby52MS5GaW5kUG9pbnRzT2ZJbnRlcmVzdFJlcXVlc3QaJC5nZW8udjEuRmluZFBvaW50c09mSW50ZXJlc3RSZXNwb25zZRJJCgxHZXRFbGV2YXRpb24SGy5nZW8udjEuR2V0RWxldmF0aW9uUmVxdWVzdBocLmdlby52MS5HZXRFbGV2YXRpb25SZXNwb25zZRJbChJHZXRQZXJzb25hbEhlYXRtYXASIS5nZW8udjEuR2V0UGVyc29uYWxIZWF0bWFwUmVxdWVzdBoiLmdlby52MS5HZXRQZXJzb25hbEhlYXRtYXBSZXNwb25zZRJbChJMaXN0RmFtaWxpYXJUcmFpbHMSIS5nZW8udjEuTGlzdEZhbWlsaWFyVHJhaWxzUmVxdWVzdBoiLmdlby52MS5MaXN0RmFtaWxpYXJUcmFpbHNSZXNwb25zZRJhChRHZXRBdmFsYW5jaGVGb3JlY2FzdBIjLmdlby52MS5HZXRBdmFsYW5jaGVGb3JlY2FzdFJlcXVlc3QaJC5nZW8udjEuR2V0QXZhbGFuY2hlRm9yZWNhc3RSZXNwb25zZRJgChFMaXN0SGVhdG1hcFRyYWNrcxIgLmdlby52MS5MaXN0SGVhdG1hcFRyYWNrc1JlcXVlc3QaIS5nZW8udjEuTGlzdEhlYXRtYXBUcmFja3NSZXNwb25zZSIGop8ZAggBQowBCgpjb20uZ2VvLnYxQghHZW9Qcm90b1ABWjtnaXRodWIuY29tL2JzLXRvb2xzL3RyYWlscnVubi5pbmcvaW50ZXJuYWwvZ2VuL2dlby92MTtnZW92MaICA0dYWKoCBkdlby5WMcoCBkdlb1xWMeICEkdlb1xWMVxHUEJNZXRhZGF0YeoCB0dlbzo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_mcp_v1_options]);
 
 /**
  * A WGS84 coordinate.
@@ -784,6 +786,276 @@ export const GetPersonalHeatmapResponseSchema: GenMessage<GetPersonalHeatmapResp
   messageDesc(file_geo_v1_geo, 20);
 
 /**
+ * @generated from message geo.v1.GetAvalancheForecastRequest
+ */
+export type GetAvalancheForecastRequest = Message<"geo.v1.GetAvalancheForecastRequest"> & {
+  /**
+   * The point to get the forecast for.
+   *
+   * @generated from field: geo.v1.LatLng location = 1;
+   */
+  location?: LatLng | undefined;
+};
+
+/**
+ * Describes the message geo.v1.GetAvalancheForecastRequest.
+ * Use `create(GetAvalancheForecastRequestSchema)` to create a new message.
+ */
+export const GetAvalancheForecastRequestSchema: GenMessage<GetAvalancheForecastRequest> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 21);
+
+/**
+ * @generated from message geo.v1.GetAvalancheForecastResponse
+ */
+export type GetAvalancheForecastResponse = Message<"geo.v1.GetAvalancheForecastResponse"> & {
+  /**
+   * The forecast for the point's area, unset if there is none.
+   *
+   * @generated from field: geo.v1.AvalancheForecast forecast = 1;
+   */
+  forecast?: AvalancheForecast | undefined;
+};
+
+/**
+ * Describes the message geo.v1.GetAvalancheForecastResponse.
+ * Use `create(GetAvalancheForecastResponseSchema)` to create a new message.
+ */
+export const GetAvalancheForecastResponseSchema: GenMessage<GetAvalancheForecastResponse> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 22);
+
+/**
+ * The danger rating of an elevation band.
+ *
+ * @generated from message geo.v1.AvalancheDangerRating
+ */
+export type AvalancheDangerRating = Message<"geo.v1.AvalancheDangerRating"> & {
+  /**
+   * The danger, unspecified if not rated.
+   *
+   * @generated from field: geo.v1.AvalancheDanger danger = 1;
+   */
+  danger: AvalancheDanger;
+
+  /**
+   * How the forecast names the rating, e.g. "3 - Considerable" or "Early
+   * Season".
+   *
+   * @generated from field: string description = 2;
+   */
+  description: string;
+};
+
+/**
+ * Describes the message geo.v1.AvalancheDangerRating.
+ * Use `create(AvalancheDangerRatingSchema)` to create a new message.
+ */
+export const AvalancheDangerRatingSchema: GenMessage<AvalancheDangerRating> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 23);
+
+/**
+ * The danger ratings of a day, by elevation band.
+ *
+ * @generated from message geo.v1.AvalancheDangerDay
+ */
+export type AvalancheDangerDay = Message<"geo.v1.AvalancheDangerDay"> & {
+  /**
+   * The date (YYYY-MM-DD), local to the forecast's area.
+   *
+   * @generated from field: string date = 1;
+   */
+  date: string;
+
+  /**
+   * Above treeline: open, often glaciated terrain.
+   *
+   * @generated from field: geo.v1.AvalancheDangerRating alpine = 2;
+   */
+  alpine?: AvalancheDangerRating | undefined;
+
+  /**
+   * Near treeline: the transition from forest to the alpine.
+   *
+   * @generated from field: geo.v1.AvalancheDangerRating treeline = 3;
+   */
+  treeline?: AvalancheDangerRating | undefined;
+
+  /**
+   * Below treeline: forested terrain.
+   *
+   * @generated from field: geo.v1.AvalancheDangerRating below_treeline = 4;
+   */
+  belowTreeline?: AvalancheDangerRating | undefined;
+};
+
+/**
+ * Describes the message geo.v1.AvalancheDangerDay.
+ * Use `create(AvalancheDangerDaySchema)` to create a new message.
+ */
+export const AvalancheDangerDaySchema: GenMessage<AvalancheDangerDay> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 24);
+
+/**
+ * A kind of avalanche to expect.
+ *
+ * @generated from message geo.v1.AvalancheProblem
+ */
+export type AvalancheProblem = Message<"geo.v1.AvalancheProblem"> & {
+  /**
+   * The problem's identifier, e.g. "windslab", "stormslab",
+   * "persistentslab", "deeppersistentslab", "wetslab", "wetloose",
+   * "dryloose" or "cornice".
+   *
+   * @generated from field: string type = 1;
+   */
+  type: string;
+
+  /**
+   * Its name, e.g. "Wind Slab".
+   *
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * The elevation bands it's found in, e.g. "Alpine", "Treeline" and
+   * "Below Treeline".
+   *
+   * @generated from field: repeated string elevations = 3;
+   */
+  elevations: string[];
+
+  /**
+   * The aspects of the slopes it's found on, in compass order, e.g. "N",
+   * "NE".
+   *
+   * @generated from field: repeated string aspects = 4;
+   */
+  aspects: string[];
+
+  /**
+   * How likely avalanches are, e.g. "Possible to likely".
+   *
+   * @generated from field: string likelihood = 5;
+   */
+  likelihood: string;
+
+  /**
+   * The expected sizes on the Canadian destructive size scale, from 1
+   * (relatively harmless to people) through 2 (could bury, injure or kill
+   * a person) and 3 (could bury and destroy a car) to 5, in half steps. 0
+   * if not given.
+   *
+   * @generated from field: double min_size = 6;
+   */
+  minSize: number;
+
+  /**
+   * @generated from field: double max_size = 7;
+   */
+  maxSize: number;
+
+  /**
+   * The forecaster's description of the problem.
+   *
+   * @generated from field: string comment = 8;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message geo.v1.AvalancheProblem.
+ * Use `create(AvalancheProblemSchema)` to create a new message.
+ */
+export const AvalancheProblemSchema: GenMessage<AvalancheProblem> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 25);
+
+/**
+ * An avalanche forecast for an area, for the next three days.
+ *
+ * @generated from message geo.v1.AvalancheForecast
+ */
+export type AvalancheForecast = Message<"geo.v1.AvalancheForecast"> & {
+  /**
+   * The name of the forecast's area, e.g. "Glacier".
+   *
+   * @generated from field: string title = 1;
+   */
+  title: string;
+
+  /**
+   * Who wrote the forecast, e.g. "Avalanche Canada" or "Parks Canada".
+   * Credit them when showing it.
+   *
+   * @generated from field: string forecaster = 2;
+   */
+  forecaster: string;
+
+  /**
+   * The full forecast on avalanche.ca. Link to it when showing the
+   * forecast.
+   *
+   * @generated from field: string url = 3;
+   */
+  url: string;
+
+  /**
+   * When the forecast was issued.
+   *
+   * @generated from field: google.protobuf.Timestamp issue_time = 4;
+   */
+  issueTime?: Timestamp | undefined;
+
+  /**
+   * When it expires, unset if not given.
+   *
+   * @generated from field: google.protobuf.Timestamp valid_until_time = 5;
+   */
+  validUntilTime?: Timestamp | undefined;
+
+  /**
+   * The forecast's summary.
+   *
+   * @generated from field: string highlights = 6;
+   */
+  highlights: string;
+
+  /**
+   * The forecaster's confidence, e.g. "Moderate", empty if not rated.
+   *
+   * @generated from field: string confidence = 7;
+   */
+  confidence: string;
+
+  /**
+   * The danger ratings of each day, in date order.
+   *
+   * @generated from field: repeated geo.v1.AvalancheDangerDay days = 8;
+   */
+  days: AvalancheDangerDay[];
+
+  /**
+   * The avalanche problems to expect, the most important first.
+   *
+   * @generated from field: repeated geo.v1.AvalancheProblem problems = 9;
+   */
+  problems: AvalancheProblem[];
+
+  /**
+   * Advice on choosing terrain and traveling in it.
+   *
+   * @generated from field: repeated string travel_advice = 10;
+   */
+  travelAdvice: string[];
+};
+
+/**
+ * Describes the message geo.v1.AvalancheForecast.
+ * Use `create(AvalancheForecastSchema)` to create a new message.
+ */
+export const AvalancheForecastSchema: GenMessage<AvalancheForecast> = /*@__PURE__*/
+  messageDesc(file_geo_v1_geo, 26);
+
+/**
  * Terrain is a coarse classification of the surface underfoot.
  *
  * @generated from enum geo.v1.Terrain
@@ -904,6 +1176,69 @@ export const PointOfInterestKindSchema: GenEnum<PointOfInterestKind> = /*@__PURE
   enumDesc(file_geo_v1_geo, 1);
 
 /**
+ * A danger rating of the North American Public Avalanche Danger Scale. The
+ * numbers are the scale's levels, so higher is more dangerous.
+ *
+ * @generated from enum geo.v1.AvalancheDanger
+ */
+export enum AvalancheDanger {
+  /**
+   * Not rated, e.g. early in the season, in spring conditions or without
+   * enough information: see the rating's description, and expect
+   * avalanches anyway.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * 1 - Low: generally safe avalanche conditions. Watch for unstable snow
+   * on isolated terrain features.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_LOW = 1;
+   */
+  LOW = 1,
+
+  /**
+   * 2 - Moderate: heightened avalanche conditions on specific terrain
+   * features. Evaluate snow and terrain carefully.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_MODERATE = 2;
+   */
+  MODERATE = 2,
+
+  /**
+   * 3 - Considerable: dangerous avalanche conditions. Careful snowpack
+   * evaluation, cautious route-finding and conservative decision-making
+   * are essential.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_CONSIDERABLE = 3;
+   */
+  CONSIDERABLE = 3,
+
+  /**
+   * 4 - High: very dangerous avalanche conditions. Travel in avalanche
+   * terrain is not recommended.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_HIGH = 4;
+   */
+  HIGH = 4,
+
+  /**
+   * 5 - Extreme: avoid all avalanche terrain.
+   *
+   * @generated from enum value: AVALANCHE_DANGER_EXTREME = 5;
+   */
+  EXTREME = 5,
+}
+
+/**
+ * Describes the enum geo.v1.AvalancheDanger.
+ */
+export const AvalancheDangerSchema: GenEnum<AvalancheDanger> = /*@__PURE__*/
+  enumDesc(file_geo_v1_geo, 2);
+
+/**
  * GeoService provides tools for exploring the area around a location. Map data
  * comes from OpenStreetMap, elevation data from the Copernicus DEM (via
  * Open-Meteo), and the heatmap from the user's own synced activities. Use these
@@ -989,6 +1324,22 @@ export const GeoService: GenService<{
     methodKind: "unary";
     input: typeof ListFamiliarTrailsRequestSchema;
     output: typeof ListFamiliarTrailsResponseSchema;
+  },
+  /**
+   * Get the current avalanche forecast for a point, from Avalanche Canada,
+   * which also publishes the forecasts of Parks Canada, Kananaskis Country
+   * and Avalanche Québec. Forecasts only cover Canada's mountains, and only
+   * in winter: elsewhere, or in summer, there is none. Check it before ski
+   * tours and winter routes in avalanche terrain, tell the user the danger
+   * and problems for their day, credit the forecaster and link to the full
+   * forecast, which says more than this summary.
+   *
+   * @generated from rpc geo.v1.GeoService.GetAvalancheForecast
+   */
+  getAvalancheForecast: {
+    methodKind: "unary";
+    input: typeof GetAvalancheForecastRequestSchema;
+    output: typeof GetAvalancheForecastResponseSchema;
   },
   /**
    * List the parts of the user's GPS tracks inside a bounding box, simplified,

@@ -5,16 +5,19 @@ import (
 	"errors"
 	"math"
 	"slices"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect/v2"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
+	"github.com/bs-tools/trailrunn.ing/internal/avalanche"
 	geov1 "github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1"
 	plansv1 "github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1"
 	"github.com/bs-tools/trailrunn.ing/internal/geo"
 	"github.com/bs-tools/trailrunn.ing/internal/mapdata"
 	"github.com/bs-tools/trailrunn.ing/internal/plans"
 	"github.com/bs-tools/trailrunn.ing/internal/routes"
+	"github.com/bs-tools/trailrunn.ing/internal/services/route"
 	"github.com/bs-tools/trailrunn.ing/internal/store"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -180,6 +183,7 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 	}
 	var result []*plansv1.WorkoutWeather_builder
 	var windyWorkouts []windy
+	var tours []skiTour
 	for _, w := range workouts {
 		g := groupOf[w]
 		if g == nil {
@@ -231,9 +235,13 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 				}
 			}
 		}
+		if w.CrossTrainingSport == plans.CrossTrainingSportSkiTouring {
+			tours = append(tours, skiTour{index: len(result), point: g.location.point, date: date})
+		}
 		result = append(result, &b)
 	}
 	warnings := s.windWarnings(ctx, windyWorkouts)
+	s.addAvalancheForecasts(ctx, tours, result)
 	built := make([]*plansv1.WorkoutWeather, len(result))
 	for i, b := range result {
 		if warning := warnings[i]; warning != nil {
@@ -242,6 +250,67 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 		built[i] = b.Build()
 	}
 	return built, nil
+}
+
+// SetAvalanches sets where the avalanche forecasts of ski tours come from.
+// Without it, they have none.
+func (s *Service) SetAvalanches(avalanches route.Avalanches) {
+	s.avalanches = avalanches
+}
+
+// skiTour is a ski tour that gets an avalanche forecast.
+type skiTour struct {
+	// The index of the workout's forecast.
+	index int
+	// Where the avalanche forecast is for: the workout's weather location.
+	// Forecast areas are tens of kilometers wide, so the start of a tour
+	// is in the same one as the rest of it.
+	point geo.Point
+	// The workout's date, YYYY-MM-DD.
+	date string
+}
+
+// addAvalancheForecasts adds the avalanche forecasts of ski tours to their
+// weather, with a warning if the danger is High or above on their day.
+// Forecasts are fetched at once, as each can be a request to Avalanche
+// Canada. Without one, as outside the forecast areas or when it's
+// unavailable, the weather goes without.
+func (s *Service) addAvalancheForecasts(ctx context.Context, tours []skiTour, result []*plansv1.WorkoutWeather_builder) {
+	if s.avalanches == nil || len(tours) == 0 {
+		return
+	}
+	forecasts := make([]*avalanche.Forecast, len(tours))
+	var wg sync.WaitGroup
+	for i, tour := range tours {
+		wg.Go(func() {
+			f, err := s.avalanches.Forecast(ctx, tour.point)
+			if err != nil {
+				s.report.Report(ctx, "Failed to get an avalanche forecast, forecasting a ski tour without it", err)
+				return
+			}
+			forecasts[i] = f
+		})
+	}
+	wg.Wait()
+	for i, tour := range tours {
+		f := forecasts[i]
+		if f == nil {
+			continue
+		}
+		b := result[tour.index]
+		b.AvalancheForecast = route.AvalancheForecastToProto(f)
+		day, ok := f.Day(tour.date)
+		if !ok {
+			continue
+		}
+		if message := f.Warning(day); message != "" {
+			b.Warnings = append(b.Warnings, plansv1.WeatherWarning_builder{
+				Kind:               plansv1.WeatherWarningKind_WEATHER_WARNING_KIND_AVALANCHE_DANGER,
+				Message:            message,
+				MaxAvalancheDanger: route.AvalancheDangerToProto(day.Max()),
+			}.Build())
+		}
+	}
 }
 
 // routePath returns the path of a route, nil for no route or a route that

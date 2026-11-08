@@ -54,6 +54,8 @@ type Service struct {
 	mapData MapData
 	finder  Finder
 	tracks  TrackRepository
+	// Gets avalanche forecasts, nil if there are none.
+	avalanches route.Avalanches
 }
 
 // NewService creates a new Service.

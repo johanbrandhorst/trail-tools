@@ -3496,6 +3496,7 @@ type GetRouteForecastResponse struct {
 	xxx_hidden_ElevationGainMeters float64                `protobuf:"fixed64,5,opt,name=elevation_gain_meters,json=elevationGainMeters,proto3"`
 	xxx_hidden_Warnings            []string               `protobuf:"bytes,6,rep,name=warnings,proto3"`
 	xxx_hidden_Path                *[]*RoutePoint         `protobuf:"bytes,7,rep,name=path,proto3"`
+	xxx_hidden_AvalancheForecast   *v1.AvalancheForecast  `protobuf:"bytes,8,opt,name=avalanche_forecast,json=avalancheForecast,proto3"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -3578,6 +3579,13 @@ func (x *GetRouteForecastResponse) GetPath() []*RoutePoint {
 	return nil
 }
 
+func (x *GetRouteForecastResponse) GetAvalancheForecast() *v1.AvalancheForecast {
+	if x != nil {
+		return x.xxx_hidden_AvalancheForecast
+	}
+	return nil
+}
+
 func (x *GetRouteForecastResponse) SetPoints(v []*ForecastPoint) {
 	x.xxx_hidden_Points = &v
 }
@@ -3606,6 +3614,10 @@ func (x *GetRouteForecastResponse) SetPath(v []*RoutePoint) {
 	x.xxx_hidden_Path = &v
 }
 
+func (x *GetRouteForecastResponse) SetAvalancheForecast(v *v1.AvalancheForecast) {
+	x.xxx_hidden_AvalancheForecast = v
+}
+
 func (x *GetRouteForecastResponse) HasFinishTime() bool {
 	if x == nil {
 		return false
@@ -3613,8 +3625,19 @@ func (x *GetRouteForecastResponse) HasFinishTime() bool {
 	return x.xxx_hidden_FinishTime != nil
 }
 
+func (x *GetRouteForecastResponse) HasAvalancheForecast() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_AvalancheForecast != nil
+}
+
 func (x *GetRouteForecastResponse) ClearFinishTime() {
 	x.xxx_hidden_FinishTime = nil
+}
+
+func (x *GetRouteForecastResponse) ClearAvalancheForecast() {
+	x.xxx_hidden_AvalancheForecast = nil
 }
 
 type GetRouteForecastResponse_builder struct {
@@ -3635,6 +3658,12 @@ type GetRouteForecastResponse_builder struct {
 	Warnings []string
 	// The path of the route, downsampled for display.
 	Path []*RoutePoint
+	// The avalanche forecast at the route's highest point, unset if there is
+	// none: forecasts only cover Canada's mountains in winter, see
+	// GeoService.GetAvalancheForecast. Its days may not reach the route's
+	// date, as they only cover the next three. Danger rated High or above
+	// on the route's days is also among the warnings.
+	AvalancheForecast *v1.AvalancheForecast
 }
 
 func (b0 GetRouteForecastResponse_builder) Build() *GetRouteForecastResponse {
@@ -3648,6 +3677,7 @@ func (b0 GetRouteForecastResponse_builder) Build() *GetRouteForecastResponse {
 	x.xxx_hidden_ElevationGainMeters = b.ElevationGainMeters
 	x.xxx_hidden_Warnings = b.Warnings
 	x.xxx_hidden_Path = &b.Path
+	x.xxx_hidden_AvalancheForecast = b.AvalancheForecast
 	return m0
 }
 
@@ -3797,7 +3827,7 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\fweather_code\x18\x12 \x01(\x05R\vweatherCode\x12/\n" +
 	"\x13weather_description\x18\x13 \x01(\tR\x12weatherDescription\x12\"\n" +
 	"\rsnow_depth_cm\x18\x14 \x01(\x01R\vsnowDepthCm\x128\n" +
-	"\x19snowfall_past_72_hours_cm\x18\x15 \x01(\x01R\x15snowfallPast72HoursCm\"\xd8\x02\n" +
+	"\x19snowfall_past_72_hours_cm\x18\x15 \x01(\x01R\x15snowfallPast72HoursCm\"\xa2\x03\n" +
 	"\x18GetRouteForecastResponse\x120\n" +
 	"\x06points\x18\x01 \x03(\v2\x18.routes.v1.ForecastPointR\x06points\x12;\n" +
 	"\vfinish_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -3806,7 +3836,8 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\x0fdistance_meters\x18\x04 \x01(\x01R\x0edistanceMeters\x122\n" +
 	"\x15elevation_gain_meters\x18\x05 \x01(\x01R\x13elevationGainMeters\x12\x1a\n" +
 	"\bwarnings\x18\x06 \x03(\tR\bwarnings\x12)\n" +
-	"\x04path\x18\a \x03(\v2\x15.routes.v1.RoutePointR\x04path*\xa5\x01\n" +
+	"\x04path\x18\a \x03(\v2\x15.routes.v1.RoutePointR\x04path\x12H\n" +
+	"\x12avalanche_forecast\x18\b \x01(\v2\x19.geo.v1.AvalancheForecastR\x11avalancheForecast*\xa5\x01\n" +
 	"\x0eRoutingProfile\x12\x1f\n" +
 	"\x1bROUTING_PROFILE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15ROUTING_PROFILE_TRAIL\x10\x01\x12\x1c\n" +
@@ -3880,6 +3911,7 @@ var file_routes_v1_routes_proto_goTypes = []any{
 	(v1.Terrain)(0),                    // 29: geo.v1.Terrain
 	(*v1.LatLng)(nil),                  // 30: geo.v1.LatLng
 	(*timestamppb.Timestamp)(nil),      // 31: google.protobuf.Timestamp
+	(*v1.AvalancheForecast)(nil),       // 32: geo.v1.AvalancheForecast
 }
 var file_routes_v1_routes_proto_depIdxs = []int32{
 	29, // 0: routes.v1.TerrainShare.terrain:type_name -> geo.v1.Terrain
@@ -3917,27 +3949,28 @@ var file_routes_v1_routes_proto_depIdxs = []int32{
 	27, // 32: routes.v1.GetRouteForecastResponse.points:type_name -> routes.v1.ForecastPoint
 	31, // 33: routes.v1.GetRouteForecastResponse.finish_time:type_name -> google.protobuf.Timestamp
 	5,  // 34: routes.v1.GetRouteForecastResponse.path:type_name -> routes.v1.RoutePoint
-	10, // 35: routes.v1.RouteService.PreviewRoute:input_type -> routes.v1.PreviewRouteRequest
-	13, // 36: routes.v1.RouteService.CreateRoute:input_type -> routes.v1.CreateRouteRequest
-	15, // 37: routes.v1.RouteService.GetRoute:input_type -> routes.v1.GetRouteRequest
-	17, // 38: routes.v1.RouteService.ListRoutes:input_type -> routes.v1.ListRoutesRequest
-	19, // 39: routes.v1.RouteService.UpdateRoute:input_type -> routes.v1.UpdateRouteRequest
-	21, // 40: routes.v1.RouteService.DeleteRoute:input_type -> routes.v1.DeleteRouteRequest
-	23, // 41: routes.v1.RouteService.CheckTrackCoverage:input_type -> routes.v1.CheckTrackCoverageRequest
-	25, // 42: routes.v1.RouteService.GetRouteForecast:input_type -> routes.v1.GetRouteForecastRequest
-	11, // 43: routes.v1.RouteService.PreviewRoute:output_type -> routes.v1.PreviewRouteResponse
-	14, // 44: routes.v1.RouteService.CreateRoute:output_type -> routes.v1.CreateRouteResponse
-	16, // 45: routes.v1.RouteService.GetRoute:output_type -> routes.v1.GetRouteResponse
-	18, // 46: routes.v1.RouteService.ListRoutes:output_type -> routes.v1.ListRoutesResponse
-	20, // 47: routes.v1.RouteService.UpdateRoute:output_type -> routes.v1.UpdateRouteResponse
-	22, // 48: routes.v1.RouteService.DeleteRoute:output_type -> routes.v1.DeleteRouteResponse
-	24, // 49: routes.v1.RouteService.CheckTrackCoverage:output_type -> routes.v1.CheckTrackCoverageResponse
-	28, // 50: routes.v1.RouteService.GetRouteForecast:output_type -> routes.v1.GetRouteForecastResponse
-	43, // [43:51] is the sub-list for method output_type
-	35, // [35:43] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	32, // 35: routes.v1.GetRouteForecastResponse.avalanche_forecast:type_name -> geo.v1.AvalancheForecast
+	10, // 36: routes.v1.RouteService.PreviewRoute:input_type -> routes.v1.PreviewRouteRequest
+	13, // 37: routes.v1.RouteService.CreateRoute:input_type -> routes.v1.CreateRouteRequest
+	15, // 38: routes.v1.RouteService.GetRoute:input_type -> routes.v1.GetRouteRequest
+	17, // 39: routes.v1.RouteService.ListRoutes:input_type -> routes.v1.ListRoutesRequest
+	19, // 40: routes.v1.RouteService.UpdateRoute:input_type -> routes.v1.UpdateRouteRequest
+	21, // 41: routes.v1.RouteService.DeleteRoute:input_type -> routes.v1.DeleteRouteRequest
+	23, // 42: routes.v1.RouteService.CheckTrackCoverage:input_type -> routes.v1.CheckTrackCoverageRequest
+	25, // 43: routes.v1.RouteService.GetRouteForecast:input_type -> routes.v1.GetRouteForecastRequest
+	11, // 44: routes.v1.RouteService.PreviewRoute:output_type -> routes.v1.PreviewRouteResponse
+	14, // 45: routes.v1.RouteService.CreateRoute:output_type -> routes.v1.CreateRouteResponse
+	16, // 46: routes.v1.RouteService.GetRoute:output_type -> routes.v1.GetRouteResponse
+	18, // 47: routes.v1.RouteService.ListRoutes:output_type -> routes.v1.ListRoutesResponse
+	20, // 48: routes.v1.RouteService.UpdateRoute:output_type -> routes.v1.UpdateRouteResponse
+	22, // 49: routes.v1.RouteService.DeleteRoute:output_type -> routes.v1.DeleteRouteResponse
+	24, // 50: routes.v1.RouteService.CheckTrackCoverage:output_type -> routes.v1.CheckTrackCoverageResponse
+	28, // 51: routes.v1.RouteService.GetRouteForecast:output_type -> routes.v1.GetRouteForecastResponse
+	44, // [44:52] is the sub-list for method output_type
+	36, // [36:44] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_routes_v1_routes_proto_init() }
