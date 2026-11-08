@@ -83,6 +83,13 @@ service TrainingPlanService {
   // app's settings, from a sweat test; only change it when they give their
   // results.
   rpc SetSweatProfile(SetSweatProfileRequest) returns (SetSweatProfileResponse);
+  // Get the user's own limits for ski touring, which the forecasts of ski
+  // tours are checked against for a go, caution or no-go verdict.
+  rpc GetTouringLimits(GetTouringLimitsRequest) returns (GetTouringLimitsResponse);
+  // Replace the user's touring limits. The user usually sets these in the
+  // web app's settings. They're the user's own rules: only set them to
+  // what the user says, never to values you chose.
+  rpc SetTouringLimits(SetTouringLimitsRequest) returns (SetTouringLimitsResponse);
 }
 
 // A training plan.
@@ -858,6 +865,10 @@ message WorkoutWeather {
   // check that the workout's date is among them. See
   // geo.v1.GeoService.GetAvalancheForecast.
   geo.v1.AvalancheForecast avalanche_forecast = 12;
+  // For ski tours, the forecast checked against the user's touring limits,
+  // during the workout if it has a start time, or else the daytime. Unset
+  // for other workouts, and if the user hasn't set any limits.
+  geo.v1.TouringVerdict touring_verdict = 13;
 }
 
 // WeatherWarningKind is the kind of danger a weather warning is about.
@@ -1001,6 +1012,48 @@ message SetSweatProfileRequest {
 message SetSweatProfileResponse {
   // The user's sweat profile.
   SweatProfile profile = 1;
+}
+
+// The user's own limits for ski touring: the conditions they won't tour
+// in. The forecasts of ski tours are checked against them: beyond a limit
+// is a no-go, and close to one, or without the data to check one, a
+// caution. Unset limits aren't checked.
+message TouringLimits {
+  // The highest avalanche danger the user will tour in, per elevation
+  // band. Unspecified for no limit.
+  geo.v1.AvalancheDanger max_avalanche_danger_alpine = 1;
+  geo.v1.AvalancheDanger max_avalanche_danger_treeline = 2;
+  geo.v1.AvalancheDanger max_avalanche_danger_below_treeline = 3;
+  // The strongest gusts the user will tour in, in kilometers per hour,
+  // from 10 to 200. Within 10 km/h of it is a caution.
+  optional double max_wind_gusts_kmh = 4;
+  // The highest freezing level the user will tour under, in meters, from
+  // 100 to 6000: warming makes wet avalanches and loose snow likely.
+  // Within 200 m of it is a caution.
+  optional double max_freezing_level_meters = 5;
+  // The most snow fallen in the 72 hours before a tour the user will tour
+  // in, in centimeters, from 1 to 300: new snow makes avalanches likely.
+  // Within 5 cm of it is a caution.
+  optional double max_snowfall_past_72_hours_cm = 6;
+  // When the limits were last set. Unset if they never were.
+  google.protobuf.Timestamp update_time = 7 [(mcp.v1.field).output_only = true];
+}
+
+message GetTouringLimitsRequest {}
+
+message GetTouringLimitsResponse {
+  // The user's touring limits, empty if they haven't set any.
+  TouringLimits limits = 1;
+}
+
+message SetTouringLimitsRequest {
+  // The user's touring limits, replacing the earlier ones.
+  TouringLimits limits = 1;
+}
+
+message SetTouringLimitsResponse {
+  // The user's touring limits.
+  TouringLimits limits = 1;
 }
 
 message GetWorkoutWeatherRequest {

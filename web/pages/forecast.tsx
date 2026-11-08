@@ -13,11 +13,12 @@ import {
   formatTime,
   parseLocalDateTime,
 } from "@components/forecast/forecast-utils";
+import TouringVerdictView from "@components/forecast/touring-verdict";
 import { FitBounds, HoverMarker, PolylineLayer } from "@components/map/layers";
 import MapView from "@components/map/map-view";
 import { toTuples } from "@components/routes/route-geometry";
 import Card from "@components/ui/card";
-import { SelectField, TextField } from "@components/ui/fields";
+import { CheckboxField, SelectField, TextField } from "@components/ui/fields";
 import type { SelectOption } from "@components/ui/fields";
 import { Badge, PageHeader, Stat } from "@components/ui/misc";
 import { ErrorText } from "@components/ui/query-error";
@@ -258,9 +259,14 @@ const ForecastTable: React.FC<ForecastTableProps> = ({ points, onHover }) => {
 
 interface ForecastResultProps {
   forecast: GetRouteForecastResponse;
+  // Whether the forecast is for a ski tour, which gets a verdict.
+  skiTour: boolean;
 }
 
-const ForecastResult: React.FC<ForecastResultProps> = ({ forecast }) => {
+const ForecastResult: React.FC<ForecastResultProps> = ({
+  forecast,
+  skiTour,
+}) => {
   const [hoverPathIndex, setHoverPathIndex] = useState<number | null>(null);
   const [hoverPointIndex, setHoverPointIndex] = useState<number | null>(null);
   const pathTuples = useMemo(() => toTuples(forecast.path), [forecast.path]);
@@ -334,6 +340,11 @@ const ForecastResult: React.FC<ForecastResultProps> = ({ forecast }) => {
           />
         </MapView>
       </div>
+      {skiTour && (
+        <Card title="Go or no-go">
+          <TouringVerdictView verdict={forecast.touringVerdict} />
+        </Card>
+      )}
       {forecast.avalancheForecast !== undefined && (
         <Card title="Avalanche forecast">
           <AvalancheForecastView
@@ -387,6 +398,7 @@ const ForecastPage: React.FC = () => {
   const [speed, setSpeed] = useState("8");
   const [climb, setClimb] = useState("600");
   const [intervalMinutes, setIntervalMinutes] = useState("60");
+  const [skiTour, setSkiTour] = useState(searchParams.get("ski") === "1");
   const [validation, setValidation] = useState("");
   const forecast = useMutation(getRouteForecast);
 
@@ -418,6 +430,7 @@ const ForecastPage: React.FC = () => {
     forecast.mutate({
       climbMetersPerHour: climbValue,
       intervalMinutes: Number(intervalMinutes),
+      skiTour,
       source:
         mode === "route"
           ? { case: "routeId", value: routeId }
@@ -547,6 +560,11 @@ const ForecastPage: React.FC = () => {
               onChange={setIntervalMinutes}
             />
           </div>
+          <CheckboxField
+            label="Ski tour: check the forecast against my touring limits"
+            checked={skiTour}
+            onChange={setSkiTour}
+          />
           {validation !== "" && (
             <p className="text-sm text-red-700">{validation}</p>
           )}
@@ -563,7 +581,10 @@ const ForecastPage: React.FC = () => {
         </form>
       </Card>
       {forecast.data !== undefined && (
-        <ForecastResult forecast={forecast.data} />
+        <ForecastResult
+          forecast={forecast.data}
+          skiTour={forecast.variables?.skiTour === true}
+        />
       )}
     </div>
   );

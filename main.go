@@ -686,6 +686,7 @@ func run(
 	avalanches := avalanche.New(avalanche.DefaultURL, telemetry.NewClient(avalancheTimeout))
 	routeService := route.NewService(log, report, routeRepo, activityRepo, routing.NewRouter(db), mapData)
 	routeService.SetAvalanches(avalanches)
+	routeService.SetTouringLimitsSource(planRepo)
 	geoService := geosvc.NewService(log, report, mapData, routing.NewFinder(db), activityRepo)
 	geoService.SetAvalanches(avalanches)
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)

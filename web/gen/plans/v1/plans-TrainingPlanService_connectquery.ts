@@ -152,3 +152,20 @@ export const getSweatProfile = TrainingPlanService.method.getSweatProfile;
  * @generated from rpc plans.v1.TrainingPlanService.SetSweatProfile
  */
 export const setSweatProfile = TrainingPlanService.method.setSweatProfile;
+
+/**
+ * Get the user's own limits for ski touring, which the forecasts of ski
+ * tours are checked against for a go, caution or no-go verdict.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.GetTouringLimits
+ */
+export const getTouringLimits = TrainingPlanService.method.getTouringLimits;
+
+/**
+ * Replace the user's touring limits. The user usually sets these in the
+ * web app's settings. They're the user's own rules: only set them to
+ * what the user says, never to values you chose.
+ *
+ * @generated from rpc plans.v1.TrainingPlanService.SetTouringLimits
+ */
+export const setTouringLimits = TrainingPlanService.method.setTouringLimits;

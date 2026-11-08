@@ -408,6 +408,9 @@ message GetRouteForecastRequest {
   // How often to sample the forecast along the route, in minutes. Defaults
   // to 60, minimum 15.
   int32 interval_minutes = 7;
+  // Whether the route is a ski tour, to check its forecast against the
+  // user's touring limits for a verdict.
+  bool ski_tour = 8;
 }
 
 // A path as a list of coordinates.
@@ -503,4 +506,10 @@ message GetRouteForecastResponse {
   // date, as they only cover the next three. Danger rated High or above
   // on the route's days is also among the warnings.
   geo.v1.AvalancheForecast avalanche_forecast = 8;
+  // For ski tours, the forecast along the route checked against the user's
+  // touring limits: the strongest gusts and highest freezing level at the
+  // forecast points, the most new snow at any of them, and the highest
+  // avalanche danger of the route's days. Unset if ski_tour isn't set, or
+  // the user hasn't set any limits.
+  geo.v1.TouringVerdict touring_verdict = 9;
 }

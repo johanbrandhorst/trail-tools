@@ -424,3 +424,37 @@ message AvalancheForecast {
   // Advice on choosing terrain and traveling in it.
   repeated string travel_advice = 10;
 }
+
+// Whether to go on a ski tour, from checking its forecast against the
+// user's touring limits.
+enum TouringVerdictLevel {
+  TOURING_VERDICT_LEVEL_UNSPECIFIED = 0;
+  // Within all the user's limits.
+  TOURING_VERDICT_LEVEL_GO = 1;
+  // Close to a limit, or a limit can't be checked, like without an
+  // avalanche forecast for the day or when the danger isn't rated.
+  TOURING_VERDICT_LEVEL_CAUTION = 2;
+  // Beyond one of the user's limits.
+  TOURING_VERDICT_LEVEL_NO_GO = 3;
+}
+
+// The result of checking one of the user's touring limits.
+message TouringCheck {
+  // The check's verdict.
+  TouringVerdictLevel level = 1;
+  // What was found, e.g. "Gusts up to 75 km/h, above your limit of 60
+  // km/h".
+  string message = 2;
+}
+
+// A verdict on a ski tour, from checking its forecast against the user's
+// own touring limits (see plans.v1.TrainingPlanService.GetTouringLimits).
+// It's the user's own rule, not advice: tell them the checks that aren't a
+// go, and leave the decision to them.
+message TouringVerdict {
+  // The overall verdict, the worst of the checks.
+  TouringVerdictLevel level = 1;
+  // The checks of the limits the user has set, in the order avalanche
+  // danger, gusts, freezing level and new snow.
+  repeated TouringCheck checks = 2;
+}

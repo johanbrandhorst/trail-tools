@@ -216,6 +216,59 @@ func (x AvalancheDanger) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// Whether to go on a ski tour, from checking its forecast against the
+// user's touring limits.
+type TouringVerdictLevel int32
+
+const (
+	TouringVerdictLevel_TOURING_VERDICT_LEVEL_UNSPECIFIED TouringVerdictLevel = 0
+	// Within all the user's limits.
+	TouringVerdictLevel_TOURING_VERDICT_LEVEL_GO TouringVerdictLevel = 1
+	// Close to a limit, or a limit can't be checked, like without an
+	// avalanche forecast for the day or when the danger isn't rated.
+	TouringVerdictLevel_TOURING_VERDICT_LEVEL_CAUTION TouringVerdictLevel = 2
+	// Beyond one of the user's limits.
+	TouringVerdictLevel_TOURING_VERDICT_LEVEL_NO_GO TouringVerdictLevel = 3
+)
+
+// Enum value maps for TouringVerdictLevel.
+var (
+	TouringVerdictLevel_name = map[int32]string{
+		0: "TOURING_VERDICT_LEVEL_UNSPECIFIED",
+		1: "TOURING_VERDICT_LEVEL_GO",
+		2: "TOURING_VERDICT_LEVEL_CAUTION",
+		3: "TOURING_VERDICT_LEVEL_NO_GO",
+	}
+	TouringVerdictLevel_value = map[string]int32{
+		"TOURING_VERDICT_LEVEL_UNSPECIFIED": 0,
+		"TOURING_VERDICT_LEVEL_GO":          1,
+		"TOURING_VERDICT_LEVEL_CAUTION":     2,
+		"TOURING_VERDICT_LEVEL_NO_GO":       3,
+	}
+)
+
+func (x TouringVerdictLevel) Enum() *TouringVerdictLevel {
+	p := new(TouringVerdictLevel)
+	*p = x
+	return p
+}
+
+func (x TouringVerdictLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TouringVerdictLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_geo_v1_geo_proto_enumTypes[3].Descriptor()
+}
+
+func (TouringVerdictLevel) Type() protoreflect.EnumType {
+	return &file_geo_v1_geo_proto_enumTypes[3]
+}
+
+func (x TouringVerdictLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // A WGS84 coordinate.
 type LatLng struct {
 	state          protoimpl.MessageState `protogen:"opaque.v1"`
@@ -3081,6 +3134,161 @@ func (b0 AvalancheForecast_builder) Build() *AvalancheForecast {
 	return m0
 }
 
+// The result of checking one of the user's touring limits.
+type TouringCheck struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Level   TouringVerdictLevel    `protobuf:"varint,1,opt,name=level,proto3,enum=geo.v1.TouringVerdictLevel"`
+	xxx_hidden_Message string                 `protobuf:"bytes,2,opt,name=message,proto3"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *TouringCheck) Reset() {
+	*x = TouringCheck{}
+	mi := &file_geo_v1_geo_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TouringCheck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TouringCheck) ProtoMessage() {}
+
+func (x *TouringCheck) ProtoReflect() protoreflect.Message {
+	mi := &file_geo_v1_geo_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TouringCheck) GetLevel() TouringVerdictLevel {
+	if x != nil {
+		return x.xxx_hidden_Level
+	}
+	return TouringVerdictLevel_TOURING_VERDICT_LEVEL_UNSPECIFIED
+}
+
+func (x *TouringCheck) GetMessage() string {
+	if x != nil {
+		return x.xxx_hidden_Message
+	}
+	return ""
+}
+
+func (x *TouringCheck) SetLevel(v TouringVerdictLevel) {
+	x.xxx_hidden_Level = v
+}
+
+func (x *TouringCheck) SetMessage(v string) {
+	x.xxx_hidden_Message = v
+}
+
+type TouringCheck_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The check's verdict.
+	Level TouringVerdictLevel
+	// What was found, e.g. "Gusts up to 75 km/h, above your limit of 60
+	// km/h".
+	Message string
+}
+
+func (b0 TouringCheck_builder) Build() *TouringCheck {
+	m0 := &TouringCheck{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Level = b.Level
+	x.xxx_hidden_Message = b.Message
+	return m0
+}
+
+// A verdict on a ski tour, from checking its forecast against the user's
+// own touring limits (see plans.v1.TrainingPlanService.GetTouringLimits).
+// It's the user's own rule, not advice: tell them the checks that aren't a
+// go, and leave the decision to them.
+type TouringVerdict struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Level  TouringVerdictLevel    `protobuf:"varint,1,opt,name=level,proto3,enum=geo.v1.TouringVerdictLevel"`
+	xxx_hidden_Checks *[]*TouringCheck       `protobuf:"bytes,2,rep,name=checks,proto3"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *TouringVerdict) Reset() {
+	*x = TouringVerdict{}
+	mi := &file_geo_v1_geo_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TouringVerdict) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TouringVerdict) ProtoMessage() {}
+
+func (x *TouringVerdict) ProtoReflect() protoreflect.Message {
+	mi := &file_geo_v1_geo_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TouringVerdict) GetLevel() TouringVerdictLevel {
+	if x != nil {
+		return x.xxx_hidden_Level
+	}
+	return TouringVerdictLevel_TOURING_VERDICT_LEVEL_UNSPECIFIED
+}
+
+func (x *TouringVerdict) GetChecks() []*TouringCheck {
+	if x != nil {
+		if x.xxx_hidden_Checks != nil {
+			return *x.xxx_hidden_Checks
+		}
+	}
+	return nil
+}
+
+func (x *TouringVerdict) SetLevel(v TouringVerdictLevel) {
+	x.xxx_hidden_Level = v
+}
+
+func (x *TouringVerdict) SetChecks(v []*TouringCheck) {
+	x.xxx_hidden_Checks = &v
+}
+
+type TouringVerdict_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The overall verdict, the worst of the checks.
+	Level TouringVerdictLevel
+	// The checks of the limits the user has set, in the order avalanche
+	// danger, gusts, freezing level and new snow.
+	Checks []*TouringCheck
+}
+
+func (b0 TouringVerdict_builder) Build() *TouringVerdict {
+	m0 := &TouringVerdict{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Level = b.Level
+	x.xxx_hidden_Checks = &b.Checks
+	return m0
+}
+
 var File_geo_v1_geo_proto protoreflect.FileDescriptor
 
 const file_geo_v1_geo_proto_rawDesc = "" +
@@ -3222,7 +3430,13 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\x04days\x18\b \x03(\v2\x1a.geo.v1.AvalancheDangerDayR\x04days\x124\n" +
 	"\bproblems\x18\t \x03(\v2\x18.geo.v1.AvalancheProblemR\bproblems\x12#\n" +
 	"\rtravel_advice\x18\n" +
-	" \x03(\tR\ftravelAdvice*s\n" +
+	" \x03(\tR\ftravelAdvice\"[\n" +
+	"\fTouringCheck\x121\n" +
+	"\x05level\x18\x01 \x01(\x0e2\x1b.geo.v1.TouringVerdictLevelR\x05level\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"q\n" +
+	"\x0eTouringVerdict\x121\n" +
+	"\x05level\x18\x01 \x01(\x0e2\x1b.geo.v1.TouringVerdictLevelR\x05level\x12,\n" +
+	"\x06checks\x18\x02 \x03(\v2\x14.geo.v1.TouringCheckR\x06checks*s\n" +
 	"\aTerrain\x12\x17\n" +
 	"\x13TERRAIN_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rTERRAIN_PAVED\x10\x01\x12\x12\n" +
@@ -3245,7 +3459,12 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\x19AVALANCHE_DANGER_MODERATE\x10\x02\x12!\n" +
 	"\x1dAVALANCHE_DANGER_CONSIDERABLE\x10\x03\x12\x19\n" +
 	"\x15AVALANCHE_DANGER_HIGH\x10\x04\x12\x1c\n" +
-	"\x18AVALANCHE_DANGER_EXTREME\x10\x052\xc9\x05\n" +
+	"\x18AVALANCHE_DANGER_EXTREME\x10\x05*\x9e\x01\n" +
+	"\x13TouringVerdictLevel\x12%\n" +
+	"!TOURING_VERDICT_LEVEL_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18TOURING_VERDICT_LEVEL_GO\x10\x01\x12!\n" +
+	"\x1dTOURING_VERDICT_LEVEL_CAUTION\x10\x02\x12\x1f\n" +
+	"\x1bTOURING_VERDICT_LEVEL_NO_GO\x10\x032\xc9\x05\n" +
 	"\n" +
 	"GeoService\x12I\n" +
 	"\fSearchPlaces\x12\x1b.geo.v1.SearchPlacesRequest\x1a\x1c.geo.v1.SearchPlacesResponse\x12C\n" +
@@ -3260,96 +3479,102 @@ const file_geo_v1_geo_proto_rawDesc = "" +
 	"\n" +
 	"com.geo.v1B\bGeoProtoP\x01Z;github.com/bs-tools/trailrunn.ing/internal/gen/geo/v1;geov1\xa2\x02\x03GXX\xaa\x02\x06Geo.V1\xca\x02\x06Geo\\V1\xe2\x02\x12Geo\\V1\\GPBMetadata\xea\x02\aGeo::V1b\x06proto3"
 
-var file_geo_v1_geo_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_geo_v1_geo_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_geo_v1_geo_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_geo_v1_geo_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_geo_v1_geo_proto_goTypes = []any{
 	(Terrain)(0),                         // 0: geo.v1.Terrain
 	(PointOfInterestKind)(0),             // 1: geo.v1.PointOfInterestKind
 	(AvalancheDanger)(0),                 // 2: geo.v1.AvalancheDanger
-	(*LatLng)(nil),                       // 3: geo.v1.LatLng
-	(*BoundingBox)(nil),                  // 4: geo.v1.BoundingBox
-	(*SearchPlacesRequest)(nil),          // 5: geo.v1.SearchPlacesRequest
-	(*Place)(nil),                        // 6: geo.v1.Place
-	(*SearchPlacesResponse)(nil),         // 7: geo.v1.SearchPlacesResponse
-	(*FindTrailsRequest)(nil),            // 8: geo.v1.FindTrailsRequest
-	(*Trail)(nil),                        // 9: geo.v1.Trail
-	(*FindTrailsResponse)(nil),           // 10: geo.v1.FindTrailsResponse
-	(*FindPointsOfInterestRequest)(nil),  // 11: geo.v1.FindPointsOfInterestRequest
-	(*PointOfInterest)(nil),              // 12: geo.v1.PointOfInterest
-	(*FindPointsOfInterestResponse)(nil), // 13: geo.v1.FindPointsOfInterestResponse
-	(*GetElevationRequest)(nil),          // 14: geo.v1.GetElevationRequest
-	(*GetElevationResponse)(nil),         // 15: geo.v1.GetElevationResponse
-	(*GetPersonalHeatmapRequest)(nil),    // 16: geo.v1.GetPersonalHeatmapRequest
-	(*HeatmapCell)(nil),                  // 17: geo.v1.HeatmapCell
-	(*ListFamiliarTrailsRequest)(nil),    // 18: geo.v1.ListFamiliarTrailsRequest
-	(*FamiliarTrail)(nil),                // 19: geo.v1.FamiliarTrail
-	(*ListFamiliarTrailsResponse)(nil),   // 20: geo.v1.ListFamiliarTrailsResponse
-	(*ListHeatmapTracksRequest)(nil),     // 21: geo.v1.ListHeatmapTracksRequest
-	(*ListHeatmapTracksResponse)(nil),    // 22: geo.v1.ListHeatmapTracksResponse
-	(*GetPersonalHeatmapResponse)(nil),   // 23: geo.v1.GetPersonalHeatmapResponse
-	(*GetAvalancheForecastRequest)(nil),  // 24: geo.v1.GetAvalancheForecastRequest
-	(*GetAvalancheForecastResponse)(nil), // 25: geo.v1.GetAvalancheForecastResponse
-	(*AvalancheDangerRating)(nil),        // 26: geo.v1.AvalancheDangerRating
-	(*AvalancheDangerDay)(nil),           // 27: geo.v1.AvalancheDangerDay
-	(*AvalancheProblem)(nil),             // 28: geo.v1.AvalancheProblem
-	(*AvalancheForecast)(nil),            // 29: geo.v1.AvalancheForecast
-	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
+	(TouringVerdictLevel)(0),             // 3: geo.v1.TouringVerdictLevel
+	(*LatLng)(nil),                       // 4: geo.v1.LatLng
+	(*BoundingBox)(nil),                  // 5: geo.v1.BoundingBox
+	(*SearchPlacesRequest)(nil),          // 6: geo.v1.SearchPlacesRequest
+	(*Place)(nil),                        // 7: geo.v1.Place
+	(*SearchPlacesResponse)(nil),         // 8: geo.v1.SearchPlacesResponse
+	(*FindTrailsRequest)(nil),            // 9: geo.v1.FindTrailsRequest
+	(*Trail)(nil),                        // 10: geo.v1.Trail
+	(*FindTrailsResponse)(nil),           // 11: geo.v1.FindTrailsResponse
+	(*FindPointsOfInterestRequest)(nil),  // 12: geo.v1.FindPointsOfInterestRequest
+	(*PointOfInterest)(nil),              // 13: geo.v1.PointOfInterest
+	(*FindPointsOfInterestResponse)(nil), // 14: geo.v1.FindPointsOfInterestResponse
+	(*GetElevationRequest)(nil),          // 15: geo.v1.GetElevationRequest
+	(*GetElevationResponse)(nil),         // 16: geo.v1.GetElevationResponse
+	(*GetPersonalHeatmapRequest)(nil),    // 17: geo.v1.GetPersonalHeatmapRequest
+	(*HeatmapCell)(nil),                  // 18: geo.v1.HeatmapCell
+	(*ListFamiliarTrailsRequest)(nil),    // 19: geo.v1.ListFamiliarTrailsRequest
+	(*FamiliarTrail)(nil),                // 20: geo.v1.FamiliarTrail
+	(*ListFamiliarTrailsResponse)(nil),   // 21: geo.v1.ListFamiliarTrailsResponse
+	(*ListHeatmapTracksRequest)(nil),     // 22: geo.v1.ListHeatmapTracksRequest
+	(*ListHeatmapTracksResponse)(nil),    // 23: geo.v1.ListHeatmapTracksResponse
+	(*GetPersonalHeatmapResponse)(nil),   // 24: geo.v1.GetPersonalHeatmapResponse
+	(*GetAvalancheForecastRequest)(nil),  // 25: geo.v1.GetAvalancheForecastRequest
+	(*GetAvalancheForecastResponse)(nil), // 26: geo.v1.GetAvalancheForecastResponse
+	(*AvalancheDangerRating)(nil),        // 27: geo.v1.AvalancheDangerRating
+	(*AvalancheDangerDay)(nil),           // 28: geo.v1.AvalancheDangerDay
+	(*AvalancheProblem)(nil),             // 29: geo.v1.AvalancheProblem
+	(*AvalancheForecast)(nil),            // 30: geo.v1.AvalancheForecast
+	(*TouringCheck)(nil),                 // 31: geo.v1.TouringCheck
+	(*TouringVerdict)(nil),               // 32: geo.v1.TouringVerdict
+	(*timestamppb.Timestamp)(nil),        // 33: google.protobuf.Timestamp
 }
 var file_geo_v1_geo_proto_depIdxs = []int32{
-	3,  // 0: geo.v1.Place.location:type_name -> geo.v1.LatLng
-	4,  // 1: geo.v1.Place.bounds:type_name -> geo.v1.BoundingBox
-	6,  // 2: geo.v1.SearchPlacesResponse.places:type_name -> geo.v1.Place
-	3,  // 3: geo.v1.FindTrailsRequest.center:type_name -> geo.v1.LatLng
+	4,  // 0: geo.v1.Place.location:type_name -> geo.v1.LatLng
+	5,  // 1: geo.v1.Place.bounds:type_name -> geo.v1.BoundingBox
+	7,  // 2: geo.v1.SearchPlacesResponse.places:type_name -> geo.v1.Place
+	4,  // 3: geo.v1.FindTrailsRequest.center:type_name -> geo.v1.LatLng
 	0,  // 4: geo.v1.Trail.terrain:type_name -> geo.v1.Terrain
-	3,  // 5: geo.v1.Trail.start:type_name -> geo.v1.LatLng
-	3,  // 6: geo.v1.Trail.end:type_name -> geo.v1.LatLng
-	3,  // 7: geo.v1.Trail.nearest_point:type_name -> geo.v1.LatLng
-	3,  // 8: geo.v1.Trail.geometry:type_name -> geo.v1.LatLng
-	9,  // 9: geo.v1.FindTrailsResponse.trails:type_name -> geo.v1.Trail
-	3,  // 10: geo.v1.FindPointsOfInterestRequest.center:type_name -> geo.v1.LatLng
+	4,  // 5: geo.v1.Trail.start:type_name -> geo.v1.LatLng
+	4,  // 6: geo.v1.Trail.end:type_name -> geo.v1.LatLng
+	4,  // 7: geo.v1.Trail.nearest_point:type_name -> geo.v1.LatLng
+	4,  // 8: geo.v1.Trail.geometry:type_name -> geo.v1.LatLng
+	10, // 9: geo.v1.FindTrailsResponse.trails:type_name -> geo.v1.Trail
+	4,  // 10: geo.v1.FindPointsOfInterestRequest.center:type_name -> geo.v1.LatLng
 	1,  // 11: geo.v1.FindPointsOfInterestRequest.kinds:type_name -> geo.v1.PointOfInterestKind
 	1,  // 12: geo.v1.PointOfInterest.kind:type_name -> geo.v1.PointOfInterestKind
-	3,  // 13: geo.v1.PointOfInterest.location:type_name -> geo.v1.LatLng
-	12, // 14: geo.v1.FindPointsOfInterestResponse.points:type_name -> geo.v1.PointOfInterest
-	3,  // 15: geo.v1.GetElevationRequest.points:type_name -> geo.v1.LatLng
-	4,  // 16: geo.v1.GetPersonalHeatmapRequest.bounds:type_name -> geo.v1.BoundingBox
-	3,  // 17: geo.v1.HeatmapCell.center:type_name -> geo.v1.LatLng
-	4,  // 18: geo.v1.ListFamiliarTrailsRequest.bounds:type_name -> geo.v1.BoundingBox
-	9,  // 19: geo.v1.FamiliarTrail.trail:type_name -> geo.v1.Trail
-	19, // 20: geo.v1.ListFamiliarTrailsResponse.trails:type_name -> geo.v1.FamiliarTrail
-	4,  // 21: geo.v1.ListHeatmapTracksRequest.bounds:type_name -> geo.v1.BoundingBox
-	17, // 22: geo.v1.GetPersonalHeatmapResponse.cells:type_name -> geo.v1.HeatmapCell
-	3,  // 23: geo.v1.GetAvalancheForecastRequest.location:type_name -> geo.v1.LatLng
-	29, // 24: geo.v1.GetAvalancheForecastResponse.forecast:type_name -> geo.v1.AvalancheForecast
+	4,  // 13: geo.v1.PointOfInterest.location:type_name -> geo.v1.LatLng
+	13, // 14: geo.v1.FindPointsOfInterestResponse.points:type_name -> geo.v1.PointOfInterest
+	4,  // 15: geo.v1.GetElevationRequest.points:type_name -> geo.v1.LatLng
+	5,  // 16: geo.v1.GetPersonalHeatmapRequest.bounds:type_name -> geo.v1.BoundingBox
+	4,  // 17: geo.v1.HeatmapCell.center:type_name -> geo.v1.LatLng
+	5,  // 18: geo.v1.ListFamiliarTrailsRequest.bounds:type_name -> geo.v1.BoundingBox
+	10, // 19: geo.v1.FamiliarTrail.trail:type_name -> geo.v1.Trail
+	20, // 20: geo.v1.ListFamiliarTrailsResponse.trails:type_name -> geo.v1.FamiliarTrail
+	5,  // 21: geo.v1.ListHeatmapTracksRequest.bounds:type_name -> geo.v1.BoundingBox
+	18, // 22: geo.v1.GetPersonalHeatmapResponse.cells:type_name -> geo.v1.HeatmapCell
+	4,  // 23: geo.v1.GetAvalancheForecastRequest.location:type_name -> geo.v1.LatLng
+	30, // 24: geo.v1.GetAvalancheForecastResponse.forecast:type_name -> geo.v1.AvalancheForecast
 	2,  // 25: geo.v1.AvalancheDangerRating.danger:type_name -> geo.v1.AvalancheDanger
-	26, // 26: geo.v1.AvalancheDangerDay.alpine:type_name -> geo.v1.AvalancheDangerRating
-	26, // 27: geo.v1.AvalancheDangerDay.treeline:type_name -> geo.v1.AvalancheDangerRating
-	26, // 28: geo.v1.AvalancheDangerDay.below_treeline:type_name -> geo.v1.AvalancheDangerRating
-	30, // 29: geo.v1.AvalancheForecast.issue_time:type_name -> google.protobuf.Timestamp
-	30, // 30: geo.v1.AvalancheForecast.valid_until_time:type_name -> google.protobuf.Timestamp
-	27, // 31: geo.v1.AvalancheForecast.days:type_name -> geo.v1.AvalancheDangerDay
-	28, // 32: geo.v1.AvalancheForecast.problems:type_name -> geo.v1.AvalancheProblem
-	5,  // 33: geo.v1.GeoService.SearchPlaces:input_type -> geo.v1.SearchPlacesRequest
-	8,  // 34: geo.v1.GeoService.FindTrails:input_type -> geo.v1.FindTrailsRequest
-	11, // 35: geo.v1.GeoService.FindPointsOfInterest:input_type -> geo.v1.FindPointsOfInterestRequest
-	14, // 36: geo.v1.GeoService.GetElevation:input_type -> geo.v1.GetElevationRequest
-	16, // 37: geo.v1.GeoService.GetPersonalHeatmap:input_type -> geo.v1.GetPersonalHeatmapRequest
-	18, // 38: geo.v1.GeoService.ListFamiliarTrails:input_type -> geo.v1.ListFamiliarTrailsRequest
-	24, // 39: geo.v1.GeoService.GetAvalancheForecast:input_type -> geo.v1.GetAvalancheForecastRequest
-	21, // 40: geo.v1.GeoService.ListHeatmapTracks:input_type -> geo.v1.ListHeatmapTracksRequest
-	7,  // 41: geo.v1.GeoService.SearchPlaces:output_type -> geo.v1.SearchPlacesResponse
-	10, // 42: geo.v1.GeoService.FindTrails:output_type -> geo.v1.FindTrailsResponse
-	13, // 43: geo.v1.GeoService.FindPointsOfInterest:output_type -> geo.v1.FindPointsOfInterestResponse
-	15, // 44: geo.v1.GeoService.GetElevation:output_type -> geo.v1.GetElevationResponse
-	23, // 45: geo.v1.GeoService.GetPersonalHeatmap:output_type -> geo.v1.GetPersonalHeatmapResponse
-	20, // 46: geo.v1.GeoService.ListFamiliarTrails:output_type -> geo.v1.ListFamiliarTrailsResponse
-	25, // 47: geo.v1.GeoService.GetAvalancheForecast:output_type -> geo.v1.GetAvalancheForecastResponse
-	22, // 48: geo.v1.GeoService.ListHeatmapTracks:output_type -> geo.v1.ListHeatmapTracksResponse
-	41, // [41:49] is the sub-list for method output_type
-	33, // [33:41] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	27, // 26: geo.v1.AvalancheDangerDay.alpine:type_name -> geo.v1.AvalancheDangerRating
+	27, // 27: geo.v1.AvalancheDangerDay.treeline:type_name -> geo.v1.AvalancheDangerRating
+	27, // 28: geo.v1.AvalancheDangerDay.below_treeline:type_name -> geo.v1.AvalancheDangerRating
+	33, // 29: geo.v1.AvalancheForecast.issue_time:type_name -> google.protobuf.Timestamp
+	33, // 30: geo.v1.AvalancheForecast.valid_until_time:type_name -> google.protobuf.Timestamp
+	28, // 31: geo.v1.AvalancheForecast.days:type_name -> geo.v1.AvalancheDangerDay
+	29, // 32: geo.v1.AvalancheForecast.problems:type_name -> geo.v1.AvalancheProblem
+	3,  // 33: geo.v1.TouringCheck.level:type_name -> geo.v1.TouringVerdictLevel
+	3,  // 34: geo.v1.TouringVerdict.level:type_name -> geo.v1.TouringVerdictLevel
+	31, // 35: geo.v1.TouringVerdict.checks:type_name -> geo.v1.TouringCheck
+	6,  // 36: geo.v1.GeoService.SearchPlaces:input_type -> geo.v1.SearchPlacesRequest
+	9,  // 37: geo.v1.GeoService.FindTrails:input_type -> geo.v1.FindTrailsRequest
+	12, // 38: geo.v1.GeoService.FindPointsOfInterest:input_type -> geo.v1.FindPointsOfInterestRequest
+	15, // 39: geo.v1.GeoService.GetElevation:input_type -> geo.v1.GetElevationRequest
+	17, // 40: geo.v1.GeoService.GetPersonalHeatmap:input_type -> geo.v1.GetPersonalHeatmapRequest
+	19, // 41: geo.v1.GeoService.ListFamiliarTrails:input_type -> geo.v1.ListFamiliarTrailsRequest
+	25, // 42: geo.v1.GeoService.GetAvalancheForecast:input_type -> geo.v1.GetAvalancheForecastRequest
+	22, // 43: geo.v1.GeoService.ListHeatmapTracks:input_type -> geo.v1.ListHeatmapTracksRequest
+	8,  // 44: geo.v1.GeoService.SearchPlaces:output_type -> geo.v1.SearchPlacesResponse
+	11, // 45: geo.v1.GeoService.FindTrails:output_type -> geo.v1.FindTrailsResponse
+	14, // 46: geo.v1.GeoService.FindPointsOfInterest:output_type -> geo.v1.FindPointsOfInterestResponse
+	16, // 47: geo.v1.GeoService.GetElevation:output_type -> geo.v1.GetElevationResponse
+	24, // 48: geo.v1.GeoService.GetPersonalHeatmap:output_type -> geo.v1.GetPersonalHeatmapResponse
+	21, // 49: geo.v1.GeoService.ListFamiliarTrails:output_type -> geo.v1.ListFamiliarTrailsResponse
+	26, // 50: geo.v1.GeoService.GetAvalancheForecast:output_type -> geo.v1.GetAvalancheForecastResponse
+	23, // 51: geo.v1.GeoService.ListHeatmapTracks:output_type -> geo.v1.ListHeatmapTracksResponse
+	44, // [44:52] is the sub-list for method output_type
+	36, // [36:44] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_geo_v1_geo_proto_init() }
@@ -3362,8 +3587,8 @@ func file_geo_v1_geo_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_geo_v1_geo_proto_rawDesc), len(file_geo_v1_geo_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   27,
+			NumEnums:      4,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
