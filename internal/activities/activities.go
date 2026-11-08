@@ -164,6 +164,11 @@ var StrengthSportTypes = []string{"WeightTraining", "Workout", "Crossfit", "High
 // races of the same day.
 var RunSportTypes = []string{"Run", "TrailRun", "VirtualRun"}
 
+// SkiTouringSportTypes are the Strava sport types that complete the user's
+// ski tours of the same day: backcountry skiing, and splitboarding, which
+// Strava records as it too.
+var SkiTouringSportTypes = []string{"BackcountrySki"}
+
 // unplannedSportTypes are the Strava sport types that complete no workout:
 // walks are everyday life, not cross-training.
 var unplannedSportTypes = []string{"Walk"}
@@ -179,10 +184,11 @@ func (r *Repository) LinkWorkouts(ctx context.Context, userID pgtype.UUID) error
 
 func queueLinkWorkouts(ctx context.Context, q *gen.Queries, userID pgtype.UUID) error {
 	return q.LinkWorkouts(ctx, &gen.LinkWorkoutsParams{
-		UserID:              userID,
-		StrengthSportTypes:  StrengthSportTypes,
-		RunSportTypes:       RunSportTypes,
-		UnplannedSportTypes: unplannedSportTypes,
+		UserID:               userID,
+		StrengthSportTypes:   StrengthSportTypes,
+		RunSportTypes:        RunSportTypes,
+		UnplannedSportTypes:  unplannedSportTypes,
+		SkiTouringSportTypes: SkiTouringSportTypes,
 	})
 }
 

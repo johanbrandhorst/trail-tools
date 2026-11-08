@@ -244,6 +244,9 @@ func workoutCalendar(workouts []*plans.Workout, loc *time.Location, now time.Tim
 		if !ok {
 			continue
 		}
+		if w.CrossTrainingSport == plans.CrossTrainingSportSkiTouring {
+			name = "Ski tour"
+		}
 		done := w.CompletedActivityID.Valid || w.Log != nil
 		duration := time.Duration(w.TargetDurationSeconds) * time.Second
 		var start time.Time

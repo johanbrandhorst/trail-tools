@@ -1758,6 +1758,7 @@ type Workout struct {
 	LinkDismissed             bool
 	LactateTest               bool
 	RunFueling                json.RawMessage
+	CrossTrainingSport        string
 }
 
 type WorkoutExercise struct {

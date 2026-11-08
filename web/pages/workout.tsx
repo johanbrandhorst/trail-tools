@@ -31,7 +31,7 @@ import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { getRoute } from "gen/routes/v1/routes-RouteService_connectquery";
 import { addDays, today } from "helpers/dates";
 import { formatDate } from "helpers/format";
-import { workoutStyle } from "helpers/labels";
+import { styleOfWorkout } from "helpers/labels";
 import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -150,7 +150,7 @@ const WorkoutPage: React.FC = () => {
   );
   let title = workout?.title.trim() ?? "";
   if (workout !== undefined && title === "") {
-    title = workoutStyle(workout.type).label;
+    title = styleOfWorkout(workout).label;
   }
 
   useEffect(() => {
@@ -194,7 +194,7 @@ const WorkoutPage: React.FC = () => {
   if (workout === undefined) {
     return null;
   }
-  const style = workoutStyle(workout.type);
+  const style = styleOfWorkout(workout);
   const planPath = `/plans/${workout.planId}?month=${workout.date.slice(0, 7)}`;
 
   const lactateTest =

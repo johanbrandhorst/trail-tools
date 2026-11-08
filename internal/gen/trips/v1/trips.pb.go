@@ -919,7 +919,9 @@ func (x *TripStats) ClearStartTime() {
 type TripStats_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The Strava sport type, e.g. Run, TrailRun, Hike.
+	// The Strava sport type, e.g. Run, TrailRun, Hike, or BackcountrySki for
+	// a ski tour, which the report is then laid out for. Copied from the
+	// activity, and set with UpdateTripReport. Empty if unknown.
 	SportType string
 	// When the activity started, if known.
 	StartTime *timestamppb.Timestamp
@@ -1703,6 +1705,7 @@ type UpdateTripReportRequest struct {
 	xxx_hidden_Date         *string                `protobuf:"bytes,5,opt,name=date,proto3,oneof"`
 	xxx_hidden_CoverPhotoId *string                `protobuf:"bytes,7,opt,name=cover_photo_id,json=coverPhotoId,proto3,oneof"`
 	xxx_hidden_Tags         *TripTags              `protobuf:"bytes,8,opt,name=tags,proto3"`
+	xxx_hidden_SportType    *string                `protobuf:"bytes,9,opt,name=sport_type,json=sportType,proto3,oneof"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
 	XXX_presence            [1]uint32
 	unknownFields           protoimpl.UnknownFields
@@ -1788,32 +1791,47 @@ func (x *UpdateTripReportRequest) GetTags() *TripTags {
 	return nil
 }
 
+func (x *UpdateTripReportRequest) GetSportType() string {
+	if x != nil {
+		if x.xxx_hidden_SportType != nil {
+			return *x.xxx_hidden_SportType
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *UpdateTripReportRequest) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
 
 func (x *UpdateTripReportRequest) SetTitle(v string) {
 	x.xxx_hidden_Title = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *UpdateTripReportRequest) SetSlug(v string) {
 	x.xxx_hidden_Slug = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *UpdateTripReportRequest) SetDate(v string) {
 	x.xxx_hidden_Date = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
 }
 
 func (x *UpdateTripReportRequest) SetCoverPhotoId(v string) {
 	x.xxx_hidden_CoverPhotoId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
 }
 
 func (x *UpdateTripReportRequest) SetTags(v *TripTags) {
 	x.xxx_hidden_Tags = v
+}
+
+func (x *UpdateTripReportRequest) SetSportType(v string) {
+	x.xxx_hidden_SportType = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
 }
 
 func (x *UpdateTripReportRequest) HasTitle() bool {
@@ -1851,6 +1869,13 @@ func (x *UpdateTripReportRequest) HasTags() bool {
 	return x.xxx_hidden_Tags != nil
 }
 
+func (x *UpdateTripReportRequest) HasSportType() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
 func (x *UpdateTripReportRequest) ClearTitle() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_Title = nil
@@ -1875,6 +1900,11 @@ func (x *UpdateTripReportRequest) ClearTags() {
 	x.xxx_hidden_Tags = nil
 }
 
+func (x *UpdateTripReportRequest) ClearSportType() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_SportType = nil
+}
+
 type UpdateTripReportRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1893,6 +1923,10 @@ type UpdateTripReportRequest_builder struct {
 	// The new tags, if set. A report has at most one difficulty tag and one
 	// route shape tag.
 	Tags *TripTags
+	// The new sport, if set: a Strava sport type, see TripStats.sport_type.
+	// Set it when the activity's is wrong, or for a report made without one,
+	// e.g. "BackcountrySki" for a ski tour.
+	SportType *string
 }
 
 func (b0 UpdateTripReportRequest_builder) Build() *UpdateTripReportRequest {
@@ -1901,22 +1935,26 @@ func (b0 UpdateTripReportRequest_builder) Build() *UpdateTripReportRequest {
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
 	if b.Title != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
 		x.xxx_hidden_Title = b.Title
 	}
 	if b.Slug != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
 		x.xxx_hidden_Slug = b.Slug
 	}
 	if b.Date != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
 		x.xxx_hidden_Date = b.Date
 	}
 	if b.CoverPhotoId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
 		x.xxx_hidden_CoverPhotoId = b.CoverPhotoId
 	}
 	x.xxx_hidden_Tags = b.Tags
+	if b.SportType != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_SportType = b.SportType
+	}
 	return m0
 }
 
@@ -4381,18 +4419,21 @@ const file_trips_v1_trips_proto_rawDesc = "" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\"I\n" +
 	"\x17ListTripReportsResponse\x12.\n" +
-	"\areports\x18\x01 \x03(\v2\x14.trips.v1.TripReportR\areports\"\x9e\x02\n" +
+	"\areports\x18\x01 \x03(\v2\x14.trips.v1.TripReportR\areports\"\xd1\x02\n" +
 	"\x17UpdateTripReportRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x17\n" +
 	"\x04slug\x18\x03 \x01(\tH\x01R\x04slug\x88\x01\x01\x12\x17\n" +
 	"\x04date\x18\x05 \x01(\tH\x02R\x04date\x88\x01\x01\x12)\n" +
 	"\x0ecover_photo_id\x18\a \x01(\tH\x03R\fcoverPhotoId\x88\x01\x01\x12&\n" +
-	"\x04tags\x18\b \x01(\v2\x12.trips.v1.TripTagsR\x04tagsB\b\n" +
+	"\x04tags\x18\b \x01(\v2\x12.trips.v1.TripTagsR\x04tags\x12\"\n" +
+	"\n" +
+	"sport_type\x18\t \x01(\tH\x04R\tsportType\x88\x01\x01B\b\n" +
 	"\x06_titleB\a\n" +
 	"\x05_slugB\a\n" +
 	"\x05_dateB\x11\n" +
-	"\x0f_cover_photo_idJ\x04\b\x04\x10\x05J\x04\b\x06\x10\aR\x04bodyR\x12hidden_ends_meters\"H\n" +
+	"\x0f_cover_photo_idB\r\n" +
+	"\v_sport_typeJ\x04\b\x04\x10\x05J\x04\b\x06\x10\aR\x04bodyR\x12hidden_ends_meters\"H\n" +
 	"\x18UpdateTripReportResponse\x12,\n" +
 	"\x06report\x18\x01 \x01(\v2\x14.trips.v1.TripReportR\x06report\")\n" +
 	"\x17DeleteTripReportRequest\x12\x0e\n" +

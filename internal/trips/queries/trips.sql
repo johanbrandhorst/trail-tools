@@ -74,6 +74,7 @@ update trip_reports set
     else cover_photo_id
   end,
   tags = coalesce(sqlc.narg(tags)::text[], tags),
+  sport_type = coalesce(sqlc.narg(sport_type), sport_type),
   update_time = now()
 where id = sqlc.arg(id) and user_id = sqlc.arg(user_id)
 returning *;

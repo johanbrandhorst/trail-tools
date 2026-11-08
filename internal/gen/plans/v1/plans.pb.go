@@ -341,6 +341,52 @@ func (x HeartRateReference) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// CrossTrainingSport is the sport of a cross-training workout.
+type CrossTrainingSport int32
+
+const (
+	// Any other sport, named by the workout's title.
+	CrossTrainingSport_CROSS_TRAINING_SPORT_UNSPECIFIED CrossTrainingSport = 0
+	// Ski touring: climbing on skis with skins and skiing down, off the
+	// groomed runs, including splitboarding. Completed by a backcountry ski
+	// activity (Strava's BackcountrySki).
+	CrossTrainingSport_CROSS_TRAINING_SPORT_SKI_TOURING CrossTrainingSport = 1
+)
+
+// Enum value maps for CrossTrainingSport.
+var (
+	CrossTrainingSport_name = map[int32]string{
+		0: "CROSS_TRAINING_SPORT_UNSPECIFIED",
+		1: "CROSS_TRAINING_SPORT_SKI_TOURING",
+	}
+	CrossTrainingSport_value = map[string]int32{
+		"CROSS_TRAINING_SPORT_UNSPECIFIED": 0,
+		"CROSS_TRAINING_SPORT_SKI_TOURING": 1,
+	}
+)
+
+func (x CrossTrainingSport) Enum() *CrossTrainingSport {
+	p := new(CrossTrainingSport)
+	*p = x
+	return p
+}
+
+func (x CrossTrainingSport) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CrossTrainingSport) Descriptor() protoreflect.EnumDescriptor {
+	return file_plans_v1_plans_proto_enumTypes[5].Descriptor()
+}
+
+func (CrossTrainingSport) Type() protoreflect.EnumType {
+	return &file_plans_v1_plans_proto_enumTypes[5]
+}
+
+func (x CrossTrainingSport) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // ExerciseGroupKind is how the exercises of a group are done.
 type ExerciseGroupKind int32
 
@@ -399,11 +445,11 @@ func (x ExerciseGroupKind) String() string {
 }
 
 func (ExerciseGroupKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[5].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[6].Descriptor()
 }
 
 func (ExerciseGroupKind) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[5]
+	return &file_plans_v1_plans_proto_enumTypes[6]
 }
 
 func (x ExerciseGroupKind) Number() protoreflect.EnumNumber {
@@ -453,11 +499,11 @@ func (x SessionEffort) String() string {
 }
 
 func (SessionEffort) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[6].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[7].Descriptor()
 }
 
 func (SessionEffort) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[6]
+	return &file_plans_v1_plans_proto_enumTypes[7]
 }
 
 func (x SessionEffort) Number() protoreflect.EnumNumber {
@@ -503,11 +549,11 @@ func (x ExerciseEffort) String() string {
 }
 
 func (ExerciseEffort) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[7].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[8].Descriptor()
 }
 
 func (ExerciseEffort) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[7]
+	return &file_plans_v1_plans_proto_enumTypes[8]
 }
 
 func (x ExerciseEffort) Number() protoreflect.EnumNumber {
@@ -551,11 +597,11 @@ func (x ExerciseVolume) String() string {
 }
 
 func (ExerciseVolume) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[8].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[9].Descriptor()
 }
 
 func (ExerciseVolume) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[8]
+	return &file_plans_v1_plans_proto_enumTypes[9]
 }
 
 func (x ExerciseVolume) Number() protoreflect.EnumNumber {
@@ -607,11 +653,11 @@ func (x Stiffness) String() string {
 }
 
 func (Stiffness) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[9].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[10].Descriptor()
 }
 
 func (Stiffness) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[9]
+	return &file_plans_v1_plans_proto_enumTypes[10]
 }
 
 func (x Stiffness) Number() protoreflect.EnumNumber {
@@ -659,11 +705,11 @@ func (x WeatherLocationSource) String() string {
 }
 
 func (WeatherLocationSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[10].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[11].Descriptor()
 }
 
 func (WeatherLocationSource) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[10]
+	return &file_plans_v1_plans_proto_enumTypes[11]
 }
 
 func (x WeatherLocationSource) Number() protoreflect.EnumNumber {
@@ -708,11 +754,11 @@ func (x WeatherWarningKind) String() string {
 }
 
 func (WeatherWarningKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_plans_v1_plans_proto_enumTypes[11].Descriptor()
+	return file_plans_v1_plans_proto_enumTypes[12].Descriptor()
 }
 
 func (WeatherWarningKind) Type() protoreflect.EnumType {
-	return &file_plans_v1_plans_proto_enumTypes[11]
+	return &file_plans_v1_plans_proto_enumTypes[12]
 }
 
 func (x WeatherWarningKind) Number() protoreflect.EnumNumber {
@@ -2637,13 +2683,14 @@ func (b0 PaceTarget_builder) Build() *PaceTarget {
 	return m0
 }
 
-// Cycling, swimming, skiing or other non-running cardio. The workout's title
-// says which.
+// Cycling, swimming, skiing or other non-running cardio. The sport says
+// which, if it's one the app knows; otherwise the workout's title does.
 type CrossTrainingWorkout struct {
 	state                                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_TargetDistanceMeters      float64                `protobuf:"fixed64,1,opt,name=target_distance_meters,json=targetDistanceMeters,proto3"`
 	xxx_hidden_TargetElevationGainMeters float64                `protobuf:"fixed64,2,opt,name=target_elevation_gain_meters,json=targetElevationGainMeters,proto3"`
 	xxx_hidden_TargetDurationSeconds     int32                  `protobuf:"varint,3,opt,name=target_duration_seconds,json=targetDurationSeconds,proto3"`
+	xxx_hidden_Sport                     CrossTrainingSport     `protobuf:"varint,4,opt,name=sport,proto3,enum=plans.v1.CrossTrainingSport"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -2694,6 +2741,13 @@ func (x *CrossTrainingWorkout) GetTargetDurationSeconds() int32 {
 	return 0
 }
 
+func (x *CrossTrainingWorkout) GetSport() CrossTrainingSport {
+	if x != nil {
+		return x.xxx_hidden_Sport
+	}
+	return CrossTrainingSport_CROSS_TRAINING_SPORT_UNSPECIFIED
+}
+
 func (x *CrossTrainingWorkout) SetTargetDistanceMeters(v float64) {
 	x.xxx_hidden_TargetDistanceMeters = v
 }
@@ -2706,6 +2760,10 @@ func (x *CrossTrainingWorkout) SetTargetDurationSeconds(v int32) {
 	x.xxx_hidden_TargetDurationSeconds = v
 }
 
+func (x *CrossTrainingWorkout) SetSport(v CrossTrainingSport) {
+	x.xxx_hidden_Sport = v
+}
+
 type CrossTrainingWorkout_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2715,6 +2773,10 @@ type CrossTrainingWorkout_builder struct {
 	TargetElevationGainMeters float64
 	// Target moving time in seconds. 0 if not set.
 	TargetDurationSeconds int32
+	// The sport. Set it for a ski tour, so it's completed by the user's ski
+	// touring activity of the day and shown as one; unspecified for any other
+	// sport.
+	Sport CrossTrainingSport
 }
 
 func (b0 CrossTrainingWorkout_builder) Build() *CrossTrainingWorkout {
@@ -2724,6 +2786,7 @@ func (b0 CrossTrainingWorkout_builder) Build() *CrossTrainingWorkout {
 	x.xxx_hidden_TargetDistanceMeters = b.TargetDistanceMeters
 	x.xxx_hidden_TargetElevationGainMeters = b.TargetElevationGainMeters
 	x.xxx_hidden_TargetDurationSeconds = b.TargetDurationSeconds
+	x.xxx_hidden_Sport = b.Sport
 	return m0
 }
 
@@ -7386,11 +7449,12 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\n" +
 	"PaceTarget\x12;\n" +
 	"\x1afast_seconds_per_kilometer\x18\x01 \x01(\x05R\x17fastSecondsPerKilometer\x12;\n" +
-	"\x1aslow_seconds_per_kilometer\x18\x02 \x01(\x05R\x17slowSecondsPerKilometer\"\xc5\x01\n" +
+	"\x1aslow_seconds_per_kilometer\x18\x02 \x01(\x05R\x17slowSecondsPerKilometer\"\xf9\x01\n" +
 	"\x14CrossTrainingWorkout\x124\n" +
 	"\x16target_distance_meters\x18\x01 \x01(\x01R\x14targetDistanceMeters\x12?\n" +
 	"\x1ctarget_elevation_gain_meters\x18\x02 \x01(\x01R\x19targetElevationGainMeters\x126\n" +
-	"\x17target_duration_seconds\x18\x03 \x01(\x05R\x15targetDurationSeconds\"\xd7\x01\n" +
+	"\x17target_duration_seconds\x18\x03 \x01(\x05R\x15targetDurationSeconds\x122\n" +
+	"\x05sport\x18\x04 \x01(\x0e2\x1c.plans.v1.CrossTrainingSportR\x05sport\"\xd7\x01\n" +
 	"\vRaceWorkout\x124\n" +
 	"\x16target_distance_meters\x18\x01 \x01(\x01R\x14targetDistanceMeters\x12?\n" +
 	"\x1ctarget_elevation_gain_meters\x18\x02 \x01(\x01R\x19targetElevationGainMeters\x126\n" +
@@ -7623,7 +7687,10 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x12HeartRateReference\x12$\n" +
 	" HEART_RATE_REFERENCE_UNSPECIFIED\x10\x00\x12*\n" +
 	"&HEART_RATE_REFERENCE_AEROBIC_THRESHOLD\x10\x01\x12,\n" +
-	"(HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD\x10\x02*\xe6\x01\n" +
+	"(HEART_RATE_REFERENCE_ANAEROBIC_THRESHOLD\x10\x02*`\n" +
+	"\x12CrossTrainingSport\x12$\n" +
+	" CROSS_TRAINING_SPORT_UNSPECIFIED\x10\x00\x12$\n" +
+	" CROSS_TRAINING_SPORT_SKI_TOURING\x10\x01*\xe6\x01\n" +
 	"\x11ExerciseGroupKind\x12#\n" +
 	"\x1fEXERCISE_GROUP_KIND_UNSPECIFIED\x10\x00\x12%\n" +
 	"!EXERCISE_GROUP_KIND_STRAIGHT_SETS\x10\x01\x12 \n" +
@@ -7685,7 +7752,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\fcom.plans.v1B\n" +
 	"PlansProtoP\x01Z?github.com/bs-tools/trailrunn.ing/internal/gen/plans/v1;plansv1\xa2\x02\x03PXX\xaa\x02\bPlans.V1\xca\x02\bPlans\\V1\xe2\x02\x14Plans\\V1\\GPBMetadata\xea\x02\tPlans::V1b\x06proto3"
 
-var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 12)
+var file_plans_v1_plans_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
 var file_plans_v1_plans_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
 var file_plans_v1_plans_proto_goTypes = []any{
 	(PeriodGranularity)(0),             // 0: plans.v1.PeriodGranularity
@@ -7693,198 +7760,200 @@ var file_plans_v1_plans_proto_goTypes = []any{
 	(RunIntensity)(0),                  // 2: plans.v1.RunIntensity
 	(RunStepKind)(0),                   // 3: plans.v1.RunStepKind
 	(HeartRateReference)(0),            // 4: plans.v1.HeartRateReference
-	(ExerciseGroupKind)(0),             // 5: plans.v1.ExerciseGroupKind
-	(SessionEffort)(0),                 // 6: plans.v1.SessionEffort
-	(ExerciseEffort)(0),                // 7: plans.v1.ExerciseEffort
-	(ExerciseVolume)(0),                // 8: plans.v1.ExerciseVolume
-	(Stiffness)(0),                     // 9: plans.v1.Stiffness
-	(WeatherLocationSource)(0),         // 10: plans.v1.WeatherLocationSource
-	(WeatherWarningKind)(0),            // 11: plans.v1.WeatherWarningKind
-	(*TrainingPlan)(nil),               // 12: plans.v1.TrainingPlan
-	(*PlanPeriod)(nil),                 // 13: plans.v1.PlanPeriod
-	(*Workout)(nil),                    // 14: plans.v1.Workout
-	(*RunWorkout)(nil),                 // 15: plans.v1.RunWorkout
-	(*RunFueling)(nil),                 // 16: plans.v1.RunFueling
-	(*FuelAmounts)(nil),                // 17: plans.v1.FuelAmounts
-	(*RunBlock)(nil),                   // 18: plans.v1.RunBlock
-	(*RunStep)(nil),                    // 19: plans.v1.RunStep
-	(*HeartRateTarget)(nil),            // 20: plans.v1.HeartRateTarget
-	(*PaceTarget)(nil),                 // 21: plans.v1.PaceTarget
-	(*CrossTrainingWorkout)(nil),       // 22: plans.v1.CrossTrainingWorkout
-	(*RaceWorkout)(nil),                // 23: plans.v1.RaceWorkout
-	(*RestDay)(nil),                    // 24: plans.v1.RestDay
-	(*StrengthWorkout)(nil),            // 25: plans.v1.StrengthWorkout
-	(*ExerciseGroup)(nil),              // 26: plans.v1.ExerciseGroup
-	(*EquipmentIssue)(nil),             // 27: plans.v1.EquipmentIssue
-	(*PlannedExercise)(nil),            // 28: plans.v1.PlannedExercise
-	(*StrengthLog)(nil),                // 29: plans.v1.StrengthLog
-	(*LoggedExercise)(nil),             // 30: plans.v1.LoggedExercise
-	(*LoggedSet)(nil),                  // 31: plans.v1.LoggedSet
-	(*CreateTrainingPlanRequest)(nil),  // 32: plans.v1.CreateTrainingPlanRequest
-	(*CreateTrainingPlanResponse)(nil), // 33: plans.v1.CreateTrainingPlanResponse
-	(*GetTrainingPlanRequest)(nil),     // 34: plans.v1.GetTrainingPlanRequest
-	(*GetTrainingPlanResponse)(nil),    // 35: plans.v1.GetTrainingPlanResponse
-	(*ListTrainingPlansRequest)(nil),   // 36: plans.v1.ListTrainingPlansRequest
-	(*ListTrainingPlansResponse)(nil),  // 37: plans.v1.ListTrainingPlansResponse
-	(*UpdateTrainingPlanRequest)(nil),  // 38: plans.v1.UpdateTrainingPlanRequest
-	(*UpdateTrainingPlanResponse)(nil), // 39: plans.v1.UpdateTrainingPlanResponse
-	(*DeleteTrainingPlanRequest)(nil),  // 40: plans.v1.DeleteTrainingPlanRequest
-	(*DeleteTrainingPlanResponse)(nil), // 41: plans.v1.DeleteTrainingPlanResponse
-	(*SetPlanPeriodsRequest)(nil),      // 42: plans.v1.SetPlanPeriodsRequest
-	(*SetPlanPeriodsResponse)(nil),     // 43: plans.v1.SetPlanPeriodsResponse
-	(*DeletePlanPeriodsRequest)(nil),   // 44: plans.v1.DeletePlanPeriodsRequest
-	(*DeletePlanPeriodsResponse)(nil),  // 45: plans.v1.DeletePlanPeriodsResponse
-	(*ListWorkoutsRequest)(nil),        // 46: plans.v1.ListWorkoutsRequest
-	(*ListWorkoutsResponse)(nil),       // 47: plans.v1.ListWorkoutsResponse
-	(*GetWorkoutRequest)(nil),          // 48: plans.v1.GetWorkoutRequest
-	(*GetWorkoutResponse)(nil),         // 49: plans.v1.GetWorkoutResponse
-	(*WorkoutWeather)(nil),             // 50: plans.v1.WorkoutWeather
-	(*WeatherWarning)(nil),             // 51: plans.v1.WeatherWarning
-	(*DayWeather)(nil),                 // 52: plans.v1.DayWeather
-	(*HourWeather)(nil),                // 53: plans.v1.HourWeather
-	(*ListWorkoutWeatherRequest)(nil),  // 54: plans.v1.ListWorkoutWeatherRequest
-	(*ListWorkoutWeatherResponse)(nil), // 55: plans.v1.ListWorkoutWeatherResponse
-	(*SweatProfile)(nil),               // 56: plans.v1.SweatProfile
-	(*GetSweatProfileRequest)(nil),     // 57: plans.v1.GetSweatProfileRequest
-	(*GetSweatProfileResponse)(nil),    // 58: plans.v1.GetSweatProfileResponse
-	(*SetSweatProfileRequest)(nil),     // 59: plans.v1.SetSweatProfileRequest
-	(*SetSweatProfileResponse)(nil),    // 60: plans.v1.SetSweatProfileResponse
-	(*GetWorkoutWeatherRequest)(nil),   // 61: plans.v1.GetWorkoutWeatherRequest
-	(*GetWorkoutWeatherResponse)(nil),  // 62: plans.v1.GetWorkoutWeatherResponse
-	(*CreateWorkoutsRequest)(nil),      // 63: plans.v1.CreateWorkoutsRequest
-	(*CreateWorkoutsResponse)(nil),     // 64: plans.v1.CreateWorkoutsResponse
-	(*UpdateWorkoutRequest)(nil),       // 65: plans.v1.UpdateWorkoutRequest
-	(*UpdateWorkoutResponse)(nil),      // 66: plans.v1.UpdateWorkoutResponse
-	(*DeleteWorkoutsRequest)(nil),      // 67: plans.v1.DeleteWorkoutsRequest
-	(*DeleteWorkoutsResponse)(nil),     // 68: plans.v1.DeleteWorkoutsResponse
-	(*SetStrengthLogRequest)(nil),      // 69: plans.v1.SetStrengthLogRequest
-	(*SetStrengthLogResponse)(nil),     // 70: plans.v1.SetStrengthLogResponse
-	(*DeleteStrengthLogRequest)(nil),   // 71: plans.v1.DeleteStrengthLogRequest
-	(*DeleteStrengthLogResponse)(nil),  // 72: plans.v1.DeleteStrengthLogResponse
-	(*timestamppb.Timestamp)(nil),      // 73: google.protobuf.Timestamp
-	(*v1.LatLng)(nil),                  // 74: geo.v1.LatLng
-	(v1.Terrain)(0),                    // 75: geo.v1.Terrain
-	(Equipment)(0),                     // 76: plans.v1.Equipment
-	(*Weight)(nil),                     // 77: plans.v1.Weight
-	(*fieldmaskpb.FieldMask)(nil),      // 78: google.protobuf.FieldMask
+	(CrossTrainingSport)(0),            // 5: plans.v1.CrossTrainingSport
+	(ExerciseGroupKind)(0),             // 6: plans.v1.ExerciseGroupKind
+	(SessionEffort)(0),                 // 7: plans.v1.SessionEffort
+	(ExerciseEffort)(0),                // 8: plans.v1.ExerciseEffort
+	(ExerciseVolume)(0),                // 9: plans.v1.ExerciseVolume
+	(Stiffness)(0),                     // 10: plans.v1.Stiffness
+	(WeatherLocationSource)(0),         // 11: plans.v1.WeatherLocationSource
+	(WeatherWarningKind)(0),            // 12: plans.v1.WeatherWarningKind
+	(*TrainingPlan)(nil),               // 13: plans.v1.TrainingPlan
+	(*PlanPeriod)(nil),                 // 14: plans.v1.PlanPeriod
+	(*Workout)(nil),                    // 15: plans.v1.Workout
+	(*RunWorkout)(nil),                 // 16: plans.v1.RunWorkout
+	(*RunFueling)(nil),                 // 17: plans.v1.RunFueling
+	(*FuelAmounts)(nil),                // 18: plans.v1.FuelAmounts
+	(*RunBlock)(nil),                   // 19: plans.v1.RunBlock
+	(*RunStep)(nil),                    // 20: plans.v1.RunStep
+	(*HeartRateTarget)(nil),            // 21: plans.v1.HeartRateTarget
+	(*PaceTarget)(nil),                 // 22: plans.v1.PaceTarget
+	(*CrossTrainingWorkout)(nil),       // 23: plans.v1.CrossTrainingWorkout
+	(*RaceWorkout)(nil),                // 24: plans.v1.RaceWorkout
+	(*RestDay)(nil),                    // 25: plans.v1.RestDay
+	(*StrengthWorkout)(nil),            // 26: plans.v1.StrengthWorkout
+	(*ExerciseGroup)(nil),              // 27: plans.v1.ExerciseGroup
+	(*EquipmentIssue)(nil),             // 28: plans.v1.EquipmentIssue
+	(*PlannedExercise)(nil),            // 29: plans.v1.PlannedExercise
+	(*StrengthLog)(nil),                // 30: plans.v1.StrengthLog
+	(*LoggedExercise)(nil),             // 31: plans.v1.LoggedExercise
+	(*LoggedSet)(nil),                  // 32: plans.v1.LoggedSet
+	(*CreateTrainingPlanRequest)(nil),  // 33: plans.v1.CreateTrainingPlanRequest
+	(*CreateTrainingPlanResponse)(nil), // 34: plans.v1.CreateTrainingPlanResponse
+	(*GetTrainingPlanRequest)(nil),     // 35: plans.v1.GetTrainingPlanRequest
+	(*GetTrainingPlanResponse)(nil),    // 36: plans.v1.GetTrainingPlanResponse
+	(*ListTrainingPlansRequest)(nil),   // 37: plans.v1.ListTrainingPlansRequest
+	(*ListTrainingPlansResponse)(nil),  // 38: plans.v1.ListTrainingPlansResponse
+	(*UpdateTrainingPlanRequest)(nil),  // 39: plans.v1.UpdateTrainingPlanRequest
+	(*UpdateTrainingPlanResponse)(nil), // 40: plans.v1.UpdateTrainingPlanResponse
+	(*DeleteTrainingPlanRequest)(nil),  // 41: plans.v1.DeleteTrainingPlanRequest
+	(*DeleteTrainingPlanResponse)(nil), // 42: plans.v1.DeleteTrainingPlanResponse
+	(*SetPlanPeriodsRequest)(nil),      // 43: plans.v1.SetPlanPeriodsRequest
+	(*SetPlanPeriodsResponse)(nil),     // 44: plans.v1.SetPlanPeriodsResponse
+	(*DeletePlanPeriodsRequest)(nil),   // 45: plans.v1.DeletePlanPeriodsRequest
+	(*DeletePlanPeriodsResponse)(nil),  // 46: plans.v1.DeletePlanPeriodsResponse
+	(*ListWorkoutsRequest)(nil),        // 47: plans.v1.ListWorkoutsRequest
+	(*ListWorkoutsResponse)(nil),       // 48: plans.v1.ListWorkoutsResponse
+	(*GetWorkoutRequest)(nil),          // 49: plans.v1.GetWorkoutRequest
+	(*GetWorkoutResponse)(nil),         // 50: plans.v1.GetWorkoutResponse
+	(*WorkoutWeather)(nil),             // 51: plans.v1.WorkoutWeather
+	(*WeatherWarning)(nil),             // 52: plans.v1.WeatherWarning
+	(*DayWeather)(nil),                 // 53: plans.v1.DayWeather
+	(*HourWeather)(nil),                // 54: plans.v1.HourWeather
+	(*ListWorkoutWeatherRequest)(nil),  // 55: plans.v1.ListWorkoutWeatherRequest
+	(*ListWorkoutWeatherResponse)(nil), // 56: plans.v1.ListWorkoutWeatherResponse
+	(*SweatProfile)(nil),               // 57: plans.v1.SweatProfile
+	(*GetSweatProfileRequest)(nil),     // 58: plans.v1.GetSweatProfileRequest
+	(*GetSweatProfileResponse)(nil),    // 59: plans.v1.GetSweatProfileResponse
+	(*SetSweatProfileRequest)(nil),     // 60: plans.v1.SetSweatProfileRequest
+	(*SetSweatProfileResponse)(nil),    // 61: plans.v1.SetSweatProfileResponse
+	(*GetWorkoutWeatherRequest)(nil),   // 62: plans.v1.GetWorkoutWeatherRequest
+	(*GetWorkoutWeatherResponse)(nil),  // 63: plans.v1.GetWorkoutWeatherResponse
+	(*CreateWorkoutsRequest)(nil),      // 64: plans.v1.CreateWorkoutsRequest
+	(*CreateWorkoutsResponse)(nil),     // 65: plans.v1.CreateWorkoutsResponse
+	(*UpdateWorkoutRequest)(nil),       // 66: plans.v1.UpdateWorkoutRequest
+	(*UpdateWorkoutResponse)(nil),      // 67: plans.v1.UpdateWorkoutResponse
+	(*DeleteWorkoutsRequest)(nil),      // 68: plans.v1.DeleteWorkoutsRequest
+	(*DeleteWorkoutsResponse)(nil),     // 69: plans.v1.DeleteWorkoutsResponse
+	(*SetStrengthLogRequest)(nil),      // 70: plans.v1.SetStrengthLogRequest
+	(*SetStrengthLogResponse)(nil),     // 71: plans.v1.SetStrengthLogResponse
+	(*DeleteStrengthLogRequest)(nil),   // 72: plans.v1.DeleteStrengthLogRequest
+	(*DeleteStrengthLogResponse)(nil),  // 73: plans.v1.DeleteStrengthLogResponse
+	(*timestamppb.Timestamp)(nil),      // 74: google.protobuf.Timestamp
+	(*v1.LatLng)(nil),                  // 75: geo.v1.LatLng
+	(v1.Terrain)(0),                    // 76: geo.v1.Terrain
+	(Equipment)(0),                     // 77: plans.v1.Equipment
+	(*Weight)(nil),                     // 78: plans.v1.Weight
+	(*fieldmaskpb.FieldMask)(nil),      // 79: google.protobuf.FieldMask
 }
 var file_plans_v1_plans_proto_depIdxs = []int32{
-	73, // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
-	73, // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
+	74, // 0: plans.v1.TrainingPlan.create_time:type_name -> google.protobuf.Timestamp
+	74, // 1: plans.v1.TrainingPlan.update_time:type_name -> google.protobuf.Timestamp
 	0,  // 2: plans.v1.PlanPeriod.granularity:type_name -> plans.v1.PeriodGranularity
 	1,  // 3: plans.v1.Workout.type:type_name -> plans.v1.WorkoutType
-	74, // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
-	15, // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
-	22, // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
-	25, // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
-	23, // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
-	24, // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
+	75, // 4: plans.v1.Workout.location:type_name -> geo.v1.LatLng
+	16, // 5: plans.v1.Workout.run:type_name -> plans.v1.RunWorkout
+	23, // 6: plans.v1.Workout.cross_training:type_name -> plans.v1.CrossTrainingWorkout
+	26, // 7: plans.v1.Workout.strength:type_name -> plans.v1.StrengthWorkout
+	24, // 8: plans.v1.Workout.race:type_name -> plans.v1.RaceWorkout
+	25, // 9: plans.v1.Workout.rest:type_name -> plans.v1.RestDay
 	2,  // 10: plans.v1.RunWorkout.intensity:type_name -> plans.v1.RunIntensity
-	75, // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
-	18, // 12: plans.v1.RunWorkout.blocks:type_name -> plans.v1.RunBlock
-	16, // 13: plans.v1.RunWorkout.fueling:type_name -> plans.v1.RunFueling
-	17, // 14: plans.v1.RunFueling.amounts:type_name -> plans.v1.FuelAmounts
-	19, // 15: plans.v1.RunBlock.steps:type_name -> plans.v1.RunStep
+	76, // 11: plans.v1.RunWorkout.target_terrain:type_name -> geo.v1.Terrain
+	19, // 12: plans.v1.RunWorkout.blocks:type_name -> plans.v1.RunBlock
+	17, // 13: plans.v1.RunWorkout.fueling:type_name -> plans.v1.RunFueling
+	18, // 14: plans.v1.RunFueling.amounts:type_name -> plans.v1.FuelAmounts
+	20, // 15: plans.v1.RunBlock.steps:type_name -> plans.v1.RunStep
 	3,  // 16: plans.v1.RunStep.kind:type_name -> plans.v1.RunStepKind
-	20, // 17: plans.v1.RunStep.heart_rate:type_name -> plans.v1.HeartRateTarget
-	21, // 18: plans.v1.RunStep.pace:type_name -> plans.v1.PaceTarget
+	21, // 17: plans.v1.RunStep.heart_rate:type_name -> plans.v1.HeartRateTarget
+	22, // 18: plans.v1.RunStep.pace:type_name -> plans.v1.PaceTarget
 	4,  // 19: plans.v1.HeartRateTarget.reference:type_name -> plans.v1.HeartRateReference
-	28, // 20: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
-	29, // 21: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
-	27, // 22: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
-	26, // 23: plans.v1.StrengthWorkout.groups:type_name -> plans.v1.ExerciseGroup
-	5,  // 24: plans.v1.ExerciseGroup.kind:type_name -> plans.v1.ExerciseGroupKind
-	76, // 25: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
-	77, // 26: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
-	77, // 27: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
-	73, // 28: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
-	6,  // 29: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
-	30, // 30: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
-	31, // 31: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
-	7,  // 32: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
-	8,  // 33: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
-	9,  // 34: plans.v1.LoggedExercise.stiffness:type_name -> plans.v1.Stiffness
-	77, // 35: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
-	7,  // 36: plans.v1.LoggedSet.effort:type_name -> plans.v1.ExerciseEffort
-	9,  // 37: plans.v1.LoggedSet.stiffness:type_name -> plans.v1.Stiffness
-	12, // 38: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	12, // 39: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	12, // 40: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	13, // 41: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
-	12, // 42: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
-	12, // 43: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
-	78, // 44: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 45: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
-	13, // 46: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
-	13, // 47: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
-	0,  // 48: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
-	14, // 49: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	14, // 50: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
-	74, // 51: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
-	10, // 52: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
-	52, // 53: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
-	53, // 54: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
-	52, // 55: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
-	73, // 56: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
-	73, // 57: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
-	17, // 58: plans.v1.WorkoutWeather.fueling:type_name -> plans.v1.FuelAmounts
-	51, // 59: plans.v1.WorkoutWeather.warnings:type_name -> plans.v1.WeatherWarning
-	11, // 60: plans.v1.WeatherWarning.kind:type_name -> plans.v1.WeatherWarningKind
-	73, // 61: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
-	50, // 62: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	73, // 63: plans.v1.SweatProfile.update_time:type_name -> google.protobuf.Timestamp
-	56, // 64: plans.v1.GetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
-	56, // 65: plans.v1.SetSweatProfileRequest.profile:type_name -> plans.v1.SweatProfile
-	56, // 66: plans.v1.SetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
-	50, // 67: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
-	14, // 68: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
-	14, // 69: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
-	14, // 70: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
-	78, // 71: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
-	14, // 72: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
-	29, // 73: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
-	14, // 74: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
-	32, // 75: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
-	34, // 76: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
-	36, // 77: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
-	38, // 78: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
-	40, // 79: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
-	42, // 80: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
-	44, // 81: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
-	46, // 82: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
-	48, // 83: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
-	63, // 84: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
-	65, // 85: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
-	67, // 86: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
-	69, // 87: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
-	71, // 88: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
-	54, // 89: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
-	61, // 90: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
-	57, // 91: plans.v1.TrainingPlanService.GetSweatProfile:input_type -> plans.v1.GetSweatProfileRequest
-	59, // 92: plans.v1.TrainingPlanService.SetSweatProfile:input_type -> plans.v1.SetSweatProfileRequest
-	33, // 93: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
-	35, // 94: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
-	37, // 95: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
-	39, // 96: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
-	41, // 97: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
-	43, // 98: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
-	45, // 99: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
-	47, // 100: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
-	49, // 101: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
-	64, // 102: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
-	66, // 103: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
-	68, // 104: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
-	70, // 105: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
-	72, // 106: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
-	55, // 107: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
-	62, // 108: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
-	58, // 109: plans.v1.TrainingPlanService.GetSweatProfile:output_type -> plans.v1.GetSweatProfileResponse
-	60, // 110: plans.v1.TrainingPlanService.SetSweatProfile:output_type -> plans.v1.SetSweatProfileResponse
-	93, // [93:111] is the sub-list for method output_type
-	75, // [75:93] is the sub-list for method input_type
-	75, // [75:75] is the sub-list for extension type_name
-	75, // [75:75] is the sub-list for extension extendee
-	0,  // [0:75] is the sub-list for field type_name
+	5,  // 20: plans.v1.CrossTrainingWorkout.sport:type_name -> plans.v1.CrossTrainingSport
+	29, // 21: plans.v1.StrengthWorkout.exercises:type_name -> plans.v1.PlannedExercise
+	30, // 22: plans.v1.StrengthWorkout.log:type_name -> plans.v1.StrengthLog
+	28, // 23: plans.v1.StrengthWorkout.equipment_issues:type_name -> plans.v1.EquipmentIssue
+	27, // 24: plans.v1.StrengthWorkout.groups:type_name -> plans.v1.ExerciseGroup
+	6,  // 25: plans.v1.ExerciseGroup.kind:type_name -> plans.v1.ExerciseGroupKind
+	77, // 26: plans.v1.EquipmentIssue.equipment:type_name -> plans.v1.Equipment
+	78, // 27: plans.v1.EquipmentIssue.closest_weights:type_name -> plans.v1.Weight
+	78, // 28: plans.v1.PlannedExercise.weight:type_name -> plans.v1.Weight
+	74, // 29: plans.v1.StrengthLog.complete_time:type_name -> google.protobuf.Timestamp
+	7,  // 30: plans.v1.StrengthLog.effort:type_name -> plans.v1.SessionEffort
+	31, // 31: plans.v1.StrengthLog.exercises:type_name -> plans.v1.LoggedExercise
+	32, // 32: plans.v1.LoggedExercise.sets:type_name -> plans.v1.LoggedSet
+	8,  // 33: plans.v1.LoggedExercise.effort:type_name -> plans.v1.ExerciseEffort
+	9,  // 34: plans.v1.LoggedExercise.volume:type_name -> plans.v1.ExerciseVolume
+	10, // 35: plans.v1.LoggedExercise.stiffness:type_name -> plans.v1.Stiffness
+	78, // 36: plans.v1.LoggedSet.weight:type_name -> plans.v1.Weight
+	8,  // 37: plans.v1.LoggedSet.effort:type_name -> plans.v1.ExerciseEffort
+	10, // 38: plans.v1.LoggedSet.stiffness:type_name -> plans.v1.Stiffness
+	13, // 39: plans.v1.CreateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	13, // 40: plans.v1.CreateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	13, // 41: plans.v1.GetTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	14, // 42: plans.v1.GetTrainingPlanResponse.periods:type_name -> plans.v1.PlanPeriod
+	13, // 43: plans.v1.ListTrainingPlansResponse.plans:type_name -> plans.v1.TrainingPlan
+	13, // 44: plans.v1.UpdateTrainingPlanRequest.plan:type_name -> plans.v1.TrainingPlan
+	79, // 45: plans.v1.UpdateTrainingPlanRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 46: plans.v1.UpdateTrainingPlanResponse.plan:type_name -> plans.v1.TrainingPlan
+	14, // 47: plans.v1.SetPlanPeriodsRequest.periods:type_name -> plans.v1.PlanPeriod
+	14, // 48: plans.v1.SetPlanPeriodsResponse.periods:type_name -> plans.v1.PlanPeriod
+	0,  // 49: plans.v1.DeletePlanPeriodsRequest.granularity:type_name -> plans.v1.PeriodGranularity
+	15, // 50: plans.v1.ListWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	15, // 51: plans.v1.GetWorkoutResponse.workout:type_name -> plans.v1.Workout
+	75, // 52: plans.v1.WorkoutWeather.location:type_name -> geo.v1.LatLng
+	11, // 53: plans.v1.WorkoutWeather.location_source:type_name -> plans.v1.WeatherLocationSource
+	53, // 54: plans.v1.WorkoutWeather.day:type_name -> plans.v1.DayWeather
+	54, // 55: plans.v1.WorkoutWeather.hours:type_name -> plans.v1.HourWeather
+	53, // 56: plans.v1.WorkoutWeather.workout:type_name -> plans.v1.DayWeather
+	74, // 57: plans.v1.WorkoutWeather.workout_start_time:type_name -> google.protobuf.Timestamp
+	74, // 58: plans.v1.WorkoutWeather.workout_end_time:type_name -> google.protobuf.Timestamp
+	18, // 59: plans.v1.WorkoutWeather.fueling:type_name -> plans.v1.FuelAmounts
+	52, // 60: plans.v1.WorkoutWeather.warnings:type_name -> plans.v1.WeatherWarning
+	12, // 61: plans.v1.WeatherWarning.kind:type_name -> plans.v1.WeatherWarningKind
+	74, // 62: plans.v1.HourWeather.time:type_name -> google.protobuf.Timestamp
+	51, // 63: plans.v1.ListWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	74, // 64: plans.v1.SweatProfile.update_time:type_name -> google.protobuf.Timestamp
+	57, // 65: plans.v1.GetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
+	57, // 66: plans.v1.SetSweatProfileRequest.profile:type_name -> plans.v1.SweatProfile
+	57, // 67: plans.v1.SetSweatProfileResponse.profile:type_name -> plans.v1.SweatProfile
+	51, // 68: plans.v1.GetWorkoutWeatherResponse.weather:type_name -> plans.v1.WorkoutWeather
+	15, // 69: plans.v1.CreateWorkoutsRequest.workouts:type_name -> plans.v1.Workout
+	15, // 70: plans.v1.CreateWorkoutsResponse.workouts:type_name -> plans.v1.Workout
+	15, // 71: plans.v1.UpdateWorkoutRequest.workout:type_name -> plans.v1.Workout
+	79, // 72: plans.v1.UpdateWorkoutRequest.update_mask:type_name -> google.protobuf.FieldMask
+	15, // 73: plans.v1.UpdateWorkoutResponse.workout:type_name -> plans.v1.Workout
+	30, // 74: plans.v1.SetStrengthLogRequest.log:type_name -> plans.v1.StrengthLog
+	15, // 75: plans.v1.SetStrengthLogResponse.workout:type_name -> plans.v1.Workout
+	33, // 76: plans.v1.TrainingPlanService.CreateTrainingPlan:input_type -> plans.v1.CreateTrainingPlanRequest
+	35, // 77: plans.v1.TrainingPlanService.GetTrainingPlan:input_type -> plans.v1.GetTrainingPlanRequest
+	37, // 78: plans.v1.TrainingPlanService.ListTrainingPlans:input_type -> plans.v1.ListTrainingPlansRequest
+	39, // 79: plans.v1.TrainingPlanService.UpdateTrainingPlan:input_type -> plans.v1.UpdateTrainingPlanRequest
+	41, // 80: plans.v1.TrainingPlanService.DeleteTrainingPlan:input_type -> plans.v1.DeleteTrainingPlanRequest
+	43, // 81: plans.v1.TrainingPlanService.SetPlanPeriods:input_type -> plans.v1.SetPlanPeriodsRequest
+	45, // 82: plans.v1.TrainingPlanService.DeletePlanPeriods:input_type -> plans.v1.DeletePlanPeriodsRequest
+	47, // 83: plans.v1.TrainingPlanService.ListWorkouts:input_type -> plans.v1.ListWorkoutsRequest
+	49, // 84: plans.v1.TrainingPlanService.GetWorkout:input_type -> plans.v1.GetWorkoutRequest
+	64, // 85: plans.v1.TrainingPlanService.CreateWorkouts:input_type -> plans.v1.CreateWorkoutsRequest
+	66, // 86: plans.v1.TrainingPlanService.UpdateWorkout:input_type -> plans.v1.UpdateWorkoutRequest
+	68, // 87: plans.v1.TrainingPlanService.DeleteWorkouts:input_type -> plans.v1.DeleteWorkoutsRequest
+	70, // 88: plans.v1.TrainingPlanService.SetStrengthLog:input_type -> plans.v1.SetStrengthLogRequest
+	72, // 89: plans.v1.TrainingPlanService.DeleteStrengthLog:input_type -> plans.v1.DeleteStrengthLogRequest
+	55, // 90: plans.v1.TrainingPlanService.ListWorkoutWeather:input_type -> plans.v1.ListWorkoutWeatherRequest
+	62, // 91: plans.v1.TrainingPlanService.GetWorkoutWeather:input_type -> plans.v1.GetWorkoutWeatherRequest
+	58, // 92: plans.v1.TrainingPlanService.GetSweatProfile:input_type -> plans.v1.GetSweatProfileRequest
+	60, // 93: plans.v1.TrainingPlanService.SetSweatProfile:input_type -> plans.v1.SetSweatProfileRequest
+	34, // 94: plans.v1.TrainingPlanService.CreateTrainingPlan:output_type -> plans.v1.CreateTrainingPlanResponse
+	36, // 95: plans.v1.TrainingPlanService.GetTrainingPlan:output_type -> plans.v1.GetTrainingPlanResponse
+	38, // 96: plans.v1.TrainingPlanService.ListTrainingPlans:output_type -> plans.v1.ListTrainingPlansResponse
+	40, // 97: plans.v1.TrainingPlanService.UpdateTrainingPlan:output_type -> plans.v1.UpdateTrainingPlanResponse
+	42, // 98: plans.v1.TrainingPlanService.DeleteTrainingPlan:output_type -> plans.v1.DeleteTrainingPlanResponse
+	44, // 99: plans.v1.TrainingPlanService.SetPlanPeriods:output_type -> plans.v1.SetPlanPeriodsResponse
+	46, // 100: plans.v1.TrainingPlanService.DeletePlanPeriods:output_type -> plans.v1.DeletePlanPeriodsResponse
+	48, // 101: plans.v1.TrainingPlanService.ListWorkouts:output_type -> plans.v1.ListWorkoutsResponse
+	50, // 102: plans.v1.TrainingPlanService.GetWorkout:output_type -> plans.v1.GetWorkoutResponse
+	65, // 103: plans.v1.TrainingPlanService.CreateWorkouts:output_type -> plans.v1.CreateWorkoutsResponse
+	67, // 104: plans.v1.TrainingPlanService.UpdateWorkout:output_type -> plans.v1.UpdateWorkoutResponse
+	69, // 105: plans.v1.TrainingPlanService.DeleteWorkouts:output_type -> plans.v1.DeleteWorkoutsResponse
+	71, // 106: plans.v1.TrainingPlanService.SetStrengthLog:output_type -> plans.v1.SetStrengthLogResponse
+	73, // 107: plans.v1.TrainingPlanService.DeleteStrengthLog:output_type -> plans.v1.DeleteStrengthLogResponse
+	56, // 108: plans.v1.TrainingPlanService.ListWorkoutWeather:output_type -> plans.v1.ListWorkoutWeatherResponse
+	63, // 109: plans.v1.TrainingPlanService.GetWorkoutWeather:output_type -> plans.v1.GetWorkoutWeatherResponse
+	59, // 110: plans.v1.TrainingPlanService.GetSweatProfile:output_type -> plans.v1.GetSweatProfileResponse
+	61, // 111: plans.v1.TrainingPlanService.SetSweatProfile:output_type -> plans.v1.SetSweatProfileResponse
+	94, // [94:112] is the sub-list for method output_type
+	76, // [76:94] is the sub-list for method input_type
+	76, // [76:76] is the sub-list for extension type_name
+	76, // [76:76] is the sub-list for extension extendee
+	0,  // [0:76] is the sub-list for field type_name
 }
 
 func init() { file_plans_v1_plans_proto_init() }
@@ -7912,7 +7981,7 @@ func file_plans_v1_plans_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plans_v1_plans_proto_rawDesc), len(file_plans_v1_plans_proto_rawDesc)),
-			NumEnums:      12,
+			NumEnums:      13,
 			NumMessages:   61,
 			NumExtensions: 0,
 			NumServices:   1,

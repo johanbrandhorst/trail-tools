@@ -82,6 +82,18 @@ const OVERLAYS: TileLayerDefinition[] = [
     opacity: 0.35,
     url: `${ESRI_SERVER}/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}`,
   },
+  {
+    /*
+     * Ski runs and ski touring, snowshoe and nordic routes mapped in
+     * OpenStreetMap, for planning and reading ski tours.
+     */
+    attribution:
+      'Ski routes &copy; <a href="https://www.opensnowmap.org">OpenSnowMap</a> (CC BY-SA)',
+    id: "opensnowmap",
+    maxNativeZoom: 18,
+    name: "Ski routes",
+    url: "https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png",
+  },
 ];
 
 const LAYERS_KEY = "trail-tools.map-layers";

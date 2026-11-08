@@ -142,6 +142,19 @@
   font-family: inherit;
 }
 
+/*
+  Ski tour maps wash the base map out towards cold blue-white, like a snowy
+  landscape, so the track stands out and the page reads as winter. Only the
+  tiles are filtered, not the track or markers.
+*/
+.snow-map .leaflet-tile-pane {
+  filter: saturate(0.35) brightness(1.1) contrast(0.95) hue-rotate(-10deg);
+}
+
+.snow-map.leaflet-container {
+  background: #f0f9ff;
+}
+
 /* Route editor waypoint markers. */
 .waypoint-marker {
   display: flex;

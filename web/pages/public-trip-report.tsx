@@ -27,6 +27,7 @@ import { MapPinIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import type { RoutePoint } from "gen/routes/v1/routes_pb";
 import { getPublicTripReport } from "gen/trips/v1/trips-TripReportService_connectquery";
 import type { TripPhoto, TripSection } from "gen/trips/v1/trips_pb";
+import { isSkiTourSport } from "helpers/labels";
 import type { LatLngTuple } from "leaflet";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -290,6 +291,7 @@ const PublicTripReportPage: React.FC = () => {
   const report = data?.report;
   const routePoints = useMemo(() => data?.track ?? [], [data?.track]);
   const track = useMemo(() => trackPositions(routePoints), [routePoints]);
+  const skiTour = isSkiTourSport(report?.stats?.sportType ?? "");
   const breaks = data?.trackBreaks ?? NO_BREAKS;
   const profile = useMemo(() => profilePoints(routePoints), [routePoints]);
   const photos = useMemo(() => report?.photos ?? [], [report?.photos]);
@@ -425,7 +427,14 @@ const PublicTripReportPage: React.FC = () => {
         </div>
       )}
       <header className="mx-auto flex max-w-3xl flex-col items-center gap-3 pt-4 text-center sm:pt-8">
-        <p className="text-sm font-semibold tracking-wide text-brand-600 uppercase">
+        <p
+          className={`text-sm font-semibold tracking-wide uppercase ${skiTour ? "text-sky-700" : "text-brand-600"}`}
+        >
+          {skiTour && (
+            <span aria-hidden="true" className="mr-1.5">
+              ❄
+            </span>
+          )}
           {tripKicker(report)}
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-balance text-gray-900 sm:text-5xl">
@@ -479,6 +488,7 @@ const PublicTripReportPage: React.FC = () => {
                   highlightKey={highlight.length > 0 ? (activeId ?? "") : ""}
                   fitKey={report.id}
                   className="h-80 sm:h-96 lg:h-[50vh]"
+                  snow={skiTour}
                 />
               </div>
               {profile.length > 1 && (
@@ -488,6 +498,7 @@ const PublicTripReportPage: React.FC = () => {
                     ranges={ranges}
                     height={160}
                     onHover={setHoverIndex}
+                    snow={skiTour}
                   />
                 </div>
               )}

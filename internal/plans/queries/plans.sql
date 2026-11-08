@@ -86,7 +86,8 @@ insert into workouts (
   location_name,
   run_blocks,
   lactate_test,
-  run_fueling
+  run_fueling,
+  cross_training_sport
 )
 select
   w.id,
@@ -108,7 +109,8 @@ select
   w.location_name,
   nullif(w.run_blocks, '')::jsonb,
   w.lactate_test,
-  nullif(w.run_fueling, '')::jsonb
+  nullif(w.run_fueling, '')::jsonb,
+  w.cross_training_sport
 from (
   select
     unnest(sqlc.arg(ids)::uuid[]) as id,
@@ -135,7 +137,9 @@ from (
     unnest(sqlc.arg(run_blocks)::text[]) as run_blocks,
     unnest(sqlc.arg(lactate_tests)::boolean[]) as lactate_test,
     -- Empty for runs without a fueling plan.
-    unnest(sqlc.arg(run_fuelings)::text[]) as run_fueling
+    unnest(sqlc.arg(run_fuelings)::text[]) as run_fueling,
+    -- Empty for workouts other than ski tours.
+    unnest(sqlc.arg(cross_training_sports)::text[]) as cross_training_sport
 ) w
 returning *;
 
@@ -187,7 +191,8 @@ update workouts set
   location_name = sqlc.arg(location_name),
   run_blocks = nullif(sqlc.arg(run_blocks)::text, '')::jsonb,
   lactate_test = sqlc.arg(lactate_test),
-  run_fueling = nullif(sqlc.arg(run_fueling)::text, '')::jsonb
+  run_fueling = nullif(sqlc.arg(run_fueling)::text, '')::jsonb,
+  cross_training_sport = sqlc.arg(cross_training_sport)
 where id = $1
 returning *;
 

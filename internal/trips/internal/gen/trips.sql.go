@@ -999,8 +999,9 @@ update trip_reports set
     else cover_photo_id
   end,
   tags = coalesce($6::text[], tags),
+  sport_type = coalesce($7, sport_type),
   update_time = now()
-where id = $7 and user_id = $8
+where id = $8 and user_id = $9
 returning id, user_id, activity_id, title, slug, date, timezone, sport_type, start_time, distance_meters, moving_time_seconds, elapsed_time_seconds, elevation_gain_meters, track, published, publish_time, create_time, update_time, cover_photo_id, tags
 `
 
@@ -1011,6 +1012,7 @@ type UpdateReportParams struct {
 	SetCoverPhoto bool
 	CoverPhotoID  pgtype.UUID
 	Tags          []string
+	SportType     pgtype.Text
 	ID            pgtype.UUID
 	UserID        pgtype.UUID
 }
@@ -1023,6 +1025,7 @@ func (q *Queries) UpdateReport(ctx context.Context, arg *UpdateReportParams) (*T
 		arg.SetCoverPhoto,
 		arg.CoverPhotoID,
 		arg.Tags,
+		arg.SportType,
 		arg.ID,
 		arg.UserID,
 	)

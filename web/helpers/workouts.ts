@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Terrain } from "gen/geo/v1/geo_pb";
 import type { Workout } from "gen/plans/v1/plans_pb";
 import {
+  CrossTrainingSport,
   CrossTrainingWorkoutSchema,
   RaceWorkoutSchema,
   RestDaySchema,
@@ -21,9 +22,12 @@ export interface WorkoutTargets {
   routeId: string;
   // Whether a run is a lactate test.
   lactateTest: boolean;
+  // The sport of cross-training, unspecified for other sports.
+  crossTrainingSport: CrossTrainingSport;
 }
 
 const NO_TARGETS: WorkoutTargets = {
+  crossTrainingSport: CrossTrainingSport.UNSPECIFIED,
   distanceMeters: 0,
   durationSeconds: 0,
   elevationGainMeters: 0,
@@ -38,6 +42,7 @@ export const workoutTargets = (workout: Workout): WorkoutTargets => {
   switch (details.case) {
     case "run": {
       return {
+        ...NO_TARGETS,
         distanceMeters: details.value.targetDistanceMeters,
         durationSeconds: details.value.targetDurationSeconds,
         elevationGainMeters: details.value.targetElevationGainMeters,
@@ -49,6 +54,7 @@ export const workoutTargets = (workout: Workout): WorkoutTargets => {
     case "crossTraining": {
       return {
         ...NO_TARGETS,
+        crossTrainingSport: details.value.sport,
         distanceMeters: details.value.targetDistanceMeters,
         durationSeconds: details.value.targetDurationSeconds,
         elevationGainMeters: details.value.targetElevationGainMeters,
@@ -144,6 +150,7 @@ export const workoutDetails = (
       return {
         case: "crossTraining",
         value: create(CrossTrainingWorkoutSchema, {
+          sport: targets.crossTrainingSport,
           targetDistanceMeters: targets.distanceMeters,
           targetDurationSeconds: targets.durationSeconds,
           targetElevationGainMeters: targets.elevationGainMeters,
@@ -180,6 +187,11 @@ export const workoutDetails = (
     }
   }
 };
+
+// IsSkiTour reports whether a workout is a ski tour.
+export const isSkiTour = (workout: Workout): boolean =>
+  workout.details.case === "crossTraining" &&
+  workout.details.value.sport === CrossTrainingSport.SKI_TOURING;
 
 // HasRoute reports whether a workout's kind can have a route.
 export const hasRoute = (type: WorkoutType): boolean =>
