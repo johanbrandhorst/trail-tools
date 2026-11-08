@@ -272,6 +272,7 @@ func newEnv(t *testing.T) *env {
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(racereport.PhotoPath, raceReportService.PhotoHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
+	mux.Handle(geosvc.SlopeTilePath, geoService.SlopeTileHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
 

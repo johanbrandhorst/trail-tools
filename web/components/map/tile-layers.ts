@@ -16,6 +16,8 @@ interface TileLayerDefinition {
   attribution: string;
   // The highest zoom the provider serves tiles for.
   maxNativeZoom: number;
+  // The lowest zoom the layer shows at. It's hidden when zoomed out further.
+  minZoom?: number;
   subdomains?: string;
   opacity?: number;
 }
@@ -73,6 +75,66 @@ const BASE_LAYERS: TileLayerDefinition[] = [
   },
 ];
 
+// SLOPE_OVERLAY_ID is the ID of the slope angle overlay, which has a legend.
+const SLOPE_OVERLAY_ID = "slope";
+
+/*
+ * SLOPE_BANDS are the slope angle overlay's colors, as the server renders
+ * them in internal/slope.
+ */
+const SLOPE_BANDS = [
+  { color: "#f2e205", label: "27–30°" },
+  { color: "#f59e0b", label: "30–35°" },
+  { color: "#dc2626", label: "35–40°" },
+  { color: "#a21caf", label: "40–45°" },
+  { color: "#1e1b4b", label: "45°+" },
+];
+
+/**
+ * SlopeLegend explains the slope angle overlay's colors, and that the 30 m
+ * elevation data smooths out small steep features like cliff bands and
+ * gully walls, so it's a guide to terrain, not a measure of it.
+ */
+const slopeLegend = (): Control => {
+  const legend = new leaflet.Control({ position: "bottomleft" });
+  legend.onAdd = () => {
+    const container = leaflet.DomUtil.create(
+      "div",
+      "rounded-md bg-white/90 px-2 py-1.5 text-[11px] leading-tight text-gray-800 shadow"
+    );
+    const title = leaflet.DomUtil.create(
+      "div",
+      "mb-1 font-semibold",
+      container
+    );
+    title.textContent = "Slope angle";
+    for (const band of SLOPE_BANDS) {
+      const row = leaflet.DomUtil.create(
+        "div",
+        "flex items-center gap-1.5 tabular-nums",
+        container
+      );
+      const swatch = leaflet.DomUtil.create(
+        "span",
+        "inline-block size-2.5 rounded-sm",
+        row
+      );
+      swatch.style.backgroundColor = band.color;
+      const label = leaflet.DomUtil.create("span", "", row);
+      label.textContent = band.label;
+    }
+    const note = leaflet.DomUtil.create(
+      "div",
+      "mt-1 max-w-36 text-[10px] text-gray-500",
+      container
+    );
+    note.textContent =
+      "From zoom 12. 30 m elevation data smooths small steep features.";
+    return container;
+  };
+  return legend;
+};
+
 const OVERLAYS: TileLayerDefinition[] = [
   {
     attribution: "Hillshade &copy; Esri",
@@ -93,6 +155,16 @@ const OVERLAYS: TileLayerDefinition[] = [
     maxNativeZoom: 18,
     name: "Ski routes",
     url: "https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png",
+  },
+  {
+    // Rendered by the server from the elevation model, for signed in users.
+    attribution: "Slope angles from SRTM elevation data",
+    id: SLOPE_OVERLAY_ID,
+    maxNativeZoom: 15,
+    minZoom: 12,
+    name: "Slope angle",
+    opacity: 0.7,
+    url: "/tiles/slope/{z}/{x}/{y}.png",
   },
 ];
 
@@ -140,6 +212,7 @@ const createTileLayer = (definition: TileLayerDefinition): TileLayer =>
     attribution: definition.attribution,
     maxNativeZoom: definition.maxNativeZoom,
     maxZoom: MAX_ZOOM,
+    minZoom: definition.minZoom ?? 0,
     opacity: definition.opacity ?? 1,
     subdomains: definition.subdomains ?? "abc",
   });
@@ -167,6 +240,7 @@ export const addTileLayers = (map: LeafletMap): void => {
     selectedBase.addTo(map);
   }
   const activeOverlays = new Set<string>();
+  const legend = slopeLegend();
   for (const definition of OVERLAYS) {
     const layer = createTileLayer(definition);
     overlays[definition.name] = layer;
@@ -174,6 +248,9 @@ export const addTileLayers = (map: LeafletMap): void => {
     if (selection.overlays.includes(definition.id)) {
       layer.addTo(map);
       activeOverlays.add(definition.id);
+      if (definition.id === SLOPE_OVERLAY_ID) {
+        legend.addTo(map);
+      }
     }
   }
 
@@ -197,6 +274,9 @@ export const addTileLayers = (map: LeafletMap): void => {
         activeOverlays.add(id);
         save();
       }
+      if (id === SLOPE_OVERLAY_ID) {
+        legend.addTo(map);
+      }
     }
   });
   map.on("overlayremove", (event: leaflet.LayersControlEvent) => {
@@ -205,6 +285,9 @@ export const addTileLayers = (map: LeafletMap): void => {
       if (id !== undefined) {
         activeOverlays.delete(id);
         save();
+      }
+      if (id === SLOPE_OVERLAY_ID) {
+        legend.remove();
       }
     }
   });
