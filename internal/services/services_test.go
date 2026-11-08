@@ -217,6 +217,7 @@ func newEnv(t *testing.T) *env {
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, e.mapData)
 	planService.SetSharing(planRepo, "https://trail.example")
 	planService.SetCalendars(planRepo)
+	planService.SetForests(routing.NewFinder(e.db))
 	e.garmin = newFakeGarmin()
 	// Notifications are handled when tests say, as by the scheduled
 	// sync the trigger runs.
@@ -473,6 +474,16 @@ type fakeMapData struct {
 	hourlyForecasts []geo.Point
 	// The number of FillElevations calls.
 	fills int
+	// The gusts HourlyForecast forecasts in kilometers per hour, from
+	// setGusts.
+	gustsKMH float64
+}
+
+// setGusts sets the gusts of the forecasts.
+func (f *fakeMapData) setGusts(kmh float64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.gustsKMH = kmh
 }
 
 func (f *fakeMapData) FillElevations(_ context.Context, points []geo.Point, _ int) error {
@@ -519,10 +530,11 @@ func (f *fakeMapData) Forecast(_ context.Context, queries []mapdata.ForecastQuer
 
 // HourlyForecast returns light rain from 10 to 12 UTC and otherwise clear
 // weather, at 5 degrees at midnight UTC warming by a degree an hour, which
-// it also feels like.
+// it also feels like, with the gusts set by setGusts, if any.
 func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, end time.Time) ([]mapdata.Weather, error) {
 	f.mu.Lock()
 	f.hourlyForecasts = append(f.hourlyForecasts, point)
+	gusts := f.gustsKMH
 	f.mu.Unlock()
 	var weather []mapdata.Weather
 	for hour := start; !hour.After(end.Add(23 * time.Hour)); hour = hour.Add(time.Hour) {
@@ -532,6 +544,7 @@ func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, 
 			ApparentTemperature:      5 + float64(hour.Hour()),
 			PrecipitationProbability: 10,
 			WindSpeedKMH:             float64(hour.Hour()),
+			WindGustsKMH:             gusts,
 			IsDay:                    true,
 		}
 		if hour.Hour() >= 10 && hour.Hour() < 12 {

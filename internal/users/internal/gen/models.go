@@ -1498,6 +1498,7 @@ type RoutingEdge struct {
 	WayID         pgtype.Int8
 	Name          string
 	Surface       string
+	Forest        bool
 }
 
 type RoutingImport struct {

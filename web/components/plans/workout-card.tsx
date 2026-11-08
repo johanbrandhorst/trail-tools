@@ -9,7 +9,7 @@ import { workoutStyle } from "helpers/labels";
 import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React from "react";
 
-import { WeatherBadge } from "./workout-weather";
+import { WarningIcon, WeatherBadge } from "./workout-weather";
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -90,7 +90,12 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
         <span className="tabular-nums opacity-80">{detail}</span>
       )}
       {activity === undefined ? (
-        forecastDay !== undefined && <WeatherBadge day={forecastDay} />
+        forecastDay !== undefined && (
+          <span className="flex items-center gap-1">
+            <WeatherBadge day={forecastDay} />
+            <WarningIcon warnings={weather?.warnings ?? []} />
+          </span>
+        )
       ) : (
         <span
           className="mt-0.5 flex items-center gap-0.5 font-medium text-emerald-700 tabular-nums"

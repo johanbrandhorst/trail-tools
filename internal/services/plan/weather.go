@@ -138,11 +138,18 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 	var groups []*group
 	groupOf := make(map[*plans.Workout]*group, len(workouts))
 	var fallback *weatherLocation
+	// The paths of the workouts' routes, for where they start and how much
+	// of them is in forest, by route ID. Workouts often share a route.
+	paths := make(map[pgtype.UUID][]geo.Point)
 	for _, w := range workouts {
 		if indoors(w) {
 			continue
 		}
-		location, ok, err := s.workoutLocation(ctx, userID, w, &fallback)
+		path, err := s.routePath(ctx, userID, w.RouteID, paths)
+		if err != nil {
+			return nil, err
+		}
+		location, ok, err := s.workoutLocation(ctx, userID, w, path, &fallback)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +178,8 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 		}
 		g.byLocalDay = byLocalDay(hours)
 	}
-	var result []*plansv1.WorkoutWeather
+	var result []*plansv1.WorkoutWeather_builder
+	var windyWorkouts []windy
 	for _, w := range workouts {
 		g := groupOf[w]
 		if g == nil {
@@ -191,8 +199,16 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 			Day:            summarizeDay(daytime),
 		}
 		during, start, end := duringWorkout(w, all)
+		// Gusts are checked during the workout if its time is known, and
+		// otherwise during the daytime it could be done in.
+		if gusts := b.Day.GetMaxWindGustsKmh(); len(during) == 0 && gusts >= highWindGustsKmh {
+			windyWorkouts = append(windyWorkouts, windy{index: len(result), location: g.location, gusts: gusts, path: paths[w.RouteID]})
+		}
 		if len(during) > 0 {
 			b.Workout = summarizeDay(during)
+			if gusts := b.Workout.GetMaxWindGustsKmh(); gusts >= highWindGustsKmh {
+				windyWorkouts = append(windyWorkouts, windy{index: len(result), location: g.location, during: true, gusts: gusts, path: paths[w.RouteID]})
+			}
 			b.WorkoutStartTime = timestamppb.New(start)
 			b.WorkoutEndTime = timestamppb.New(end)
 			// Fueling is adjusted for the hottest it feels during the run.
@@ -215,30 +231,51 @@ func (s *Service) workoutWeather(ctx context.Context, userID pgtype.UUID, workou
 				}
 			}
 		}
-		result = append(result, b.Build())
+		result = append(result, &b)
 	}
-	return result, nil
+	warnings := s.windWarnings(ctx, windyWorkouts)
+	built := make([]*plansv1.WorkoutWeather, len(result))
+	for i, b := range result {
+		if warning := warnings[i]; warning != nil {
+			b.Warnings = append(b.Warnings, warning)
+		}
+		built[i] = b.Build()
+	}
+	return built, nil
+}
+
+// routePath returns the path of a route, nil for no route or a route that
+// was deleted, keeping the paths it got in paths.
+func (s *Service) routePath(ctx context.Context, userID, routeID pgtype.UUID, paths map[pgtype.UUID][]geo.Point) ([]geo.Point, error) {
+	if !routeID.Valid {
+		return nil, nil
+	}
+	if path, ok := paths[routeID]; ok {
+		return path, nil
+	}
+	route, err := s.routes.GetRoute(ctx, userID, routeID)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		paths[routeID] = nil
+		return nil, nil
+	case err != nil:
+		return nil, s.toConnectError(ctx, err, "failed to get route")
+	}
+	path, _ := route.Path()
+	paths[routeID] = path
+	return path, nil
 }
 
 // workoutLocation returns where a workout's forecast is for: its location,
-// the start of its route, or else where the user's most recent activity
-// started, which is looked up once and kept in fallback. It returns false if
-// there is none of them.
-func (s *Service) workoutLocation(ctx context.Context, userID pgtype.UUID, w *plans.Workout, fallback **weatherLocation) (weatherLocation, bool, error) {
+// the start of its route's path, or else where the user's most recent
+// activity started, which is looked up once and kept in fallback. It returns
+// false if there is none of them.
+func (s *Service) workoutLocation(ctx context.Context, userID pgtype.UUID, w *plans.Workout, path []geo.Point, fallback **weatherLocation) (weatherLocation, bool, error) {
 	if w.Location != nil {
 		return weatherLocation{point: *w.Location, source: plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_WORKOUT_LOCATION}, true, nil
 	}
-	if w.RouteID.Valid {
-		route, err := s.routes.GetRoute(ctx, userID, w.RouteID)
-		switch {
-		case errors.Is(err, store.ErrNotFound):
-		case err != nil:
-			return weatherLocation{}, false, s.toConnectError(ctx, err, "failed to get route")
-		default:
-			if path, _ := route.Path(); len(path) > 0 {
-				return weatherLocation{point: path[0], source: plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_ROUTE_START}, true, nil
-			}
-		}
+	if len(path) > 0 {
+		return weatherLocation{point: path[0], source: plansv1.WeatherLocationSource_WEATHER_LOCATION_SOURCE_ROUTE_START}, true, nil
 	}
 	if *fallback == nil {
 		point, ok, err := s.activities.LatestStartPoint(ctx, userID)

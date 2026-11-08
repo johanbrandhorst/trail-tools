@@ -70,7 +70,9 @@ service TrainingPlanService {
   // List the weather forecast for the days of the user's workouts in a date
   // range, without hourly forecasts. Forecasts are available up to 15 days
   // ahead, so workouts after that and before today are left out, as are rest
-  // days and strength training, which don't need one.
+  // days and strength training, which don't need one. Check each
+  // forecast's warnings, like high winds while running in forest, and tell
+  // the user about them.
   rpc ListWorkoutWeather(ListWorkoutWeatherRequest) returns (ListWorkoutWeatherResponse);
   // Get the weather forecast for the day of a workout, with the forecast
   // for each hour of the daytime.
@@ -832,6 +834,39 @@ message WorkoutWeather {
   // heat during the workout. Unset for other workouts, and for runs without
   // a start time or whose time can't be estimated.
   FuelAmounts fueling = 10;
+  // Dangers in the forecast for this workout, which the user should know
+  // about before going: suggest changing the route or the day. Empty if
+  // there are none.
+  repeated WeatherWarning warnings = 11;
+}
+
+// WeatherWarningKind is the kind of danger a weather warning is about.
+enum WeatherWarningKind {
+  WEATHER_WARNING_KIND_UNSPECIFIED = 0;
+  // High winds are forecast while the workout is in forest, where they
+  // bring down branches and trees: gusts of at least 60 km/h, gale force,
+  // during the workout, or during the daytime for a workout without a start
+  // time. The workout is taken to be in forest if at least 300 meters of its
+  // route is, or, without a route, if most of the trails within a kilometer
+  // of its location are. Forests come from OpenStreetMap, so they are only
+  // known in the regions whose map data has been imported.
+  WEATHER_WARNING_KIND_WIND_IN_FOREST = 1;
+}
+
+// A danger in the forecast for a workout.
+message WeatherWarning {
+  // What the danger is.
+  WeatherWarningKind kind = 1;
+  // The warning for the user, saying what's forecast and what to do, e.g.
+  // "Gusts up to 75 km/h are forecast during the run, and 6.2 km of its
+  // route is in forest, where wind brings down branches and trees. Choose a
+  // route in the open, or move the run to a calmer day."
+  string message = 2;
+  // The strongest gusts forecast in kilometers per hour, for wind warnings.
+  double max_wind_gusts_kmh = 3;
+  // How many meters of the workout's route are in forest. 0 for workouts
+  // without a route, whose surroundings are mostly forest instead.
+  double forest_distance_meters = 4;
 }
 
 // The weather of a day.

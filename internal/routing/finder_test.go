@@ -29,7 +29,7 @@ func TestFinder(t *testing.T) {
 	// Overlapping regions both have the trails and points of interest.
 	for _, region := range []string{"test", "overlap"} {
 		edges := routing.BuildEdges(ways, nodes, elevations, bounds)
-		if _, err := routing.SaveRegion(ctx, db, region, bounds, edges, testFeatures()); err != nil {
+		if _, err := routing.SaveRegion(ctx, db, region, bounds, edges, testFeatures(), nil); err != nil {
 			t.Fatalf("SaveRegion: %v", err)
 		}
 	}
@@ -120,7 +120,7 @@ func TestFamiliarWays(t *testing.T) {
 	ctx := context.Background()
 	ways, nodes, bounds := testGraph()
 	edges := routing.BuildEdges(ways, nodes, make([]float64, len(nodes.IDs)), bounds)
-	if _, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil); err != nil {
+	if _, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil, nil); err != nil {
 		t.Fatalf("SaveRegion: %v", err)
 	}
 	finder := routing.NewFinder(db)

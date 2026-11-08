@@ -107,11 +107,13 @@ func featureFromTags(id int64, way bool, tags map[string]string) (Feature, bool)
 }
 
 // OSM is the OpenStreetMap data of an area: its foot accessible ways, the
-// nodes they use and its points of interest.
+// nodes they use, its points of interest and its forests.
 type OSM struct {
 	Ways     []Way
 	Nodes    *Nodes
 	Features []Feature
+	// Not written by WriteOSM, as the demo region doesn't need them.
+	Forests []Forest
 }
 
 // Nodes are the coordinates of OpenStreetMap nodes, sorted by ID.
@@ -130,13 +132,16 @@ func (n *Nodes) find(id int64) int {
 }
 
 // ReadPBF reads the foot accessible ways of an OpenStreetMap PBF extract,
-// the coordinates of their nodes, and its points of interest. The extract is
-// read twice, as nodes come before the ways that use them.
+// the coordinates of their nodes, its points of interest and its forests.
+// The extract is read three times: first for the forest relations, which
+// come last, then for the ways, and then for the nodes, which come before
+// the ways that use them.
 //
 // If bounds are set, only ways with a node inside them, and points of
-// interest inside them, are read. The extract is then read a third time
-// first, to find the nodes inside the bounds, so memory grows with the area
-// rather than the extract.
+// interest inside them, are read. The first read then also finds the nodes
+// inside the bounds, so memory grows with the area rather than the extract.
+// Forests are read if one of their ways has a node inside the bounds, which
+// misses the rare forest that surrounds the bounds without one.
 func ReadPBF(ctx context.Context, path string, bounds geo.Bounds) (*OSM, error) {
 	return readOSM(bounds, func(handle func(any)) error {
 		return scanPBF(ctx, path, handle)
@@ -149,17 +154,28 @@ func ReadPBF(ctx context.Context, path string, bounds geo.Bounds) (*OSM, error) 
 func readOSM(bounds geo.Bounds, scan func(handle func(any)) error) (*OSM, error) {
 	bounded := bounds != (geo.Bounds{})
 	var inside []int64
-	if bounded {
-		err := scan(func(v any) {
-			if n, ok := v.(*osmpbf.Node); ok && bounds.Contains(geo.Point{Lat: n.Lat, Lng: n.Lon}) {
-				inside = append(inside, n.ID)
+	var relations []*forestRelation
+	// The forest relations each outer way belongs to.
+	relationsOf := make(map[int64][]*forestRelation)
+	err := scan(func(v any) {
+		switch v := v.(type) {
+		case *osmpbf.Node:
+			if bounded && bounds.Contains(geo.Point{Lat: v.Lat, Lng: v.Lon}) {
+				inside = append(inside, v.ID)
 			}
-		})
-		if err != nil {
-			return nil, err
+		case *osmpbf.Relation:
+			if f, ok := forestRelationFromOSM(v); ok {
+				relations = append(relations, &f)
+				for _, id := range f.ways {
+					relationsOf[id] = append(relationsOf[id], &f)
+				}
+			}
 		}
-		slices.Sort(inside)
+	})
+	if err != nil {
+		return nil, err
 	}
+	slices.Sort(inside)
 	entersBounds := func(nodes []int64) bool {
 		for _, id := range nodes {
 			if _, ok := slices.BinarySearch(inside, id); ok {
@@ -172,10 +188,28 @@ func readOSM(bounds geo.Bounds, scan func(handle func(any)) error) (*OSM, error)
 	// Ways that are points of interest, such as car parks, with their nodes.
 	var featureWays []Way
 	var wayFeatures []Feature
-	err := scan(func(v any) {
+	// Closed ways that are forests, and the outer ways of forest relations,
+	// which are kept whether or not they enter the bounds, as the others of
+	// their relation may.
+	var forestWays []Way
+	memberNodes := make(map[int64][]int64)
+	err = scan(func(v any) {
 		w, ok := v.(*osmpbf.Way)
-		if !ok || bounded && !entersBounds(w.NodeIDs) {
+		if !ok {
 			return
+		}
+		enters := !bounded || entersBounds(w.NodeIDs)
+		if rs := relationsOf[w.ID]; len(rs) > 0 {
+			memberNodes[w.ID] = w.NodeIDs
+			for _, r := range rs {
+				r.entersBounds = r.entersBounds || enters
+			}
+		}
+		if !enters {
+			return
+		}
+		if isForest(w.Tags) && len(w.NodeIDs) >= 4 && w.NodeIDs[0] == w.NodeIDs[len(w.NodeIDs)-1] {
+			forestWays = append(forestWays, Way{ID: w.ID, Nodes: w.NodeIDs})
 		}
 		if isFootWay(w.Tags) {
 			ways = append(ways, wayFromOSM(w))
@@ -189,8 +223,32 @@ func readOSM(bounds geo.Bounds, scan func(handle func(any)) error) (*OSM, error)
 		return nil, err
 	}
 	inside = nil
+	// The rings of the forest relations that enter the bounds.
+	type relationRing struct {
+		id    int64
+		nodes []int64
+	}
+	var relationRings []relationRing
+	// The closed ways come first in forestWays, then the relation rings.
+	closedForests := len(forestWays)
+	for _, r := range relations {
+		if !r.entersBounds {
+			continue
+		}
+		members := make([][]int64, 0, len(r.ways))
+		for _, id := range r.ways {
+			members = append(members, memberNodes[id])
+		}
+		for _, ring := range assembleRings(members) {
+			relationRings = append(relationRings, relationRing{id: r.id, nodes: ring})
+			forestWays = append(forestWays, Way{Nodes: ring})
+		}
+	}
+	// Free the members, which can be many, before reading the nodes.
+	relationsOf, memberNodes = nil, nil
 	nodes := newNodes(ways)
 	featureNodes := newNodes(featureWays)
+	forestNodes := newNodes(forestWays)
 	var features []Feature
 	err = scan(func(v any) {
 		n, ok := v.(*osmpbf.Node)
@@ -202,6 +260,9 @@ func readOSM(bounds geo.Bounds, scan func(handle func(any)) error) (*OSM, error)
 		}
 		if i := featureNodes.find(n.ID); i >= 0 {
 			featureNodes.Lats[i], featureNodes.Lngs[i] = n.Lat, n.Lon
+		}
+		if i := forestNodes.find(n.ID); i >= 0 {
+			forestNodes.Lats[i], forestNodes.Lngs[i] = n.Lat, n.Lon
 		}
 		p := geo.Point{Lat: n.Lat, Lng: n.Lon}
 		if f, ok := featureFromTags(n.ID, false, n.Tags); ok && (!bounded || bounds.Contains(p)) {
@@ -220,7 +281,18 @@ func readOSM(bounds geo.Bounds, scan func(handle func(any)) error) (*OSM, error)
 			features = append(features, f)
 		}
 	}
-	return &OSM{Ways: ways, Nodes: nodes, Features: features}, nil
+	var forests []Forest
+	for _, w := range forestWays[:closedForests] {
+		if ring, ok := ringPoints(w.Nodes, forestNodes); ok {
+			forests = append(forests, Forest{ID: w.ID, Ring: ring})
+		}
+	}
+	for _, r := range relationRings {
+		if ring, ok := ringPoints(r.nodes, forestNodes); ok && overlaps(ring, bounds) {
+			forests = append(forests, Forest{ID: r.id, Relation: true, Ring: ring})
+		}
+	}
+	return &OSM{Ways: ways, Nodes: nodes, Features: features, Forests: forests}, nil
 }
 
 // newNodes returns the nodes used by ways, without coordinates.
@@ -286,6 +358,22 @@ func MergeExtracts(data, more *OSM) *OSM {
 			features = append(features, f)
 		}
 	}
+	forests := data.Forests
+	type forestID struct {
+		id       int64
+		relation bool
+	}
+	seenForests := make(map[forestID]bool, len(forests))
+	for _, f := range forests {
+		seenForests[forestID{f.ID, f.Relation}] = true
+	}
+	for _, f := range more.Forests {
+		// A relation has a forest for each ring, all kept from the first
+		// extract that has it.
+		if id := (forestID{f.ID, f.Relation}); !seenForests[id] {
+			forests = append(forests, f)
+		}
+	}
 	nodes, moreNodes := data.Nodes, more.Nodes
 	if nodes == nil {
 		nodes = &Nodes{}
@@ -322,7 +410,7 @@ func MergeExtracts(data, more *OSM) *OSM {
 			j++
 		}
 	}
-	return &OSM{Ways: ways, Nodes: merged, Features: features}
+	return &OSM{Ways: ways, Nodes: merged, Features: features, Forests: forests}
 }
 
 func scanPBF(ctx context.Context, path string, handle func(any)) error {

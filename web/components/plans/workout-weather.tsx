@@ -1,10 +1,12 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { useQuery } from "@connectrpc/connect-query";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import { listWorkoutWeather } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import type {
   DayWeather,
   HourWeather,
+  WeatherWarning,
   WorkoutWeather,
 } from "gen/plans/v1/plans_pb";
 import { WeatherLocationSource } from "gen/plans/v1/plans_pb";
@@ -72,6 +74,48 @@ export const WeatherBadge: React.FC<{ day: DayWeather }> = ({ day }) => (
       </span>
     )}
   </span>
+);
+
+/**
+ * WarningIcon flags a workout card whose forecast has warnings, like high
+ * winds in forest, with the warnings as its tooltip.
+ */
+export const WarningIcon: React.FC<{ warnings: WeatherWarning[] }> = ({
+  warnings,
+}) => {
+  if (warnings.length === 0) {
+    return null;
+  }
+  const text = warnings.map((warning) => warning.message).join("\n");
+  return (
+    <span className="shrink-0 text-amber-600" title={text}>
+      <ExclamationTriangleIcon className="size-3.5" aria-hidden="true" />
+      <span className="sr-only">{text}</span>
+    </span>
+  );
+};
+
+/**
+ * WeatherWarnings shows the dangers in a workout's forecast, like high
+ * winds in forest, ahead of the forecast itself.
+ */
+const WeatherWarnings: React.FC<{ warnings: WeatherWarning[] }> = ({
+  warnings,
+}) => (
+  <ul className="flex flex-col gap-2">
+    {warnings.map((warning) => (
+      <li
+        key={warning.message}
+        className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+      >
+        <ExclamationTriangleIcon
+          className="mt-0.5 size-4 shrink-0 text-amber-600"
+          aria-hidden="true"
+        />
+        <span>{warning.message}</span>
+      </li>
+    ))}
+  </ul>
 );
 
 const locationLabel = (source: WeatherLocationSource): string => {
@@ -170,6 +214,9 @@ export const WeatherForecast: React.FC<{ weather: WorkoutWeather }> = ({
   }
   return (
     <div className="flex flex-col gap-3">
+      {weather.warnings.length > 0 && (
+        <WeatherWarnings warnings={weather.warnings} />
+      )}
       {weather.workout !== undefined && (
         <p className="text-sm font-medium text-gray-700 tabular-nums">
           During the workout, {formatClock(weather.workoutStartTime)} to{" "}

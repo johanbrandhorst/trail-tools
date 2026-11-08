@@ -257,7 +257,9 @@ type TrainingPlanServiceClient interface {
 	// List the weather forecast for the days of the user's workouts in a date
 	// range, without hourly forecasts. Forecasts are available up to 15 days
 	// ahead, so workouts after that and before today are left out, as are rest
-	// days and strength training, which don't need one.
+	// days and strength training, which don't need one. Check each
+	// forecast's warnings, like high winds while running in forest, and tell
+	// the user about them.
 	ListWorkoutWeather(context.Context, *v1.ListWorkoutWeatherRequest) (*v1.ListWorkoutWeatherResponse, error)
 	// Get the weather forecast for the day of a workout, with the forecast
 	// for each hour of the daytime.
@@ -324,7 +326,9 @@ type TrainingPlanServiceHandler interface {
 	// List the weather forecast for the days of the user's workouts in a date
 	// range, without hourly forecasts. Forecasts are available up to 15 days
 	// ahead, so workouts after that and before today are left out, as are rest
-	// days and strength training, which don't need one.
+	// days and strength training, which don't need one. Check each
+	// forecast's warnings, like high winds while running in forest, and tell
+	// the user about them.
 	ListWorkoutWeather(context.Context, *v1.ListWorkoutWeatherRequest) (*v1.ListWorkoutWeatherResponse, error)
 	// Get the weather forecast for the day of a workout, with the forecast
 	// for each hour of the daytime.
