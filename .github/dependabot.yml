@@ -41,7 +41,7 @@ updates:
   # The Google provider, in infra/.terraform.lock.hcl. Its pull request has
   # a plan comment, but is applied once merged like any other update.
   - package-ecosystem: "terraform"
-    directory: "/infra"
+    directories: ["/infra", "/infra/github"]
     schedule:
       interval: "weekly"
     cooldown:

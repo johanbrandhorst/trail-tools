@@ -183,6 +183,23 @@ infra-apply: $(TERRAFORM) ## Apply changes to the Google Cloud project, with you
 		$(TERRAFORM) -chdir=infra init -input=false && \
 		$(TERRAFORM) -chdir=infra apply
 
+# The repository's settings, in infra/github, are applied with an admin's
+# GitHub credentials from the gh CLI, as GitHub Actions' token can't manage
+# them. The state is in the same bucket, read with gcloud's credentials.
+.PHONY: github-plan
+github-plan: $(TERRAFORM) ## Plan changes to the GitHub repository's settings, with your gh and gcloud credentials
+	GITHUB_TOKEN=$$(gh auth token) && export GITHUB_TOKEN && \
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra/github init -input=false && \
+		$(TERRAFORM) -chdir=infra/github plan
+
+.PHONY: github-apply
+github-apply: $(TERRAFORM) ## Apply changes to the GitHub repository's settings, with your gh and gcloud credentials
+	GITHUB_TOKEN=$$(gh auth token) && export GITHUB_TOKEN && \
+	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \
+		$(TERRAFORM) -chdir=infra/github init -input=false && \
+		$(TERRAFORM) -chdir=infra/github apply
+
 .PHONY: infra-output
 infra-output: $(TERRAFORM) ## Print Terraform's outputs, e.g. make infra-output NAME=domain_records
 	GOOGLE_OAUTH_ACCESS_TOKEN=$$(gcloud auth print-access-token) && export GOOGLE_OAUTH_ACCESS_TOKEN && \

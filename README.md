@@ -556,6 +556,31 @@ account, which can only read the database URL among the secrets. Tiles are
 stored gzipped as downloaded, at the same paths as on AWS, e.g.
 `skadi/N46/N46E007.hgt.gz`.
 
+### Repository settings
+
+The GitHub repository's settings are Terraform too, in
+[`infra/github`](infra/github), the same as foodplann.ing's: squash merges
+with the pull request's title and description as the commit message,
+auto-merge, deleting merged branches, Dependabot alerts and security
+updates, the `GCP_PROJECT_ID` and `GCP_PROJECT_NUMBER` Actions variables,
+and a ruleset on `main` that requires CI's checks and refuses force-pushes
+and deletion, which admins can bypass.
+
+Managing them needs a repository admin, which GitHub Actions' token isn't,
+and storing an admin token in CI would hand it to every workflow, including
+those running Dependabot's updates before anyone reviews them. So they're
+applied from your machine, with your gh and gcloud credentials (the state is
+in the same bucket):
+
+```sh
+$ make github-plan
+$ make github-apply
+```
+
+The first plan imports the existing repository, and shows what changes
+before anything is applied. Commit the `infra/github/.terraform.lock.hcl`
+that the first run creates.
+
 ### Custom domain
 
 The app is served on `trailrunn.ing`, set as `domain` in

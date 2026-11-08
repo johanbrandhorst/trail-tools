@@ -6,6 +6,11 @@ for the app and GitHub Actions. Merging to `main` builds the image with ko and
 runs `terraform apply`. Pull requests that change this directory get a plan as
 a comment.
 
+`github/` is a separate configuration, with its own state, for the GitHub
+repository's settings. It's applied locally by an admin (`make
+github-apply`), never by CI, as it needs admin credentials. Keep it the same
+as foodplann.ing's `infra/github`, other than its `terraform.tfvars`.
+
 ## Cost
 
 The app is meant to stay within the free tiers. Keep it that way, and explain
