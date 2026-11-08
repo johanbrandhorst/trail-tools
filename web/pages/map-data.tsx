@@ -16,7 +16,7 @@ import {
   thClass,
 } from "@components/ui/styles";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { skipToken, useQueryClient } from "@tanstack/react-query";
 import {
   deleteRegion,
@@ -307,11 +307,23 @@ const isActive = (item: Import): boolean =>
 
 interface RegionsTableProps {
   regions: Region[];
+  // Whether an import is queued or running, so another can't start.
+  importing: boolean;
 }
 
-const RegionsTable: React.FC<RegionsTableProps> = ({ regions }) => {
+const RegionsTable: React.FC<RegionsTableProps> = ({ regions, importing }) => {
   const queryClient = useQueryClient();
   const remove = useMutation(deleteRegion, {
+    onSuccess: async () => {
+      await invalidateServices(queryClient, [MapDataService]);
+    },
+  });
+  /*
+   * Importing a region again replaces it with the latest OpenStreetMap data
+   * of the same area, picking up new trails, and data newer imports read,
+   * like forests. Routing uses the old data until the import finishes.
+   */
+  const reimport = useMutation(startImport, {
     onSuccess: async () => {
       await invalidateServices(queryClient, [MapDataService]);
     },
@@ -366,7 +378,32 @@ const RegionsTable: React.FC<RegionsTableProps> = ({ regions }) => {
                 <td className={`${tdClass} hidden sm:table-cell`}>
                   {formatTimestamp(region.importTime)}
                 </td>
-                <td className={`${tdClass} text-right`}>
+                <td className={`${tdClass} text-right whitespace-nowrap`}>
+                  <button
+                    type="button"
+                    className={ghostButton}
+                    title={
+                      importing
+                        ? "An import is running. Another can start once it finishes."
+                        : `Import ${region.name} again with the latest OpenStreetMap data`
+                    }
+                    disabled={
+                      importing ||
+                      reimport.isPending ||
+                      region.area === undefined
+                    }
+                    onClick={() => {
+                      reimport.mutate({
+                        area: region.area,
+                        region: region.name,
+                      });
+                    }}
+                  >
+                    <ArrowPathIcon
+                      className="size-4"
+                      aria-label={`Import ${region.name} again`}
+                    />
+                  </button>
                   <ConfirmButton
                     className={ghostDangerButton}
                     title={`Delete ${region.name}?`}
@@ -389,6 +426,7 @@ const RegionsTable: React.FC<RegionsTableProps> = ({ regions }) => {
         </table>
       </div>
       <ErrorText error={remove.error} />
+      <ErrorText error={reimport.error} />
     </div>
   );
 };
@@ -637,7 +675,10 @@ const MapDataPage: React.FC = () => {
             </MapView>
           </div>
           <Card title="Imported areas" className="order-3 lg:order-none">
-            <RegionsTable regions={data.regions} />
+            <RegionsTable
+              regions={data.regions}
+              importing={data.imports.some(isActive)}
+            />
           </Card>
         </div>
         <div className="contents lg:flex lg:flex-col lg:gap-4">
