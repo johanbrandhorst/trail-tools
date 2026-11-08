@@ -272,6 +272,7 @@ func newEnv(t *testing.T) *env {
 	mux.Handle(trip.PhotoPath, tripService.PhotoHandler())
 	mux.Handle(racereport.PhotoPath, raceReportService.PhotoHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
+	mux.Handle(geosvc.SlopeTilePath, geoService.SlopeTileHandler())
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(trip.ProfilePath, raceReportService.PageHandler(false, tripService.PageHandler(false)))
 
@@ -524,13 +525,19 @@ func (f *fakeMapData) Forecast(_ context.Context, queries []mapdata.ForecastQuer
 		if hour.Equal(queries[0].Time.UTC().Truncate(time.Hour).Add(time.Hour)) {
 			weather[i].WeatherCode = 95
 		}
+		// The last point is deep in snow, with 40 cm in the past 3 days.
+		if i == len(queries)-1 && len(queries) > 1 {
+			weather[i].SnowDepthMeters, weather[i].SnowfallPast72HoursCM = 0.8, 40
+		}
 	}
 	return weather, nil
 }
 
 // HourlyForecast returns light rain from 10 to 12 UTC and otherwise clear
 // weather, at 5 degrees at midnight UTC warming by a degree an hour, which
-// it also feels like, with the gusts set by setGusts, if any.
+// it also feels like, with the gusts set by setGusts, if any. The freezing
+// level is at 2000 m at midnight UTC, rising 10 m an hour, on 25 cm of
+// snow, 12 cm of which fell in the past 3 days.
 func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, end time.Time) ([]mapdata.Weather, error) {
 	f.mu.Lock()
 	f.hourlyForecasts = append(f.hourlyForecasts, point)
@@ -546,6 +553,9 @@ func (f *fakeMapData) HourlyForecast(_ context.Context, point geo.Point, start, 
 			WindSpeedKMH:             float64(hour.Hour()),
 			WindGustsKMH:             gusts,
 			IsDay:                    true,
+			FreezingLevelMeters:      2000 + 10*float64(hour.Hour()),
+			SnowDepthMeters:          0.25,
+			SnowfallPast72HoursCM:    12,
 		}
 		if hour.Hour() >= 10 && hour.Hour() < 12 {
 			w.WeatherCode, w.PrecipitationProbability, w.PrecipitationMM = 61, 80, 0.5

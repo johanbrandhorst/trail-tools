@@ -366,6 +366,9 @@ func summarizeDay(hours []mapdata.Weather) *plansv1.DayWeather {
 		MinTemperatureCelsius: math.Inf(1),
 		MaxTemperatureCelsius: math.Inf(-1),
 	}
+	if len(hours) > 0 {
+		b.SnowfallPast_72HoursCm = hours[0].SnowfallPast72HoursCM
+	}
 	for _, h := range hours {
 		b.MinTemperatureCelsius = min(b.MinTemperatureCelsius, h.TemperatureCelsius)
 		b.MaxTemperatureCelsius = max(b.MaxTemperatureCelsius, h.TemperatureCelsius)
@@ -374,6 +377,12 @@ func summarizeDay(hours []mapdata.Weather) *plansv1.DayWeather {
 		b.SnowfallCm += h.SnowfallCM
 		b.MaxWindSpeedKmh = max(b.MaxWindSpeedKmh, h.WindSpeedKMH)
 		b.MaxWindGustsKmh = max(b.MaxWindGustsKmh, h.WindGustsKMH)
+		b.MaxSnowDepthCm = max(b.MaxSnowDepthCm, h.SnowDepthMeters*100)
+		// A freezing level of 0 is taken as missing, so it doesn't hide
+		// the lowest real level of the day.
+		if h.FreezingLevelMeters > 0 && (b.MinFreezingLevelMeters == 0 || h.FreezingLevelMeters < b.MinFreezingLevelMeters) {
+			b.MinFreezingLevelMeters = h.FreezingLevelMeters
+		}
 		// Higher WMO codes are more severe weather.
 		b.WeatherCode = max(b.WeatherCode, int32(h.WeatherCode))
 	}
@@ -393,6 +402,9 @@ func hourToProto(h mapdata.Weather) *plansv1.HourWeather {
 		WindGustsKmh:               h.WindGustsKMH,
 		WindDirectionDegrees:       int32(h.WindDirectionDegrees),
 		IsDay:                      h.IsDay,
+		SnowfallCm:                 h.SnowfallCM,
+		FreezingLevelMeters:        h.FreezingLevelMeters,
+		SnowDepthCm:                h.SnowDepthMeters * 100,
 	}.Build()
 }
 

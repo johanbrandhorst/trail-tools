@@ -42,7 +42,18 @@ type Weather struct {
 	FreezingLevelMeters      float64
 	UVIndex                  float64
 	IsDay                    bool
+	// SnowDepthMeters is the modeled depth of the snow on the ground. The
+	// model's grid is a few kilometers wide, so in the mountains it's a
+	// rough guide that can be far off on a given slope.
+	SnowDepthMeters float64
+	// SnowfallPast72HoursCM is the snow that fell in the 72 hours before
+	// the hour, the loading that makes avalanches likely.
+	SnowfallPast72HoursCM float64
 }
+
+// recentSnowHours is how many hours before an hour SnowfallPast72HoursCM
+// sums, and so how much earlier than the hours asked for forecasts start.
+const recentSnowHours = 72
 
 // ForecastQuery is a location and time to forecast.
 type ForecastQuery struct {
@@ -52,7 +63,7 @@ type ForecastQuery struct {
 
 const forecastHourlyVariables = "temperature_2m,apparent_temperature,precipitation_probability," +
 	"precipitation,snowfall,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m," +
-	"wind_direction_10m,freezing_level_height,uv_index,is_day"
+	"wind_direction_10m,freezing_level_height,uv_index,is_day,snow_depth"
 
 type forecastResponse struct {
 	// UTCOffsetSeconds is a single offset for the whole response. Open-Meteo
@@ -77,6 +88,7 @@ type forecastResponse struct {
 		FreezingLevel            []*float64 `json:"freezing_level_height"`
 		UVIndex                  []*float64 `json:"uv_index"`
 		IsDay                    []*float64 `json:"is_day"`
+		SnowDepth                []*float64 `json:"snow_depth"`
 	} `json:"hourly"`
 	// location is the loaded Timezone, or nil if it couldn't be loaded.
 	location *time.Location
@@ -170,10 +182,11 @@ func (c *Client) forecastBatch(ctx context.Context, queries []ForecastQuery) ([]
 	v.Set("elevation", strings.Join(eles, ","))
 	v.Set("hourly", forecastHourlyVariables)
 	// Use the local time zone of each location so the response includes its
-	// UTC offset. Pad the dates by a day, as they are local dates.
+	// UTC offset. Pad the dates by a day, as they are local dates, and start
+	// early enough for the snowfall of the hours before the first.
 	v.Set("timezone", "auto")
 	v.Set("timeformat", "unixtime")
-	v.Set("start_date", first.UTC().AddDate(0, 0, -1).Format(time.DateOnly))
+	v.Set("start_date", first.UTC().Add(-recentSnowHours*time.Hour).AddDate(0, 0, -1).Format(time.DateOnly))
 	endDate := last.UTC().AddDate(0, 0, 1)
 	if maxEnd := time.Now().UTC().AddDate(0, 0, MaxForecastDays-1); endDate.After(maxEnd) {
 		endDate = maxEnd
@@ -229,7 +242,15 @@ func (r *forecastResponse) hour(idx int) Weather {
 	if r.location != nil {
 		_, offsetSeconds = start.In(r.location).Zone()
 	}
+	recent := 0.0
+	for i := max(idx-recentSnowHours, 0); i < idx; i++ {
+		if i < len(hourly.Snowfall) && hourly.Snowfall[i] != nil {
+			recent += *hourly.Snowfall[i]
+		}
+	}
 	return Weather{
+		SnowDepthMeters:          at(hourly.SnowDepth),
+		SnowfallPast72HoursCM:    recent,
 		Time:                     start,
 		UTCOffset:                time.Duration(offsetSeconds) * time.Second,
 		TemperatureCelsius:       at(hourly.Temperature),
@@ -251,7 +272,8 @@ func (r *forecastResponse) hour(idx int) Weather {
 // HourlyForecast returns the hourly weather forecast at a point for the
 // local dates from start to end, inclusive, using Open-Meteo. Dates past the
 // end of the forecast are left out. The forecast is downscaled to the
-// elevation of the point if it is known.
+// elevation of the point if it is known. The days before start are
+// requested too, for the snowfall before the first hours, but not returned.
 func (c *Client) HourlyForecast(ctx context.Context, point geo.Point, start, end time.Time) ([]Weather, error) {
 	if maxEnd := time.Now().UTC().AddDate(0, 0, MaxForecastDays-1); end.After(maxEnd) {
 		end = maxEnd
@@ -269,7 +291,7 @@ func (c *Client) HourlyForecast(ctx context.Context, point geo.Point, start, end
 	// With the local time zone the dates are local dates.
 	v.Set("timezone", "auto")
 	v.Set("timeformat", "unixtime")
-	v.Set("start_date", start.Format(time.DateOnly))
+	v.Set("start_date", start.AddDate(0, 0, -recentSnowHours/24).Format(time.DateOnly))
 	v.Set("end_date", end.Format(time.DateOnly))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.conf.ForecastURL+"?"+v.Encode(), nil)
 	if err != nil {
@@ -280,9 +302,14 @@ func (c *Client) HourlyForecast(ctx context.Context, point geo.Point, start, end
 		return nil, fmt.Errorf("weather forecast failed: %w", err)
 	}
 	resp.resolveLocation()
-	weather := make([]Weather, len(resp.Hourly.Time))
+	first := start.Format(time.DateOnly)
+	weather := make([]Weather, 0, len(resp.Hourly.Time))
 	for i := range resp.Hourly.Time {
-		weather[i] = resp.hour(i)
+		h := resp.hour(i)
+		// Local dates compare as strings.
+		if h.Time.Add(h.UTCOffset).Format(time.DateOnly) >= first {
+			weather = append(weather, h)
+		}
 	}
 	return weather, nil
 }

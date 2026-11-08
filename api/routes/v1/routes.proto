@@ -471,6 +471,14 @@ message ForecastPoint {
   int32 weather_code = 18;
   // A description of the weather code, e.g. "Light rain".
   string weather_description = 19;
+  // The modeled depth of the snow on the ground in centimeters. The model's
+  // grid is a few kilometers wide, so in the mountains it's a rough guide
+  // that can be far off on a given slope.
+  double snow_depth_cm = 20;
+  // The snow that fell in the 72 hours before, in centimeters. New snow is
+  // what makes avalanches likely: check the avalanche forecast after a lot
+  // of it.
+  double snowfall_past_72_hours_cm = 21;
 }
 
 message GetRouteForecastResponse {

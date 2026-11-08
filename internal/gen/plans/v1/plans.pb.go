@@ -5650,6 +5650,9 @@ type DayWeather struct {
 	xxx_hidden_MaxWindGustsKmh             float64                `protobuf:"fixed64,7,opt,name=max_wind_gusts_kmh,json=maxWindGustsKmh,proto3"`
 	xxx_hidden_WeatherCode                 int32                  `protobuf:"varint,8,opt,name=weather_code,json=weatherCode,proto3"`
 	xxx_hidden_Description                 string                 `protobuf:"bytes,9,opt,name=description,proto3"`
+	xxx_hidden_MinFreezingLevelMeters      float64                `protobuf:"fixed64,10,opt,name=min_freezing_level_meters,json=minFreezingLevelMeters,proto3"`
+	xxx_hidden_MaxSnowDepthCm              float64                `protobuf:"fixed64,11,opt,name=max_snow_depth_cm,json=maxSnowDepthCm,proto3"`
+	xxx_hidden_SnowfallPast_72HoursCm      float64                `protobuf:"fixed64,12,opt,name=snowfall_past_72_hours_cm,json=snowfallPast72HoursCm,proto3"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
 }
@@ -5742,6 +5745,27 @@ func (x *DayWeather) GetDescription() string {
 	return ""
 }
 
+func (x *DayWeather) GetMinFreezingLevelMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_MinFreezingLevelMeters
+	}
+	return 0
+}
+
+func (x *DayWeather) GetMaxSnowDepthCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_MaxSnowDepthCm
+	}
+	return 0
+}
+
+func (x *DayWeather) GetSnowfallPast_72HoursCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_SnowfallPast_72HoursCm
+	}
+	return 0
+}
+
 func (x *DayWeather) SetMinTemperatureCelsius(v float64) {
 	x.xxx_hidden_MinTemperatureCelsius = v
 }
@@ -5778,6 +5802,18 @@ func (x *DayWeather) SetDescription(v string) {
 	x.xxx_hidden_Description = v
 }
 
+func (x *DayWeather) SetMinFreezingLevelMeters(v float64) {
+	x.xxx_hidden_MinFreezingLevelMeters = v
+}
+
+func (x *DayWeather) SetMaxSnowDepthCm(v float64) {
+	x.xxx_hidden_MaxSnowDepthCm = v
+}
+
+func (x *DayWeather) SetSnowfallPast_72HoursCm(v float64) {
+	x.xxx_hidden_SnowfallPast_72HoursCm = v
+}
+
 type DayWeather_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -5797,6 +5833,17 @@ type DayWeather_builder struct {
 	WeatherCode int32
 	// A description of the weather code, e.g. "Light rain".
 	Description string
+	// The lowest height of the 0 degree Celsius level in meters, 0 if
+	// unknown. Above it, rain falls as snow and wet snow refreezes.
+	MinFreezingLevelMeters float64
+	// The deepest modeled snow on the ground in centimeters. The model's grid
+	// is a few kilometers wide, so in the mountains it's a rough guide that
+	// can be far off on a given slope.
+	MaxSnowDepthCm float64
+	// The snow that fell in the 72 hours before the period, in centimeters.
+	// New snow is what makes avalanches likely: check the avalanche forecast
+	// after a lot of it.
+	SnowfallPast_72HoursCm float64
 }
 
 func (b0 DayWeather_builder) Build() *DayWeather {
@@ -5812,6 +5859,9 @@ func (b0 DayWeather_builder) Build() *DayWeather {
 	x.xxx_hidden_MaxWindGustsKmh = b.MaxWindGustsKmh
 	x.xxx_hidden_WeatherCode = b.WeatherCode
 	x.xxx_hidden_Description = b.Description
+	x.xxx_hidden_MinFreezingLevelMeters = b.MinFreezingLevelMeters
+	x.xxx_hidden_MaxSnowDepthCm = b.MaxSnowDepthCm
+	x.xxx_hidden_SnowfallPast_72HoursCm = b.SnowfallPast_72HoursCm
 	return m0
 }
 
@@ -5828,6 +5878,9 @@ type HourWeather struct {
 	xxx_hidden_WindGustsKmh               float64                `protobuf:"fixed64,8,opt,name=wind_gusts_kmh,json=windGustsKmh,proto3"`
 	xxx_hidden_WindDirectionDegrees       int32                  `protobuf:"varint,9,opt,name=wind_direction_degrees,json=windDirectionDegrees,proto3"`
 	xxx_hidden_IsDay                      bool                   `protobuf:"varint,10,opt,name=is_day,json=isDay,proto3"`
+	xxx_hidden_SnowfallCm                 float64                `protobuf:"fixed64,11,opt,name=snowfall_cm,json=snowfallCm,proto3"`
+	xxx_hidden_FreezingLevelMeters        float64                `protobuf:"fixed64,12,opt,name=freezing_level_meters,json=freezingLevelMeters,proto3"`
+	xxx_hidden_SnowDepthCm                float64                `protobuf:"fixed64,13,opt,name=snow_depth_cm,json=snowDepthCm,proto3"`
 	unknownFields                         protoimpl.UnknownFields
 	sizeCache                             protoimpl.SizeCache
 }
@@ -5927,6 +5980,27 @@ func (x *HourWeather) GetIsDay() bool {
 	return false
 }
 
+func (x *HourWeather) GetSnowfallCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_SnowfallCm
+	}
+	return 0
+}
+
+func (x *HourWeather) GetFreezingLevelMeters() float64 {
+	if x != nil {
+		return x.xxx_hidden_FreezingLevelMeters
+	}
+	return 0
+}
+
+func (x *HourWeather) GetSnowDepthCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_SnowDepthCm
+	}
+	return 0
+}
+
 func (x *HourWeather) SetTime(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Time = v
 }
@@ -5967,6 +6041,18 @@ func (x *HourWeather) SetIsDay(v bool) {
 	x.xxx_hidden_IsDay = v
 }
 
+func (x *HourWeather) SetSnowfallCm(v float64) {
+	x.xxx_hidden_SnowfallCm = v
+}
+
+func (x *HourWeather) SetFreezingLevelMeters(v float64) {
+	x.xxx_hidden_FreezingLevelMeters = v
+}
+
+func (x *HourWeather) SetSnowDepthCm(v float64) {
+	x.xxx_hidden_SnowDepthCm = v
+}
+
 func (x *HourWeather) HasTime() bool {
 	if x == nil {
 		return false
@@ -6000,6 +6086,12 @@ type HourWeather_builder struct {
 	WindDirectionDegrees int32
 	// Whether it is daylight.
 	IsDay bool
+	// Snowfall in centimeters.
+	SnowfallCm float64
+	// The height of the 0 degree Celsius level in meters.
+	FreezingLevelMeters float64
+	// The modeled depth of the snow on the ground in centimeters.
+	SnowDepthCm float64
 }
 
 func (b0 HourWeather_builder) Build() *HourWeather {
@@ -6016,6 +6108,9 @@ func (b0 HourWeather_builder) Build() *HourWeather {
 	x.xxx_hidden_WindGustsKmh = b.WindGustsKmh
 	x.xxx_hidden_WindDirectionDegrees = b.WindDirectionDegrees
 	x.xxx_hidden_IsDay = b.IsDay
+	x.xxx_hidden_SnowfallCm = b.SnowfallCm
+	x.xxx_hidden_FreezingLevelMeters = b.FreezingLevelMeters
+	x.xxx_hidden_SnowDepthCm = b.SnowDepthCm
 	return m0
 }
 
@@ -7577,7 +7672,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.plans.v1.WeatherWarningKindR\x04kind\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12+\n" +
 	"\x12max_wind_gusts_kmh\x18\x03 \x01(\x01R\x0fmaxWindGustsKmh\x124\n" +
-	"\x16forest_distance_meters\x18\x04 \x01(\x01R\x14forestDistanceMeters\"\xab\x03\n" +
+	"\x16forest_distance_meters\x18\x04 \x01(\x01R\x14forestDistanceMeters\"\xcb\x04\n" +
 	"\n" +
 	"DayWeather\x126\n" +
 	"\x17min_temperature_celsius\x18\x01 \x01(\x01R\x15minTemperatureCelsius\x126\n" +
@@ -7589,7 +7684,11 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x12max_wind_speed_kmh\x18\x06 \x01(\x01R\x0fmaxWindSpeedKmh\x12+\n" +
 	"\x12max_wind_gusts_kmh\x18\a \x01(\x01R\x0fmaxWindGustsKmh\x12!\n" +
 	"\fweather_code\x18\b \x01(\x05R\vweatherCode\x12 \n" +
-	"\vdescription\x18\t \x01(\tR\vdescription\"\xd4\x03\n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\x129\n" +
+	"\x19min_freezing_level_meters\x18\n" +
+	" \x01(\x01R\x16minFreezingLevelMeters\x12)\n" +
+	"\x11max_snow_depth_cm\x18\v \x01(\x01R\x0emaxSnowDepthCm\x128\n" +
+	"\x19snowfall_past_72_hours_cm\x18\f \x01(\x01R\x15snowfallPast72HoursCm\"\xcd\x04\n" +
 	"\vHourWeather\x12.\n" +
 	"\x04time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04time\x12/\n" +
 	"\x13temperature_celsius\x18\x02 \x01(\x01R\x12temperatureCelsius\x12@\n" +
@@ -7601,7 +7700,11 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x0ewind_gusts_kmh\x18\b \x01(\x01R\fwindGustsKmh\x124\n" +
 	"\x16wind_direction_degrees\x18\t \x01(\x05R\x14windDirectionDegrees\x12\x15\n" +
 	"\x06is_day\x18\n" +
-	" \x01(\bR\x05isDay\"U\n" +
+	" \x01(\bR\x05isDay\x12\x1f\n" +
+	"\vsnowfall_cm\x18\v \x01(\x01R\n" +
+	"snowfallCm\x122\n" +
+	"\x15freezing_level_meters\x18\f \x01(\x01R\x13freezingLevelMeters\x12\"\n" +
+	"\rsnow_depth_cm\x18\r \x01(\x01R\vsnowDepthCm\"U\n" +
 	"\x19ListWorkoutWeatherRequest\x12\x1d\n" +
 	"\n" +
 	"start_date\x18\x01 \x01(\tR\tstartDate\x12\x19\n" +

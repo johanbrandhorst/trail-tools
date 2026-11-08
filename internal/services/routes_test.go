@@ -238,8 +238,13 @@ func TestRouteForecast(t *testing.T) {
 	if !second.GetTime().AsTime().Equal(start.Add(time.Hour)) || second.GetWeatherDescription() != "Thunderstorm" {
 		t.Errorf("unexpected second point %v", second)
 	}
-	if len(resp.GetWarnings()) != 1 || !strings.HasPrefix(resp.GetWarnings()[0], "Thunderstorms possible: ") {
-		t.Errorf("unexpected warnings %v", resp.GetWarnings())
+	finish := resp.GetPoints()[len(resp.GetPoints())-1]
+	if !approx(finish.GetSnowDepthCm(), 80, 1e-9) || finish.GetSnowfallPast_72HoursCm() != 40 {
+		t.Errorf("got %v cm deep and %v cm new at the finish, want 80 and 40", finish.GetSnowDepthCm(), finish.GetSnowfallPast_72HoursCm())
+	}
+	if w := resp.GetWarnings(); len(w) != 2 || !strings.HasPrefix(w[0], "Thunderstorms possible: ") ||
+		!strings.HasPrefix(w[1], "Heavy recent snowfall, check the avalanche forecast: ") || !strings.Contains(w[1], "40 cm in the past 3 days") {
+		t.Errorf("unexpected warnings %v", w)
 	}
 
 	// A GPX file or a list of coordinates can be forecast too.

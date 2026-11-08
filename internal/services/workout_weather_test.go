@@ -110,6 +110,11 @@ func TestWorkoutWeather(t *testing.T) {
 		!approx(d.GetPrecipitationMm(), 1, 1e-9) || d.GetWeatherCode() != 61 || d.GetDescription() != "Light rain" || d.GetMaxWindSpeedKmh() != 20 {
 		t.Errorf("unexpected day %v", d)
 	}
+	// The lowest freezing level of the daytime is at 06:00, and the snow.
+	if d := w.GetDay(); d.GetMinFreezingLevelMeters() != 2060 || d.GetMaxSnowDepthCm() != 25 || d.GetSnowfallPast_72HoursCm() != 12 {
+		t.Errorf("got freezing level %v, snow depth %v and new snow %v, want 2060, 25 and 12",
+			d.GetMinFreezingLevelMeters(), d.GetMaxSnowDepthCm(), d.GetSnowfallPast_72HoursCm())
+	}
 
 	// A workout's weather has the hours of the daytime.
 	got, err := e.plans.GetWorkoutWeather(ctx, plansv1.GetWorkoutWeatherRequest_builder{WorkoutId: easy.GetId()}.Build())

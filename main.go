@@ -915,6 +915,8 @@ func run(
 	mux.Handle(trip.PhotoUploadPath, tripService.PhotoUploadHandler())
 	mux.Handle(racereport.PhotoUploadPath, raceReportService.PhotoUploadHandler())
 	mux.Handle(user.AvatarPath, userService.AvatarHandler())
+	// Slope angle map tiles, rendered from the elevation model.
+	mux.Handle(geosvc.SlopeTilePath, authenticate(geoService.SlopeTileHandler()))
 	// The guided lactate test as a Garmin workout. It holds no user data.
 	mux.Handle(lactatesvc.WorkoutPath, lactateService.WorkoutHandler())
 	mux.Handle(trip.ProfilePath, authenticate(raceReportService.PageHandler(serveDir != "", tripService.PageHandler(serveDir != ""))))

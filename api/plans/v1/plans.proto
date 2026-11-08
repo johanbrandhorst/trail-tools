@@ -901,6 +901,17 @@ message DayWeather {
   int32 weather_code = 8;
   // A description of the weather code, e.g. "Light rain".
   string description = 9;
+  // The lowest height of the 0 degree Celsius level in meters, 0 if
+  // unknown. Above it, rain falls as snow and wet snow refreezes.
+  double min_freezing_level_meters = 10;
+  // The deepest modeled snow on the ground in centimeters. The model's grid
+  // is a few kilometers wide, so in the mountains it's a rough guide that
+  // can be far off on a given slope.
+  double max_snow_depth_cm = 11;
+  // The snow that fell in the 72 hours before the period, in centimeters.
+  // New snow is what makes avalanches likely: check the avalanche forecast
+  // after a lot of it.
+  double snowfall_past_72_hours_cm = 12;
 }
 
 // The weather forecast for an hour.
@@ -924,6 +935,12 @@ message HourWeather {
   int32 wind_direction_degrees = 9;
   // Whether it is daylight.
   bool is_day = 10;
+  // Snowfall in centimeters.
+  double snowfall_cm = 11;
+  // The height of the 0 degree Celsius level in meters.
+  double freezing_level_meters = 12;
+  // The modeled depth of the snow on the ground in centimeters.
+  double snow_depth_cm = 13;
 }
 
 message ListWorkoutWeatherRequest {

@@ -3123,6 +3123,8 @@ type ForecastPoint struct {
 	xxx_hidden_IsDay                           bool                   `protobuf:"varint,17,opt,name=is_day,json=isDay,proto3"`
 	xxx_hidden_WeatherCode                     int32                  `protobuf:"varint,18,opt,name=weather_code,json=weatherCode,proto3"`
 	xxx_hidden_WeatherDescription              string                 `protobuf:"bytes,19,opt,name=weather_description,json=weatherDescription,proto3"`
+	xxx_hidden_SnowDepthCm                     float64                `protobuf:"fixed64,20,opt,name=snow_depth_cm,json=snowDepthCm,proto3"`
+	xxx_hidden_SnowfallPast_72HoursCm          float64                `protobuf:"fixed64,21,opt,name=snowfall_past_72_hours_cm,json=snowfallPast72HoursCm,proto3"`
 	unknownFields                              protoimpl.UnknownFields
 	sizeCache                                  protoimpl.SizeCache
 }
@@ -3285,6 +3287,20 @@ func (x *ForecastPoint) GetWeatherDescription() string {
 	return ""
 }
 
+func (x *ForecastPoint) GetSnowDepthCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_SnowDepthCm
+	}
+	return 0
+}
+
+func (x *ForecastPoint) GetSnowfallPast_72HoursCm() float64 {
+	if x != nil {
+		return x.xxx_hidden_SnowfallPast_72HoursCm
+	}
+	return 0
+}
+
 func (x *ForecastPoint) SetKind(v ForecastPointKind) {
 	x.xxx_hidden_Kind = v
 }
@@ -3361,6 +3377,14 @@ func (x *ForecastPoint) SetWeatherDescription(v string) {
 	x.xxx_hidden_WeatherDescription = v
 }
 
+func (x *ForecastPoint) SetSnowDepthCm(v float64) {
+	x.xxx_hidden_SnowDepthCm = v
+}
+
+func (x *ForecastPoint) SetSnowfallPast_72HoursCm(v float64) {
+	x.xxx_hidden_SnowfallPast_72HoursCm = v
+}
+
 func (x *ForecastPoint) HasTime() bool {
 	if x == nil {
 		return false
@@ -3425,6 +3449,14 @@ type ForecastPoint_builder struct {
 	WeatherCode int32
 	// A description of the weather code, e.g. "Light rain".
 	WeatherDescription string
+	// The modeled depth of the snow on the ground in centimeters. The model's
+	// grid is a few kilometers wide, so in the mountains it's a rough guide
+	// that can be far off on a given slope.
+	SnowDepthCm float64
+	// The snow that fell in the 72 hours before, in centimeters. New snow is
+	// what makes avalanches likely: check the avalanche forecast after a lot
+	// of it.
+	SnowfallPast_72HoursCm float64
 }
 
 func (b0 ForecastPoint_builder) Build() *ForecastPoint {
@@ -3450,6 +3482,8 @@ func (b0 ForecastPoint_builder) Build() *ForecastPoint {
 	x.xxx_hidden_IsDay = b.IsDay
 	x.xxx_hidden_WeatherCode = b.WeatherCode
 	x.xxx_hidden_WeatherDescription = b.WeatherDescription
+	x.xxx_hidden_SnowDepthCm = b.SnowDepthCm
+	x.xxx_hidden_SnowfallPast_72HoursCm = b.SnowfallPast_72HoursCm
 	return m0
 }
 
@@ -3739,7 +3773,7 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\x10interval_minutes\x18\a \x01(\x05R\x0fintervalMinutesB\b\n" +
 	"\x06source\".\n" +
 	"\x04Path\x12&\n" +
-	"\x06points\x18\x01 \x03(\v2\x0e.geo.v1.LatLngR\x06points\"\xe8\x06\n" +
+	"\x06points\x18\x01 \x03(\v2\x0e.geo.v1.LatLngR\x06points\"\xc6\a\n" +
 	"\rForecastPoint\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.routes.v1.ForecastPointKindR\x04kind\x12.\n" +
 	"\x04time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04time\x12'\n" +
@@ -3761,7 +3795,9 @@ const file_routes_v1_routes_proto_rawDesc = "" +
 	"\buv_index\x18\x10 \x01(\x01R\auvIndex\x12\x15\n" +
 	"\x06is_day\x18\x11 \x01(\bR\x05isDay\x12!\n" +
 	"\fweather_code\x18\x12 \x01(\x05R\vweatherCode\x12/\n" +
-	"\x13weather_description\x18\x13 \x01(\tR\x12weatherDescription\"\xd8\x02\n" +
+	"\x13weather_description\x18\x13 \x01(\tR\x12weatherDescription\x12\"\n" +
+	"\rsnow_depth_cm\x18\x14 \x01(\x01R\vsnowDepthCm\x128\n" +
+	"\x19snowfall_past_72_hours_cm\x18\x15 \x01(\x01R\x15snowfallPast72HoursCm\"\xd8\x02\n" +
 	"\x18GetRouteForecastResponse\x120\n" +
 	"\x06points\x18\x01 \x03(\v2\x18.routes.v1.ForecastPointR\x06points\x12;\n" +
 	"\vfinish_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
