@@ -37,6 +37,20 @@ var workoutTypes = map[plansv1.WorkoutType]plans.WorkoutType{
 	plansv1.WorkoutType_WORKOUT_TYPE_REST:           plans.WorkoutTypeRest,
 }
 
+var crossTrainingSports = map[plansv1.CrossTrainingSport]plans.CrossTrainingSport{
+	plansv1.CrossTrainingSport_CROSS_TRAINING_SPORT_UNSPECIFIED: plans.CrossTrainingSportOther,
+	plansv1.CrossTrainingSport_CROSS_TRAINING_SPORT_SKI_TOURING: plans.CrossTrainingSportSkiTouring,
+}
+
+func crossTrainingSportToProto(s plans.CrossTrainingSport) plansv1.CrossTrainingSport {
+	for k, v := range crossTrainingSports {
+		if v == s {
+			return k
+		}
+	}
+	return plansv1.CrossTrainingSport_CROSS_TRAINING_SPORT_UNSPECIFIED
+}
+
 func workoutTypeToProto(t plans.WorkoutType) plansv1.WorkoutType {
 	for k, v := range workoutTypes {
 		if v == t {
@@ -96,6 +110,11 @@ func workoutDetailsFromProto(w *plansv1.Workout, workout *plans.Workout) error {
 		workout.TargetDistanceMeters = ct.GetTargetDistanceMeters()
 		workout.TargetElevationGainMeters = ct.GetTargetElevationGainMeters()
 		workout.TargetDurationSeconds = ct.GetTargetDurationSeconds()
+		sport, ok := crossTrainingSports[ct.GetSport()]
+		if !ok {
+			return invalidArgument("cross_training.sport %v is unknown", ct.GetSport())
+		}
+		workout.CrossTrainingSport = sport
 		return nil
 	case plansv1.Workout_Strength_case:
 		st := w.GetStrength()
@@ -371,6 +390,7 @@ func workoutToProto(w *plans.Workout) *plansv1.Workout {
 			TargetDistanceMeters:      w.TargetDistanceMeters,
 			TargetElevationGainMeters: w.TargetElevationGainMeters,
 			TargetDurationSeconds:     w.TargetDurationSeconds,
+			Sport:                     crossTrainingSportToProto(w.CrossTrainingSport),
 		}.Build()
 	case plans.WorkoutTypeStrength:
 		exercises := make([]*plansv1.PlannedExercise, len(w.Exercises))

@@ -13,7 +13,7 @@ import type { Workout } from "gen/plans/v1/plans_pb";
 import { getSharedWorkout } from "gen/plans/v1/shares-WorkoutShareService_connectquery";
 import { formatDate } from "helpers/format";
 import { useFragmentToken } from "helpers/hooks";
-import { workoutStyle } from "helpers/labels";
+import { styleOfWorkout } from "helpers/labels";
 import {
   formatDose,
   formatRounds,
@@ -223,7 +223,7 @@ const SharedWorkoutPage: React.FC = () => {
   const workout = data?.workout;
   let title = workout?.title.trim() ?? "";
   if (workout !== undefined && title === "") {
-    title = workoutStyle(workout.type).label;
+    title = styleOfWorkout(workout).label;
   }
 
   useEffect(() => {
@@ -259,7 +259,7 @@ const SharedWorkoutPage: React.FC = () => {
   if (workout === undefined) {
     return <WorkoutNotAvailable />;
   }
-  const style = workoutStyle(workout.type);
+  const style = styleOfWorkout(workout);
   const { route } = data;
   const strengthFile =
     workout.details.case === "strength" &&

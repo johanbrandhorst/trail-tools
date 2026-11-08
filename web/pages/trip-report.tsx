@@ -33,7 +33,8 @@ import {
 import TripMap from "@components/trips/trip-map";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
-import { TextField } from "@components/ui/fields";
+import { SelectField, TextField } from "@components/ui/fields";
+import type { SelectOption } from "@components/ui/fields";
 import Lightbox from "@components/ui/lightbox";
 import { Badge } from "@components/ui/misc";
 import QueryError, { ErrorText } from "@components/ui/query-error";
@@ -76,6 +77,7 @@ import type { TripReport, TripSection } from "gen/trips/v1/trips_pb";
 import { LocationSource, TripReportService } from "gen/trips/v1/trips_pb";
 import { listPrivacyZones } from "gen/users/v1/users-UserService_connectquery";
 import type { PrivacyZone } from "gen/users/v1/users_pb";
+import { TRIP_SPORT_TYPES, isSkiTourSport, sportLabel } from "helpers/labels";
 import { invalidateServices } from "helpers/query";
 import { isValidSlug, slugify } from "helpers/slug";
 import type { LatLng, LatLngTuple } from "leaflet";
@@ -89,6 +91,22 @@ interface SuggestionPanelProps {
 }
 
 // SuggestionPanel previews suggested sections before they're used.
+
+/**
+ * SportOptions are the sports a report can be set to: the common ones, and
+ * the activity's, if it's another. A report without a sport can stay
+ * without one, as the API only sets one.
+ */
+const sportOptions = (saved: string): SelectOption[] => {
+  const sports = TRIP_SPORT_TYPES.includes(saved)
+    ? TRIP_SPORT_TYPES
+    : [saved, ...TRIP_SPORT_TYPES];
+  return sports.map((sport) => ({
+    label: sport === "" ? "Not set" : sportLabel(sport),
+    value: sport,
+  }));
+};
+
 const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
   sections,
   onApply,
@@ -162,6 +180,8 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
   );
   const [date, setDate] = useState(report.date);
   const [tags, setTags] = useState(report.tags);
+  const [sportType, setSportType] = useState(report.stats?.sportType ?? "");
+  const skiTour = isSkiTourSport(sportType);
   const [draft, setDraft] = useState(() => draftSections(report.sections));
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [splittingKey, setSplittingKey] = useState<string | null>(null);
@@ -273,7 +293,8 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
     trimmedTitle !== report.title ||
     slug !== report.slug ||
     date !== report.date ||
-    tags.join() !== report.tags.join();
+    tags.join() !== report.tags.join() ||
+    sportType !== (report.stats?.sportType ?? "");
   const sectionsDirty = !sameSections(sections, saved);
   const dirty = detailsDirty || sectionsDirty;
   const slugValid = isValidSlug(slug);
@@ -289,6 +310,8 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
         date: date === report.date ? undefined : date,
         id: report.id,
         slug: slug === report.slug ? undefined : slug,
+        sportType:
+          sportType === (report.stats?.sportType ?? "") ? undefined : sportType,
         tags: tags.join() === report.tags.join() ? undefined : { tags },
         title: trimmedTitle === report.title ? undefined : trimmedTitle,
       });
@@ -309,6 +332,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
     setSlug(report.slug);
     setDate(report.date);
     setTags(report.tags);
+    setSportType(report.stats?.sportType ?? "");
     setDraft(draftSections(report.sections));
     setSuggestion(null);
     setSplittingKey(null);
@@ -423,6 +447,12 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
                 .
               </p>
             )}
+            <SelectField
+              label="Sport"
+              value={sportType}
+              onChange={setSportType}
+              options={sportOptions(report.stats?.sportType ?? "")}
+            />
             <TagPicker tags={tags} onChange={setTags} />
           </div>
         </Card>
@@ -640,6 +670,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
             }
             fitKey={report.id}
             className="h-[45vh] min-h-72"
+            snow={skiTour}
           />
         </div>
         {placing === undefined ? (
@@ -680,6 +711,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({
         {profile.length > 1 && (
           <Card>
             <ElevationProfile
+              snow={skiTour}
               points={profile}
               ranges={ranges}
               height={170}

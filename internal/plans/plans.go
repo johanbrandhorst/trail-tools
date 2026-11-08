@@ -82,6 +82,16 @@ const (
 	WorkoutTypeRest          WorkoutType = "rest"
 )
 
+// CrossTrainingSport is the sport of a cross-training workout.
+type CrossTrainingSport string
+
+// Cross-training sports. The zero value is any other sport, which the
+// workout's title names.
+const (
+	CrossTrainingSportOther      CrossTrainingSport = ""
+	CrossTrainingSportSkiTouring CrossTrainingSport = "ski_touring"
+)
+
 // Workout is a workout planned for a day.
 type Workout struct {
 	ID                        pgtype.UUID
@@ -126,6 +136,8 @@ type Workout struct {
 	EquipmentIssues []EquipmentIssue
 	// The log of a completed strength workout. Nil if it has none.
 	Log *StrengthLog
+	// The sport of a cross-training workout. Other for other workouts.
+	CrossTrainingSport CrossTrainingSport
 }
 
 // CreateTrainingPlan stores a new training plan.
@@ -393,6 +405,7 @@ func (r *Repository) CreateWorkouts(ctx context.Context, userID, planID pgtype.U
 		params.LocationLats = append(params.LocationLats, location.Lat)
 		params.LocationLngs = append(params.LocationLngs, location.Lng)
 		params.LocationNames = append(params.LocationNames, w.LocationName)
+		params.CrossTrainingSports = append(params.CrossTrainingSports, string(w.CrossTrainingSport))
 		params.RunBlocks = append(params.RunBlocks, runBlocksToDB(w.RunBlocks))
 		params.LactateTests = append(params.LactateTests, w.LactateTest)
 		params.RunFuelings = append(params.RunFuelings, runFuelingToDB(w.RunFueling))
@@ -518,6 +531,7 @@ func (r *Repository) UpdateWorkout(ctx context.Context, userID pgtype.UUID, w *W
 				RunBlocks:                 runBlocksToDB(w.RunBlocks),
 				LactateTest:               w.LactateTest,
 				RunFueling:                runFuelingToDB(w.RunFueling),
+				CrossTrainingSport:        string(w.CrossTrainingSport),
 			})
 			if errors.Is(err, pgx.ErrNoRows) {
 				return store.ErrNotFound
@@ -653,6 +667,7 @@ func workoutFromDB(w *gen.Workout) *Workout {
 		LactateTest:               w.LactateTest,
 		RunFueling:                runFuelingFromDB(w.RunFueling),
 		ShareToken:                w.ShareToken.String,
+		CrossTrainingSport:        CrossTrainingSport(w.CrossTrainingSport),
 	}
 	if w.LocationLat.Valid && w.LocationLng.Valid {
 		workout.Location = &geo.Point{Lat: w.LocationLat.Float64, Lng: w.LocationLng.Float64}

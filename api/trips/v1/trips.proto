@@ -247,7 +247,9 @@ message TripSection {
 
 // The statistics of a trip.
 message TripStats {
-  // The Strava sport type, e.g. Run, TrailRun, Hike.
+  // The Strava sport type, e.g. Run, TrailRun, Hike, or BackcountrySki for
+  // a ski tour, which the report is then laid out for. Copied from the
+  // activity, and set with UpdateTripReport. Empty if unknown.
   string sport_type = 1;
   // When the activity started, if known.
   google.protobuf.Timestamp start_time = 2;
@@ -369,6 +371,10 @@ message UpdateTripReportRequest {
   // The new tags, if set. A report has at most one difficulty tag and one
   // route shape tag.
   TripTags tags = 8;
+  // The new sport, if set: a Strava sport type, see TripStats.sport_type.
+  // Set it when the activity's is wrong, or for a report made without one,
+  // e.g. "BackcountrySki" for a ski tour.
+  optional string sport_type = 9;
 }
 
 message UpdateTripReportResponse {

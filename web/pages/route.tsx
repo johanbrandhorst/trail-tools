@@ -31,7 +31,7 @@ import {
 import type { CheckTrackCoverageRequest, Route } from "gen/routes/v1/routes_pb";
 import { RouteService, TrackConversion } from "gen/routes/v1/routes_pb";
 import { formatDate, formatHoursMinutes, formatKm } from "helpers/format";
-import { workoutStyle } from "helpers/labels";
+import { styleOfWorkout } from "helpers/labels";
 import { invalidateServices } from "helpers/query";
 import { hasRoute, workoutDetails, workoutTargets } from "helpers/workouts";
 import React, { useState } from "react";
@@ -311,7 +311,7 @@ const WorkoutContext: React.FC<WorkoutContextProps> = ({ workout }) => {
   if (target.durationSeconds > 0) {
     targets.push(formatHoursMinutes(target.durationSeconds));
   }
-  const { label } = workoutStyle(workout.type);
+  const { label } = styleOfWorkout(workout);
   return (
     <span>
       Designing route for:{" "}

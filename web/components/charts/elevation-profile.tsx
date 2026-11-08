@@ -80,7 +80,33 @@ interface ElevationProfileProps {
   onHover?: (index: number | null) => void;
   // Called with the distance clicked, e.g. to split a section there.
   onSelectDistance?: ((distanceMeters: number) => void) | undefined;
+  // Colors the profile in the icy colors of a ski tour.
+  snow?: boolean;
 }
+
+// Palette is the colors of the profile's highlights.
+interface Palette {
+  // The colors ranges alternate between, so neighbors differ.
+  bands: string[];
+  activeBand: string;
+  // The fill and line of the active range and the position.
+  fill: string;
+  line: string;
+}
+
+const TRAIL_PALETTE: Palette = {
+  activeBand: "#f5c9a6",
+  bands: ["#f5f5f4", "#fdf0e6"],
+  fill: "#d2601a",
+  line: "#b4500f",
+};
+
+const SNOW_PALETTE: Palette = {
+  activeBand: "#bae6fd",
+  bands: ["#f1f5f9", "#e0f2fe"],
+  fill: "#0284c7",
+  line: "#075985",
+};
 
 const NO_MARKERS: ProfileMarker[] = [];
 const NO_RANGES: ProfileRange[] = [];
@@ -88,15 +114,16 @@ const NO_LEVELS: ProfilePoint[] = [];
 
 const NO_POINT: ProfilePoint = { distanceMeters: 0, elevationMeters: 0 };
 
-// BAND_FILLS are the colors ranges alternate between, so neighbors differ.
-const BAND_FILLS = ["#f5f5f4", "#fdf0e6"];
-
 // BandFill is the color of a range: active ranges stand out, others cycle.
-const bandFill = (range: ProfileRange, index: number): string => {
+const bandFill = (
+  range: ProfileRange,
+  index: number,
+  palette: Palette
+): string => {
   if (range.active === true) {
-    return "#f5c9a6";
+    return palette.activeBand;
   }
-  return BAND_FILLS[index % BAND_FILLS.length] ?? "#f5f5f4";
+  return palette.bands[index % palette.bands.length] ?? "#f5f5f4";
 };
 
 // FitLabel shortens a label to about the width in pixels, with an ellipsis.
@@ -244,7 +271,9 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
   height = 200,
   onHover,
   onSelectDistance,
+  snow = false,
 }) => {
+  const palette = snow ? SNOW_PALETTE : TRAIL_PALETTE;
   const containerRef = useRef<HTMLDivElement>(null);
   // The ID of the clip path of the active range, without React's symbols.
   const clipId = `profile-${useId().replaceAll(/[^\w-]/gu, "")}`;
@@ -459,7 +488,7 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
                 y={marginTop}
                 width={Math.max(band.x2 - band.x1, 0)}
                 height={plotHeight}
-                fill={bandFill(band, index)}
+                fill={bandFill(band, index, palette)}
               />
               {index > 0 && (
                 <line
@@ -512,11 +541,16 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
                 />
               </clipPath>
               <g clipPath={`url(#${clipId})`}>
-                <path d={area} fill="#d2601a" opacity={0.35} stroke="none" />
+                <path
+                  d={area}
+                  fill={palette.fill}
+                  opacity={0.35}
+                  stroke="none"
+                />
                 <polyline
                   points={outline.join(" ")}
                   fill="none"
-                  stroke="#b4500f"
+                  stroke={palette.line}
                   strokeWidth={2}
                   strokeLinejoin="round"
                 />
@@ -622,14 +656,14 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
                   x2={xFor(positionMeters)}
                   y1={marginTop}
                   y2={baseline}
-                  stroke="#b4500f"
+                  stroke={palette.line}
                   strokeWidth={2}
                 />
                 <circle
                   cx={xFor(positionMeters)}
                   cy={yFor(elevationAt(points, positionMeters))}
                   r={6}
-                  fill="#d2601a"
+                  fill={palette.fill}
                   stroke="#ffffff"
                   strokeWidth={2}
                 />

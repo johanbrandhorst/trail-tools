@@ -20,6 +20,7 @@ import {
 } from "gen/plans/v1/plans-TrainingPlanService_connectquery";
 import type { Workout } from "gen/plans/v1/plans_pb";
 import {
+  CrossTrainingSport,
   RunFuelingSchema,
   TrainingPlanService,
   WorkoutType,
@@ -27,7 +28,12 @@ import {
 import { listRoutes } from "gen/routes/v1/routes-RouteService_connectquery";
 import { isDateString, isWithin } from "helpers/dates";
 import { formatKm } from "helpers/format";
-import { TERRAIN_STYLES, WORKOUT_STYLES, sportLabel } from "helpers/labels";
+import {
+  CROSS_TRAINING_SPORT_OPTIONS,
+  TERRAIN_STYLES,
+  WORKOUT_STYLES,
+  sportLabel,
+} from "helpers/labels";
 import {
   hoursMinutesInput,
   kmInput,
@@ -112,6 +118,9 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     hoursMinutesInput(stored?.durationSeconds ?? 0)
   );
   const [terrain, setTerrain] = useState(String(stored?.terrain ?? 0));
+  const [sport, setSport] = useState(
+    String(stored?.crossTrainingSport ?? CrossTrainingSport.UNSPECIFIED)
+  );
   const [routeId, setRouteId] = useState(stored?.routeId ?? "");
   const [lactateTest, setLactateTest] = useState(stored?.lactateTest ?? false);
   const storedFueling =
@@ -196,6 +205,11 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     const targetTerrain = parseEnum(Terrain, terrain, Terrain.UNSPECIFIED);
     // Fields the kind of workout doesn't have are left out.
     const targets = {
+      crossTrainingSport: parseEnum(
+        CrossTrainingSport,
+        sport,
+        CrossTrainingSport.UNSPECIFIED
+      ),
       distanceMeters: distanceMeters,
       durationSeconds: durationSeconds,
       elevationGainMeters: vertMeters,
@@ -347,6 +361,14 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
               value={terrain}
               onChange={setTerrain}
               options={TERRAIN_OPTIONS}
+            />
+          )}
+          {selectedType === WorkoutType.CROSS_TRAINING && (
+            <SelectField
+              label="Sport"
+              value={sport}
+              onChange={setSport}
+              options={CROSS_TRAINING_SPORT_OPTIONS}
             />
           )}
         </div>

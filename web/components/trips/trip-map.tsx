@@ -46,7 +46,21 @@ interface TripMapProps {
   highlightKey?: string;
   fitKey: string;
   className?: string;
+  /**
+   * Draws a ski tour: an icy track on a map washed out like snow, rather
+   * than a trail's orange on a summer map.
+   */
+  snow?: boolean;
 }
+
+// TrackColors are the colors of a track and its highlighted stretch.
+interface TrackColors {
+  track: string;
+  highlight: string;
+}
+
+const TRAIL_COLORS: TrackColors = { highlight: "#c2410c", track: "#ea580c" };
+const SNOW_COLORS: TrackColors = { highlight: "#1e3a8a", track: "#0369a1" };
 
 interface HiddenAreaProps {
   center: LatLngTuple;
@@ -126,7 +140,9 @@ const TripMap: React.FC<TripMapProps> = ({
   highlightKey,
   fitKey,
   className = "h-96",
+  snow = false,
 }) => {
+  const colors = snow ? SNOW_COLORS : TRAIL_COLORS;
   const [start] = track;
   const finish = track.at(-1);
   const fitPositions =
@@ -134,11 +150,11 @@ const TripMap: React.FC<TripMapProps> = ({
   const pieces = useMemo(() => splitAt(track, breaks), [track, breaks]);
   const highlighted = useMemo(() => highlight.flat(), [highlight]);
   return (
-    <MapView className={className}>
+    <MapView className={snow ? `snow-map ${className}` : className}>
       {track.length > 1 && (
         <PolylineLayer
           positions={pieces}
-          color="#ea580c"
+          color={colors.track}
           weight={4}
           opacity={highlight.length > 0 ? 0.35 : 0.9}
         />
@@ -146,7 +162,7 @@ const TripMap: React.FC<TripMapProps> = ({
       {highlight.length > 0 && (
         <PolylineLayer
           positions={highlight}
-          color="#c2410c"
+          color={colors.highlight}
           weight={6}
           opacity={1}
         />

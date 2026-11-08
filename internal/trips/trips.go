@@ -350,6 +350,8 @@ type ReportUpdate struct {
 	CoverPhotoID *pgtype.UUID
 	// The tags. Nil to leave them unchanged.
 	Tags []string
+	// The Strava sport type, e.g. BackcountrySki. Nil to leave it unchanged.
+	SportType *string
 }
 
 // UpdateReport updates one of the user's reports. It returns ErrSlugTaken if
@@ -371,6 +373,9 @@ func (r *Repository) UpdateReport(ctx context.Context, u *ReportUpdate) (*Report
 	}
 	if u.Tags != nil {
 		params.Tags = u.Tags
+	}
+	if u.SportType != nil {
+		params.SportType = pgtype.Text{String: *u.SportType, Valid: true}
 	}
 	row, err := r.q.UpdateReport(ctx, params)
 	if err != nil {

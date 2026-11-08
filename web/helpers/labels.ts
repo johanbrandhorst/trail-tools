@@ -1,5 +1,6 @@
 import { Terrain } from "gen/geo/v1/geo_pb";
-import { WorkoutType } from "gen/plans/v1/plans_pb";
+import type { Workout } from "gen/plans/v1/plans_pb";
+import { CrossTrainingSport, WorkoutType } from "gen/plans/v1/plans_pb";
 import { ContingencyScenario, RuleStatus } from "gen/races/v1/race_plans_pb";
 import { RacePriority } from "gen/races/v1/races_pb";
 import { RoutingProfile, RouteSource } from "gen/routes/v1/routes_pb";
@@ -53,6 +54,33 @@ export const WORKOUT_STYLES: WorkoutStyle[] = [
     type: WorkoutType.REST,
   },
 ];
+
+/**
+ * SKI_TOUR_STYLE is the style of ski tours, cross-training in the cold
+ * colors of snow and ice.
+ */
+const SKI_TOUR_STYLE: WorkoutStyle = {
+  cardClass: "bg-cyan-50 border-cyan-400 text-cyan-950",
+  dotClass: "bg-cyan-600",
+  label: "Ski tour",
+  type: WorkoutType.CROSS_TRAINING,
+};
+
+// CROSS_TRAINING_SPORT_OPTIONS are the sports of cross-training.
+export const CROSS_TRAINING_SPORT_OPTIONS = [
+  { label: "Other (see title)", value: String(CrossTrainingSport.UNSPECIFIED) },
+  { label: "Ski touring", value: String(CrossTrainingSport.SKI_TOURING) },
+];
+
+/**
+ * StyleOfWorkout returns the style of a workout: of its type, or of its
+ * sport for cross-training with one.
+ */
+export const styleOfWorkout = (workout: Workout): WorkoutStyle =>
+  workout.details.case === "crossTraining" &&
+  workout.details.value.sport === CrossTrainingSport.SKI_TOURING
+    ? SKI_TOUR_STYLE
+    : workoutStyle(workout.type);
 
 export const workoutStyle = (type: WorkoutType): WorkoutStyle => {
   for (const style of WORKOUT_STYLES) {
@@ -250,4 +278,22 @@ export const SPORT_TYPE_OPTIONS = [
 
 // SportLabel splits a Strava sport type into words, e.g. "Trail Run".
 export const sportLabel = (sportType: string): string =>
-  sportType.replaceAll(/([a-z])([A-Z])/gu, "$1 $2");
+  sportType === SKI_TOUR_SPORT_TYPE
+    ? "Ski tour"
+    : sportType.replaceAll(/([a-z])([A-Z])/gu, "$1 $2");
+
+// SKI_TOUR_SPORT_TYPE is Strava's sport type of ski tours.
+export const SKI_TOUR_SPORT_TYPE = "BackcountrySki";
+
+// IsSkiTourSport reports whether a Strava sport type is ski touring.
+export const isSkiTourSport = (sportType: string): boolean =>
+  sportType === SKI_TOUR_SPORT_TYPE;
+
+// TRIP_SPORT_TYPES are the sports offered for trip reports.
+export const TRIP_SPORT_TYPES = [
+  "TrailRun",
+  "Run",
+  "Hike",
+  SKI_TOUR_SPORT_TYPE,
+  "Snowshoe",
+];

@@ -13,7 +13,7 @@ import {
   formatKm,
   formatMeters,
 } from "helpers/format";
-import { sportLabel } from "helpers/labels";
+import { isSkiTourSport, sportLabel } from "helpers/labels";
 import type { LatLngTuple } from "leaflet";
 import React from "react";
 import { Link } from "react-router";
@@ -88,16 +88,28 @@ interface StatItem {
   value: string;
 }
 
+/**
+ * StatItems lists a trip's statistics. A ski tour is measured by the
+ * vertical skinned up, so that leads.
+ */
 const statItems = (stats: TripStats): StatItem[] => {
   const items: StatItem[] = [];
+  const skiTour = isSkiTourSport(stats.sportType);
+  const vertical =
+    stats.elevationGainMeters > 0
+      ? {
+          label: skiTour ? "Skinned up" : "Elevation gain",
+          value: formatMeters(stats.elevationGainMeters),
+        }
+      : undefined;
+  if (skiTour && vertical !== undefined) {
+    items.push(vertical);
+  }
   if (stats.distanceMeters > 0) {
     items.push({ label: "Distance", value: formatKm(stats.distanceMeters) });
   }
-  if (stats.elevationGainMeters > 0) {
-    items.push({
-      label: "Elevation gain",
-      value: formatMeters(stats.elevationGainMeters),
-    });
+  if (!skiTour && vertical !== undefined) {
+    items.push(vertical);
   }
   if (stats.movingTimeSeconds > 0) {
     items.push({

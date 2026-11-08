@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -34,6 +35,10 @@ import (
 )
 
 var _ tripsv1connect.TripReportServiceHandler = (*Service)(nil)
+
+// sportType matches Strava sport types, like TrailRun or BackcountrySki,
+// which the web app turns into words and picks a report's layout by.
+var sportType = regexp.MustCompile(`^[A-Z][A-Za-z]{1,39}$`)
 
 // TripRepository stores trip reports, photos and public profiles.
 type TripRepository interface {
@@ -400,6 +405,13 @@ func (s *Service) UpdateTripReport(ctx context.Context, req *tripsv1.UpdateTripR
 			}
 		}
 		update.CoverPhotoID = &cover
+	}
+	if req.HasSportType() {
+		sport := strings.TrimSpace(req.GetSportType())
+		if !sportType.MatchString(sport) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, `sport_type must be a Strava sport type in CamelCase, e.g. "TrailRun", "Hike" or "BackcountrySki"`)
+		}
+		update.SportType = &sport
 	}
 	if req.HasTags() {
 		update.Tags, err = tagNames(req.GetTags().GetTags())

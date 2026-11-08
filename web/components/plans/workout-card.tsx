@@ -5,7 +5,7 @@ import type { Activity } from "gen/activities/v1/activities_pb";
 import type { Workout, WorkoutWeather } from "gen/plans/v1/plans_pb";
 import { WorkoutType } from "gen/plans/v1/plans_pb";
 import { formatHoursMinutes } from "helpers/format";
-import { workoutStyle } from "helpers/labels";
+import { styleOfWorkout } from "helpers/labels";
 import { isCompleted, startWindow, workoutTargets } from "helpers/workouts";
 import React from "react";
 
@@ -58,7 +58,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
   activity,
   onClick,
 }) => {
-  const style = workoutStyle(workout.type);
+  const style = styleOfWorkout(workout);
   const threshold = useAerobicThreshold();
   const detail = [
     startWindow(workout),

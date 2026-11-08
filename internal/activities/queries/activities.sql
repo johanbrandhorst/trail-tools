@@ -217,7 +217,10 @@ limit sqlc.arg(max_activities);
 -- name: LinkWorkouts :exec
 -- Links the user's workouts that have no activity to the activities of the
 -- same day that no workout has: runs and races to runs, strength workouts
--- to strength training and cross-training to anything else. With several
+-- to strength training, ski tours to ski touring and other cross-training
+-- to anything else. On a day without a planned ski tour, ski touring
+-- activities complete other cross-training, as a ski tour may have been
+-- planned as that before ski tours could be. With several
 -- of a kind on a day, they're paired in order, the workouts by their start
 -- time and the activities by theirs, so the morning run completes the
 -- morning workout without comparing times across time zones. Workouts whose
@@ -230,6 +233,7 @@ with workout_kinds as (
   cross join lateral (select case
     when w.type = 'strength' then 'strength'
     when w.type in ('base', 'intensity', 'race') then 'run'
+    when w.cross_training_sport = 'ski_touring' then 'ski_touring'
     else 'cross_training'
   end as kind) k
   where p.user_id = sqlc.arg(user_id)::uuid
@@ -245,6 +249,8 @@ activity_kinds as (
     when a.sport_type = any(sqlc.arg(strength_sport_types)::text[]) then 'strength'
     when a.sport_type = any(sqlc.arg(run_sport_types)::text[]) then 'run'
     when a.sport_type = any(sqlc.arg(unplanned_sport_types)::text[]) then null
+    when a.sport_type = any(sqlc.arg(ski_touring_sport_types)::text[])
+      and a.start_date_local in (select date from workout_kinds where kind = 'ski_touring') then 'ski_touring'
     else 'cross_training'
   end as kind) k
   where a.user_id = sqlc.arg(user_id)::uuid

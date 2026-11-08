@@ -420,8 +420,8 @@ message PaceTarget {
   int32 slow_seconds_per_kilometer = 2;
 }
 
-// Cycling, swimming, skiing or other non-running cardio. The workout's title
-// says which.
+// Cycling, swimming, skiing or other non-running cardio. The sport says
+// which, if it's one the app knows; otherwise the workout's title does.
 message CrossTrainingWorkout {
   // Target distance in meters. 0 if not set.
   double target_distance_meters = 1;
@@ -429,6 +429,20 @@ message CrossTrainingWorkout {
   double target_elevation_gain_meters = 2;
   // Target moving time in seconds. 0 if not set.
   int32 target_duration_seconds = 3;
+  // The sport. Set it for a ski tour, so it's completed by the user's ski
+  // touring activity of the day and shown as one; unspecified for any other
+  // sport.
+  CrossTrainingSport sport = 4;
+}
+
+// CrossTrainingSport is the sport of a cross-training workout.
+enum CrossTrainingSport {
+  // Any other sport, named by the workout's title.
+  CROSS_TRAINING_SPORT_UNSPECIFIED = 0;
+  // Ski touring: climbing on skis with skins and skiing down, off the
+  // groomed runs, including splitboarding. Completed by a backcountry ski
+  // activity (Strava's BackcountrySki).
+  CROSS_TRAINING_SPORT_SKI_TOURING = 1;
 }
 
 // A race, either a goal race or a tune-up. The race itself is managed with
