@@ -130,3 +130,21 @@ export const parseEdited = (
 // HoursMinutesInput formats seconds as "h:mm" for an input.
 export const hoursMinutesInput = (seconds: number): string =>
   durationInput(seconds, false);
+
+/**
+ * ParseEnum parses the value of a select field into a member of a numeric
+ * protobuf enum, or returns the fallback if it isn't one of its values.
+ */
+export const parseEnum = <Enum extends number>(
+  values: Record<string, Enum | string>,
+  text: string,
+  fallback: Enum
+): Enum => {
+  const number = Number(text);
+  for (const value of Object.values(values)) {
+    if (typeof value === "number" && value === number) {
+      return value;
+    }
+  }
+  return fallback;
+};
