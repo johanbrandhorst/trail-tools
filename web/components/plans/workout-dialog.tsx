@@ -34,6 +34,7 @@ import {
   numberInput,
   parseDuration,
   parseEdited,
+  parseEnum,
   parseKm,
   parseMeters,
 } from "helpers/parse";
@@ -191,8 +192,8 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
       return;
     }
     setValidation("");
-    const workoutType: WorkoutType = Number(type);
-    const targetTerrain: Terrain = Number(terrain);
+    const workoutType = parseEnum(WorkoutType, type, WorkoutType.BASE);
+    const targetTerrain = parseEnum(Terrain, terrain, Terrain.UNSPECIFIED);
     // Fields the kind of workout doesn't have are left out.
     const targets = {
       distanceMeters: distanceMeters,
@@ -304,7 +305,7 @@ const WorkoutDialog: React.FC<WorkoutDialogProps> = ({
     activityOptions.push({ label: "Linked activity", value: completedId });
   }
 
-  const selectedType: WorkoutType = Number(type);
+  const selectedType = parseEnum(WorkoutType, type, WorkoutType.BASE);
   const isRun =
     selectedType === WorkoutType.BASE || selectedType === WorkoutType.INTENSITY;
   const designLink =

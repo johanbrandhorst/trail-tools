@@ -15,6 +15,7 @@ import {
   TimelineItemSchema,
 } from "gen/races/v1/race_plans_pb";
 import { CONTINGENCY_OPTIONS, contingencyLabel } from "helpers/labels";
+import { parseEnum } from "helpers/parse";
 import React, { useState } from "react";
 
 import ListControls, { AddButton } from "./list-controls";
@@ -299,7 +300,11 @@ export const ContingenciesSection: React.FC<SectionComponentProps> = ({
                   value={String(draft.item.scenario)}
                   options={SCENARIO_SELECT}
                   onChange={(value) => {
-                    const scenario: ContingencyScenario = Number(value);
+                    const scenario = parseEnum(
+                      ContingencyScenario,
+                      value,
+                      ContingencyScenario.UNSPECIFIED
+                    );
                     update(draft.key, { ...draft.item, scenario });
                   }}
                 />
