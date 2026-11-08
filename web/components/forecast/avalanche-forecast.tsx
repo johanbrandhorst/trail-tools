@@ -38,21 +38,33 @@ const dangerClass = (danger: AvalancheDanger): string => {
   }
 };
 
-// DangerCell shows a band's rating on a day.
+/**
+ * DangerCell shows a band's rating on a day: the level's number and name,
+ * like "3" over "Considerable", or how an unrated band is described, small
+ * enough for three days to fit a narrow sidebar.
+ */
 const DangerCell: React.FC<{
   rating: AvalancheDangerRating | undefined;
   selected: boolean;
-}> = ({ rating, selected }) => (
-  <td className="p-0.5">
-    <span
-      className={`block rounded px-1.5 py-1 text-center text-xs font-medium ${dangerClass(rating?.danger ?? AvalancheDanger.UNSPECIFIED)} ${selected ? "ring-2 ring-gray-900 ring-offset-1" : ""}`}
-    >
-      {rating?.description === undefined || rating.description === ""
-        ? "–"
-        : rating.description}
-    </span>
-  </td>
-);
+}> = ({ rating, selected }) => {
+  const danger = rating?.danger ?? AvalancheDanger.UNSPECIFIED;
+  const description = rating?.description ?? "";
+  // Rated levels are described like "3 - Considerable".
+  const name = description.replace(/^\d+\s*-\s*/u, "");
+  return (
+    <td className="p-0.5">
+      <span
+        title={description}
+        className={`flex min-h-10 flex-col items-center justify-center rounded px-0.5 py-1 text-center leading-tight font-medium hyphens-auto [overflow-wrap:anywhere] ${dangerClass(danger)} ${selected ? "ring-2 ring-gray-900 ring-offset-1" : ""}`}
+      >
+        {danger !== AvalancheDanger.UNSPECIFIED && (
+          <span className="text-sm font-semibold">{danger}</span>
+        )}
+        <span className="text-[10px]">{name === "" ? "–" : name}</span>
+      </span>
+    </td>
+  );
+};
 
 const BANDS: {
   label: string;
@@ -127,10 +139,10 @@ const AvalancheForecastView: React.FC<AvalancheForecastViewProps> = ({
         </p>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-80 table-fixed border-separate border-spacing-0 tabular-nums">
+        <table className="w-full min-w-64 table-fixed border-separate border-spacing-0 tabular-nums">
           <thead>
             <tr>
-              <th className="w-28" />
+              <th className="w-20" />
               {forecast.days.map((day) => (
                 <th
                   key={day.date}

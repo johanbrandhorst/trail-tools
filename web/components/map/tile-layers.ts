@@ -76,7 +76,7 @@ const BASE_LAYERS: TileLayerDefinition[] = [
 ];
 
 // SLOPE_OVERLAY_ID is the ID of the slope angle overlay, which has a legend.
-const SLOPE_OVERLAY_ID = "slope";
+export const SLOPE_OVERLAY_ID = "slope";
 
 /*
  * SLOPE_BANDS are the slope angle overlay's colors, as the server renders
@@ -170,6 +170,39 @@ const OVERLAYS: TileLayerDefinition[] = [
 
 const LAYERS_KEY = "trail-tools.map-layers";
 
+/**
+ * MapOverlays holds each map's overlays by ID, so they can be shown and
+ * hidden from outside the layers control.
+ */
+const mapOverlays = new WeakMap<LeafletMap, Map<string, TileLayer>>();
+
+// OverlayLayer returns a map's overlay by ID, undefined if there's none.
+export const overlayLayer = (
+  map: LeafletMap,
+  id: string
+): TileLayer | undefined => mapOverlays.get(map)?.get(id);
+
+/**
+ * SetOverlayVisible shows or hides one of a map's overlays. The layers
+ * control follows, checking or unchecking it, showing its legend and
+ * remembering the selection, as it does for the user's own clicks.
+ */
+export const setOverlayVisible = (
+  map: LeafletMap,
+  id: string,
+  visible: boolean
+): void => {
+  const layer = overlayLayer(map, id);
+  if (layer === undefined || map.hasLayer(layer) === visible) {
+    return;
+  }
+  if (visible) {
+    layer.addTo(map);
+  } else {
+    layer.remove();
+  }
+};
+
 interface LayerSelection {
   base: string;
   overlays: string[];
@@ -241,9 +274,12 @@ export const addTileLayers = (map: LeafletMap): void => {
   }
   const activeOverlays = new Set<string>();
   const legend = slopeLegend();
+  const overlaysByID = new Map<string, TileLayer>();
+  mapOverlays.set(map, overlaysByID);
   for (const definition of OVERLAYS) {
     const layer = createTileLayer(definition);
     overlays[definition.name] = layer;
+    overlaysByID.set(definition.id, layer);
     ids.set(layer, definition.id);
     if (selection.overlays.includes(definition.id)) {
       layer.addTo(map);
