@@ -18,8 +18,9 @@ import (
 
 // SaveRegion replaces the edges and points of interest of a region in the
 // routing graph. The edges are streamed into the database, so they don't all
-// need to be in memory.
-func SaveRegion(ctx context.Context, db *store.DB, region string, bounds geo.Bounds, edges iter.Seq[Edge], features []Feature) (int, error) {
+// need to be in memory. Edges whose midpoint is in one of the forests are
+// marked as in forest; the forests themselves aren't kept.
+func SaveRegion(ctx context.Context, db *store.DB, region string, bounds geo.Bounds, edges iter.Seq[Edge], features []Feature, forests []Forest) (int, error) {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -37,6 +38,9 @@ func SaveRegion(ctx context.Context, db *store.DB, region string, bounds geo.Bou
 	}
 	if _, err := tx.Exec(ctx, `delete from points_of_interest where region_id = $1`, regionID); err != nil {
 		return 0, fmt.Errorf("failed to delete the region's points of interest: %w", err)
+	}
+	if err := stageForests(ctx, tx, forests); err != nil {
+		return 0, err
 	}
 	// Geometries are copied as text into a staging table, as pgx can't encode
 	// PostGIS types.
@@ -56,10 +60,11 @@ func SaveRegion(ctx context.Context, db *store.DB, region string, bounds geo.Bou
 	}
 	if _, err := tx.Exec(ctx, `insert into routing_edges (
 		region_id, source, target, geom, elevations, length_meters, climb_meters,
-		descent_meters, highway, sac_scale, terrain, way_id, name, surface
-	) select $1, source, target, ST_GeomFromText(wkt, 4326), elevations, length_meters,
-		climb_meters, descent_meters, highway, sac_scale, terrain, way_id, name, surface
-	from staged_edges`, regionID); err != nil {
+		descent_meters, highway, sac_scale, terrain, way_id, name, surface, forest
+	) select $1, source, target, edge.geom, elevations, length_meters,
+		climb_meters, descent_meters, highway, sac_scale, terrain, way_id, name, surface,
+		exists (select 1 from staged_forests f where ST_Intersects(f.geom, ST_LineInterpolatePoint(edge.geom, 0.5)))
+	from staged_edges, ST_GeomFromText(wkt, 4326) as edge (geom)`, regionID); err != nil {
 		return 0, fmt.Errorf("failed to insert edges: %w", err)
 	}
 	if _, err := tx.Exec(ctx, `create temporary table staged_points_of_interest (
@@ -91,6 +96,41 @@ func SaveRegion(ctx context.Context, db *store.DB, region string, bounds geo.Bou
 		return 0, fmt.Errorf("failed to save the region: %w", err)
 	}
 	return source.count, tx.Commit(ctx)
+}
+
+// stageForests copies the outlines of forests into a temporary table with a
+// spatial index, staged_forests, for marking the edges in them. Outlines
+// that cross themselves, which OpenStreetMap has a few of, are made valid,
+// as they would otherwise fail the intersection tests.
+func stageForests(ctx context.Context, tx pgx.Tx, forests []Forest) error {
+	if _, err := tx.Exec(ctx, `create temporary table staged_forest_outlines (wkt text) on commit drop`); err != nil {
+		return fmt.Errorf("failed to create the staging table: %w", err)
+	}
+	if _, err := tx.CopyFrom(ctx, pgx.Identifier{"staged_forest_outlines"}, []string{"wkt"},
+		pgx.CopyFromSlice(len(forests), func(i int) ([]any, error) {
+			return []any{polygonWKT(forests[i].Ring)}, nil
+		})); err != nil {
+		return fmt.Errorf("failed to copy forests: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `create temporary table staged_forests on commit drop as
+	select ST_MakeValid(ST_GeomFromText(wkt, 4326)) as geom from staged_forest_outlines`); err != nil {
+		return fmt.Errorf("failed to stage forests: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `create index on staged_forests using gist (geom)`); err != nil {
+		return fmt.Errorf("failed to index forests: %w", err)
+	}
+	// Without statistics, the planner doesn't know the table is worth using
+	// the index for.
+	if _, err := tx.Exec(ctx, `analyze staged_forests`); err != nil {
+		return fmt.Errorf("failed to analyze forests: %w", err)
+	}
+	return nil
+}
+
+// polygonWKT returns the well-known text of a polygon with a closed ring as
+// its outline.
+func polygonWKT(ring []geo.Point) string {
+	return "POLYGON((" + strings.TrimSuffix(strings.TrimPrefix(lineWKT(ring), "LINESTRING("), ")") + "))"
 }
 
 // edgeSource is a pgx.CopyFromSource of edges.

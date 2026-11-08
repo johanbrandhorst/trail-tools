@@ -681,6 +681,7 @@ func run(
 	planService := plan.NewService(log, report, planRepo, routeRepo, activityRepo, mapData)
 	planService.SetSharing(planRepo, baseURL)
 	planService.SetCalendars(planRepo)
+	planService.SetForests(routing.NewFinder(db))
 	if garminSyncer != nil {
 		// Changed workouts of the coming days go on the Garmin calendar
 		// right away.

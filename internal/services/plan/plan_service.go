@@ -64,6 +64,8 @@ type Service struct {
 	baseURL string
 	// Serves calendar feeds, nil if they aren't set up.
 	calendars CalendarRepository
+	// Looks up forests for wind warnings, nil if there are none.
+	forests ForestSource
 }
 
 // WorkoutsChangedFunc is told about changes to the user's workouts, on the

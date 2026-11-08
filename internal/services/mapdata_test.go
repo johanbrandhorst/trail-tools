@@ -117,7 +117,7 @@ func TestMapData(t *testing.T) {
 		{Source: 1, Target: 2, Points: []geo.Point{{Lat: 47, Lng: 8, Ele: 500}, {Lat: 47.01, Lng: 8, Ele: 520}}, Highway: "path", Terrain: geo.TerrainTrail},
 		{Source: 2, Target: 3, Points: []geo.Point{{Lat: 47.01, Lng: 8, Ele: 520}, {Lat: 47.02, Lng: 8, Ele: 510}}, Highway: "track", Terrain: geo.TerrainGravel},
 	})
-	if _, err := routing.SaveRegion(ctx, e.db, "central-switzerland", bounds, edges, nil); err != nil {
+	if _, err := routing.SaveRegion(ctx, e.db, "central-switzerland", bounds, edges, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := routing.FailImport(ctx, e.db, id, "the download failed"); err != nil {
@@ -217,7 +217,7 @@ func TestRefreshMapData(t *testing.T) {
 	// demo region, both imported 40 days ago.
 	bounds := geo.Bounds{MinLat: 46.6, MinLng: 7.9, MaxLat: 47.5, MaxLng: 9.2}
 	for _, name := range []string{"central-switzerland", "demo"} {
-		if _, err := routing.SaveRegion(ctx, e.db, name, bounds, edges(), nil); err != nil {
+		if _, err := routing.SaveRegion(ctx, e.db, name, bounds, edges(), nil, nil); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -263,7 +263,7 @@ func TestRefreshMapData(t *testing.T) {
 	if _, err := e.db.Exec(ctx, "update routing_imports set state = 'done' where id = $1", record.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := routing.SaveRegion(ctx, e.db, "central-switzerland", bounds, edges(), nil); err != nil {
+	if _, err := routing.SaveRegion(ctx, e.db, "central-switzerland", bounds, edges(), nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if code := refresh(); code != http.StatusNoContent || len(runner.ids) != 1 {

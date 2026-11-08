@@ -42,7 +42,7 @@ func ImportOSM(ctx context.Context, log *slog.Logger, db *store.DB, region strin
 			}
 		}
 	}
-	count, err := SaveRegion(ctx, db, region, bounds, BuildEdges(ways, nodes, elevations, bounds), features)
+	count, err := SaveRegion(ctx, db, region, bounds, BuildEdges(ways, nodes, elevations, bounds), features, data.Forests)
 	if err != nil {
 		return 0, err
 	}
@@ -50,7 +50,7 @@ func ImportOSM(ctx context.Context, log *slog.Logger, db *store.DB, region strin
 		return 0, fmt.Errorf("there are no foot accessible ways within the bounds")
 	}
 	log.InfoContext(ctx, "Imported the region", slog.String("region", region), slog.Int("edges", count),
-		slog.Int("points_of_interest", len(features)), slog.Duration("duration", time.Since(start)))
+		slog.Int("points_of_interest", len(features)), slog.Int("forests", len(data.Forests)), slog.Duration("duration", time.Since(start)))
 	return count, nil
 }
 

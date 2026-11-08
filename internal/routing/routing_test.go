@@ -112,11 +112,11 @@ func newRouter(t *testing.T) *routing.Router {
 	elevations := make([]float64, len(nodes.IDs))
 	edges := routing.BuildEdges(ways, nodes, elevations, bounds)
 	ctx := context.Background()
-	if _, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil); err != nil {
+	if _, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil, nil); err != nil {
 		t.Fatalf("SaveRegion: %v", err)
 	}
 	// Importing again replaces the region.
-	if count, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil); err != nil || count != 5 {
+	if count, err := routing.SaveRegion(ctx, db, "test", bounds, edges, nil, nil); err != nil || count != 5 {
 		t.Fatalf("SaveRegion: %d edges, %v", count, err)
 	}
 	return routing.NewRouter(db)
@@ -208,7 +208,7 @@ func loopRouter(t *testing.T) *routing.Router {
 	}
 	bounds := geo.Bounds{MinLat: -0.01, MinLng: -0.01, MaxLat: 0.02, MaxLng: 0.02}
 	edges := routing.BuildEdges(ways, nodes, make([]float64, len(nodes.IDs)), bounds)
-	if count, err := routing.SaveRegion(context.Background(), db, "loop", bounds, edges, nil); err != nil || count != 2 {
+	if count, err := routing.SaveRegion(context.Background(), db, "loop", bounds, edges, nil, nil); err != nil || count != 2 {
 		t.Fatalf("SaveRegion: %d edges, %v", count, err)
 	}
 	return routing.NewRouter(db)
