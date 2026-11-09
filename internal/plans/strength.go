@@ -166,6 +166,11 @@ type PlannedExercise struct {
 	Reps int32
 	// 0 for exercises done for reps.
 	HoldSeconds int32
+	// For exercises done on each side, the left side's reps or hold time
+	// when they differ from the right's, which Reps and HoldSeconds are
+	// then. 0 for the same on both sides.
+	LeftReps        int32
+	LeftHoldSeconds int32
 	// Of each dumbbell for exercises with two. Zero for bodyweight.
 	Weight      Weight
 	RestSeconds int32
@@ -257,6 +262,11 @@ type LoggedSet struct {
 	Reps int32
 	// 0 for exercises done for reps.
 	HoldSeconds int32
+	// For exercises done on each side, the left side's reps or hold time
+	// when they differ from the right's, which Reps and HoldSeconds are
+	// then. 0 for the same on both sides.
+	LeftReps        int32
+	LeftHoldSeconds int32
 	// Zero for bodyweight.
 	Weight Weight
 	// How hard the set felt, empty if not rated.
@@ -464,6 +474,8 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 			exercises.PlannedSets = append(exercises.PlannedSets, p.Sets)
 			exercises.PlannedReps = append(exercises.PlannedReps, p.Reps)
 			exercises.PlannedHoldSeconds = append(exercises.PlannedHoldSeconds, p.HoldSeconds)
+			exercises.PlannedLeftReps = append(exercises.PlannedLeftReps, p.LeftReps)
+			exercises.PlannedLeftHoldSeconds = append(exercises.PlannedLeftHoldSeconds, p.LeftHoldSeconds)
 			exercises.PlannedWeightValues = append(exercises.PlannedWeightValues, p.Weight.Value)
 			exercises.PlannedWeightUnits = append(exercises.PlannedWeightUnits, string(p.Weight.Unit))
 			exercises.PlannedRestSeconds = append(exercises.PlannedRestSeconds, p.RestSeconds)
@@ -475,6 +487,8 @@ func (r *Repository) SetStrengthLog(ctx context.Context, userID pgtype.UUID, w *
 				sets.SetNumbers = append(sets.SetNumbers, int32(n+1))
 				sets.Reps = append(sets.Reps, s.Reps)
 				sets.HoldSeconds = append(sets.HoldSeconds, s.HoldSeconds)
+				sets.LeftReps = append(sets.LeftReps, s.LeftReps)
+				sets.LeftHoldSeconds = append(sets.LeftHoldSeconds, s.LeftHoldSeconds)
 				sets.WeightValues = append(sets.WeightValues, s.Weight.Value)
 				sets.WeightUnits = append(sets.WeightUnits, string(s.Weight.Unit))
 				sets.Efforts = append(sets.Efforts, string(s.Effort))
@@ -566,23 +580,25 @@ func (r *Repository) ListExerciseHistory(ctx context.Context, userID pgtype.UUID
 			WorkoutTitle:  row.WorkoutTitle,
 			SessionEffort: SessionEffort(row.SessionEffort.SessionEffort),
 			Exercise: loggedExerciseFromDB(&gen.StrengthLogExercise{
-				LogID:               row.LogID,
-				Position:            row.Position,
-				ExerciseID:          row.ExerciseID,
-				Effort:              row.Effort,
-				Volume:              row.Volume,
-				Stiffness:           row.Stiffness,
-				Notes:               row.Notes,
-				PlannedGroupName:    row.PlannedGroupName,
-				PlannedSets:         row.PlannedSets,
-				PlannedReps:         row.PlannedReps,
-				PlannedHoldSeconds:  row.PlannedHoldSeconds,
-				PlannedWeightValue:  row.PlannedWeightValue,
-				PlannedWeightUnit:   row.PlannedWeightUnit,
-				PlannedRestSeconds:  row.PlannedRestSeconds,
-				PlannedTempo:        row.PlannedTempo,
-				PlannedTargetEffort: row.PlannedTargetEffort,
-				PlannedNotes:        row.PlannedNotes,
+				LogID:                  row.LogID,
+				Position:               row.Position,
+				ExerciseID:             row.ExerciseID,
+				Effort:                 row.Effort,
+				Volume:                 row.Volume,
+				Stiffness:              row.Stiffness,
+				Notes:                  row.Notes,
+				PlannedGroupName:       row.PlannedGroupName,
+				PlannedSets:            row.PlannedSets,
+				PlannedReps:            row.PlannedReps,
+				PlannedHoldSeconds:     row.PlannedHoldSeconds,
+				PlannedLeftReps:        row.PlannedLeftReps,
+				PlannedLeftHoldSeconds: row.PlannedLeftHoldSeconds,
+				PlannedWeightValue:     row.PlannedWeightValue,
+				PlannedWeightUnit:      row.PlannedWeightUnit,
+				PlannedRestSeconds:     row.PlannedRestSeconds,
+				PlannedTempo:           row.PlannedTempo,
+				PlannedTargetEffort:    row.PlannedTargetEffort,
+				PlannedNotes:           row.PlannedNotes,
 			}, row.ExerciseName, setsByExercise[setKey{row.LogID, row.Position}]),
 		}
 	}
@@ -679,6 +695,8 @@ func (wr *workoutReader) workouts() []*Workout {
 			Sets:              row.Sets,
 			Reps:              row.Reps,
 			HoldSeconds:       row.HoldSeconds,
+			LeftReps:          row.LeftReps,
+			LeftHoldSeconds:   row.LeftHoldSeconds,
 			Weight:            weightFromDB(row.WeightValue, row.WeightUnit),
 			RestSeconds:       row.RestSeconds,
 			Tempo:             row.Tempo,
@@ -747,11 +765,13 @@ func groupSets(rows []*gen.StrengthLogSet) map[setKey][]LoggedSet {
 	for _, s := range rows {
 		k := setKey{s.LogID, s.Position}
 		result[k] = append(result[k], LoggedSet{
-			Reps:        s.Reps,
-			HoldSeconds: s.HoldSeconds,
-			Weight:      weightFromDB(s.WeightValue, s.WeightUnit),
-			Effort:      ExerciseEffort(s.Effort.ExerciseEffort),
-			Stiffness:   Stiffness(s.Stiffness),
+			Reps:            s.Reps,
+			HoldSeconds:     s.HoldSeconds,
+			LeftReps:        s.LeftReps,
+			LeftHoldSeconds: s.LeftHoldSeconds,
+			Weight:          weightFromDB(s.WeightValue, s.WeightUnit),
+			Effort:          ExerciseEffort(s.Effort.ExerciseEffort),
+			Stiffness:       Stiffness(s.Stiffness),
 		})
 	}
 	return result
@@ -780,6 +800,8 @@ func queueReplaceExercises(ctx context.Context, q *gen.Queries, workouts []*Work
 			params.Sets = append(params.Sets, e.Sets)
 			params.Reps = append(params.Reps, e.Reps)
 			params.HoldSeconds = append(params.HoldSeconds, e.HoldSeconds)
+			params.LeftReps = append(params.LeftReps, e.LeftReps)
+			params.LeftHoldSeconds = append(params.LeftHoldSeconds, e.LeftHoldSeconds)
 			params.WeightValues = append(params.WeightValues, e.Weight.Value)
 			params.WeightUnits = append(params.WeightUnits, string(e.Weight.Unit))
 			params.RestSeconds = append(params.RestSeconds, e.RestSeconds)
@@ -806,17 +828,19 @@ func loggedExerciseFromDB(row *gen.StrengthLogExercise, name string, sets []Logg
 	}
 	if row.PlannedSets.Valid {
 		e.Planned = &PlannedExercise{
-			ExerciseID:   row.ExerciseID,
-			ExerciseName: name,
-			Group:        row.PlannedGroupName.String,
-			Sets:         row.PlannedSets.Int32,
-			Reps:         row.PlannedReps.Int32,
-			HoldSeconds:  row.PlannedHoldSeconds.Int32,
-			Weight:       weightFromDB(row.PlannedWeightValue.Float64, row.PlannedWeightUnit),
-			RestSeconds:  row.PlannedRestSeconds.Int32,
-			Tempo:        row.PlannedTempo.String,
-			TargetEffort: row.PlannedTargetEffort.Int32,
-			Notes:        row.PlannedNotes.String,
+			ExerciseID:      row.ExerciseID,
+			ExerciseName:    name,
+			Group:           row.PlannedGroupName.String,
+			Sets:            row.PlannedSets.Int32,
+			Reps:            row.PlannedReps.Int32,
+			HoldSeconds:     row.PlannedHoldSeconds.Int32,
+			LeftReps:        row.PlannedLeftReps.Int32,
+			LeftHoldSeconds: row.PlannedLeftHoldSeconds.Int32,
+			Weight:          weightFromDB(row.PlannedWeightValue.Float64, row.PlannedWeightUnit),
+			RestSeconds:     row.PlannedRestSeconds.Int32,
+			Tempo:           row.PlannedTempo.String,
+			TargetEffort:    row.PlannedTargetEffort.Int32,
+			Notes:           row.PlannedNotes.String,
 		}
 	}
 	return e

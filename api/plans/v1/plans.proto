@@ -572,13 +572,15 @@ message PlannedExercise {
   // as it reads: the exercise is done once each round, for the group's
   // rounds. A number other than the rounds is refused.
   int32 sets = 4;
-  // The reps of each set, per side for exercises done on each side. 0 for
-  // exercises held for a time, and for exercises done until the user is
-  // done, like stretches or leg swings: leave both reps and hold_seconds 0
-  // for those, and watches move on when the lap button is pressed.
+  // The reps of each set, per side for exercises done on each side, or the
+  // right side's when left_reps is set. 0 for exercises held for a time,
+  // and for exercises done until the user is done, like stretches or leg
+  // swings: leave both reps and hold_seconds 0 for those, and watches move
+  // on when the lap button is pressed.
   int32 reps = 5;
   // How long each set is held in seconds, per side for exercises done on
-  // each side, e.g. 30 for a plank. 0 for exercises done for reps. Set at
+  // each side, or the right side's when left_hold_seconds is set, e.g. 30
+  // for a plank. 0 for exercises done for reps. Set at
   // most one of reps and hold_seconds: with neither, the exercise is done
   // until the user is done, e.g. leg swings in a warm-up or stretches in a
   // cool-down, and watches move on when they press the lap button.
@@ -604,6 +606,17 @@ message PlannedExercise {
   // Shown with the exercise's instructions and how it should feel. Empty if
   // none.
   string notes = 11;
+  // For exercises done on each side, the reps of the left side when they
+  // differ from the right side's, e.g. 12 on a weaker left leg: reps are
+  // then the right side's. 0 for the same reps on both sides. Only with
+  // reps, and only for exercises done on each side.
+  int32 left_reps = 12;
+  // For exercises done on each side, how long the left side is held in
+  // seconds when it differs from the right side, e.g. 45 on a weaker left
+  // side: hold_seconds is then the right side's. 0 for the same on both
+  // sides. Only with hold_seconds, and only for exercises done on each
+  // side.
+  int32 left_hold_seconds = 13;
 }
 
 // SessionEffort is how hard a whole strength session felt.
@@ -690,10 +703,12 @@ message LoggedExercise {
 
 // A set as it was done.
 message LoggedSet {
-  // The reps done, per side for exercises done on each side. 0 for
-  // exercises held for a time.
+  // The reps done, per side for exercises done on each side, or the right
+  // side's when left_reps is set. 0 for exercises held for a time.
   int32 reps = 1;
-  // How long the set was held in seconds. 0 for exercises done for reps.
+  // How long the set was held in seconds, per side for exercises done on
+  // each side, or the right side's when left_hold_seconds is set. 0 for
+  // exercises done for reps.
   int32 hold_seconds = 2;
   // The weight used, as in PlannedExercise. Unset for bodyweight.
   Weight weight = 3;
@@ -705,6 +720,14 @@ message LoggedSet {
   // How stiff the body felt in the set, for warm-up and cool-down
   // exercises. Unspecified if not rated.
   Stiffness stiffness = 5;
+  // For exercises done on each side, the reps done on the left side when
+  // they differ from the right side's, which reps are then. 0 when both
+  // sides did the same.
+  int32 left_reps = 6;
+  // For exercises done on each side, how long the left side was held in
+  // seconds when it differs from the right side, which hold_seconds is
+  // then. 0 when both sides held the same.
+  int32 left_hold_seconds = 7;
 }
 
 message CreateTrainingPlanRequest {

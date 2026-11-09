@@ -99,7 +99,8 @@ func strengthWorkoutFIT(w *plans.Workout) *fit.StrengthWorkout {
 
 func strengthExerciseFIT(e *plans.PlannedExercise) fit.StrengthExercise {
 	var notes []string
-	if e.ExerciseEachSide {
+	// The steps of an uneven exercise name their sides.
+	if e.ExerciseEachSide && !e.Uneven() {
 		notes = append(notes, "Each side")
 	}
 	if e.Tempo != "" {
@@ -118,6 +119,8 @@ func strengthExerciseFIT(e *plans.PlannedExercise) fit.StrengthExercise {
 		Rest:            time.Duration(e.RestSeconds) * time.Second,
 		Intensity:       exerciseIntensities[e.GroupKind],
 		EachSide:        e.ExerciseEachSide,
+		LeftReps:        int(e.LeftReps),
+		LeftHold:        time.Duration(e.LeftHoldSeconds) * time.Second,
 	}
 }
 

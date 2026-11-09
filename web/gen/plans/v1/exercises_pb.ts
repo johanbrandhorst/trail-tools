@@ -82,7 +82,9 @@ export type Exercise = Message<"plans.v1.Exercise"> & {
 
   /**
    * Whether the exercise is done on each side in turn, like a lunge, so
-   * planned and logged reps and hold times are per side.
+   * planned and logged reps and hold times are per side. The left side can
+   * have its own, e.g. more on a weaker leg: see
+   * PlannedExercise.left_reps and left_hold_seconds.
    *
    * @generated from field: bool each_side = 8;
    */

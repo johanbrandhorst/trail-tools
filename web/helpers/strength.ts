@@ -178,17 +178,27 @@ export const formatSeconds = (seconds: number): string => {
   return `${seconds / 60}${NBSP}min`;
 };
 
-// FormatReps formats what a set is: its reps or how long it's held.
+/**
+ * FormatReps formats what a set is: its reps or how long it's held, with
+ * the left side's first when it differs from the right side's, e.g. "10
+ * left / 8 right".
+ */
 export const formatReps = (
   reps: number,
   holdSeconds: number,
-  eachSide: boolean
+  eachSide: boolean,
+  leftReps = 0,
+  leftHoldSeconds = 0
 ): string => {
   if (holdSeconds > 0) {
-    return `${formatSeconds(holdSeconds)}${perSide(eachSide)}`;
+    return leftHoldSeconds > 0
+      ? `${formatSeconds(leftHoldSeconds)} left / ${formatSeconds(holdSeconds)} right`
+      : `${formatSeconds(holdSeconds)}${perSide(eachSide)}`;
   }
   if (reps > 0) {
-    return `${reps}${perSide(eachSide)}`;
+    return leftReps > 0
+      ? `${leftReps} left / ${reps} right`
+      : `${reps}${perSide(eachSide)}`;
   }
   return `until done${perSide(eachSide)}`;
 };
@@ -203,13 +213,22 @@ export const formatDose = (
   eachSide: boolean,
   inRounds = false
 ): string => {
-  const reps = formatReps(planned.reps, planned.holdSeconds, eachSide);
+  const reps = formatReps(
+    planned.reps,
+    planned.holdSeconds,
+    eachSide,
+    planned.leftReps,
+    planned.leftHoldSeconds
+  );
   const once = inRounds || (planned.sets === 1 && isOpen(planned));
   // Without "N ×" before them, reps need their unit.
-  const alone =
-    planned.reps > 0 && planned.holdSeconds === 0
-      ? `${planned.reps} reps${perSide(eachSide)}`
-      : capitalize(reps);
+  let alone = capitalize(reps);
+  if (planned.reps > 0 && planned.holdSeconds === 0) {
+    alone =
+      planned.leftReps > 0
+        ? `${planned.leftReps} reps left / ${planned.reps} right`
+        : `${planned.reps} reps${perSide(eachSide)}`;
+  }
   // Lines only break between the parts.
   const parts = [keepTogether(once ? alone : `${planned.sets} × ${reps}`)];
   if (hasWeight(planned.weight)) {
@@ -235,13 +254,21 @@ export const isOpen = (planned: PlannedExercise): boolean =>
 const capitalize = (text: string): string =>
   text.charAt(0).toUpperCase() + text.slice(1);
 
-// FormatSet formats a logged set, e.g. "8 × 10 kg", "20 s" or "Done".
+/**
+ * FormatSet formats a logged set, e.g. "8 × 10 kg", "20 s", "10 L / 8 R" or
+ * "Done".
+ */
 export const formatSet = (set: LoggedSet): string => {
   let reps = `${set.reps}`;
   if (set.holdSeconds > 0) {
-    reps = formatSeconds(set.holdSeconds);
+    reps =
+      set.leftHoldSeconds > 0
+        ? `${formatSeconds(set.leftHoldSeconds)} L / ${formatSeconds(set.holdSeconds)} R`
+        : formatSeconds(set.holdSeconds);
   } else if (set.reps === 0) {
     reps = "Done";
+  } else if (set.leftReps > 0) {
+    reps = `${set.leftReps} L / ${set.reps} R`;
   }
   return keepTogether(
     hasWeight(set.weight) ? `${reps} × ${formatWeight(set.weight)}` : reps

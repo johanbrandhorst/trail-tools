@@ -3351,20 +3351,22 @@ func (b0 EquipmentIssue_builder) Build() *EquipmentIssue {
 // hold time, weight and rest. The exercise itself (its instructions and
 // muscles) is in the user's exercise library, see ExerciseService.
 type PlannedExercise struct {
-	state                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_ExerciseId   string                 `protobuf:"bytes,1,opt,name=exercise_id,json=exerciseId,proto3"`
-	xxx_hidden_ExerciseName string                 `protobuf:"bytes,2,opt,name=exercise_name,json=exerciseName,proto3"`
-	xxx_hidden_Group        string                 `protobuf:"bytes,3,opt,name=group,proto3"`
-	xxx_hidden_Sets         int32                  `protobuf:"varint,4,opt,name=sets,proto3"`
-	xxx_hidden_Reps         int32                  `protobuf:"varint,5,opt,name=reps,proto3"`
-	xxx_hidden_HoldSeconds  int32                  `protobuf:"varint,6,opt,name=hold_seconds,json=holdSeconds,proto3"`
-	xxx_hidden_Weight       *Weight                `protobuf:"bytes,7,opt,name=weight,proto3"`
-	xxx_hidden_RestSeconds  int32                  `protobuf:"varint,8,opt,name=rest_seconds,json=restSeconds,proto3"`
-	xxx_hidden_Tempo        string                 `protobuf:"bytes,9,opt,name=tempo,proto3"`
-	xxx_hidden_TargetEffort int32                  `protobuf:"varint,10,opt,name=target_effort,json=targetEffort,proto3"`
-	xxx_hidden_Notes        string                 `protobuf:"bytes,11,opt,name=notes,proto3"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ExerciseId      string                 `protobuf:"bytes,1,opt,name=exercise_id,json=exerciseId,proto3"`
+	xxx_hidden_ExerciseName    string                 `protobuf:"bytes,2,opt,name=exercise_name,json=exerciseName,proto3"`
+	xxx_hidden_Group           string                 `protobuf:"bytes,3,opt,name=group,proto3"`
+	xxx_hidden_Sets            int32                  `protobuf:"varint,4,opt,name=sets,proto3"`
+	xxx_hidden_Reps            int32                  `protobuf:"varint,5,opt,name=reps,proto3"`
+	xxx_hidden_HoldSeconds     int32                  `protobuf:"varint,6,opt,name=hold_seconds,json=holdSeconds,proto3"`
+	xxx_hidden_Weight          *Weight                `protobuf:"bytes,7,opt,name=weight,proto3"`
+	xxx_hidden_RestSeconds     int32                  `protobuf:"varint,8,opt,name=rest_seconds,json=restSeconds,proto3"`
+	xxx_hidden_Tempo           string                 `protobuf:"bytes,9,opt,name=tempo,proto3"`
+	xxx_hidden_TargetEffort    int32                  `protobuf:"varint,10,opt,name=target_effort,json=targetEffort,proto3"`
+	xxx_hidden_Notes           string                 `protobuf:"bytes,11,opt,name=notes,proto3"`
+	xxx_hidden_LeftReps        int32                  `protobuf:"varint,12,opt,name=left_reps,json=leftReps,proto3"`
+	xxx_hidden_LeftHoldSeconds int32                  `protobuf:"varint,13,opt,name=left_hold_seconds,json=leftHoldSeconds,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *PlannedExercise) Reset() {
@@ -3469,6 +3471,20 @@ func (x *PlannedExercise) GetNotes() string {
 	return ""
 }
 
+func (x *PlannedExercise) GetLeftReps() int32 {
+	if x != nil {
+		return x.xxx_hidden_LeftReps
+	}
+	return 0
+}
+
+func (x *PlannedExercise) GetLeftHoldSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_LeftHoldSeconds
+	}
+	return 0
+}
+
 func (x *PlannedExercise) SetExerciseId(v string) {
 	x.xxx_hidden_ExerciseId = v
 }
@@ -3513,6 +3529,14 @@ func (x *PlannedExercise) SetNotes(v string) {
 	x.xxx_hidden_Notes = v
 }
 
+func (x *PlannedExercise) SetLeftReps(v int32) {
+	x.xxx_hidden_LeftReps = v
+}
+
+func (x *PlannedExercise) SetLeftHoldSeconds(v int32) {
+	x.xxx_hidden_LeftHoldSeconds = v
+}
+
 func (x *PlannedExercise) HasWeight() bool {
 	if x == nil {
 		return false
@@ -3541,13 +3565,15 @@ type PlannedExercise_builder struct {
 	// as it reads: the exercise is done once each round, for the group's
 	// rounds. A number other than the rounds is refused.
 	Sets int32
-	// The reps of each set, per side for exercises done on each side. 0 for
-	// exercises held for a time, and for exercises done until the user is
-	// done, like stretches or leg swings: leave both reps and hold_seconds 0
-	// for those, and watches move on when the lap button is pressed.
+	// The reps of each set, per side for exercises done on each side, or the
+	// right side's when left_reps is set. 0 for exercises held for a time,
+	// and for exercises done until the user is done, like stretches or leg
+	// swings: leave both reps and hold_seconds 0 for those, and watches move
+	// on when the lap button is pressed.
 	Reps int32
 	// How long each set is held in seconds, per side for exercises done on
-	// each side, e.g. 30 for a plank. 0 for exercises done for reps. Set at
+	// each side, or the right side's when left_hold_seconds is set, e.g. 30
+	// for a plank. 0 for exercises done for reps. Set at
 	// most one of reps and hold_seconds: with neither, the exercise is done
 	// until the user is done, e.g. leg swings in a warm-up or stretches in a
 	// cool-down, and watches move on when they press the lap button.
@@ -3573,6 +3599,17 @@ type PlannedExercise_builder struct {
 	// Shown with the exercise's instructions and how it should feel. Empty if
 	// none.
 	Notes string
+	// For exercises done on each side, the reps of the left side when they
+	// differ from the right side's, e.g. 12 on a weaker left leg: reps are
+	// then the right side's. 0 for the same reps on both sides. Only with
+	// reps, and only for exercises done on each side.
+	LeftReps int32
+	// For exercises done on each side, how long the left side is held in
+	// seconds when it differs from the right side, e.g. 45 on a weaker left
+	// side: hold_seconds is then the right side's. 0 for the same on both
+	// sides. Only with hold_seconds, and only for exercises done on each
+	// side.
+	LeftHoldSeconds int32
 }
 
 func (b0 PlannedExercise_builder) Build() *PlannedExercise {
@@ -3590,6 +3627,8 @@ func (b0 PlannedExercise_builder) Build() *PlannedExercise {
 	x.xxx_hidden_Tempo = b.Tempo
 	x.xxx_hidden_TargetEffort = b.TargetEffort
 	x.xxx_hidden_Notes = b.Notes
+	x.xxx_hidden_LeftReps = b.LeftReps
+	x.xxx_hidden_LeftHoldSeconds = b.LeftHoldSeconds
 	return m0
 }
 
@@ -3873,14 +3912,16 @@ func (b0 LoggedExercise_builder) Build() *LoggedExercise {
 
 // A set as it was done.
 type LoggedSet struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Reps        int32                  `protobuf:"varint,1,opt,name=reps,proto3"`
-	xxx_hidden_HoldSeconds int32                  `protobuf:"varint,2,opt,name=hold_seconds,json=holdSeconds,proto3"`
-	xxx_hidden_Weight      *Weight                `protobuf:"bytes,3,opt,name=weight,proto3"`
-	xxx_hidden_Effort      ExerciseEffort         `protobuf:"varint,4,opt,name=effort,proto3,enum=plans.v1.ExerciseEffort"`
-	xxx_hidden_Stiffness   Stiffness              `protobuf:"varint,5,opt,name=stiffness,proto3,enum=plans.v1.Stiffness"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Reps            int32                  `protobuf:"varint,1,opt,name=reps,proto3"`
+	xxx_hidden_HoldSeconds     int32                  `protobuf:"varint,2,opt,name=hold_seconds,json=holdSeconds,proto3"`
+	xxx_hidden_Weight          *Weight                `protobuf:"bytes,3,opt,name=weight,proto3"`
+	xxx_hidden_Effort          ExerciseEffort         `protobuf:"varint,4,opt,name=effort,proto3,enum=plans.v1.ExerciseEffort"`
+	xxx_hidden_Stiffness       Stiffness              `protobuf:"varint,5,opt,name=stiffness,proto3,enum=plans.v1.Stiffness"`
+	xxx_hidden_LeftReps        int32                  `protobuf:"varint,6,opt,name=left_reps,json=leftReps,proto3"`
+	xxx_hidden_LeftHoldSeconds int32                  `protobuf:"varint,7,opt,name=left_hold_seconds,json=leftHoldSeconds,proto3"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *LoggedSet) Reset() {
@@ -3943,6 +3984,20 @@ func (x *LoggedSet) GetStiffness() Stiffness {
 	return Stiffness_STIFFNESS_UNSPECIFIED
 }
 
+func (x *LoggedSet) GetLeftReps() int32 {
+	if x != nil {
+		return x.xxx_hidden_LeftReps
+	}
+	return 0
+}
+
+func (x *LoggedSet) GetLeftHoldSeconds() int32 {
+	if x != nil {
+		return x.xxx_hidden_LeftHoldSeconds
+	}
+	return 0
+}
+
 func (x *LoggedSet) SetReps(v int32) {
 	x.xxx_hidden_Reps = v
 }
@@ -3963,6 +4018,14 @@ func (x *LoggedSet) SetStiffness(v Stiffness) {
 	x.xxx_hidden_Stiffness = v
 }
 
+func (x *LoggedSet) SetLeftReps(v int32) {
+	x.xxx_hidden_LeftReps = v
+}
+
+func (x *LoggedSet) SetLeftHoldSeconds(v int32) {
+	x.xxx_hidden_LeftHoldSeconds = v
+}
+
 func (x *LoggedSet) HasWeight() bool {
 	if x == nil {
 		return false
@@ -3977,10 +4040,12 @@ func (x *LoggedSet) ClearWeight() {
 type LoggedSet_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The reps done, per side for exercises done on each side. 0 for
-	// exercises held for a time.
+	// The reps done, per side for exercises done on each side, or the right
+	// side's when left_reps is set. 0 for exercises held for a time.
 	Reps int32
-	// How long the set was held in seconds. 0 for exercises done for reps.
+	// How long the set was held in seconds, per side for exercises done on
+	// each side, or the right side's when left_hold_seconds is set. 0 for
+	// exercises done for reps.
 	HoldSeconds int32
 	// The weight used, as in PlannedExercise. Unset for bodyweight.
 	Weight *Weight
@@ -3992,6 +4057,14 @@ type LoggedSet_builder struct {
 	// How stiff the body felt in the set, for warm-up and cool-down
 	// exercises. Unspecified if not rated.
 	Stiffness Stiffness
+	// For exercises done on each side, the reps done on the left side when
+	// they differ from the right side's, which reps are then. 0 when both
+	// sides did the same.
+	LeftReps int32
+	// For exercises done on each side, how long the left side was held in
+	// seconds when it differs from the right side, which hold_seconds is
+	// then. 0 when both sides held the same.
+	LeftHoldSeconds int32
 }
 
 func (b0 LoggedSet_builder) Build() *LoggedSet {
@@ -4003,6 +4076,8 @@ func (b0 LoggedSet_builder) Build() *LoggedSet {
 	x.xxx_hidden_Weight = b.Weight
 	x.xxx_hidden_Effort = b.Effort
 	x.xxx_hidden_Stiffness = b.Stiffness
+	x.xxx_hidden_LeftReps = b.LeftReps
+	x.xxx_hidden_LeftHoldSeconds = b.LeftHoldSeconds
 	return m0
 }
 
@@ -8118,7 +8193,7 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x0eexercise_index\x18\x01 \x01(\x05R\rexerciseIndex\x121\n" +
 	"\tequipment\x18\x02 \x01(\x0e2\x13.plans.v1.EquipmentR\tequipment\x129\n" +
 	"\x0fclosest_weights\x18\x03 \x03(\v2\x10.plans.v1.WeightR\x0eclosestWeights\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xde\x02\n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xa7\x03\n" +
 	"\x0fPlannedExercise\x12\x1f\n" +
 	"\vexercise_id\x18\x01 \x01(\tR\n" +
 	"exerciseId\x12+\n" +
@@ -8132,7 +8207,9 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x05tempo\x18\t \x01(\tR\x05tempo\x12#\n" +
 	"\rtarget_effort\x18\n" +
 	" \x01(\x05R\ftargetEffort\x12\x14\n" +
-	"\x05notes\x18\v \x01(\tR\x05notes\"\xd5\x01\n" +
+	"\x05notes\x18\v \x01(\tR\x05notes\x12\x1b\n" +
+	"\tleft_reps\x18\f \x01(\x05R\bleftReps\x12*\n" +
+	"\x11left_hold_seconds\x18\r \x01(\x05R\x0fleftHoldSeconds\"\xd5\x01\n" +
 	"\vStrengthLog\x12G\n" +
 	"\rcomplete_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xaa\x9f\x19\x02\b\x01R\fcompleteTime\x12/\n" +
 	"\x06effort\x18\x02 \x01(\x0e2\x17.plans.v1.SessionEffortR\x06effort\x12\x14\n" +
@@ -8146,13 +8223,15 @@ const file_plans_v1_plans_proto_rawDesc = "" +
 	"\x06effort\x18\x04 \x01(\x0e2\x18.plans.v1.ExerciseEffortR\x06effort\x120\n" +
 	"\x06volume\x18\x05 \x01(\x0e2\x18.plans.v1.ExerciseVolumeR\x06volume\x12\x14\n" +
 	"\x05notes\x18\x06 \x01(\tR\x05notes\x121\n" +
-	"\tstiffness\x18\a \x01(\x0e2\x13.plans.v1.StiffnessR\tstiffness\"\xd1\x01\n" +
+	"\tstiffness\x18\a \x01(\x0e2\x13.plans.v1.StiffnessR\tstiffness\"\x9a\x02\n" +
 	"\tLoggedSet\x12\x12\n" +
 	"\x04reps\x18\x01 \x01(\x05R\x04reps\x12!\n" +
 	"\fhold_seconds\x18\x02 \x01(\x05R\vholdSeconds\x12(\n" +
 	"\x06weight\x18\x03 \x01(\v2\x10.plans.v1.WeightR\x06weight\x120\n" +
 	"\x06effort\x18\x04 \x01(\x0e2\x18.plans.v1.ExerciseEffortR\x06effort\x121\n" +
-	"\tstiffness\x18\x05 \x01(\x0e2\x13.plans.v1.StiffnessR\tstiffness\"G\n" +
+	"\tstiffness\x18\x05 \x01(\x0e2\x13.plans.v1.StiffnessR\tstiffness\x12\x1b\n" +
+	"\tleft_reps\x18\x06 \x01(\x05R\bleftReps\x12*\n" +
+	"\x11left_hold_seconds\x18\a \x01(\x05R\x0fleftHoldSeconds\"G\n" +
 	"\x19CreateTrainingPlanRequest\x12*\n" +
 	"\x04plan\x18\x01 \x01(\v2\x16.plans.v1.TrainingPlanR\x04plan\"H\n" +
 	"\x1aCreateTrainingPlanResponse\x12*\n" +

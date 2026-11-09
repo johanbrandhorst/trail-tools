@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"connectrpc.com/connect/v2"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
@@ -32,6 +33,12 @@ func (s *Service) SetStrengthLog(ctx context.Context, req *plansv1.SetStrengthLo
 	for i, e := range log.Exercises {
 		if exercises[e.ExerciseID] == nil {
 			return nil, invalidArgument("exercises[%d]: exercise %s does not exist", i, store.UUIDToString(e.ExerciseID))
+		}
+		if !exercises[e.ExerciseID].EachSide && slices.ContainsFunc(e.Sets, func(set plans.LoggedSet) bool {
+			return set.LeftReps > 0 || set.LeftHoldSeconds > 0
+		}) {
+			return nil, invalidArgument("exercises[%d]: %s isn't done on each side, so its sets can't have left_reps or left_hold_seconds",
+				i, exercises[e.ExerciseID].Name)
 		}
 	}
 	if err := s.plans.SetStrengthLog(ctx, userID, workout, log); err != nil {

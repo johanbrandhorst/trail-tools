@@ -178,6 +178,9 @@ func plannedExerciseFromProto(e *plansv1.PlannedExercise) (*plans.PlannedExercis
 	if e.GetReps() > 0 && e.GetHoldSeconds() > 0 {
 		return nil, errors.New("set one of reps and hold_seconds, or neither for an exercise done until the user is done")
 	}
+	if err := checkLeftSide(e.GetReps(), e.GetHoldSeconds(), e.GetLeftReps(), e.GetLeftHoldSeconds()); err != nil {
+		return nil, err
+	}
 	weight, err := weightFromProto("weight", e.GetWeight())
 	if err != nil {
 		return nil, err
@@ -186,17 +189,33 @@ func plannedExerciseFromProto(e *plansv1.PlannedExercise) (*plans.PlannedExercis
 		return nil, fmt.Errorf("target_effort must be between 1 and %d, or 0 if not set", maxTargetEffort)
 	}
 	return &plans.PlannedExercise{
-		ExerciseID:   id,
-		Group:        strings.TrimSpace(e.GetGroup()),
-		Sets:         e.GetSets(),
-		Reps:         e.GetReps(),
-		HoldSeconds:  e.GetHoldSeconds(),
-		Weight:       weight,
-		RestSeconds:  e.GetRestSeconds(),
-		Tempo:        strings.TrimSpace(e.GetTempo()),
-		TargetEffort: e.GetTargetEffort(),
-		Notes:        strings.TrimSpace(e.GetNotes()),
+		ExerciseID:      id,
+		Group:           strings.TrimSpace(e.GetGroup()),
+		Sets:            e.GetSets(),
+		Reps:            e.GetReps(),
+		HoldSeconds:     e.GetHoldSeconds(),
+		LeftReps:        e.GetLeftReps(),
+		LeftHoldSeconds: e.GetLeftHoldSeconds(),
+		Weight:          weight,
+		RestSeconds:     e.GetRestSeconds(),
+		Tempo:           strings.TrimSpace(e.GetTempo()),
+		TargetEffort:    e.GetTargetEffort(),
+		Notes:           strings.TrimSpace(e.GetNotes()),
 	}, nil
+}
+
+// checkLeftSide checks the left side's reps or hold time of an exercise or
+// set: they only go with reps or a hold time on the right side.
+func checkLeftSide(reps, holdSeconds, leftReps, leftHoldSeconds int32) error {
+	switch {
+	case leftReps < 0 || leftHoldSeconds < 0:
+		return errors.New("left_reps and left_hold_seconds must not be negative")
+	case leftReps > 0 && reps == 0:
+		return errors.New("left_reps needs reps, the right side's; for a hold, set left_hold_seconds")
+	case leftHoldSeconds > 0 && holdSeconds == 0:
+		return errors.New("left_hold_seconds needs hold_seconds, the right side's; for reps, set left_reps")
+	}
+	return nil
 }
 
 // groupKinds are the API's kinds of exercise groups.
@@ -338,17 +357,19 @@ func strengthGroupsToProto(exercises []*plans.PlannedExercise, out []*plansv1.Pl
 
 func plannedExerciseToProto(e *plans.PlannedExercise) *plansv1.PlannedExercise {
 	return plansv1.PlannedExercise_builder{
-		ExerciseId:   store.UUIDToString(e.ExerciseID),
-		ExerciseName: e.ExerciseName,
-		Group:        e.Group,
-		Sets:         e.Sets,
-		Reps:         e.Reps,
-		HoldSeconds:  e.HoldSeconds,
-		Weight:       weightToProto(e.Weight),
-		RestSeconds:  e.RestSeconds,
-		Tempo:        e.Tempo,
-		TargetEffort: e.TargetEffort,
-		Notes:        e.Notes,
+		ExerciseId:      store.UUIDToString(e.ExerciseID),
+		ExerciseName:    e.ExerciseName,
+		Group:           e.Group,
+		Sets:            e.Sets,
+		Reps:            e.Reps,
+		HoldSeconds:     e.HoldSeconds,
+		LeftReps:        e.LeftReps,
+		LeftHoldSeconds: e.LeftHoldSeconds,
+		Weight:          weightToProto(e.Weight),
+		RestSeconds:     e.RestSeconds,
+		Tempo:           e.Tempo,
+		TargetEffort:    e.TargetEffort,
+		Notes:           e.Notes,
 	}.Build()
 }
 
@@ -517,6 +538,9 @@ func loggedExerciseFromProto(e *plansv1.LoggedExercise) (*plans.LoggedExercise, 
 		if s.GetReps() < 0 || s.GetHoldSeconds() < 0 {
 			return nil, fmt.Errorf("sets[%d]: reps and hold_seconds must not be negative", j)
 		}
+		if err := checkLeftSide(s.GetReps(), s.GetHoldSeconds(), s.GetLeftReps(), s.GetLeftHoldSeconds()); err != nil {
+			return nil, fmt.Errorf("sets[%d]: %w", j, err)
+		}
 		weight, err := weightFromProto(fmt.Sprintf("sets[%d].weight", j), s.GetWeight())
 		if err != nil {
 			return nil, err
@@ -529,7 +553,10 @@ func loggedExerciseFromProto(e *plansv1.LoggedExercise) (*plans.LoggedExercise, 
 		if !ok {
 			return nil, fmt.Errorf("sets[%d]: invalid stiffness %v", j, s.GetStiffness())
 		}
-		logged.Sets = append(logged.Sets, plans.LoggedSet{Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), Weight: weight, Effort: setEffort, Stiffness: setStiffness})
+		logged.Sets = append(logged.Sets, plans.LoggedSet{
+			Reps: s.GetReps(), HoldSeconds: s.GetHoldSeconds(), LeftReps: s.GetLeftReps(), LeftHoldSeconds: s.GetLeftHoldSeconds(),
+			Weight: weight, Effort: setEffort, Stiffness: setStiffness,
+		})
 	}
 	return logged, nil
 }
@@ -551,11 +578,13 @@ func loggedExerciseToProto(e *plans.LoggedExercise) *plansv1.LoggedExercise {
 	sets := make([]*plansv1.LoggedSet, len(e.Sets))
 	for i, s := range e.Sets {
 		sets[i] = plansv1.LoggedSet_builder{
-			Reps:        s.Reps,
-			HoldSeconds: s.HoldSeconds,
-			Weight:      weightToProto(s.Weight),
-			Effort:      exerciseEffortsToProto[s.Effort],
-			Stiffness:   stiffnessesToProto[s.Stiffness],
+			Reps:            s.Reps,
+			HoldSeconds:     s.HoldSeconds,
+			LeftReps:        s.LeftReps,
+			LeftHoldSeconds: s.LeftHoldSeconds,
+			Weight:          weightToProto(s.Weight),
+			Effort:          exerciseEffortsToProto[s.Effort],
+			Stiffness:       stiffnessesToProto[s.Stiffness],
 		}.Build()
 	}
 	return plansv1.LoggedExercise_builder{

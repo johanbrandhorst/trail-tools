@@ -258,6 +258,8 @@ insert into strength_log_exercises (
   planned_sets,
   planned_reps,
   planned_hold_seconds,
+  planned_left_reps,
+  planned_left_hold_seconds,
   planned_weight_value,
   planned_weight_unit,
   planned_rest_seconds,
@@ -277,6 +279,8 @@ select
   case when e.planned then e.planned_sets end,
   case when e.planned then e.planned_reps end,
   case when e.planned then e.planned_hold_seconds end,
+  case when e.planned then e.planned_left_reps end,
+  case when e.planned then e.planned_left_hold_seconds end,
   case when e.planned then e.planned_weight_value end,
   case when e.planned then nullif(e.planned_weight_unit, '')::weight_unit end,
   case when e.planned then e.planned_rest_seconds end,
@@ -297,34 +301,38 @@ from (
     unnest($10::integer[]) as planned_sets,
     unnest($11::integer[]) as planned_reps,
     unnest($12::integer[]) as planned_hold_seconds,
-    unnest($13::double precision[]) as planned_weight_value,
-    unnest($14::text[]) as planned_weight_unit,
-    unnest($15::integer[]) as planned_rest_seconds,
-    unnest($16::text[]) as planned_tempo,
-    unnest($17::integer[]) as planned_target_effort,
-    unnest($18::text[]) as planned_notes
+    unnest($13::integer[]) as planned_left_reps,
+    unnest($14::integer[]) as planned_left_hold_seconds,
+    unnest($15::double precision[]) as planned_weight_value,
+    unnest($16::text[]) as planned_weight_unit,
+    unnest($17::integer[]) as planned_rest_seconds,
+    unnest($18::text[]) as planned_tempo,
+    unnest($19::integer[]) as planned_target_effort,
+    unnest($20::text[]) as planned_notes
 ) e
 `
 
 type InsertStrengthLogExercisesParams struct {
-	LogID                pgtype.UUID
-	Positions            []int32
-	ExerciseIds          []pgtype.UUID
-	Efforts              []string
-	Volumes              []string
-	Stiffnesses          []string
-	Notes                []string
-	Planned              []bool
-	PlannedGroupNames    []string
-	PlannedSets          []int32
-	PlannedReps          []int32
-	PlannedHoldSeconds   []int32
-	PlannedWeightValues  []float64
-	PlannedWeightUnits   []string
-	PlannedRestSeconds   []int32
-	PlannedTempos        []string
-	PlannedTargetEfforts []int32
-	PlannedNotes         []string
+	LogID                  pgtype.UUID
+	Positions              []int32
+	ExerciseIds            []pgtype.UUID
+	Efforts                []string
+	Volumes                []string
+	Stiffnesses            []string
+	Notes                  []string
+	Planned                []bool
+	PlannedGroupNames      []string
+	PlannedSets            []int32
+	PlannedReps            []int32
+	PlannedHoldSeconds     []int32
+	PlannedLeftReps        []int32
+	PlannedLeftHoldSeconds []int32
+	PlannedWeightValues    []float64
+	PlannedWeightUnits     []string
+	PlannedRestSeconds     []int32
+	PlannedTempos          []string
+	PlannedTargetEfforts   []int32
+	PlannedNotes           []string
 }
 
 // Inserts the exercises of a log. What was planned is only set where
@@ -343,6 +351,8 @@ func (q *Queries) InsertStrengthLogExercises(ctx context.Context, arg *InsertStr
 		arg.PlannedSets,
 		arg.PlannedReps,
 		arg.PlannedHoldSeconds,
+		arg.PlannedLeftReps,
+		arg.PlannedLeftHoldSeconds,
 		arg.PlannedWeightValues,
 		arg.PlannedWeightUnits,
 		arg.PlannedRestSeconds,
@@ -360,13 +370,15 @@ insert into strength_log_sets (
   set_number,
   reps,
   hold_seconds,
+  left_reps,
+  left_hold_seconds,
   weight_value,
   weight_unit,
   effort,
   stiffness
 )
 select
-  $1::uuid, s.position, s.set_number, s.reps, s.hold_seconds,
+  $1::uuid, s.position, s.set_number, s.reps, s.hold_seconds, s.left_reps, s.left_hold_seconds,
   s.weight_value, nullif(s.weight_unit, '')::weight_unit,
   nullif(s.effort, '')::exercise_effort, s.stiffness
 from (
@@ -375,25 +387,29 @@ from (
     unnest($3::integer[]) as set_number,
     unnest($4::integer[]) as reps,
     unnest($5::integer[]) as hold_seconds,
-    unnest($6::double precision[]) as weight_value,
+    unnest($6::integer[]) as left_reps,
+    unnest($7::integer[]) as left_hold_seconds,
+    unnest($8::double precision[]) as weight_value,
     -- Empty for bodyweight.
-    unnest($7::text[]) as weight_unit,
+    unnest($9::text[]) as weight_unit,
     -- Empty if not rated.
-    unnest($8::text[]) as effort,
-    unnest($9::text[]) as stiffness
+    unnest($10::text[]) as effort,
+    unnest($11::text[]) as stiffness
 ) s
 `
 
 type InsertStrengthLogSetsParams struct {
-	LogID        pgtype.UUID
-	Positions    []int32
-	SetNumbers   []int32
-	Reps         []int32
-	HoldSeconds  []int32
-	WeightValues []float64
-	WeightUnits  []string
-	Efforts      []string
-	Stiffnesses  []string
+	LogID           pgtype.UUID
+	Positions       []int32
+	SetNumbers      []int32
+	Reps            []int32
+	HoldSeconds     []int32
+	LeftReps        []int32
+	LeftHoldSeconds []int32
+	WeightValues    []float64
+	WeightUnits     []string
+	Efforts         []string
+	Stiffnesses     []string
 }
 
 func (q *Queries) InsertStrengthLogSets(ctx context.Context, arg *InsertStrengthLogSetsParams) error {
@@ -403,6 +419,8 @@ func (q *Queries) InsertStrengthLogSets(ctx context.Context, arg *InsertStrength
 		arg.SetNumbers,
 		arg.Reps,
 		arg.HoldSeconds,
+		arg.LeftReps,
+		arg.LeftHoldSeconds,
 		arg.WeightValues,
 		arg.WeightUnits,
 		arg.Efforts,
@@ -421,6 +439,8 @@ insert into workout_exercises (
   sets,
   reps,
   hold_seconds,
+  left_reps,
+  left_hold_seconds,
   weight_value,
   weight_unit,
   rest_seconds,
@@ -430,6 +450,7 @@ insert into workout_exercises (
 )
 select
   e.workout_id, e.position, e.exercise_id, e.group_name, e.group_kind, e.sets, e.reps, e.hold_seconds,
+  e.left_reps, e.left_hold_seconds,
   e.weight_value, nullif(e.weight_unit, '')::weight_unit,
   e.rest_seconds, e.tempo, e.target_effort, e.notes
 from (
@@ -443,31 +464,35 @@ from (
     unnest($6::integer[]) as sets,
     unnest($7::integer[]) as reps,
     unnest($8::integer[]) as hold_seconds,
-    unnest($9::double precision[]) as weight_value,
+    unnest($9::integer[]) as left_reps,
+    unnest($10::integer[]) as left_hold_seconds,
+    unnest($11::double precision[]) as weight_value,
     -- Empty for bodyweight.
-    unnest($10::text[]) as weight_unit,
-    unnest($11::integer[]) as rest_seconds,
-    unnest($12::text[]) as tempo,
-    unnest($13::integer[]) as target_effort,
-    unnest($14::text[]) as notes
+    unnest($12::text[]) as weight_unit,
+    unnest($13::integer[]) as rest_seconds,
+    unnest($14::text[]) as tempo,
+    unnest($15::integer[]) as target_effort,
+    unnest($16::text[]) as notes
 ) e
 `
 
 type InsertWorkoutExercisesParams struct {
-	WorkoutIds    []pgtype.UUID
-	Positions     []int32
-	ExerciseIds   []pgtype.UUID
-	GroupNames    []string
-	GroupKinds    []string
-	Sets          []int32
-	Reps          []int32
-	HoldSeconds   []int32
-	WeightValues  []float64
-	WeightUnits   []string
-	RestSeconds   []int32
-	Tempos        []string
-	TargetEfforts []int32
-	Notes         []string
+	WorkoutIds      []pgtype.UUID
+	Positions       []int32
+	ExerciseIds     []pgtype.UUID
+	GroupNames      []string
+	GroupKinds      []string
+	Sets            []int32
+	Reps            []int32
+	HoldSeconds     []int32
+	LeftReps        []int32
+	LeftHoldSeconds []int32
+	WeightValues    []float64
+	WeightUnits     []string
+	RestSeconds     []int32
+	Tempos          []string
+	TargetEfforts   []int32
+	Notes           []string
 }
 
 func (q *Queries) InsertWorkoutExercises(ctx context.Context, arg *InsertWorkoutExercisesParams) error {
@@ -480,6 +505,8 @@ func (q *Queries) InsertWorkoutExercises(ctx context.Context, arg *InsertWorkout
 		arg.Sets,
 		arg.Reps,
 		arg.HoldSeconds,
+		arg.LeftReps,
+		arg.LeftHoldSeconds,
 		arg.WeightValues,
 		arg.WeightUnits,
 		arg.RestSeconds,
@@ -492,7 +519,7 @@ func (q *Queries) InsertWorkoutExercises(ctx context.Context, arg *InsertWorkout
 
 const listExerciseHistory = `-- name: ListExerciseHistory :many
 select
-  le.log_id, le.position, le.exercise_id, le.effort, le.volume, le.notes, le.planned_group_name, le.planned_sets, le.planned_reps, le.planned_hold_seconds, le.planned_weight_value, le.planned_weight_unit, le.planned_rest_seconds, le.planned_tempo, le.planned_target_effort, le.planned_notes, le.stiffness,
+  le.log_id, le.position, le.exercise_id, le.effort, le.volume, le.notes, le.planned_group_name, le.planned_sets, le.planned_reps, le.planned_hold_seconds, le.planned_weight_value, le.planned_weight_unit, le.planned_rest_seconds, le.planned_tempo, le.planned_target_effort, le.planned_notes, le.stiffness, le.planned_left_reps, le.planned_left_hold_seconds,
   e.name as exercise_name,
   l.date,
   l.workout_id,
@@ -517,28 +544,30 @@ type ListExerciseHistoryParams struct {
 }
 
 type ListExerciseHistoryRow struct {
-	LogID               pgtype.UUID
-	Position            int32
-	ExerciseID          pgtype.UUID
-	Effort              NullExerciseEffort
-	Volume              NullExerciseVolume
-	Notes               string
-	PlannedGroupName    pgtype.Text
-	PlannedSets         pgtype.Int4
-	PlannedReps         pgtype.Int4
-	PlannedHoldSeconds  pgtype.Int4
-	PlannedWeightValue  pgtype.Float8
-	PlannedWeightUnit   NullWeightUnit
-	PlannedRestSeconds  pgtype.Int4
-	PlannedTempo        pgtype.Text
-	PlannedTargetEffort pgtype.Int4
-	PlannedNotes        pgtype.Text
-	Stiffness           string
-	ExerciseName        string
-	Date                pgtype.Date
-	WorkoutID           pgtype.UUID
-	SessionEffort       NullSessionEffort
-	WorkoutTitle        string
+	LogID                  pgtype.UUID
+	Position               int32
+	ExerciseID             pgtype.UUID
+	Effort                 NullExerciseEffort
+	Volume                 NullExerciseVolume
+	Notes                  string
+	PlannedGroupName       pgtype.Text
+	PlannedSets            pgtype.Int4
+	PlannedReps            pgtype.Int4
+	PlannedHoldSeconds     pgtype.Int4
+	PlannedWeightValue     pgtype.Float8
+	PlannedWeightUnit      NullWeightUnit
+	PlannedRestSeconds     pgtype.Int4
+	PlannedTempo           pgtype.Text
+	PlannedTargetEffort    pgtype.Int4
+	PlannedNotes           pgtype.Text
+	Stiffness              string
+	PlannedLeftReps        pgtype.Int4
+	PlannedLeftHoldSeconds pgtype.Int4
+	ExerciseName           string
+	Date                   pgtype.Date
+	WorkoutID              pgtype.UUID
+	SessionEffort          NullSessionEffort
+	WorkoutTitle           string
 }
 
 // Lists the logged exercises of the user, optionally of some exercises and
@@ -575,6 +604,8 @@ func (q *Queries) ListExerciseHistory(ctx context.Context, arg *ListExerciseHist
 			&i.PlannedTargetEffort,
 			&i.PlannedNotes,
 			&i.Stiffness,
+			&i.PlannedLeftReps,
+			&i.PlannedLeftHoldSeconds,
 			&i.ExerciseName,
 			&i.Date,
 			&i.WorkoutID,
@@ -592,7 +623,7 @@ func (q *Queries) ListExerciseHistory(ctx context.Context, arg *ListExerciseHist
 }
 
 const listExerciseHistorySets = `-- name: ListExerciseHistorySets :many
-select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness
+select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness, s.left_reps, s.left_hold_seconds
 from strength_log_sets s
 join strength_log_exercises le on le.log_id = s.log_id and le.position = s.position
 join strength_logs l on l.id = s.log_id
@@ -636,6 +667,8 @@ func (q *Queries) ListExerciseHistorySets(ctx context.Context, arg *ListExercise
 			&i.WeightUnit,
 			&i.Effort,
 			&i.Stiffness,
+			&i.LeftReps,
+			&i.LeftHoldSeconds,
 		); err != nil {
 			return nil, err
 		}
@@ -689,7 +722,7 @@ func (q *Queries) ListExercises(ctx context.Context, userID pgtype.UUID) ([]*Exe
 }
 
 const listStrengthLogExercises = `-- name: ListStrengthLogExercises :many
-select le.log_id, le.position, le.exercise_id, le.effort, le.volume, le.notes, le.planned_group_name, le.planned_sets, le.planned_reps, le.planned_hold_seconds, le.planned_weight_value, le.planned_weight_unit, le.planned_rest_seconds, le.planned_tempo, le.planned_target_effort, le.planned_notes, le.stiffness, e.name as exercise_name
+select le.log_id, le.position, le.exercise_id, le.effort, le.volume, le.notes, le.planned_group_name, le.planned_sets, le.planned_reps, le.planned_hold_seconds, le.planned_weight_value, le.planned_weight_unit, le.planned_rest_seconds, le.planned_tempo, le.planned_target_effort, le.planned_notes, le.stiffness, le.planned_left_reps, le.planned_left_hold_seconds, e.name as exercise_name
 from strength_log_exercises le
 join strength_logs l on l.id = le.log_id
 join workouts w on w.id = l.workout_id
@@ -711,24 +744,26 @@ type ListStrengthLogExercisesParams struct {
 }
 
 type ListStrengthLogExercisesRow struct {
-	LogID               pgtype.UUID
-	Position            int32
-	ExerciseID          pgtype.UUID
-	Effort              NullExerciseEffort
-	Volume              NullExerciseVolume
-	Notes               string
-	PlannedGroupName    pgtype.Text
-	PlannedSets         pgtype.Int4
-	PlannedReps         pgtype.Int4
-	PlannedHoldSeconds  pgtype.Int4
-	PlannedWeightValue  pgtype.Float8
-	PlannedWeightUnit   NullWeightUnit
-	PlannedRestSeconds  pgtype.Int4
-	PlannedTempo        pgtype.Text
-	PlannedTargetEffort pgtype.Int4
-	PlannedNotes        pgtype.Text
-	Stiffness           string
-	ExerciseName        string
+	LogID                  pgtype.UUID
+	Position               int32
+	ExerciseID             pgtype.UUID
+	Effort                 NullExerciseEffort
+	Volume                 NullExerciseVolume
+	Notes                  string
+	PlannedGroupName       pgtype.Text
+	PlannedSets            pgtype.Int4
+	PlannedReps            pgtype.Int4
+	PlannedHoldSeconds     pgtype.Int4
+	PlannedWeightValue     pgtype.Float8
+	PlannedWeightUnit      NullWeightUnit
+	PlannedRestSeconds     pgtype.Int4
+	PlannedTempo           pgtype.Text
+	PlannedTargetEffort    pgtype.Int4
+	PlannedNotes           pgtype.Text
+	Stiffness              string
+	PlannedLeftReps        pgtype.Int4
+	PlannedLeftHoldSeconds pgtype.Int4
+	ExerciseName           string
 }
 
 // Lists the exercises of the logs ListStrengthLogs lists, by log and
@@ -766,6 +801,8 @@ func (q *Queries) ListStrengthLogExercises(ctx context.Context, arg *ListStrengt
 			&i.PlannedTargetEffort,
 			&i.PlannedNotes,
 			&i.Stiffness,
+			&i.PlannedLeftReps,
+			&i.PlannedLeftHoldSeconds,
 			&i.ExerciseName,
 		); err != nil {
 			return nil, err
@@ -779,7 +816,7 @@ func (q *Queries) ListStrengthLogExercises(ctx context.Context, arg *ListStrengt
 }
 
 const listStrengthLogSets = `-- name: ListStrengthLogSets :many
-select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness
+select s.log_id, s.position, s.set_number, s.reps, s.hold_seconds, s.weight_value, s.weight_unit, s.effort, s.stiffness, s.left_reps, s.left_hold_seconds
 from strength_log_sets s
 join strength_logs l on l.id = s.log_id
 join workouts w on w.id = l.workout_id
@@ -826,6 +863,8 @@ func (q *Queries) ListStrengthLogSets(ctx context.Context, arg *ListStrengthLogS
 			&i.WeightUnit,
 			&i.Effort,
 			&i.Stiffness,
+			&i.LeftReps,
+			&i.LeftHoldSeconds,
 		); err != nil {
 			return nil, err
 		}
@@ -894,7 +933,7 @@ func (q *Queries) ListStrengthLogs(ctx context.Context, arg *ListStrengthLogsPar
 }
 
 const listWorkoutExercises = `-- name: ListWorkoutExercises :many
-select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, we.group_kind, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
+select we.workout_id, we.position, we.exercise_id, we.group_name, we.sets, we.reps, we.hold_seconds, we.weight_value, we.weight_unit, we.rest_seconds, we.tempo, we.target_effort, we.notes, we.group_kind, we.left_reps, we.left_hold_seconds, e.name as exercise_name, e.equipment::text[] as exercise_equipment, e.each_side as exercise_each_side,
   e.garmin_exercise as exercise_garmin_exercise
 from workout_exercises we
 join workouts w on w.id = we.workout_id
@@ -931,6 +970,8 @@ type ListWorkoutExercisesRow struct {
 	TargetEffort           int32
 	Notes                  string
 	GroupKind              string
+	LeftReps               int32
+	LeftHoldSeconds        int32
 	ExerciseName           string
 	ExerciseEquipment      []string
 	ExerciseEachSide       bool
@@ -969,6 +1010,8 @@ func (q *Queries) ListWorkoutExercises(ctx context.Context, arg *ListWorkoutExer
 			&i.TargetEffort,
 			&i.Notes,
 			&i.GroupKind,
+			&i.LeftReps,
+			&i.LeftHoldSeconds,
 			&i.ExerciseName,
 			&i.ExerciseEquipment,
 			&i.ExerciseEachSide,

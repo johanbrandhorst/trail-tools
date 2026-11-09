@@ -155,6 +155,69 @@ func TestStrengthHoldSteps(t *testing.T) {
 	}
 }
 
+func TestStrengthUnevenSteps(t *testing.T) {
+	t.Parallel()
+	w := &plans.Workout{Type: plans.WorkoutTypeStrength, Title: "Rehab", Exercises: []*plans.PlannedExercise{
+		// More on the weaker left leg, and a longer hold on the left side.
+		{ExerciseName: "Single-leg squat", ExerciseEachSide: true, Sets: 1, Reps: 8, LeftReps: 10},
+		{ExerciseName: "Side plank", ExerciseEachSide: true, Sets: 1, HoldSeconds: 30, LeftHoldSeconds: 45},
+	}}
+	gw, ok := trainingWorkout(w, thresholds{})
+	if !ok {
+		t.Fatal("not a Garmin workout")
+	}
+	steps := gw.Segments[0].Steps
+	type step struct {
+		intensity, duration string
+		value               float64
+		side                string
+	}
+	var got []step
+	for _, s := range steps {
+		side := ""
+		for _, name := range []string{"Left side", "Right side"} {
+			if strings.Contains(s.Description, name) {
+				side = name
+			}
+		}
+		got = append(got, step{s.Intensity, s.DurationType, s.DurationValue, side})
+	}
+	// Each side is its own step, the left first, with its own reps or hold.
+	want := []step{
+		{"ACTIVE", "REPS", 10, "Left side"},
+		{"ACTIVE", "REPS", 8, "Right side"},
+		{"REST", "OPEN", 0, "Left side"},
+		{"ACTIVE", "TIME", 45, "Left side"},
+		{"REST", "OPEN", 0, "Right side"},
+		{"ACTIVE", "TIME", 30, "Right side"},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("got steps %v, want %v", got, want)
+	}
+	if layout := plans.StrengthStepExercises(w.Exercises); !slices.Equal(layout, []int{0, plans.StepSecondSide, plans.StepNoExercise, 1, plans.StepNoExercise, plans.StepSecondSide}) {
+		t.Errorf("got step exercises %v", layout)
+	}
+
+	// The watch's sets of each side are one set, with the left side's reps
+	// and hold where they differ from the right's.
+	log := strengthLogFromSets(w, &fit.Activity{Sets: []fit.Set{
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 0, Reps: 10},
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 1, Reps: 7},
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 3, Duration: 45 * time.Second},
+		{Active: true, HasWorkoutStep: true, WorkoutStep: 5, Duration: 45 * time.Second},
+	}})
+	if log == nil || len(log.Exercises) != 2 {
+		t.Fatalf("got log %+v, want both exercises", log)
+	}
+	if sets := log.Exercises[0].Sets; len(sets) != 1 || sets[0].Reps != 7 || sets[0].LeftReps != 10 {
+		t.Errorf("got squat sets %+v, want one of 7 reps, 10 on the left", sets)
+	}
+	// Both sides held for as long, so the set has no left side's hold.
+	if sets := log.Exercises[1].Sets; len(sets) != 1 || sets[0].HoldSeconds != 45 || sets[0].LeftHoldSeconds != 0 {
+		t.Errorf("got plank sets %+v, want one of 45 s on both sides", sets)
+	}
+}
+
 func TestLactateTestSteps(t *testing.T) {
 	t.Parallel()
 	w := &plans.Workout{Type: plans.WorkoutTypeBase, Title: "Lactate test", LactateTest: true}

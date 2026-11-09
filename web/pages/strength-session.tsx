@@ -68,6 +68,13 @@ interface DraftSet {
   stiffness?: Stiffness;
   reps: number;
   holdSeconds: number;
+  /*
+   * For an exercise on each side, the left side's reps or hold when they
+   * differ from the right side's, which reps and holdSeconds are then; 0
+   * for the same. Kept drafts from before sides could differ have neither.
+   */
+  leftReps?: number;
+  leftHoldSeconds?: number;
   // The weight in its unit; a value of 0 is bodyweight.
   weight: { value: number; unit: WeightUnit };
 }
@@ -153,6 +160,8 @@ const plannedSets = (planned: PlannedExercise): DraftSet[] =>
     done: false,
     effort: ExerciseEffort.UNSPECIFIED,
     holdSeconds: planned.holdSeconds,
+    leftHoldSeconds: planned.leftHoldSeconds,
+    leftReps: planned.leftReps,
     reps: planned.reps,
     stiffness: Stiffness.UNSPECIFIED,
     weight: {
@@ -229,6 +238,8 @@ const initialDraft = (workoutId: string, strength: StrengthWorkout): Draft => {
       done: true,
       effort: set.effort,
       holdSeconds: set.holdSeconds,
+      leftHoldSeconds: set.leftHoldSeconds,
+      leftReps: set.leftReps,
       reps: set.reps,
       stiffness: set.stiffness,
       weight: {
@@ -403,6 +414,8 @@ const Session: React.FC<SessionProps> = ({
             .map((set) => ({
               effort: set.effort ?? ExerciseEffort.UNSPECIFIED,
               holdSeconds: set.holdSeconds,
+              leftHoldSeconds: set.leftHoldSeconds ?? 0,
+              leftReps: set.leftReps ?? 0,
               reps: set.reps,
               stiffness: set.stiffness ?? Stiffness.UNSPECIFIED,
               weight: set.weight.value > 0 ? set.weight : undefined,
@@ -726,12 +739,21 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
     [exercise]
   );
   const allDone = finished(draft);
-  const reps = formatReps(planned.reps, planned.holdSeconds, false);
+  const reps = formatReps(
+    planned.reps,
+    planned.holdSeconds,
+    false,
+    planned.leftReps,
+    planned.leftHoldSeconds
+  );
+  // Different amounts on each side name the sides instead.
+  const uneven = planned.leftReps > 0 || planned.leftHoldSeconds > 0;
+  const perSide = eachSide && !uneven;
   const stats: { label: string; value: string; sub: string }[] = [
     block === undefined
       ? {
           label: setsLabel(planned),
-          sub: eachSide ? "each side" : "",
+          sub: perSide ? "each side" : "",
           // A single set until done needs no count.
           value:
             planned.sets === 1 && isOpen(planned)
@@ -740,7 +762,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
         }
       : {
           label: planned.holdSeconds > 0 ? "Time" : "Reps",
-          sub: `${eachSide ? "each side, " : ""}once each round`,
+          sub: `${perSide ? "each side, " : ""}once each round`,
           value: isOpen(planned) ? "Until done" : reps,
         },
   ];
@@ -858,7 +880,13 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
                 {block === undefined ? "Set" : "Round"} {index + 1}
               </span>
               <span className="text-xs font-normal tabular-nums">
-                {formatReps(set.reps, set.holdSeconds, false)}
+                {formatReps(
+                  set.reps,
+                  set.holdSeconds,
+                  false,
+                  set.leftReps,
+                  set.leftHoldSeconds
+                )}
                 {set.weight.value > 0 && ` · ${formatWeight(set.weight)}`}
               </span>
             </button>
@@ -884,6 +912,7 @@ const ExerciseStep: React.FC<ExerciseStepProps> = ({
           <AdjustSets
             sets={draft.sets}
             byTime={planned.holdSeconds > 0}
+            eachSide={eachSide}
             onChange={setSet}
           />
         )}
@@ -959,37 +988,93 @@ interface AdjustSetsProps {
   sets: DraftSet[];
   // Whether the sets are held for a time rather than done for reps.
   byTime: boolean;
+  // Whether the exercise is done on each side, which can each differ.
+  eachSide: boolean;
   onChange: (index: number, change: Partial<DraftSet>) => void;
 }
 
 /**
- * AdjustSets edits the reps or time and weight of each set, for sets that
- * didn't go as planned.
+ * SideValues returns a set's reps or time on the left and right side: the
+ * left side's are the right side's unless they differ.
  */
-const AdjustSets: React.FC<AdjustSetsProps> = ({ sets, byTime, onChange }) => (
+const sideValues = (set: DraftSet, byTime: boolean): [number, number] => {
+  const right = byTime ? set.holdSeconds : set.reps;
+  const left = (byTime ? set.leftHoldSeconds : set.leftReps) ?? 0;
+  return [left > 0 ? left : right, right];
+};
+
+/**
+ * SideChange returns the change to a set when one side's reps or time is
+ * set to a value. The right side's are the set's reps or time, and the
+ * left side's are kept only where they differ from them, so changing one
+ * side leaves the other as it was.
+ */
+const sideChange = (
+  set: DraftSet,
+  side: "left" | "right",
+  value: number,
+  byTime: boolean
+): Partial<DraftSet> => {
+  const [left, right] = sideValues(set, byTime);
+  const [newLeft, newRight] = side === "left" ? [value, right] : [left, value];
+  const leftValue = newLeft === newRight ? 0 : newLeft;
+  return byTime
+    ? { holdSeconds: newRight, leftHoldSeconds: leftValue }
+    : { leftReps: leftValue, reps: newRight };
+};
+
+/**
+ * AdjustSets edits the reps or time and weight of each set, for sets that
+ * didn't go as planned, on each side for an exercise done on each side.
+ */
+const AdjustSets: React.FC<AdjustSetsProps> = ({
+  sets,
+  byTime,
+  eachSide,
+  onChange,
+}) => (
   <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-3">
     {sets.map((set, index) => (
       <div
         // Sets keep their order.
         // oxlint-disable-next-line no-array-index-key
         key={index}
-        className="grid grid-cols-[3.5rem_1fr_1fr] items-end gap-2"
+        className={`grid items-end gap-2 ${eachSide ? "grid-cols-[3.5rem_1fr_1fr_1fr]" : "grid-cols-[3.5rem_1fr_1fr]"}`}
       >
         <span className="pb-2 text-sm font-medium">Set {index + 1}</span>
-        <label className={labelClass}>
-          {byTime ? "Seconds" : "Reps"}
-          <span className="mt-1 flex">
-            <NumberInput
-              value={byTime ? set.holdSeconds : set.reps}
-              onChange={(value) => {
-                onChange(
-                  index,
-                  byTime ? { holdSeconds: value } : { reps: value }
-                );
-              }}
-            />
-          </span>
-        </label>
+        {eachSide ? (
+          (["left", "right"] as const).map((side) => {
+            const [left, right] = sideValues(set, byTime);
+            return (
+              <label key={side} className={labelClass}>
+                {side === "left" ? "Left" : "Right"} ({byTime ? "s" : "reps"})
+                <span className="mt-1 flex">
+                  <NumberInput
+                    value={side === "left" ? left : right}
+                    onChange={(value) => {
+                      onChange(index, sideChange(set, side, value, byTime));
+                    }}
+                  />
+                </span>
+              </label>
+            );
+          })
+        ) : (
+          <label className={labelClass}>
+            {byTime ? "Seconds" : "Reps"}
+            <span className="mt-1 flex">
+              <NumberInput
+                value={byTime ? set.holdSeconds : set.reps}
+                onChange={(value) => {
+                  onChange(
+                    index,
+                    byTime ? { holdSeconds: value } : { reps: value }
+                  );
+                }}
+              />
+            </span>
+          </label>
+        )}
         <label className={labelClass}>
           Weight ({set.weight.unit === WeightUnit.POUNDS ? "lb" : "kg"})
           <span className="mt-1 flex gap-1">
