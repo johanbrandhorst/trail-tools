@@ -8,9 +8,11 @@ import "mcp/v1/options.proto";
 // GarminService manages the connection to the user's Garmin Connect account.
 // Once connected, the user's activities come straight from Garmin, with the
 // sets of strength workouts, alongside any from Strava: an activity on both
-// is one activity. Upcoming runs and strength workouts are put on the user's
-// Garmin Connect calendar, and the routes of upcoming runs and races are put
-// on it as courses, which Garmin syncs to their watch. The account is
+// is one activity. The runs and strength workouts of the coming week are put
+// on the user's Garmin Connect calendar, and the routes of upcoming runs and
+// races are put on it as courses, which Garmin syncs to their watch. Workouts
+// are removed from Garmin a day after their date, and once done, so they
+// don't fill the watch, which holds a limited number. The account is
 // connected in the browser by visiting /garmin/connect.
 service GarminService {
   // Get the status of the Garmin connection.

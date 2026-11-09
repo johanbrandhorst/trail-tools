@@ -560,7 +560,7 @@ func TestGarminCalendar(t *testing.T) {
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	day := func(days int) string { return today.AddDate(0, 0, days).Format(time.DateOnly) }
 	plan, err := e.plans.CreateTrainingPlan(ctx, plansv1.CreateTrainingPlanRequest_builder{
-		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: day(0), EndDate: day(40)}.Build(),
+		Plan: plansv1.TrainingPlan_builder{Name: "Build", StartDate: day(-7), EndDate: day(40)}.Build(),
 	}.Build())
 	if err != nil {
 		t.Fatal(err)
@@ -580,8 +580,9 @@ func TestGarminCalendar(t *testing.T) {
 				plansv1.PlannedExercise_builder{ExerciseId: exercise.GetExercises()[0].GetId(), Sets: 3, Reps: 10}.Build(),
 			}}.Build()}.Build(),
 			plansv1.Workout_builder{Date: day(3), Title: "Off", Rest: plansv1.RestDay_builder{}.Build()}.Build(),
-			// Too far ahead for the calendar.
-			plansv1.Workout_builder{Date: day(30), Title: "Later", Run: baseRun()}.Build(),
+			// Too far ahead for the calendar, which only has the coming
+			// week.
+			plansv1.Workout_builder{Date: day(10), Title: "Later", Run: baseRun()}.Build(),
 		},
 	}.Build())
 	if err != nil {
@@ -592,8 +593,8 @@ func TestGarminCalendar(t *testing.T) {
 		t.Fatalf("sent %d workouts to Garmin before connecting", e.garmin.created)
 	}
 
-	// Connecting puts the runs and strength workouts of the coming two
-	// weeks on the calendar, but not rest days or later workouts.
+	// Connecting puts the runs and strength workouts of the coming week on
+	// the calendar, but not rest days or later workouts.
 	e.connectGarmin(garmin.PermissionActivityExport, garmin.PermissionWorkoutImport)
 	resp, err := e.garminAPI.SyncGarmin(ctx, garminv1.SyncGarminRequest_builder{}.Build())
 	if err != nil {
@@ -631,13 +632,23 @@ func TestGarminCalendar(t *testing.T) {
 	if got := e.garmin.calendar(); fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("got calendar %v after moving a workout, want %v", got, want)
 	}
+	// A workout moved into the past is removed, so past workouts don't fill
+	// the watch.
+	if _, err := e.plans.UpdateWorkout(ctx, plansv1.UpdateWorkoutRequest_builder{
+		Workout: plansv1.Workout_builder{Id: easy.GetId(), Date: day(-3)}.Build(), UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"date"}},
+	}.Build()); err != nil {
+		t.Fatalf("UpdateWorkout: %v", err)
+	}
+	want = map[string][]string{day(2): {"Legs"}}
+	if got := e.garmin.calendar(); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("got calendar %v after moving a workout into the past, want %v", got, want)
+	}
 	// Deleting one removes it right away.
 	if _, err := e.plans.DeleteWorkouts(ctx, plansv1.DeleteWorkoutsRequest_builder{PlanId: planID, Ids: []string{legs.GetId()}}.Build()); err != nil {
 		t.Fatalf("DeleteWorkouts: %v", err)
 	}
-	want = map[string][]string{day(4): {"Easy"}}
-	if got := e.garmin.calendar(); fmt.Sprint(got) != fmt.Sprint(want) {
-		t.Errorf("got calendar %v after deleting a workout, want %v", got, want)
+	if got := e.garmin.calendar(); len(got) != 0 {
+		t.Errorf("got calendar %v after deleting a workout, want it empty", got)
 	}
 
 	// Agents can't disconnect Garmin, only the web app's session.
