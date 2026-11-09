@@ -91,8 +91,8 @@ const StrengthWorkoutView: React.FC<StrengthWorkoutViewProps> = ({
       </Link>
       {garminSyncs ? (
         <p className="-mt-2 text-sm text-gray-600">
-          Or do it on your watch: it's put on your Garmin calendar two weeks
-          ahead, with the sets, reps, weights and rest.
+          Or do it on your watch: it's put on your Garmin calendar a week ahead,
+          with the sets, reps, weights and rest.
         </p>
       ) : (
         <p className="-mt-2 text-sm text-gray-600">

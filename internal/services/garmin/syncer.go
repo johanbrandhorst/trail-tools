@@ -93,9 +93,19 @@ type PlanRepository interface {
 
 const (
 	// calendarDays is how many days ahead workouts are put on the Garmin
-	// calendar. Watches only take the coming week or so, and a short
-	// window keeps the requests and replanning cheap.
-	calendarDays = 14
+	// calendar. Watches hold a limited number of workouts, and warn when
+	// there are too many, so only the coming week's are kept on Garmin.
+	calendarDays = 7
+	// pastWorkoutDays is how many days a workout is kept on Garmin after
+	// its date, in UTC. Today in UTC can already be tomorrow for users west
+	// of Greenwich, whose workouts of the day must stay on the watch until
+	// the day is over for them.
+	pastWorkoutDays = 1
+	// maxRemovalsPerSync bounds how many workouts a sync removes from
+	// Garmin, each a request, so the first sync after the window shrank,
+	// with many past workouts to remove, doesn't run long. The next syncs
+	// remove the rest.
+	maxRemovalsPerSync = 50
 	// backfillDays is how far back activities are asked for when a user
 	// connects. Garmin sends them through the notifications, and older ones
 	// most likely came from Strava already.
@@ -480,7 +490,7 @@ func (s *Syncer) syncCalendar(ctx context.Context, conn *activities.GarminConnec
 
 // syncWorkouts puts the user's runs and strength workouts of the coming
 // days on their Garmin calendar, replacing those that changed and removing
-// those deleted or moved away, and returns what it did. Workouts that
+// those deleted, moved away or past, and returns what it did. Workouts that
 // didn't change aren't sent again.
 func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnection, token string, today time.Time, workouts []*plans.Workout) (string, error) {
 	onGarmin, err := s.plans.ListGarminWorkouts(ctx, conn.UserID)
@@ -494,12 +504,16 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 		case !g.WorkoutID.Valid:
 			// The workout was deleted.
 			stale = append(stale, g)
-		case g.WorkoutDate.Before(today) || g.WorkoutDate.After(today.AddDate(0, 0, calendarDays)):
-			// Past workouts stay on the calendar, as done; ones moved
-			// further ahead are removed until they're near again.
-			if g.WorkoutDate.After(today) {
+		case g.WorkoutDate.Before(today):
+			// Past workouts are removed, so they don't fill the watch;
+			// the activities done for them stay on Garmin.
+			if g.WorkoutDate.Before(today.AddDate(0, 0, -pastWorkoutDays)) {
 				stale = append(stale, g)
 			}
+		case g.WorkoutDate.After(today.AddDate(0, 0, calendarDays)):
+			// Ones moved further ahead are removed until they're near
+			// again.
+			stale = append(stale, g)
 		default:
 			byWorkout[g.WorkoutID] = g
 		}
@@ -555,7 +569,7 @@ func (s *Syncer) syncWorkouts(ctx context.Context, conn *activities.GarminConnec
 			}
 		}
 	}
-	for _, g := range stale {
+	for _, g := range stale[:min(len(stale), maxRemovalsPerSync)] {
 		if err := s.removeWorkout(ctx, conn.UserID, token, g); err != nil {
 			return "", err
 		}
