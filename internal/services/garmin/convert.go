@@ -247,8 +247,13 @@ func strengthLogFromSets(w *plans.Workout, a *fit.Activity) *plans.StrengthLog {
 		exercise := -1
 		if s.HasWorkoutStep && s.WorkoutStep < len(steps) {
 			exercise = steps[s.WorkoutStep]
-			// The second side of a hold is the same set as the first.
+			// The second side of an exercise on each side is the same set
+			// as the first. For an uneven exercise, the first side was the
+			// left, and the second the right, whose amounts are the set's.
 			if exercise == plans.StepSecondSide {
+				if lastExercise >= 0 && w.Exercises[lastExercise].Uneven() && len(sets[lastExercise]) > 0 {
+					mergeRightSide(&sets[lastExercise][len(sets[lastExercise])-1], loggedSet(w.Exercises[lastExercise], s))
+				}
 				continue
 			}
 		}
@@ -280,6 +285,20 @@ func strengthLogFromSets(w *plans.Workout, a *fit.Activity) *plans.StrengthLog {
 		log.Exercises = append(log.Exercises, &plans.LoggedExercise{ExerciseID: e.ExerciseID, Sets: sets[i]})
 	}
 	return log
+}
+
+// mergeRightSide merges the right side of an uneven exercise's set into the
+// set its left side recorded, leaving the left side's amounts only where
+// they differ.
+func mergeRightSide(set *plans.LoggedSet, right plans.LoggedSet) {
+	set.LeftReps, set.LeftHoldSeconds = set.Reps, set.HoldSeconds
+	set.Reps, set.HoldSeconds = right.Reps, right.HoldSeconds
+	if set.LeftReps == set.Reps {
+		set.LeftReps = 0
+	}
+	if set.LeftHoldSeconds == set.HoldSeconds {
+		set.LeftHoldSeconds = 0
+	}
 }
 
 // loggedSet converts a set from a watch, in the unit of the planned weight,
@@ -510,7 +529,7 @@ func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.Work
 		case plans.StepGetReady:
 			description := "Get into position, then press lap to start the timer"
 			if s.Side > 0 {
-				description = fmt.Sprintf("Side %d of 2: get into position, then press lap to start the timer", s.Side)
+				description = e.SideName(s.Side) + ": get into position, then press lap to start the timer"
 			}
 			steps = append(steps, garmin.WorkoutStep{
 				Type:         "WorkoutStep",
@@ -540,11 +559,12 @@ func exerciseSteps(e *plans.PlannedExercise, nextOrder func() int) []garmin.Work
 			if inCatalog {
 				step.ExerciseCategory, step.ExerciseName = catalog.Category, catalog.Name
 			}
+			reps, holdSeconds := e.SideAmounts(s.Side)
 			switch {
-			case e.Reps > 0:
-				step.DurationType, step.DurationValue = "REPS", float64(e.Reps)
-			case e.HoldSeconds > 0:
-				step.DurationType, step.DurationValue = "TIME", float64(e.HoldSeconds)
+			case reps > 0:
+				step.DurationType, step.DurationValue = "REPS", float64(reps)
+			case holdSeconds > 0:
+				step.DurationType, step.DurationValue = "TIME", float64(holdSeconds)
 			default:
 				step.DurationType = "OPEN"
 			}
@@ -577,7 +597,7 @@ func stepDescription(e *plans.PlannedExercise, withName bool, side int) string {
 	}
 	switch {
 	case side > 0:
-		add(fmt.Sprintf("Side %d of 2", side))
+		add(e.SideName(side))
 	case e.ExerciseEachSide && e.Reps > 0:
 		add("Each side")
 	}

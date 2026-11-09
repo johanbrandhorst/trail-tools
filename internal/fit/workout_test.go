@@ -135,6 +135,32 @@ func TestWriteStrengthWorkout(t *testing.T) {
 		t.Errorf("unexpected title %v", title.Fields)
 	}
 
+	// An exercise with more reps on the left side does each side in turn,
+	// the left first, naming the sides.
+	buf.Reset()
+	err = fit.WriteStrengthWorkout(&buf, &fit.StrengthWorkout{
+		Name: "Rehab",
+		Blocks: []fit.StrengthBlock{{Rounds: 1, Exercises: []fit.StrengthExercise{
+			{Name: "Single-leg squat", Notes: "Slow", Reps: 8, LeftReps: 10, EachSide: true},
+		}}},
+	}, created)
+	if err != nil {
+		t.Fatalf("WriteStrengthWorkout: %v", err)
+	}
+	messages = fittest.Decode(t, buf.Bytes())
+	if len(messages) != 5 {
+		t.Fatalf("got %d messages, want a file ID, a workout, 2 steps and a title", len(messages))
+	}
+	for i, want := range []struct {
+		reps  uint64
+		notes string
+	}{{10, "Left side · Slow"}, {8, "Right side · Slow"}} {
+		step := messages[2+i]
+		if step.Uint(t, 1) != 29 || step.Uint(t, 2) != want.reps || step.String(8) != want.notes {
+			t.Errorf("side %d: got %d reps and notes %q, want %d and %q", i+1, step.Uint(t, 2), step.String(8), want.reps, want.notes)
+		}
+	}
+
 	err = fit.WriteStrengthWorkout(&buf, &fit.StrengthWorkout{Name: "Empty"}, created)
 	if err == nil {
 		t.Error("wrote a workout without exercises")

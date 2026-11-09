@@ -600,6 +600,10 @@ func (s *Service) checkReferences(ctx context.Context, userID pgtype.UUID, worko
 			if exercises[e.ExerciseID] == nil {
 				return invalidArgument("%sstrength.exercises[%d]: exercise %s does not exist; create it with CreateExercises first", prefix, j, store.UUIDToString(e.ExerciseID))
 			}
+			if (e.LeftReps > 0 || e.LeftHoldSeconds > 0) && !exercises[e.ExerciseID].EachSide {
+				return invalidArgument("%sstrength.exercises[%d]: %s isn't done on each side, so it can't have left_reps or left_hold_seconds; set each_side on the exercise first",
+					prefix, j, exercises[e.ExerciseID].Name)
+			}
 		}
 	}
 	return nil

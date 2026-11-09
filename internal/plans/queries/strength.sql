@@ -85,6 +85,8 @@ insert into workout_exercises (
   sets,
   reps,
   hold_seconds,
+  left_reps,
+  left_hold_seconds,
   weight_value,
   weight_unit,
   rest_seconds,
@@ -94,6 +96,7 @@ insert into workout_exercises (
 )
 select
   e.workout_id, e.position, e.exercise_id, e.group_name, e.group_kind, e.sets, e.reps, e.hold_seconds,
+  e.left_reps, e.left_hold_seconds,
   e.weight_value, nullif(e.weight_unit, '')::weight_unit,
   e.rest_seconds, e.tempo, e.target_effort, e.notes
 from (
@@ -107,6 +110,8 @@ from (
     unnest(sqlc.arg(sets)::integer[]) as sets,
     unnest(sqlc.arg(reps)::integer[]) as reps,
     unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,
+    unnest(sqlc.arg(left_reps)::integer[]) as left_reps,
+    unnest(sqlc.arg(left_hold_seconds)::integer[]) as left_hold_seconds,
     unnest(sqlc.arg(weight_values)::double precision[]) as weight_value,
     -- Empty for bodyweight.
     unnest(sqlc.arg(weight_units)::text[]) as weight_unit,
@@ -193,6 +198,8 @@ insert into strength_log_exercises (
   planned_sets,
   planned_reps,
   planned_hold_seconds,
+  planned_left_reps,
+  planned_left_hold_seconds,
   planned_weight_value,
   planned_weight_unit,
   planned_rest_seconds,
@@ -212,6 +219,8 @@ select
   case when e.planned then e.planned_sets end,
   case when e.planned then e.planned_reps end,
   case when e.planned then e.planned_hold_seconds end,
+  case when e.planned then e.planned_left_reps end,
+  case when e.planned then e.planned_left_hold_seconds end,
   case when e.planned then e.planned_weight_value end,
   case when e.planned then nullif(e.planned_weight_unit, '')::weight_unit end,
   case when e.planned then e.planned_rest_seconds end,
@@ -232,6 +241,8 @@ from (
     unnest(sqlc.arg(planned_sets)::integer[]) as planned_sets,
     unnest(sqlc.arg(planned_reps)::integer[]) as planned_reps,
     unnest(sqlc.arg(planned_hold_seconds)::integer[]) as planned_hold_seconds,
+    unnest(sqlc.arg(planned_left_reps)::integer[]) as planned_left_reps,
+    unnest(sqlc.arg(planned_left_hold_seconds)::integer[]) as planned_left_hold_seconds,
     unnest(sqlc.arg(planned_weight_values)::double precision[]) as planned_weight_value,
     unnest(sqlc.arg(planned_weight_units)::text[]) as planned_weight_unit,
     unnest(sqlc.arg(planned_rest_seconds)::integer[]) as planned_rest_seconds,
@@ -247,13 +258,15 @@ insert into strength_log_sets (
   set_number,
   reps,
   hold_seconds,
+  left_reps,
+  left_hold_seconds,
   weight_value,
   weight_unit,
   effort,
   stiffness
 )
 select
-  sqlc.arg(log_id)::uuid, s.position, s.set_number, s.reps, s.hold_seconds,
+  sqlc.arg(log_id)::uuid, s.position, s.set_number, s.reps, s.hold_seconds, s.left_reps, s.left_hold_seconds,
   s.weight_value, nullif(s.weight_unit, '')::weight_unit,
   nullif(s.effort, '')::exercise_effort, s.stiffness
 from (
@@ -262,6 +275,8 @@ from (
     unnest(sqlc.arg(set_numbers)::integer[]) as set_number,
     unnest(sqlc.arg(reps)::integer[]) as reps,
     unnest(sqlc.arg(hold_seconds)::integer[]) as hold_seconds,
+    unnest(sqlc.arg(left_reps)::integer[]) as left_reps,
+    unnest(sqlc.arg(left_hold_seconds)::integer[]) as left_hold_seconds,
     unnest(sqlc.arg(weight_values)::double precision[]) as weight_value,
     -- Empty for bodyweight.
     unnest(sqlc.arg(weight_units)::text[]) as weight_unit,

@@ -1622,35 +1622,39 @@ type StrengthLog struct {
 }
 
 type StrengthLogExercise struct {
-	LogID               pgtype.UUID
-	Position            int32
-	ExerciseID          pgtype.UUID
-	Effort              NullExerciseEffort
-	Volume              NullExerciseVolume
-	Notes               string
-	PlannedGroupName    pgtype.Text
-	PlannedSets         pgtype.Int4
-	PlannedReps         pgtype.Int4
-	PlannedHoldSeconds  pgtype.Int4
-	PlannedWeightValue  pgtype.Float8
-	PlannedWeightUnit   NullWeightUnit
-	PlannedRestSeconds  pgtype.Int4
-	PlannedTempo        pgtype.Text
-	PlannedTargetEffort pgtype.Int4
-	PlannedNotes        pgtype.Text
-	Stiffness           string
+	LogID                  pgtype.UUID
+	Position               int32
+	ExerciseID             pgtype.UUID
+	Effort                 NullExerciseEffort
+	Volume                 NullExerciseVolume
+	Notes                  string
+	PlannedGroupName       pgtype.Text
+	PlannedSets            pgtype.Int4
+	PlannedReps            pgtype.Int4
+	PlannedHoldSeconds     pgtype.Int4
+	PlannedWeightValue     pgtype.Float8
+	PlannedWeightUnit      NullWeightUnit
+	PlannedRestSeconds     pgtype.Int4
+	PlannedTempo           pgtype.Text
+	PlannedTargetEffort    pgtype.Int4
+	PlannedNotes           pgtype.Text
+	Stiffness              string
+	PlannedLeftReps        pgtype.Int4
+	PlannedLeftHoldSeconds pgtype.Int4
 }
 
 type StrengthLogSet struct {
-	LogID       pgtype.UUID
-	Position    int32
-	SetNumber   int32
-	Reps        int32
-	HoldSeconds int32
-	WeightValue float64
-	WeightUnit  NullWeightUnit
-	Effort      NullExerciseEffort
-	Stiffness   string
+	LogID           pgtype.UUID
+	Position        int32
+	SetNumber       int32
+	Reps            int32
+	HoldSeconds     int32
+	WeightValue     float64
+	WeightUnit      NullWeightUnit
+	Effort          NullExerciseEffort
+	Stiffness       string
+	LeftReps        int32
+	LeftHoldSeconds int32
 }
 
 type SweatProfile struct {
@@ -1773,18 +1777,20 @@ type Workout struct {
 }
 
 type WorkoutExercise struct {
-	WorkoutID    pgtype.UUID
-	Position     int32
-	ExerciseID   pgtype.UUID
-	GroupName    string
-	Sets         int32
-	Reps         int32
-	HoldSeconds  int32
-	WeightValue  float64
-	WeightUnit   NullWeightUnit
-	RestSeconds  int32
-	Tempo        string
-	TargetEffort int32
-	Notes        string
-	GroupKind    string
+	WorkoutID       pgtype.UUID
+	Position        int32
+	ExerciseID      pgtype.UUID
+	GroupName       string
+	Sets            int32
+	Reps            int32
+	HoldSeconds     int32
+	WeightValue     float64
+	WeightUnit      NullWeightUnit
+	RestSeconds     int32
+	Tempo           string
+	TargetEffort    int32
+	Notes           string
+	GroupKind       string
+	LeftReps        int32
+	LeftHoldSeconds int32
 }

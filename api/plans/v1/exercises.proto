@@ -121,7 +121,9 @@ message Exercise {
   // done with; planning chooses the weight.
   repeated Equipment equipment = 7;
   // Whether the exercise is done on each side in turn, like a lunge, so
-  // planned and logged reps and hold times are per side.
+  // planned and logged reps and hold times are per side. The left side can
+  // have its own, e.g. more on a weaker leg: see
+  // PlannedExercise.left_reps and left_hold_seconds.
   bool each_side = 8;
   // When the exercise was created.
   google.protobuf.Timestamp create_time = 9 [(mcp.v1.field).output_only = true];

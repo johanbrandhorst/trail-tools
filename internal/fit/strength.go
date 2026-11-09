@@ -1,6 +1,7 @@
 package fit
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -80,7 +81,21 @@ type StrengthExercise struct {
 	// Whether a hold is done on each side: then each set holds each side
 	// in turn, for Hold each.
 	EachSide bool
+	// For an exercise done on each side, the left side's reps or hold when
+	// they differ from Reps and Hold, which are then the right side's. Then
+	// each set does the left side, then the right, as steps of their own.
+	// 0 for the same on both sides.
+	LeftReps int
+	LeftHold time.Duration
 }
+
+// uneven reports whether the exercise's sides have different amounts.
+func (e *StrengthExercise) uneven() bool {
+	return e.EachSide && (e.LeftReps > 0 && e.Reps > 0 || e.LeftHold > 0 && e.Hold > 0)
+}
+
+// sideNames name the sides of an uneven exercise's steps.
+var sideNames = [2]string{"Left side", "Right side"}
 
 // strengthStep is a step of a strength workout as written.
 type strengthStep struct {
@@ -124,16 +139,8 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 			}
 			titles = append(titles, e.Name)
 			sides := 1
-			if e.Hold > 0 && e.EachSide {
+			if e.Hold > 0 && e.EachSide || e.uneven() {
 				sides = 2
-			}
-			switch {
-			case e.Reps > 0:
-				step.durationType, step.durationValue = durationReps, uint32(e.Reps)
-			case e.Hold > 0:
-				step.durationType, step.durationValue = durationTime, uint32(e.Hold/time.Millisecond)
-			default:
-				step.durationType = durationOpen
 			}
 			if e.WeightKilograms > 0 {
 				step.weight = uint16(min(math.Round(e.WeightKilograms*stepWeightScale), invalidUint16-1))
@@ -143,6 +150,27 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 				}
 			}
 			for side := 1; side <= sides; side++ {
+				step := step
+				reps, hold := e.Reps, e.Hold
+				if side == 1 && e.uneven() {
+					reps, hold = cmp.Or(e.LeftReps, e.Reps), cmp.Or(e.LeftHold, e.Hold)
+				}
+				switch {
+				case reps > 0:
+					step.durationType, step.durationValue = durationReps, uint32(reps)
+				case hold > 0:
+					step.durationType, step.durationValue = durationTime, uint32(hold/time.Millisecond)
+				default:
+					step.durationType = durationOpen
+				}
+				sideName := fmt.Sprintf("Side %d of 2", side)
+				if e.uneven() {
+					sideName = sideNames[side-1]
+					step.notes = sideName
+					if e.Notes != "" {
+						step.notes += " · " + e.Notes
+					}
+				}
 				if e.Hold > 0 {
 					ready := strengthStep{
 						name:         "Get ready",
@@ -153,7 +181,7 @@ func strengthSteps(workout *StrengthWorkout) ([]strengthStep, []string, error) {
 						weight:       invalidUint16,
 					}
 					if sides == 2 {
-						ready.notes = fmt.Sprintf("Side %d of 2: get into position, then press lap", side)
+						ready.notes = sideName + ": get into position, then press lap"
 					}
 					steps = append(steps, ready)
 				}
