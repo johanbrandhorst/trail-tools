@@ -86,6 +86,10 @@ func New(appURL string, router Router, cacheDir string) *Server {
 	p := strings.TrimSuffix(Path, "/")
 	s.mux.HandleFunc("GET "+p+"/oauth/authorize", s.authorize)
 	s.mux.HandleFunc("POST "+p+"/oauth/token", s.token)
+	s.mux.HandleFunc("POST "+p+"/oauth/deauthorize", func(w http.ResponseWriter, _ *http.Request) {
+		// Tokens aren't tracked, so there's nothing to revoke.
+		writeJSON(w, http.StatusOK, map[string]any{})
+	})
 	s.mux.HandleFunc("GET "+p+"/api/v3/athlete/activities", s.authenticated(s.listActivities))
 	s.mux.HandleFunc("GET "+p+"/api/v3/activities/{id}", s.authenticated(s.getActivity))
 	s.mux.HandleFunc("GET "+p+"/api/v3/activities/{id}/streams", s.authenticated(s.getStreams))

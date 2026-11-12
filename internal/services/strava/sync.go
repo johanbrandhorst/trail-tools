@@ -39,6 +39,8 @@ type SyncRepository interface {
 	RecordActivitySyncFailure(ctx context.Context, userID, activityID pgtype.UUID) error
 	StoreActivityDetail(ctx context.Context, userID, activityID pgtype.UUID, stravaID int64, detail *activities.Detail, streams *activitiesv1.ActivityStreams, bounds *geo.Bounds) error
 	DeleteActivityByStravaID(ctx context.Context, userID pgtype.UUID, stravaID int64) error
+	ListStravaActivityPurges(ctx context.Context) ([]pgtype.UUID, error)
+	PurgeStravaActivities(ctx context.Context, userID pgtype.UUID, limit int32) (done bool, err error)
 }
 
 // StravaClient is the Strava API.
@@ -48,6 +50,7 @@ type StravaClient interface {
 	GetActivity(ctx context.Context, accessToken string, id int64) (*strava.Activity, error)
 	GetStreams(ctx context.Context, accessToken string, id int64) (*strava.Streams, error)
 	GetActivityPhotos(ctx context.Context, accessToken string, id int64) ([]*strava.Photo, error)
+	Deauthorize(ctx context.Context, accessToken string) error
 }
 
 // Trigger starts a scheduled sync right away, e.g. by running the Cloud
@@ -96,6 +99,10 @@ const (
 	// refreshTimeout bounds refreshing an access token, while the connection
 	// is locked and its other updates wait.
 	refreshTimeout = 15 * time.Second
+	// purgeBatchSize is how many activities are deleted at a time after a
+	// user disconnected Strava without keeping them: a few seconds of
+	// deleting objects, so progress is saved often.
+	purgeBatchSize = 100
 )
 
 // Syncer syncs activities from Strava in the background. At most one sync
@@ -117,6 +124,8 @@ type Syncer struct {
 	mu      sync.Mutex
 	ctx     context.Context
 	running map[pgtype.UUID]bool
+	// The users whose activities from Strava are being deleted.
+	purging map[pgtype.UUID]bool
 	// The activities being synced, by Strava ID, closed when done.
 	claims map[int64]chan struct{}
 	wg     sync.WaitGroup
@@ -137,6 +146,7 @@ func NewSyncer(ctx context.Context, log *slog.Logger, report *errreport.Reporter
 		trigger:    trigger,
 		ctx:        ctx,
 		running:    map[pgtype.UUID]bool{},
+		purging:    map[pgtype.UUID]bool{},
 		claims:     map[int64]chan struct{}{},
 	}
 }
@@ -255,6 +265,11 @@ func (s *Syncer) syncOnce(ctx context.Context, userID pgtype.UUID, opts syncOpti
 // latest sync started longest ago go first, so if a run ends before every
 // user had a turn, those left out go first in the next one.
 func (s *Syncer) SyncDue(ctx context.Context) error {
+	// Deleting the data of disconnected users comes first: the agreement
+	// with Strava requires it.
+	if err := s.PurgeDue(ctx); err != nil {
+		return err
+	}
 	conns, err := s.repo.ListStravaConnections(ctx)
 	if err != nil {
 		return err
@@ -321,6 +336,13 @@ func (s *Syncer) RunBackground(ctx context.Context) {
 	ticker := time.NewTicker(autoSyncCheckInterval)
 	defer ticker.Stop()
 	for {
+		users, err := s.repo.ListStravaActivityPurges(ctx)
+		if err != nil {
+			s.report.Report(ctx, "Failed to list Strava activity purges", err)
+		}
+		for _, userID := range users {
+			s.startPurge(userID)
+		}
 		conns, err := s.repo.ListStravaConnections(ctx)
 		if err != nil {
 			s.report.Report(ctx, "Failed to list Strava connections", err)
@@ -337,6 +359,111 @@ func (s *Syncer) RunBackground(ctx context.Context) {
 		case <-ticker.C:
 		}
 	}
+}
+
+// Deauthorize revokes the app's access to the user's Strava account, as
+// they disconnect it in the app, so Strava no longer lists the app as
+// authorized.
+func (s *Syncer) Deauthorize(ctx context.Context, conn *activities.StravaConnection) error {
+	return s.withToken(ctx, conn, func(token string) error {
+		return s.client.Deauthorize(ctx, token)
+	})
+}
+
+// RequestPurge deletes the activities a user got from Strava soon, after
+// they disconnected it without agreeing to keep them: in the background, if
+// syncs run there, or else by running the trigger, so a scheduled sync
+// deletes them right away. Without a trigger, or if it fails, it deletes
+// them within the request for a while instead, and scheduled syncs continue
+// from where it stops.
+func (s *Syncer) RequestPurge(ctx context.Context, userID pgtype.UUID) {
+	if s.background {
+		s.startPurge(userID)
+		return
+	}
+	if s.trigger != nil {
+		err := s.trigger.Run(ctx)
+		if err == nil {
+			return
+		}
+		s.report.Report(ctx, "Failed to trigger deleting Strava activities, deleting them within the request instead", err)
+	}
+	purgeCtx, cancel := context.WithTimeout(ctx, inlineSyncBudget)
+	defer cancel()
+	if err := s.purgeOnce(purgeCtx, userID); err != nil && purgeCtx.Err() == nil {
+		s.report.Report(ctx, "Failed to delete Strava activities, deleting them with the next scheduled sync", err)
+	}
+}
+
+// startPurge deletes a user's activities from Strava in the background,
+// unless that's already running.
+func (s *Syncer) startPurge(userID pgtype.UUID) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.purging[userID] || s.ctx.Err() != nil {
+		return
+	}
+	s.purging[userID] = true
+	s.wg.Go(func() {
+		defer func() {
+			s.mu.Lock()
+			delete(s.purging, userID)
+			s.mu.Unlock()
+		}()
+		if err := s.purge(s.ctx, userID); err != nil && s.ctx.Err() == nil {
+			s.report.Report(s.ctx, "Failed to delete Strava activities, retrying later", err)
+		}
+	})
+}
+
+// PurgeDue deletes the activities from Strava of all users who disconnected
+// it without keeping them, until done or ctx is done.
+func (s *Syncer) PurgeDue(ctx context.Context) error {
+	users, err := s.repo.ListStravaActivityPurges(ctx)
+	if err != nil {
+		return err
+	}
+	for _, userID := range users {
+		if err := s.purgeOnce(ctx, userID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// purgeOnce deletes a user's activities from Strava unless that's already
+// running.
+func (s *Syncer) purgeOnce(ctx context.Context, userID pgtype.UUID) error {
+	s.mu.Lock()
+	if s.purging[userID] {
+		s.mu.Unlock()
+		return nil
+	}
+	s.purging[userID] = true
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		delete(s.purging, userID)
+		s.mu.Unlock()
+	}()
+	return s.purge(ctx, userID)
+}
+
+// purge deletes a user's activities from Strava a batch at a time, until
+// done or ctx is done.
+func (s *Syncer) purge(ctx context.Context, userID pgtype.UUID) error {
+	for ctx.Err() == nil {
+		done, err := s.repo.PurgeStravaActivities(ctx, userID, purgeBatchSize)
+		if err != nil {
+			return err
+		}
+		if done {
+			s.log.InfoContext(ctx, "Deleted the activities from Strava of a user who disconnected it",
+				slog.String("user_id", store.UUIDToString(userID)))
+			return nil
+		}
+	}
+	return ctx.Err()
 }
 
 // errRateLimited is returned when a sync stops at the rate limit rather than
@@ -527,9 +654,12 @@ func (s *Syncer) listActivities(ctx context.Context, conn *activities.StravaConn
 	// Fetch activity summaries, newest first, so recent activities show up
 	// first. An unfinished listing continues where it stopped, to the oldest
 	// activity. Otherwise a full sync lists all activities, and an
-	// incremental sync stops at the ones synced before.
+	// incremental sync stops at the ones synced before. A connection's first
+	// sync is full, as after disconnecting Strava without keeping the
+	// activities, the older ones are gone, while others, like those
+	// imported from the user's Strava archive, are still there.
 	before, since := conn.ListBefore, time.Time{}
-	if before.IsZero() && !opts.full {
+	if before.IsZero() && !opts.full && !conn.LastSyncTime.IsZero() {
 		latest, err := s.repo.LatestActivityStartTime(ctx, userID)
 		if err != nil {
 			return err

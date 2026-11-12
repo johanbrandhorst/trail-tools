@@ -33,6 +33,8 @@ type fakeStrava struct {
 	activities  []*strava.Activity
 	photos      map[int64][]*strava.Photo
 	rateLimited bool
+	// How many times the app's access was revoked by Deauthorize.
+	deauthorizations int
 	// Whether the athlete revoked access.
 	revoked     bool
 	refreshes   int
@@ -107,6 +109,15 @@ func newFakeStrava() *fakeStrava {
 		{UniqueID: "p2", URL: "https://strava.example/p2.jpg", CreatedAt: start.Add(45 * time.Minute), Raw: []byte("{}")},
 	}
 	return f
+}
+
+// Deauthorize revokes access, counting the times it was asked to.
+func (f *fakeStrava) Deauthorize(context.Context, string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.revoked = true
+	f.deauthorizations++
+	return nil
 }
 
 func (f *fakeStrava) Refresh(_ context.Context, refreshToken string) (*strava.Token, error) {

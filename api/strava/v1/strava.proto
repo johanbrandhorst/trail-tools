@@ -22,8 +22,19 @@ service StravaService {
   rpc SyncActivity(SyncActivityRequest) returns (SyncActivityResponse) {
     option (mcp.v1.method).exclude = true;
   }
-  // Disconnect the Strava account. Synced activities are kept.
+  // Disconnect the Strava account, revoking the app's access on Strava.
+  // Strava's API agreement only lets the app keep the data it got from
+  // Strava with the user's agreement, so the activities from Strava are
+  // deleted unless keep_activities is set. The user does this in the web
+  // app.
   rpc DisconnectStrava(DisconnectStravaRequest) returns (DisconnectStravaResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+  // Record whether the user agrees to keep their activities from Strava on
+  // trailrunn.ing if Strava is disconnected, including by revoking the
+  // app's access on Strava, when there's no chance to ask. The user's own
+  // agreement, so only the user sets it, in the web app.
+  rpc SetStravaKeepActivities(SetStravaKeepActivitiesRequest) returns (SetStravaKeepActivitiesResponse) {
     option (mcp.v1.method).exclude = true;
   }
 }
@@ -65,6 +76,15 @@ message StravaConnection {
   bool configured = 10;
   // The page of the connected Strava athlete on Strava.
   string athlete_url = 11;
+  // Whether the user agreed to keep their activities from Strava if Strava
+  // is disconnected. Without it, disconnecting deletes the activities that
+  // came from Strava: those also on Garmin Connect keep Garmin's data, and
+  // those imported from the user's own Strava archive stay.
+  bool keep_activities = 12;
+  // Whether the activities from an earlier connection are being deleted, as
+  // Strava was disconnected without keeping them. It takes a few minutes
+  // for a long history.
+  bool deleting_activities = 13;
 }
 
 message GetStravaConnectionRequest {}
@@ -99,6 +119,25 @@ message SyncActivityResponse {
   google.protobuf.Timestamp resume_time = 2;
 }
 
-message DisconnectStravaRequest {}
+message DisconnectStravaRequest {
+  // Whether the user agrees to keep their activities from Strava on
+  // trailrunn.ing. If not, they're deleted, as described in
+  // StravaConnection.keep_activities.
+  bool keep_activities = 1;
+}
 
-message DisconnectStravaResponse {}
+message DisconnectStravaResponse {
+  // The connection status after disconnecting.
+  StravaConnection connection = 1;
+}
+
+message SetStravaKeepActivitiesRequest {
+  // Whether the user agrees to keep their activities from Strava if Strava
+  // is disconnected.
+  bool keep_activities = 1;
+}
+
+message SetStravaKeepActivitiesResponse {
+  // The connection status.
+  StravaConnection connection = 1;
+}

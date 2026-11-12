@@ -99,6 +99,15 @@ others' new activities, and the app syncs new activities every few hours.
 The activities page checks for new activities every minute while it's
 open.
 
+Disconnecting Strava revokes the app's access on Strava. Strava's API
+agreement only lets the app keep the data it got from Strava with the
+user's agreement, so the disconnect dialog asks, and a setting on the
+Strava card records it in advance for when access is revoked on Strava's
+website, where there's no asking. Without it, the activities only on Strava
+are deleted, in batches by the scheduled sync; those also on Garmin Connect
+keep Garmin's data, and those imported from the user's Strava archive stay.
+Connecting again syncs the whole history again.
+
 The activities' detailed streams and Strava's raw responses are stored as
 files, not in the database: locally in the `activity-data` directory of the
 working directory, which is ignored by git, or elsewhere with

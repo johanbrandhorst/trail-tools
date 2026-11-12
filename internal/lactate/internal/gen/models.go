@@ -1572,6 +1572,7 @@ type StravaActivity struct {
 	StravaExternalID    string
 	DataSource          string
 	GarminSamples       bool
+	FromStravaArchive   bool
 }
 
 type StravaActivityPhoto struct {
@@ -1587,27 +1588,34 @@ type StravaActivityPhoto struct {
 	TakenTime  pgtype.Timestamptz
 }
 
+type StravaActivityPurge struct {
+	UserID          pgtype.UUID
+	AfterActivityID pgtype.UUID
+	CreateTime      pgtype.Timestamptz
+}
+
 type StravaActivityStream struct {
 	ActivityID    pgtype.UUID
 	TrackPolyline pgtype.Text
 }
 
 type StravaConnection struct {
-	UserID        pgtype.UUID
-	AthleteID     int64
-	AthleteName   string
-	AccessToken   string
-	RefreshToken  string
-	Expiry        pgtype.Timestamptz
-	SyncState     StravaSyncState
-	SyncMessage   string
-	LastSyncTime  pgtype.Timestamptz
-	ResumeTime    pgtype.Timestamptz
-	CreateTime    pgtype.Timestamptz
-	SyncStateTime pgtype.Timestamptz
-	ListBefore    pgtype.Timestamptz
-	SyncFailures  int32
-	SyncStartTime pgtype.Timestamptz
+	UserID         pgtype.UUID
+	AthleteID      int64
+	AthleteName    string
+	AccessToken    string
+	RefreshToken   string
+	Expiry         pgtype.Timestamptz
+	SyncState      StravaSyncState
+	SyncMessage    string
+	LastSyncTime   pgtype.Timestamptz
+	ResumeTime     pgtype.Timestamptz
+	CreateTime     pgtype.Timestamptz
+	SyncStateTime  pgtype.Timestamptz
+	ListBefore     pgtype.Timestamptz
+	SyncFailures   int32
+	SyncStartTime  pgtype.Timestamptz
+	KeepActivities bool
 }
 
 type StrengthLog struct {

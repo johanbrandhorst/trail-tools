@@ -3,8 +3,9 @@ import {
   ConnectResultNotice,
   useConnectResult,
 } from "@components/strava/connect-result";
+import DisconnectStrava from "@components/strava/disconnect-strava";
 import Card from "@components/ui/card";
-import ConfirmButton from "@components/ui/confirm-button";
+import { CheckboxField } from "@components/ui/fields";
 import { Stat } from "@components/ui/misc";
 import QueryError, { ErrorText } from "@components/ui/query-error";
 import { primaryButton, secondaryButton } from "@components/ui/styles";
@@ -16,6 +17,7 @@ import { GeoService } from "gen/geo/v1/geo_pb";
 import {
   disconnectStrava,
   getStravaConnection,
+  setStravaKeepActivities,
   syncStrava,
 } from "gen/strava/v1/strava-StravaService_connectquery";
 import type { StravaConnection } from "gen/strava/v1/strava_pb";
@@ -142,8 +144,11 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
     getStravaConnection,
     {},
     {
+      // Deleting the activities after disconnecting is polled too.
       refetchInterval: (query) =>
-        pollInterval(query.state.data?.connection?.syncState),
+        query.state.data?.connection?.deletingActivities === true
+          ? 3000
+          : pollInterval(query.state.data?.connection?.syncState),
     }
   );
   const sync = useMutation(syncStrava, {
@@ -152,6 +157,11 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
     },
   });
   const disconnect = useMutation(disconnectStrava, {
+    onSuccess: async () => {
+      await invalidateServices(queryClient, [StravaService, ActivityService]);
+    },
+  });
+  const setKeep = useMutation(setStravaKeepActivities, {
     onSuccess: async () => {
       await invalidateServices(queryClient, [StravaService]);
     },
@@ -166,6 +176,16 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
     }
     previousState.current = syncState;
   }, [syncState, queryClient]);
+
+  // Refresh activity data when deleting the activities finishes.
+  const deleting = data?.connection?.deletingActivities ?? false;
+  const wasDeleting = useRef(deleting);
+  useEffect(() => {
+    if (wasDeleting.current && !deleting) {
+      void invalidateServices(queryClient, [ActivityService, GeoService]);
+    }
+    wasDeleting.current = deleting;
+  }, [deleting, queryClient]);
 
   if (isPending) {
     return (
@@ -213,6 +233,13 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
             service="Strava"
             connectedText="Your activities are syncing."
           />
+          {connection.deletingActivities && (
+            <p className="flex items-center gap-2 rounded-md bg-gray-50 p-2 text-xs text-gray-700">
+              <ArrowPathIcon className="size-4 animate-spin" />
+              Deleting your activities from Strava. A long history takes a few
+              minutes.
+            </p>
+          )}
           <p className="text-sm text-gray-700">
             Connect your Strava account to sync your activities. Your training
             history powers the weekly volume, plan tracking and your personal
@@ -278,7 +305,23 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
             </p>
           )
         )}
-        <ErrorText error={sync.error ?? disconnect.error} />
+        {showDisconnect && (
+          <div className="flex flex-col gap-1">
+            <CheckboxField
+              label="Keep my activities on trailrunn.ing if Strava is disconnected"
+              checked={connection.keepActivities}
+              onChange={(keepActivities) => {
+                setKeep.mutate({ keepActivities });
+              }}
+            />
+            <p className="pl-6 text-xs text-gray-600">
+              Strava&apos;s terms only allow keeping them with your agreement.
+              This also applies if you revoke access on Strava&apos;s website.
+              Without it, the activities only on Strava are deleted.
+            </p>
+          </div>
+        )}
+        <ErrorText error={sync.error ?? disconnect.error ?? setKeep.error} />
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -306,17 +349,13 @@ const StravaCard: React.FC<StravaCardProps> = ({ showDisconnect = false }) => {
               >
                 Full resync
               </button>
-              <ConfirmButton
-                title="Disconnect Strava?"
-                message="Synced activities are kept, but no new activities will be synced until you connect again."
-                confirmLabel="Disconnect"
+              <DisconnectStrava
+                keepActivities={connection.keepActivities}
                 disabled={disconnect.isPending}
-                onConfirm={() => {
-                  disconnect.mutate({});
+                onDisconnect={(keepActivities) => {
+                  disconnect.mutate({ keepActivities });
                 }}
-              >
-                Disconnect
-              </ConfirmButton>
+              />
             </>
           )}
         </div>
