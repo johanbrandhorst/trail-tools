@@ -37,6 +37,23 @@ service StravaService {
   rpc SetStravaKeepActivities(SetStravaKeepActivitiesRequest) returns (SetStravaKeepActivitiesResponse) {
     option (mcp.v1.method).exclude = true;
   }
+  // Start importing the user's activities from their Strava archive: the
+  // zip of their data that Strava emails them, requested on Strava under
+  // Settings, My Account, Download or Delete Your Account. Strava needn't
+  // be connected. The web app reads the archive in the browser, sends its
+  // activities.csv here, then sends each activity's file with
+  // ImportStravaArchiveActivity, so the archive's photos and other data
+  // never leave the device. Activities imported from an archive came from
+  // the user rather than Strava's API, so they stay when Strava is
+  // disconnected. Starting again replaces an unfinished import.
+  rpc StartStravaArchiveImport(StartStravaArchiveImportRequest) returns (StartStravaArchiveImportResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
+  // Import an activity of the archive whose import was started, with its
+  // original file from the archive, if it has one.
+  rpc ImportStravaArchiveActivity(ImportStravaArchiveActivityRequest) returns (ImportStravaArchiveActivityResponse) {
+    option (mcp.v1.method).exclude = true;
+  }
 }
 
 // SyncState is the state of a Strava sync.
@@ -140,4 +157,48 @@ message SetStravaKeepActivitiesRequest {
 message SetStravaKeepActivitiesResponse {
   // The connection status.
   StravaConnection connection = 1;
+}
+
+message StartStravaArchiveImportRequest {
+  // The archive's activities.csv.
+  string activities_csv = 1;
+}
+
+// An activity of a Strava archive to import.
+message StravaArchiveActivity {
+  // Strava's ID of the activity.
+  string strava_id = 1;
+  // The activity's name.
+  string name = 2;
+  // The path of the activity's original file in the archive, like
+  // "activities/22115185543.fit.gz", or empty for an activity without one,
+  // like one entered by hand.
+  string filename = 3;
+}
+
+message StartStravaArchiveImportResponse {
+  // The activities to import, the most recent first.
+  repeated StravaArchiveActivity activities = 1;
+  // How many of the archive's activities were imported from an archive
+  // before, and are skipped.
+  int32 already_imported_count = 2;
+  // How many rows of activities.csv couldn't be read, as they lack an ID or
+  // a start time.
+  int32 unreadable_count = 3;
+}
+
+message ImportStravaArchiveActivityRequest {
+  // Strava's ID of the activity, as StartStravaArchiveImport listed it.
+  string strava_id = 1;
+  // The activity's file from the archive, as it is there: FIT, GPX or TCX,
+  // gzipped if its name ends in ".gz". Empty for an activity without one.
+  bytes file = 2;
+}
+
+message ImportStravaArchiveActivityResponse {
+  // The ID of the imported activity.
+  string activity_id = 1;
+  // Whether the activity's file couldn't be read, so it was imported
+  // without its samples.
+  bool file_unreadable = 2;
 }

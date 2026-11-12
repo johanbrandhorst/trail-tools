@@ -108,6 +108,14 @@ are deleted, in batches by the scheduled sync; those also on Garmin Connect
 keep Garmin's data, and those imported from the user's Strava archive stay.
 Connecting again syncs the whole history again.
 
+Users can also import their history from the archive of their data Strava
+gives them (Settings, My Account, Download or Delete Your Account on
+strava.com), without connecting Strava, under Settings. The browser reads
+the zip, which can be gigabytes of photos, through its central directory,
+and sends only `activities.csv` and the activities' FIT, GPX and TCX files,
+one at a time (`internal/stravaarchive`). Their data came from the user
+rather than Strava's API, so they stay when Strava is disconnected.
+
 The activities' detailed streams and Strava's raw responses are stored as
 files, not in the database: locally in the `activity-data` directory of the
 working directory, which is ignored by git, or elsewhere with

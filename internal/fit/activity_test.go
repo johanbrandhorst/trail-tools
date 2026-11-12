@@ -1,6 +1,7 @@
 package fit_test
 
 import (
+	"bytes"
 	"math"
 	"os"
 	"testing"
@@ -83,5 +84,42 @@ func TestDecodeRejects(t *testing.T) {
 		if _, err := fit.DecodeActivity(data); err == nil {
 			t.Errorf("%s: decoded", name)
 		}
+	}
+}
+
+func TestDecodeActivityUTCOffset(t *testing.T) {
+	t.Parallel()
+	start := time.Date(2026, 11, 11, 1, 42, 0, 0, time.UTC)
+	write := func(offset time.Duration) []byte {
+		t.Helper()
+		var f fit.Writer
+		f.Define(0, fit.FileIDMessage, fit.EnumField(0))
+		f.Data(0, uint8(4)) // An activity file.
+		// The activity message, with the device's local time.
+		f.Define(1, 34, fit.Uint32Field(253), fit.Uint32Field(5))
+		f.Data(1, fit.Time(start), fit.Time(start.Add(offset)))
+		f.Define(2, 18, fit.Uint32Field(2))
+		f.Data(2, fit.Time(start))
+		var buf bytes.Buffer
+		if err := f.WriteFile(&buf); err != nil {
+			t.Fatal(err)
+		}
+		return buf.Bytes()
+	}
+	// 8 hours behind UTC, as in Vancouver in November.
+	a, err := fit.DecodeActivity(write(-8 * time.Hour))
+	if err != nil {
+		t.Fatalf("DecodeActivity: %v", err)
+	}
+	if !a.HasUTCOffset || a.UTCOffset != -8*time.Hour {
+		t.Errorf("got offset %v (%t), want -8h", a.UTCOffset, a.HasUTCOffset)
+	}
+	// A clock that wasn't set isn't a time zone.
+	a, err = fit.DecodeActivity(write(-40 * time.Hour))
+	if err != nil {
+		t.Fatalf("DecodeActivity: %v", err)
+	}
+	if a.HasUTCOffset {
+		t.Errorf("got offset %v from an unset clock, want none", a.UTCOffset)
 	}
 }

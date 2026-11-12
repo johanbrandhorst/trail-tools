@@ -38,8 +38,10 @@ type Service struct {
 	log    *slog.Logger
 	report *errreport.Reporter
 	repo   ConnectionRepository
-	syncer *Syncer
-	oauth  *OAuth
+	// Stores the activities imported from Strava archives.
+	archive ArchiveRepository
+	syncer  *Syncer
+	oauth   *OAuth
 	// The URL of Strava's website.
 	webURL string
 }
@@ -47,14 +49,15 @@ type Service struct {
 // NewService creates a new Service. syncer and oauth may be nil if Strava is
 // not configured. webURL is the URL of Strava's website, usually strava.WebURL, for links
 // to athletes.
-func NewService(log *slog.Logger, report *errreport.Reporter, repo ConnectionRepository, syncer *Syncer, oauth *OAuth, webURL string) *Service {
+func NewService(log *slog.Logger, report *errreport.Reporter, repo ConnectionRepository, archive ArchiveRepository, syncer *Syncer, oauth *OAuth, webURL string) *Service {
 	return &Service{
-		log:    log,
-		report: report,
-		repo:   repo,
-		syncer: syncer,
-		oauth:  oauth,
-		webURL: webURL,
+		log:     log,
+		report:  report,
+		repo:    repo,
+		archive: archive,
+		syncer:  syncer,
+		oauth:   oauth,
+		webURL:  webURL,
 	}
 }
 

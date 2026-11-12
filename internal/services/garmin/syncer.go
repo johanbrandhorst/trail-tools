@@ -349,7 +349,7 @@ func (s *Syncer) processFile(ctx context.Context, conn *activities.GarminConnect
 	var streams *activitiesv1.ActivityStreams
 	var bounds *geo.Bounds
 	if !stored.HasSamples {
-		streams, bounds = streamsFromFIT(decoded, isFootSport(stored.SportType))
+		streams, bounds = activities.StreamsFromFIT(decoded, isFootSport(stored.SportType))
 	}
 	if err := s.activities.StoreGarminActivityFile(ctx, conn.UserID, stored.ID, f.GarminActivityID, file, streams, bounds); err != nil {
 		return err

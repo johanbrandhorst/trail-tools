@@ -17,6 +17,7 @@ import (
 	"connectrpc.com/connect/v2/connectproto"
 	"github.com/bs-tools/trailrunn.ing/internal/authn"
 	"github.com/bs-tools/trailrunn.ing/internal/gen/routes/v1/routesv1connect"
+	"github.com/bs-tools/trailrunn.ing/internal/gen/strava/v1/stravav1connect"
 	"github.com/bs-tools/trailrunn.ing/internal/gen/trips/v1/tripsv1connect"
 	"github.com/bs-tools/trailrunn.ing/internal/gen/users/v1/usersv1connect"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -53,11 +54,15 @@ const (
 // uploadProcedures are the procedures that carry files, which accept
 // requests up to MaxUploadBytes from signed in callers.
 var uploadProcedures = map[string]bool{
-	routesv1connect.RouteServiceCreateRouteProcedure:         true,
-	routesv1connect.RouteServiceCheckTrackCoverageProcedure:  true,
-	routesv1connect.RouteServiceGetRouteForecastProcedure:    true,
-	tripsv1connect.TripReportServiceUploadTripPhotoProcedure: true,
-	usersv1connect.UserServiceUploadAvatarProcedure:          true,
+	routesv1connect.RouteServiceCreateRouteProcedure: true,
+	// A long history's activities.csv is megabytes, and an activity's file
+	// as long as a GPX file.
+	stravav1connect.StravaServiceStartStravaArchiveImportProcedure:    true,
+	stravav1connect.StravaServiceImportStravaArchiveActivityProcedure: true,
+	routesv1connect.RouteServiceCheckTrackCoverageProcedure:           true,
+	routesv1connect.RouteServiceGetRouteForecastProcedure:             true,
+	tripsv1connect.TripReportServiceUploadTripPhotoProcedure:          true,
+	usersv1connect.UserServiceUploadAvatarProcedure:                   true,
 }
 
 // errTooManyValues is returned for requests with more than MaxRequestValues

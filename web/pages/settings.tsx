@@ -9,6 +9,7 @@ import PrivacyZonesCard from "@components/settings/privacy-zones";
 import PublicProfileCard from "@components/settings/public-profile";
 import SweatProfileCard from "@components/settings/sweat-profile";
 import TouringLimitsCard from "@components/settings/touring-limits";
+import StravaArchiveImport from "@components/strava/archive-import";
 import StravaCard from "@components/strava/strava-card";
 import Card from "@components/ui/card";
 import ConfirmButton from "@components/ui/confirm-button";
@@ -262,6 +263,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user }) => (
         <Passkeys />
         <Invitations admin={user.admin} />
         <StravaCard showDisconnect />
+        <StravaArchiveImport />
         <GarminCard showDisconnect />
       </div>
       <div className="flex flex-col gap-4">
