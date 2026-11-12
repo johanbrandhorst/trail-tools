@@ -8,8 +8,10 @@ import (
 // Global message numbers of activity files.
 const (
 	sessionMessage = 18
-	recordMessage  = 20
-	setMessage     = 225
+	// activityMessage summarizes the whole file, with the local time.
+	activityMessage = 34
+	recordMessage   = 20
+	setMessage      = 225
 )
 
 // semicirclesToDegrees converts FIT positions to degrees.
@@ -29,8 +31,12 @@ type Activity struct {
 	MaxHeartRateBPM         float64
 	AverageSpeedMPS         float64
 	MaxSpeedMPS             float64
-	Records                 []Record
-	Sets                    []Set
+	// The local time's offset from UTC, from the device's clock, if
+	// HasUTCOffset.
+	UTCOffset    time.Duration
+	HasUTCOffset bool
+	Records      []Record
+	Sets         []Set
 	// The names of the exercises of the sets, by category and name.
 	ExerciseTitles map[[2]uint16]string
 }
@@ -153,6 +159,19 @@ func DecodeActivity(file []byte) (*Activity, error) {
 				func() (float64, bool) { return scaled(m, 125, 1000, 0) },
 				func() (float64, bool) { return scaled(m, 15, 1000, 0) },
 			)
+		case activityMessage:
+			// The local timestamp is the device's clock, in its time zone,
+			// on the same epoch as the timestamp.
+			ts, tsOK := m.Uint(253)
+			local, localOK := m.Uint(5)
+			if tsOK && localOK {
+				offset := time.Duration(int64(local)-int64(ts)) * time.Second
+				// Time zones are at most 14 hours from UTC; other values
+				// are a clock that wasn't set.
+				if offset.Abs() <= 14*time.Hour {
+					a.UTCOffset, a.HasUTCOffset = offset, true
+				}
+			}
 		case recordMessage:
 			ts, ok := m.Uint(253)
 			if !ok {

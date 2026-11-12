@@ -679,7 +679,7 @@ func run(
 		return fmt.Errorf("failed to create auth service: %w", err)
 	}
 	activityService := activity.NewService(log, report, activityRepo, lactateRepo, stravaWebURL)
-	stravaService := stravasvc.NewService(log, report, activityRepo, stravaSyncer, stravaOAuth, stravaWebURL)
+	stravaService := stravasvc.NewService(log, report, activityRepo, activityRepo, stravaSyncer, stravaOAuth, stravaWebURL)
 	garminService := garminsvc.NewService(report, activityRepo, garminSyncer)
 	// Avalanche forecasts are shared by the services, so they share their
 	// cache too.

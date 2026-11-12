@@ -37,6 +37,12 @@ const (
 	// StravaServiceSetStravaKeepActivitiesProcedure is the procedure name of the StravaService's
 	// SetStravaKeepActivities RPC.
 	StravaServiceSetStravaKeepActivitiesProcedure = "/strava.v1.StravaService/SetStravaKeepActivities"
+	// StravaServiceStartStravaArchiveImportProcedure is the procedure name of the StravaService's
+	// StartStravaArchiveImport RPC.
+	StravaServiceStartStravaArchiveImportProcedure = "/strava.v1.StravaService/StartStravaArchiveImport"
+	// StravaServiceImportStravaArchiveActivityProcedure is the procedure name of the StravaService's
+	// ImportStravaArchiveActivity RPC.
+	StravaServiceImportStravaArchiveActivityProcedure = "/strava.v1.StravaService/ImportStravaArchiveActivity"
 )
 
 var (
@@ -75,6 +81,20 @@ var (
 			Procedure:  StravaServiceSetStravaKeepActivitiesProcedure,
 		}
 	})
+	stravaServiceStartStravaArchiveImportSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_strava_v1_strava_proto.Services().ByName("StravaService").Methods().ByName("StartStravaArchiveImport"),
+			Procedure:  StravaServiceStartStravaArchiveImportProcedure,
+		}
+	})
+	stravaServiceImportStravaArchiveActivitySpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_strava_v1_strava_proto.Services().ByName("StravaService").Methods().ByName("ImportStravaArchiveActivity"),
+			Procedure:  StravaServiceImportStravaArchiveActivityProcedure,
+		}
+	})
 )
 
 // StravaServiceClient is a client for the strava.v1.StravaService service.
@@ -101,6 +121,19 @@ type StravaServiceClient interface {
 	// app's access on Strava, when there's no chance to ask. The user's own
 	// agreement, so only the user sets it, in the web app.
 	SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error)
+	// Start importing the user's activities from their Strava archive: the
+	// zip of their data that Strava emails them, requested on Strava under
+	// Settings, My Account, Download or Delete Your Account. Strava needn't
+	// be connected. The web app reads the archive in the browser, sends its
+	// activities.csv here, then sends each activity's file with
+	// ImportStravaArchiveActivity, so the archive's photos and other data
+	// never leave the device. Activities imported from an archive came from
+	// the user rather than Strava's API, so they stay when Strava is
+	// disconnected. Starting again replaces an unfinished import.
+	StartStravaArchiveImport(context.Context, *v1.StartStravaArchiveImportRequest) (*v1.StartStravaArchiveImportResponse, error)
+	// Import an activity of the archive whose import was started, with its
+	// original file from the archive, if it has one.
+	ImportStravaArchiveActivity(context.Context, *v1.ImportStravaArchiveActivityRequest) (*v1.ImportStravaArchiveActivityResponse, error)
 }
 
 // NewStravaServiceClient constructs a client for the strava.v1.StravaService service. Multiple
@@ -133,6 +166,19 @@ type StravaServiceHandler interface {
 	// app's access on Strava, when there's no chance to ask. The user's own
 	// agreement, so only the user sets it, in the web app.
 	SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error)
+	// Start importing the user's activities from their Strava archive: the
+	// zip of their data that Strava emails them, requested on Strava under
+	// Settings, My Account, Download or Delete Your Account. Strava needn't
+	// be connected. The web app reads the archive in the browser, sends its
+	// activities.csv here, then sends each activity's file with
+	// ImportStravaArchiveActivity, so the archive's photos and other data
+	// never leave the device. Activities imported from an archive came from
+	// the user rather than Strava's API, so they stay when Strava is
+	// disconnected. Starting again replaces an unfinished import.
+	StartStravaArchiveImport(context.Context, *v1.StartStravaArchiveImportRequest) (*v1.StartStravaArchiveImportResponse, error)
+	// Import an activity of the archive whose import was started, with its
+	// original file from the archive, if it has one.
+	ImportStravaArchiveActivity(context.Context, *v1.ImportStravaArchiveActivityRequest) (*v1.ImportStravaArchiveActivityResponse, error)
 }
 
 // RegisterStravaServiceHandler registers svc as the strava.v1.StravaService implementation on
@@ -145,6 +191,8 @@ func RegisterStravaServiceHandler(server *connect.Server, svc StravaServiceHandl
 		connect.Method{Spec: stravaServiceSyncActivitySpec(), Handler: adapter.syncActivity},
 		connect.Method{Spec: stravaServiceDisconnectStravaSpec(), Handler: adapter.disconnectStrava},
 		connect.Method{Spec: stravaServiceSetStravaKeepActivitiesSpec(), Handler: adapter.setStravaKeepActivities},
+		connect.Method{Spec: stravaServiceStartStravaArchiveImportSpec(), Handler: adapter.startStravaArchiveImport},
+		connect.Method{Spec: stravaServiceImportStravaArchiveActivitySpec(), Handler: adapter.importStravaArchiveActivity},
 	)
 }
 
@@ -169,6 +217,14 @@ func (UnimplementedStravaServiceHandler) DisconnectStrava(context.Context, *v1.D
 
 func (UnimplementedStravaServiceHandler) SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "strava.v1.StravaService.SetStravaKeepActivities is not implemented")
+}
+
+func (UnimplementedStravaServiceHandler) StartStravaArchiveImport(context.Context, *v1.StartStravaArchiveImportRequest) (*v1.StartStravaArchiveImportResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "strava.v1.StravaService.StartStravaArchiveImport is not implemented")
+}
+
+func (UnimplementedStravaServiceHandler) ImportStravaArchiveActivity(context.Context, *v1.ImportStravaArchiveActivityRequest) (*v1.ImportStravaArchiveActivityResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "strava.v1.StravaService.ImportStravaArchiveActivity is not implemented")
 }
 
 type stravaServiceClient struct {
@@ -210,6 +266,22 @@ func (c *stravaServiceClient) DisconnectStrava(ctx context.Context, req *v1.Disc
 func (c *stravaServiceClient) SetStravaKeepActivities(ctx context.Context, req *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error) {
 	var res v1.SetStravaKeepActivitiesResponse
 	if err := c.client.CallUnary(ctx, stravaServiceSetStravaKeepActivitiesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *stravaServiceClient) StartStravaArchiveImport(ctx context.Context, req *v1.StartStravaArchiveImportRequest) (*v1.StartStravaArchiveImportResponse, error) {
+	var res v1.StartStravaArchiveImportResponse
+	if err := c.client.CallUnary(ctx, stravaServiceStartStravaArchiveImportSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *stravaServiceClient) ImportStravaArchiveActivity(ctx context.Context, req *v1.ImportStravaArchiveActivityRequest) (*v1.ImportStravaArchiveActivityResponse, error) {
+	var res v1.ImportStravaArchiveActivityResponse
+	if err := c.client.CallUnary(ctx, stravaServiceImportStravaArchiveActivitySpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -271,6 +343,30 @@ func (h stravaServiceHandler) setStravaKeepActivities(ctx context.Context, _ con
 		return err
 	}
 	res, err := h.svc.SetStravaKeepActivities(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h stravaServiceHandler) startStravaArchiveImport(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.StartStravaArchiveImportRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.StartStravaArchiveImport(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h stravaServiceHandler) importStravaArchiveActivity(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ImportStravaArchiveActivityRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ImportStravaArchiveActivity(ctx, &req)
 	if err != nil {
 		return err
 	}

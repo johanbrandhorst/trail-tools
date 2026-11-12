@@ -214,7 +214,7 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	activityService := activity.NewService(log, report, activityRepo, lactateRepo, strava.WebURL)
-	stravaService := stravasvc.NewService(log, report, activityRepo, e.syncer, nil, strava.WebURL)
+	stravaService := stravasvc.NewService(log, report, activityRepo, activityRepo, e.syncer, nil, strava.WebURL)
 	routeService := route.NewService(log, report, routeRepo, activityRepo, e.router, e.mapData)
 	routeService.SetAvalanches(e.avalanches)
 	routeService.SetTouringLimitsSource(planRepo)

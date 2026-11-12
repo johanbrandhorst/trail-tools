@@ -1599,6 +1599,27 @@ type StravaActivityStream struct {
 	TrackPolyline pgtype.Text
 }
 
+type StravaArchiveActivity struct {
+	UserID              pgtype.UUID
+	StravaID            int64
+	Name                string
+	Description         string
+	SportType           string
+	StartTime           pgtype.Timestamptz
+	ElapsedTimeSeconds  int32
+	MovingTimeSeconds   int32
+	DistanceMeters      float64
+	ElevationGainMeters float64
+	AverageSpeedMps     float64
+	MaxSpeedMps         float64
+	AverageHeartrateBpm float64
+	MaxHeartrateBpm     float64
+	AverageCadenceSpm   float64
+	RelativeEffort      int32
+	Filename            string
+	CreateTime          pgtype.Timestamptz
+}
+
 type StravaConnection struct {
 	UserID         pgtype.UUID
 	AthleteID      int64

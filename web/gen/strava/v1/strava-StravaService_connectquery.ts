@@ -50,3 +50,26 @@ export const disconnectStrava = StravaService.method.disconnectStrava;
  * @generated from rpc strava.v1.StravaService.SetStravaKeepActivities
  */
 export const setStravaKeepActivities = StravaService.method.setStravaKeepActivities;
+
+/**
+ * Start importing the user's activities from their Strava archive: the
+ * zip of their data that Strava emails them, requested on Strava under
+ * Settings, My Account, Download or Delete Your Account. Strava needn't
+ * be connected. The web app reads the archive in the browser, sends its
+ * activities.csv here, then sends each activity's file with
+ * ImportStravaArchiveActivity, so the archive's photos and other data
+ * never leave the device. Activities imported from an archive came from
+ * the user rather than Strava's API, so they stay when Strava is
+ * disconnected. Starting again replaces an unfinished import.
+ *
+ * @generated from rpc strava.v1.StravaService.StartStravaArchiveImport
+ */
+export const startStravaArchiveImport = StravaService.method.startStravaArchiveImport;
+
+/**
+ * Import an activity of the archive whose import was started, with its
+ * original file from the archive, if it has one.
+ *
+ * @generated from rpc strava.v1.StravaService.ImportStravaArchiveActivity
+ */
+export const importStravaArchiveActivity = StravaService.method.importStravaArchiveActivity;

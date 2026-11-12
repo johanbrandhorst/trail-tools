@@ -67,7 +67,13 @@ func (a *Activity) TimezoneName() string {
 // IsFootSport returns whether the activity is a running or walking sport.
 // Strava reports the cadence of these per leg.
 func (a *Activity) IsFootSport() bool {
-	switch a.SportType {
+	return IsFootSport(a.SportType)
+}
+
+// IsFootSport returns whether a sport type is a running or walking sport,
+// whose cadence Strava and FIT files count per leg.
+func IsFootSport(sportType string) bool {
+	switch sportType {
 	case "Run", "TrailRun", "VirtualRun", "Walk", "Hike", "Snowshoe":
 		return true
 	}

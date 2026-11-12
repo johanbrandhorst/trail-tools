@@ -984,6 +984,398 @@ func (b0 SetStravaKeepActivitiesResponse_builder) Build() *SetStravaKeepActiviti
 	return m0
 }
 
+type StartStravaArchiveImportRequest struct {
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ActivitiesCsv string                 `protobuf:"bytes,1,opt,name=activities_csv,json=activitiesCsv,proto3"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *StartStravaArchiveImportRequest) Reset() {
+	*x = StartStravaArchiveImportRequest{}
+	mi := &file_strava_v1_strava_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartStravaArchiveImportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartStravaArchiveImportRequest) ProtoMessage() {}
+
+func (x *StartStravaArchiveImportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_strava_v1_strava_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *StartStravaArchiveImportRequest) GetActivitiesCsv() string {
+	if x != nil {
+		return x.xxx_hidden_ActivitiesCsv
+	}
+	return ""
+}
+
+func (x *StartStravaArchiveImportRequest) SetActivitiesCsv(v string) {
+	x.xxx_hidden_ActivitiesCsv = v
+}
+
+type StartStravaArchiveImportRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The archive's activities.csv.
+	ActivitiesCsv string
+}
+
+func (b0 StartStravaArchiveImportRequest_builder) Build() *StartStravaArchiveImportRequest {
+	m0 := &StartStravaArchiveImportRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ActivitiesCsv = b.ActivitiesCsv
+	return m0
+}
+
+// An activity of a Strava archive to import.
+type StravaArchiveActivity struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_StravaId string                 `protobuf:"bytes,1,opt,name=strava_id,json=stravaId,proto3"`
+	xxx_hidden_Name     string                 `protobuf:"bytes,2,opt,name=name,proto3"`
+	xxx_hidden_Filename string                 `protobuf:"bytes,3,opt,name=filename,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *StravaArchiveActivity) Reset() {
+	*x = StravaArchiveActivity{}
+	mi := &file_strava_v1_strava_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StravaArchiveActivity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StravaArchiveActivity) ProtoMessage() {}
+
+func (x *StravaArchiveActivity) ProtoReflect() protoreflect.Message {
+	mi := &file_strava_v1_strava_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *StravaArchiveActivity) GetStravaId() string {
+	if x != nil {
+		return x.xxx_hidden_StravaId
+	}
+	return ""
+}
+
+func (x *StravaArchiveActivity) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *StravaArchiveActivity) GetFilename() string {
+	if x != nil {
+		return x.xxx_hidden_Filename
+	}
+	return ""
+}
+
+func (x *StravaArchiveActivity) SetStravaId(v string) {
+	x.xxx_hidden_StravaId = v
+}
+
+func (x *StravaArchiveActivity) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *StravaArchiveActivity) SetFilename(v string) {
+	x.xxx_hidden_Filename = v
+}
+
+type StravaArchiveActivity_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Strava's ID of the activity.
+	StravaId string
+	// The activity's name.
+	Name string
+	// The path of the activity's original file in the archive, like
+	// "activities/22115185543.fit.gz", or empty for an activity without one,
+	// like one entered by hand.
+	Filename string
+}
+
+func (b0 StravaArchiveActivity_builder) Build() *StravaArchiveActivity {
+	m0 := &StravaArchiveActivity{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_StravaId = b.StravaId
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Filename = b.Filename
+	return m0
+}
+
+type StartStravaArchiveImportResponse struct {
+	state                           protoimpl.MessageState    `protogen:"opaque.v1"`
+	xxx_hidden_Activities           *[]*StravaArchiveActivity `protobuf:"bytes,1,rep,name=activities,proto3"`
+	xxx_hidden_AlreadyImportedCount int32                     `protobuf:"varint,2,opt,name=already_imported_count,json=alreadyImportedCount,proto3"`
+	xxx_hidden_UnreadableCount      int32                     `protobuf:"varint,3,opt,name=unreadable_count,json=unreadableCount,proto3"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
+}
+
+func (x *StartStravaArchiveImportResponse) Reset() {
+	*x = StartStravaArchiveImportResponse{}
+	mi := &file_strava_v1_strava_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartStravaArchiveImportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartStravaArchiveImportResponse) ProtoMessage() {}
+
+func (x *StartStravaArchiveImportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_strava_v1_strava_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *StartStravaArchiveImportResponse) GetActivities() []*StravaArchiveActivity {
+	if x != nil {
+		if x.xxx_hidden_Activities != nil {
+			return *x.xxx_hidden_Activities
+		}
+	}
+	return nil
+}
+
+func (x *StartStravaArchiveImportResponse) GetAlreadyImportedCount() int32 {
+	if x != nil {
+		return x.xxx_hidden_AlreadyImportedCount
+	}
+	return 0
+}
+
+func (x *StartStravaArchiveImportResponse) GetUnreadableCount() int32 {
+	if x != nil {
+		return x.xxx_hidden_UnreadableCount
+	}
+	return 0
+}
+
+func (x *StartStravaArchiveImportResponse) SetActivities(v []*StravaArchiveActivity) {
+	x.xxx_hidden_Activities = &v
+}
+
+func (x *StartStravaArchiveImportResponse) SetAlreadyImportedCount(v int32) {
+	x.xxx_hidden_AlreadyImportedCount = v
+}
+
+func (x *StartStravaArchiveImportResponse) SetUnreadableCount(v int32) {
+	x.xxx_hidden_UnreadableCount = v
+}
+
+type StartStravaArchiveImportResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The activities to import, the most recent first.
+	Activities []*StravaArchiveActivity
+	// How many of the archive's activities were imported from an archive
+	// before, and are skipped.
+	AlreadyImportedCount int32
+	// How many rows of activities.csv couldn't be read, as they lack an ID or
+	// a start time.
+	UnreadableCount int32
+}
+
+func (b0 StartStravaArchiveImportResponse_builder) Build() *StartStravaArchiveImportResponse {
+	m0 := &StartStravaArchiveImportResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Activities = &b.Activities
+	x.xxx_hidden_AlreadyImportedCount = b.AlreadyImportedCount
+	x.xxx_hidden_UnreadableCount = b.UnreadableCount
+	return m0
+}
+
+type ImportStravaArchiveActivityRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_StravaId string                 `protobuf:"bytes,1,opt,name=strava_id,json=stravaId,proto3"`
+	xxx_hidden_File     []byte                 `protobuf:"bytes,2,opt,name=file,proto3"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ImportStravaArchiveActivityRequest) Reset() {
+	*x = ImportStravaArchiveActivityRequest{}
+	mi := &file_strava_v1_strava_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportStravaArchiveActivityRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportStravaArchiveActivityRequest) ProtoMessage() {}
+
+func (x *ImportStravaArchiveActivityRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_strava_v1_strava_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ImportStravaArchiveActivityRequest) GetStravaId() string {
+	if x != nil {
+		return x.xxx_hidden_StravaId
+	}
+	return ""
+}
+
+func (x *ImportStravaArchiveActivityRequest) GetFile() []byte {
+	if x != nil {
+		return x.xxx_hidden_File
+	}
+	return nil
+}
+
+func (x *ImportStravaArchiveActivityRequest) SetStravaId(v string) {
+	x.xxx_hidden_StravaId = v
+}
+
+func (x *ImportStravaArchiveActivityRequest) SetFile(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_File = v
+}
+
+type ImportStravaArchiveActivityRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Strava's ID of the activity, as StartStravaArchiveImport listed it.
+	StravaId string
+	// The activity's file from the archive, as it is there: FIT, GPX or TCX,
+	// gzipped if its name ends in ".gz". Empty for an activity without one.
+	File []byte
+}
+
+func (b0 ImportStravaArchiveActivityRequest_builder) Build() *ImportStravaArchiveActivityRequest {
+	m0 := &ImportStravaArchiveActivityRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_StravaId = b.StravaId
+	x.xxx_hidden_File = b.File
+	return m0
+}
+
+type ImportStravaArchiveActivityResponse struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ActivityId     string                 `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3"`
+	xxx_hidden_FileUnreadable bool                   `protobuf:"varint,2,opt,name=file_unreadable,json=fileUnreadable,proto3"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *ImportStravaArchiveActivityResponse) Reset() {
+	*x = ImportStravaArchiveActivityResponse{}
+	mi := &file_strava_v1_strava_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportStravaArchiveActivityResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportStravaArchiveActivityResponse) ProtoMessage() {}
+
+func (x *ImportStravaArchiveActivityResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_strava_v1_strava_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ImportStravaArchiveActivityResponse) GetActivityId() string {
+	if x != nil {
+		return x.xxx_hidden_ActivityId
+	}
+	return ""
+}
+
+func (x *ImportStravaArchiveActivityResponse) GetFileUnreadable() bool {
+	if x != nil {
+		return x.xxx_hidden_FileUnreadable
+	}
+	return false
+}
+
+func (x *ImportStravaArchiveActivityResponse) SetActivityId(v string) {
+	x.xxx_hidden_ActivityId = v
+}
+
+func (x *ImportStravaArchiveActivityResponse) SetFileUnreadable(v bool) {
+	x.xxx_hidden_FileUnreadable = v
+}
+
+type ImportStravaArchiveActivityResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The ID of the imported activity.
+	ActivityId string
+	// Whether the activity's file couldn't be read, so it was imported
+	// without its samples.
+	FileUnreadable bool
+}
+
+func (b0 ImportStravaArchiveActivityResponse_builder) Build() *ImportStravaArchiveActivityResponse {
+	m0 := &ImportStravaArchiveActivityResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ActivityId = b.ActivityId
+	x.xxx_hidden_FileUnreadable = b.FileUnreadable
+	return m0
+}
+
 var File_strava_v1_strava_proto protoreflect.FileDescriptor
 
 const file_strava_v1_strava_proto_rawDesc = "" +
@@ -1039,64 +1431,95 @@ const file_strava_v1_strava_proto_rawDesc = "" +
 	"\x1fSetStravaKeepActivitiesResponse\x12;\n" +
 	"\n" +
 	"connection\x18\x01 \x01(\v2\x1b.strava.v1.StravaConnectionR\n" +
-	"connection*\x88\x01\n" +
+	"connection\"H\n" +
+	"\x1fStartStravaArchiveImportRequest\x12%\n" +
+	"\x0eactivities_csv\x18\x01 \x01(\tR\ractivitiesCsv\"d\n" +
+	"\x15StravaArchiveActivity\x12\x1b\n" +
+	"\tstrava_id\x18\x01 \x01(\tR\bstravaId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\"\xc5\x01\n" +
+	" StartStravaArchiveImportResponse\x12@\n" +
+	"\n" +
+	"activities\x18\x01 \x03(\v2 .strava.v1.StravaArchiveActivityR\n" +
+	"activities\x124\n" +
+	"\x16already_imported_count\x18\x02 \x01(\x05R\x14alreadyImportedCount\x12)\n" +
+	"\x10unreadable_count\x18\x03 \x01(\x05R\x0funreadableCount\"U\n" +
+	"\"ImportStravaArchiveActivityRequest\x12\x1b\n" +
+	"\tstrava_id\x18\x01 \x01(\tR\bstravaId\x12\x12\n" +
+	"\x04file\x18\x02 \x01(\fR\x04file\"o\n" +
+	"#ImportStravaArchiveActivityResponse\x12\x1f\n" +
+	"\vactivity_id\x18\x01 \x01(\tR\n" +
+	"activityId\x12'\n" +
+	"\x0ffile_unreadable\x18\x02 \x01(\bR\x0efileUnreadable*\x88\x01\n" +
 	"\tSyncState\x12\x1a\n" +
 	"\x16SYNC_STATE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fSYNC_STATE_IDLE\x10\x01\x12\x16\n" +
 	"\x12SYNC_STATE_RUNNING\x10\x02\x12\x1b\n" +
 	"\x17SYNC_STATE_RATE_LIMITED\x10\x03\x12\x15\n" +
-	"\x11SYNC_STATE_FAILED\x10\x042\xf8\x03\n" +
+	"\x11SYNC_STATE_FAILED\x10\x042\xfc\x05\n" +
 	"\rStravaService\x12d\n" +
 	"\x13GetStravaConnection\x12%.strava.v1.GetStravaConnectionRequest\x1a&.strava.v1.GetStravaConnectionResponse\x12I\n" +
 	"\n" +
 	"SyncStrava\x12\x1c.strava.v1.SyncStravaRequest\x1a\x1d.strava.v1.SyncStravaResponse\x12W\n" +
 	"\fSyncActivity\x12\x1e.strava.v1.SyncActivityRequest\x1a\x1f.strava.v1.SyncActivityResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12c\n" +
 	"\x10DisconnectStrava\x12\".strava.v1.DisconnectStravaRequest\x1a#.strava.v1.DisconnectStravaResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12x\n" +
-	"\x17SetStravaKeepActivities\x12).strava.v1.SetStravaKeepActivitiesRequest\x1a*.strava.v1.SetStravaKeepActivitiesResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa4\x01\n" +
+	"\x17SetStravaKeepActivities\x12).strava.v1.SetStravaKeepActivitiesRequest\x1a*.strava.v1.SetStravaKeepActivitiesResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12{\n" +
+	"\x18StartStravaArchiveImport\x12*.strava.v1.StartStravaArchiveImportRequest\x1a+.strava.v1.StartStravaArchiveImportResponse\"\x06\xa2\x9f\x19\x02\b\x01\x12\x84\x01\n" +
+	"\x1bImportStravaArchiveActivity\x12-.strava.v1.ImportStravaArchiveActivityRequest\x1a..strava.v1.ImportStravaArchiveActivityResponse\"\x06\xa2\x9f\x19\x02\b\x01B\xa4\x01\n" +
 	"\rcom.strava.v1B\vStravaProtoP\x01ZAgithub.com/bs-tools/trailrunn.ing/internal/gen/strava/v1;stravav1\xa2\x02\x03SXX\xaa\x02\tStrava.V1\xca\x02\tStrava\\V1\xe2\x02\x15Strava\\V1\\GPBMetadata\xea\x02\n" +
 	"Strava::V1b\x06proto3"
 
 var file_strava_v1_strava_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_strava_v1_strava_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_strava_v1_strava_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_strava_v1_strava_proto_goTypes = []any{
-	(SyncState)(0),                          // 0: strava.v1.SyncState
-	(*StravaConnection)(nil),                // 1: strava.v1.StravaConnection
-	(*GetStravaConnectionRequest)(nil),      // 2: strava.v1.GetStravaConnectionRequest
-	(*GetStravaConnectionResponse)(nil),     // 3: strava.v1.GetStravaConnectionResponse
-	(*SyncStravaRequest)(nil),               // 4: strava.v1.SyncStravaRequest
-	(*SyncStravaResponse)(nil),              // 5: strava.v1.SyncStravaResponse
-	(*SyncActivityRequest)(nil),             // 6: strava.v1.SyncActivityRequest
-	(*SyncActivityResponse)(nil),            // 7: strava.v1.SyncActivityResponse
-	(*DisconnectStravaRequest)(nil),         // 8: strava.v1.DisconnectStravaRequest
-	(*DisconnectStravaResponse)(nil),        // 9: strava.v1.DisconnectStravaResponse
-	(*SetStravaKeepActivitiesRequest)(nil),  // 10: strava.v1.SetStravaKeepActivitiesRequest
-	(*SetStravaKeepActivitiesResponse)(nil), // 11: strava.v1.SetStravaKeepActivitiesResponse
-	(*timestamppb.Timestamp)(nil),           // 12: google.protobuf.Timestamp
+	(SyncState)(0),                              // 0: strava.v1.SyncState
+	(*StravaConnection)(nil),                    // 1: strava.v1.StravaConnection
+	(*GetStravaConnectionRequest)(nil),          // 2: strava.v1.GetStravaConnectionRequest
+	(*GetStravaConnectionResponse)(nil),         // 3: strava.v1.GetStravaConnectionResponse
+	(*SyncStravaRequest)(nil),                   // 4: strava.v1.SyncStravaRequest
+	(*SyncStravaResponse)(nil),                  // 5: strava.v1.SyncStravaResponse
+	(*SyncActivityRequest)(nil),                 // 6: strava.v1.SyncActivityRequest
+	(*SyncActivityResponse)(nil),                // 7: strava.v1.SyncActivityResponse
+	(*DisconnectStravaRequest)(nil),             // 8: strava.v1.DisconnectStravaRequest
+	(*DisconnectStravaResponse)(nil),            // 9: strava.v1.DisconnectStravaResponse
+	(*SetStravaKeepActivitiesRequest)(nil),      // 10: strava.v1.SetStravaKeepActivitiesRequest
+	(*SetStravaKeepActivitiesResponse)(nil),     // 11: strava.v1.SetStravaKeepActivitiesResponse
+	(*StartStravaArchiveImportRequest)(nil),     // 12: strava.v1.StartStravaArchiveImportRequest
+	(*StravaArchiveActivity)(nil),               // 13: strava.v1.StravaArchiveActivity
+	(*StartStravaArchiveImportResponse)(nil),    // 14: strava.v1.StartStravaArchiveImportResponse
+	(*ImportStravaArchiveActivityRequest)(nil),  // 15: strava.v1.ImportStravaArchiveActivityRequest
+	(*ImportStravaArchiveActivityResponse)(nil), // 16: strava.v1.ImportStravaArchiveActivityResponse
+	(*timestamppb.Timestamp)(nil),               // 17: google.protobuf.Timestamp
 }
 var file_strava_v1_strava_proto_depIdxs = []int32{
 	0,  // 0: strava.v1.StravaConnection.sync_state:type_name -> strava.v1.SyncState
-	12, // 1: strava.v1.StravaConnection.last_sync_time:type_name -> google.protobuf.Timestamp
-	12, // 2: strava.v1.StravaConnection.resume_time:type_name -> google.protobuf.Timestamp
+	17, // 1: strava.v1.StravaConnection.last_sync_time:type_name -> google.protobuf.Timestamp
+	17, // 2: strava.v1.StravaConnection.resume_time:type_name -> google.protobuf.Timestamp
 	1,  // 3: strava.v1.GetStravaConnectionResponse.connection:type_name -> strava.v1.StravaConnection
 	1,  // 4: strava.v1.SyncStravaResponse.connection:type_name -> strava.v1.StravaConnection
-	12, // 5: strava.v1.SyncActivityResponse.resume_time:type_name -> google.protobuf.Timestamp
+	17, // 5: strava.v1.SyncActivityResponse.resume_time:type_name -> google.protobuf.Timestamp
 	1,  // 6: strava.v1.DisconnectStravaResponse.connection:type_name -> strava.v1.StravaConnection
 	1,  // 7: strava.v1.SetStravaKeepActivitiesResponse.connection:type_name -> strava.v1.StravaConnection
-	2,  // 8: strava.v1.StravaService.GetStravaConnection:input_type -> strava.v1.GetStravaConnectionRequest
-	4,  // 9: strava.v1.StravaService.SyncStrava:input_type -> strava.v1.SyncStravaRequest
-	6,  // 10: strava.v1.StravaService.SyncActivity:input_type -> strava.v1.SyncActivityRequest
-	8,  // 11: strava.v1.StravaService.DisconnectStrava:input_type -> strava.v1.DisconnectStravaRequest
-	10, // 12: strava.v1.StravaService.SetStravaKeepActivities:input_type -> strava.v1.SetStravaKeepActivitiesRequest
-	3,  // 13: strava.v1.StravaService.GetStravaConnection:output_type -> strava.v1.GetStravaConnectionResponse
-	5,  // 14: strava.v1.StravaService.SyncStrava:output_type -> strava.v1.SyncStravaResponse
-	7,  // 15: strava.v1.StravaService.SyncActivity:output_type -> strava.v1.SyncActivityResponse
-	9,  // 16: strava.v1.StravaService.DisconnectStrava:output_type -> strava.v1.DisconnectStravaResponse
-	11, // 17: strava.v1.StravaService.SetStravaKeepActivities:output_type -> strava.v1.SetStravaKeepActivitiesResponse
-	13, // [13:18] is the sub-list for method output_type
-	8,  // [8:13] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	13, // 8: strava.v1.StartStravaArchiveImportResponse.activities:type_name -> strava.v1.StravaArchiveActivity
+	2,  // 9: strava.v1.StravaService.GetStravaConnection:input_type -> strava.v1.GetStravaConnectionRequest
+	4,  // 10: strava.v1.StravaService.SyncStrava:input_type -> strava.v1.SyncStravaRequest
+	6,  // 11: strava.v1.StravaService.SyncActivity:input_type -> strava.v1.SyncActivityRequest
+	8,  // 12: strava.v1.StravaService.DisconnectStrava:input_type -> strava.v1.DisconnectStravaRequest
+	10, // 13: strava.v1.StravaService.SetStravaKeepActivities:input_type -> strava.v1.SetStravaKeepActivitiesRequest
+	12, // 14: strava.v1.StravaService.StartStravaArchiveImport:input_type -> strava.v1.StartStravaArchiveImportRequest
+	15, // 15: strava.v1.StravaService.ImportStravaArchiveActivity:input_type -> strava.v1.ImportStravaArchiveActivityRequest
+	3,  // 16: strava.v1.StravaService.GetStravaConnection:output_type -> strava.v1.GetStravaConnectionResponse
+	5,  // 17: strava.v1.StravaService.SyncStrava:output_type -> strava.v1.SyncStravaResponse
+	7,  // 18: strava.v1.StravaService.SyncActivity:output_type -> strava.v1.SyncActivityResponse
+	9,  // 19: strava.v1.StravaService.DisconnectStrava:output_type -> strava.v1.DisconnectStravaResponse
+	11, // 20: strava.v1.StravaService.SetStravaKeepActivities:output_type -> strava.v1.SetStravaKeepActivitiesResponse
+	14, // 21: strava.v1.StravaService.StartStravaArchiveImport:output_type -> strava.v1.StartStravaArchiveImportResponse
+	16, // 22: strava.v1.StravaService.ImportStravaArchiveActivity:output_type -> strava.v1.ImportStravaArchiveActivityResponse
+	16, // [16:23] is the sub-list for method output_type
+	9,  // [9:16] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_strava_v1_strava_proto_init() }
@@ -1110,7 +1533,7 @@ func file_strava_v1_strava_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_strava_v1_strava_proto_rawDesc), len(file_strava_v1_strava_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
