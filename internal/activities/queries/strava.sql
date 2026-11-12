@@ -118,3 +118,66 @@ with detached as (
   returning id
 )
 select (select count(*) from deleted) > 0 as deleted;
+
+-- name: SetStravaKeepActivities :execrows
+update strava_connections set keep_activities = $2
+where user_id = $1;
+
+-- name: AddStravaActivityPurge :exec
+-- Starts deleting the user's activities from Strava's API, from the
+-- beginning if they were already being deleted.
+insert into strava_activity_purges (user_id)
+values ($1)
+on conflict (user_id) do update set after_activity_id = null;
+
+-- name: CancelStravaActivityPurge :exec
+-- Stops deleting the user's activities from Strava, as they connected it
+-- again, which lets the app hold its data again.
+delete from strava_activity_purges
+where user_id = $1;
+
+-- name: ListStravaActivityPurges :many
+select * from strava_activity_purges
+order by create_time, user_id;
+
+-- name: HasStravaActivityPurge :one
+select exists (select from strava_activity_purges where user_id = $1);
+
+-- name: ListStravaActivitiesToPurge :many
+-- Lists a batch of the user's activities with a Strava ID after an activity
+-- ID, in ID order.
+select id, strava_id, garmin_activity_id is not null as on_garmin, garmin_samples, from_strava_archive
+from strava_activities
+where user_id = sqlc.arg(user_id)::uuid
+  and strava_id is not null
+  and (sqlc.narg(after_id)::uuid is null or id > sqlc.narg(after_id)::uuid)
+order by id
+limit sqlc.arg(row_limit);
+
+-- name: DeleteStravaActivitiesByID :exec
+delete from strava_activities
+where user_id = sqlc.arg(user_id)::uuid and id = any(sqlc.arg(ids)::uuid[]);
+
+-- name: DetachStravaActivities :exec
+-- Keeps activities that are on Garmin Connect too without their Strava ID,
+-- and without Strava's samples unless they have Garmin's.
+update strava_activities set
+  strava_id = null,
+  streams_synced = false,
+  photo_count = 0,
+  update_time = now()
+where user_id = sqlc.arg(user_id)::uuid and id = any(sqlc.arg(ids)::uuid[]);
+
+-- name: DeleteStravaActivityPhotos :exec
+delete from strava_activity_photos p
+using strava_activities a
+where a.id = p.activity_id and a.user_id = sqlc.arg(user_id)::uuid and a.id = any(sqlc.arg(ids)::uuid[]);
+
+-- name: AdvanceStravaActivityPurge :exec
+update strava_activity_purges set after_activity_id = $2
+where user_id = $1;
+
+-- name: GetStravaActivityPurge :many
+-- Gets the user's purge: no rows if their activities aren't being deleted.
+select * from strava_activity_purges
+where user_id = $1;

@@ -11,6 +11,46 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addStravaActivityPurge = `-- name: AddStravaActivityPurge :exec
+insert into strava_activity_purges (user_id)
+values ($1)
+on conflict (user_id) do update set after_activity_id = null
+`
+
+// Starts deleting the user's activities from Strava's API, from the
+// beginning if they were already being deleted.
+func (q *Queries) AddStravaActivityPurge(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, addStravaActivityPurge, userID)
+	return err
+}
+
+const advanceStravaActivityPurge = `-- name: AdvanceStravaActivityPurge :exec
+update strava_activity_purges set after_activity_id = $2
+where user_id = $1
+`
+
+type AdvanceStravaActivityPurgeParams struct {
+	UserID          pgtype.UUID
+	AfterActivityID pgtype.UUID
+}
+
+func (q *Queries) AdvanceStravaActivityPurge(ctx context.Context, arg *AdvanceStravaActivityPurgeParams) error {
+	_, err := q.db.Exec(ctx, advanceStravaActivityPurge, arg.UserID, arg.AfterActivityID)
+	return err
+}
+
+const cancelStravaActivityPurge = `-- name: CancelStravaActivityPurge :exec
+delete from strava_activity_purges
+where user_id = $1
+`
+
+// Stops deleting the user's activities from Strava, as they connected it
+// again, which lets the app hold its data again.
+func (q *Queries) CancelStravaActivityPurge(ctx context.Context, userID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, cancelStravaActivityPurge, userID)
+	return err
+}
+
 const deleteActivityByStravaID = `-- name: DeleteActivityByStravaID :one
 with detached as (
   update strava_activities set
@@ -40,6 +80,37 @@ func (q *Queries) DeleteActivityByStravaID(ctx context.Context, arg *DeleteActiv
 	return deleted, err
 }
 
+const deleteStravaActivitiesByID = `-- name: DeleteStravaActivitiesByID :exec
+delete from strava_activities
+where user_id = $1::uuid and id = any($2::uuid[])
+`
+
+type DeleteStravaActivitiesByIDParams struct {
+	UserID pgtype.UUID
+	Ids    []pgtype.UUID
+}
+
+func (q *Queries) DeleteStravaActivitiesByID(ctx context.Context, arg *DeleteStravaActivitiesByIDParams) error {
+	_, err := q.db.Exec(ctx, deleteStravaActivitiesByID, arg.UserID, arg.Ids)
+	return err
+}
+
+const deleteStravaActivityPhotos = `-- name: DeleteStravaActivityPhotos :exec
+delete from strava_activity_photos p
+using strava_activities a
+where a.id = p.activity_id and a.user_id = $1::uuid and a.id = any($2::uuid[])
+`
+
+type DeleteStravaActivityPhotosParams struct {
+	UserID pgtype.UUID
+	Ids    []pgtype.UUID
+}
+
+func (q *Queries) DeleteStravaActivityPhotos(ctx context.Context, arg *DeleteStravaActivityPhotosParams) error {
+	_, err := q.db.Exec(ctx, deleteStravaActivityPhotos, arg.UserID, arg.Ids)
+	return err
+}
+
 const deleteStravaConnection = `-- name: DeleteStravaConnection :execrows
 delete from strava_connections
 where user_id = $1
@@ -51,6 +122,27 @@ func (q *Queries) DeleteStravaConnection(ctx context.Context, userID pgtype.UUID
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const detachStravaActivities = `-- name: DetachStravaActivities :exec
+update strava_activities set
+  strava_id = null,
+  streams_synced = false,
+  photo_count = 0,
+  update_time = now()
+where user_id = $1::uuid and id = any($2::uuid[])
+`
+
+type DetachStravaActivitiesParams struct {
+	UserID pgtype.UUID
+	Ids    []pgtype.UUID
+}
+
+// Keeps activities that are on Garmin Connect too without their Strava ID,
+// and without Strava's samples unless they have Garmin's.
+func (q *Queries) DetachStravaActivities(ctx context.Context, arg *DetachStravaActivitiesParams) error {
+	_, err := q.db.Exec(ctx, detachStravaActivities, arg.UserID, arg.Ids)
+	return err
 }
 
 const failStravaSync = `-- name: FailStravaSync :exec
@@ -125,8 +217,34 @@ func (q *Queries) GetActivityIDByStravaID(ctx context.Context, arg *GetActivityI
 	return &i, err
 }
 
+const getStravaActivityPurge = `-- name: GetStravaActivityPurge :many
+select user_id, after_activity_id, create_time from strava_activity_purges
+where user_id = $1
+`
+
+// Gets the user's purge: no rows if their activities aren't being deleted.
+func (q *Queries) GetStravaActivityPurge(ctx context.Context, userID pgtype.UUID) ([]*StravaActivityPurge, error) {
+	rows, err := q.db.Query(ctx, getStravaActivityPurge, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*StravaActivityPurge
+	for rows.Next() {
+		var i StravaActivityPurge
+		if err := rows.Scan(&i.UserID, &i.AfterActivityID, &i.CreateTime); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getStravaConnection = `-- name: GetStravaConnection :one
-select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time from strava_connections
+select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time, keep_activities from strava_connections
 where user_id = $1
 `
 
@@ -149,12 +267,13 @@ func (q *Queries) GetStravaConnection(ctx context.Context, userID pgtype.UUID) (
 		&i.ListBefore,
 		&i.SyncFailures,
 		&i.SyncStartTime,
+		&i.KeepActivities,
 	)
 	return &i, err
 }
 
 const getStravaConnectionForUpdate = `-- name: GetStravaConnectionForUpdate :one
-select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time from strava_connections
+select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time, keep_activities from strava_connections
 where user_id = $1
 for update
 `
@@ -178,12 +297,101 @@ func (q *Queries) GetStravaConnectionForUpdate(ctx context.Context, userID pgtyp
 		&i.ListBefore,
 		&i.SyncFailures,
 		&i.SyncStartTime,
+		&i.KeepActivities,
 	)
 	return &i, err
 }
 
+const hasStravaActivityPurge = `-- name: HasStravaActivityPurge :one
+select exists (select from strava_activity_purges where user_id = $1)
+`
+
+func (q *Queries) HasStravaActivityPurge(ctx context.Context, userID pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasStravaActivityPurge, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const listStravaActivitiesToPurge = `-- name: ListStravaActivitiesToPurge :many
+select id, strava_id, garmin_activity_id is not null as on_garmin, garmin_samples, from_strava_archive
+from strava_activities
+where user_id = $1::uuid
+  and strava_id is not null
+  and ($2::uuid is null or id > $2::uuid)
+order by id
+limit $3
+`
+
+type ListStravaActivitiesToPurgeParams struct {
+	UserID   pgtype.UUID
+	AfterID  pgtype.UUID
+	RowLimit int32
+}
+
+type ListStravaActivitiesToPurgeRow struct {
+	ID                pgtype.UUID
+	StravaID          pgtype.Int8
+	OnGarmin          interface{}
+	GarminSamples     bool
+	FromStravaArchive bool
+}
+
+// Lists a batch of the user's activities with a Strava ID after an activity
+// ID, in ID order.
+func (q *Queries) ListStravaActivitiesToPurge(ctx context.Context, arg *ListStravaActivitiesToPurgeParams) ([]*ListStravaActivitiesToPurgeRow, error) {
+	rows, err := q.db.Query(ctx, listStravaActivitiesToPurge, arg.UserID, arg.AfterID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*ListStravaActivitiesToPurgeRow
+	for rows.Next() {
+		var i ListStravaActivitiesToPurgeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.StravaID,
+			&i.OnGarmin,
+			&i.GarminSamples,
+			&i.FromStravaArchive,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStravaActivityPurges = `-- name: ListStravaActivityPurges :many
+select user_id, after_activity_id, create_time from strava_activity_purges
+order by create_time, user_id
+`
+
+func (q *Queries) ListStravaActivityPurges(ctx context.Context) ([]*StravaActivityPurge, error) {
+	rows, err := q.db.Query(ctx, listStravaActivityPurges)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*StravaActivityPurge
+	for rows.Next() {
+		var i StravaActivityPurge
+		if err := rows.Scan(&i.UserID, &i.AfterActivityID, &i.CreateTime); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStravaConnections = `-- name: ListStravaConnections :many
-select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time from strava_connections
+select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time, keep_activities from strava_connections
 order by sync_start_time nulls first, user_id
 `
 
@@ -212,6 +420,7 @@ func (q *Queries) ListStravaConnections(ctx context.Context) ([]*StravaConnectio
 			&i.ListBefore,
 			&i.SyncFailures,
 			&i.SyncStartTime,
+			&i.KeepActivities,
 		); err != nil {
 			return nil, err
 		}
@@ -224,7 +433,7 @@ func (q *Queries) ListStravaConnections(ctx context.Context) ([]*StravaConnectio
 }
 
 const listStravaConnectionsByAthlete = `-- name: ListStravaConnectionsByAthlete :many
-select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time from strava_connections
+select user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time, keep_activities from strava_connections
 where athlete_id = $1
 `
 
@@ -253,6 +462,7 @@ func (q *Queries) ListStravaConnectionsByAthlete(ctx context.Context, athleteID 
 			&i.ListBefore,
 			&i.SyncFailures,
 			&i.SyncStartTime,
+			&i.KeepActivities,
 		); err != nil {
 			return nil, err
 		}
@@ -262,6 +472,24 @@ func (q *Queries) ListStravaConnectionsByAthlete(ctx context.Context, athleteID 
 		return nil, err
 	}
 	return items, nil
+}
+
+const setStravaKeepActivities = `-- name: SetStravaKeepActivities :execrows
+update strava_connections set keep_activities = $2
+where user_id = $1
+`
+
+type SetStravaKeepActivitiesParams struct {
+	UserID         pgtype.UUID
+	KeepActivities bool
+}
+
+func (q *Queries) SetStravaKeepActivities(ctx context.Context, arg *SetStravaKeepActivitiesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setStravaKeepActivities, arg.UserID, arg.KeepActivities)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const startStravaSync = `-- name: StartStravaSync :exec
@@ -383,7 +611,7 @@ on conflict (user_id) do update set
   sync_failures = 0,
   resume_time = null,
   sync_state_time = current_timestamp
-returning user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time
+returning user_id, athlete_id, athlete_name, access_token, refresh_token, expiry, sync_state, sync_message, last_sync_time, resume_time, create_time, sync_state_time, list_before, sync_failures, sync_start_time, keep_activities
 `
 
 type UpsertStravaConnectionParams struct {
@@ -421,6 +649,7 @@ func (q *Queries) UpsertStravaConnection(ctx context.Context, arg *UpsertStravaC
 		&i.ListBefore,
 		&i.SyncFailures,
 		&i.SyncStartTime,
+		&i.KeepActivities,
 	)
 	return &i, err
 }

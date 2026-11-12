@@ -72,8 +72,16 @@ func (f *fakeConnectionRepo) UpsertStravaConnection(_ context.Context, conn *act
 	return conn, nil
 }
 
-func (f *fakeConnectionRepo) DeleteStravaConnection(context.Context, pgtype.UUID) error {
-	panic("unexpected DeleteStravaConnection")
+func (f *fakeConnectionRepo) DisconnectStrava(context.Context, pgtype.UUID, bool) error {
+	panic("unexpected DisconnectStrava")
+}
+
+func (f *fakeConnectionRepo) SetStravaKeepActivities(context.Context, pgtype.UUID, bool) error {
+	panic("unexpected SetStravaKeepActivities")
+}
+
+func (f *fakeConnectionRepo) PurgingStravaActivities(context.Context, pgtype.UUID) (bool, error) {
+	panic("unexpected PurgingStravaActivities")
 }
 
 func (f *fakeConnectionRepo) UpdateStravaSyncState(_ context.Context, _ pgtype.UUID, state activities.SyncState, _ string, _, _ time.Time) error {

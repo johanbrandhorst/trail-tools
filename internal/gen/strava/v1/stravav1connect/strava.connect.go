@@ -34,6 +34,9 @@ const (
 	// StravaServiceDisconnectStravaProcedure is the procedure name of the StravaService's
 	// DisconnectStrava RPC.
 	StravaServiceDisconnectStravaProcedure = "/strava.v1.StravaService/DisconnectStrava"
+	// StravaServiceSetStravaKeepActivitiesProcedure is the procedure name of the StravaService's
+	// SetStravaKeepActivities RPC.
+	StravaServiceSetStravaKeepActivitiesProcedure = "/strava.v1.StravaService/SetStravaKeepActivities"
 )
 
 var (
@@ -65,6 +68,13 @@ var (
 			Procedure:  StravaServiceDisconnectStravaProcedure,
 		}
 	})
+	stravaServiceSetStravaKeepActivitiesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_strava_v1_strava_proto.Services().ByName("StravaService").Methods().ByName("SetStravaKeepActivities"),
+			Procedure:  StravaServiceSetStravaKeepActivitiesProcedure,
+		}
+	})
 )
 
 // StravaServiceClient is a client for the strava.v1.StravaService service.
@@ -80,8 +90,17 @@ type StravaServiceClient interface {
 	// them right away, ahead of the other activities. If Strava's rate limit
 	// is reached, the activity is synced first once it resets.
 	SyncActivity(context.Context, *v1.SyncActivityRequest) (*v1.SyncActivityResponse, error)
-	// Disconnect the Strava account. Synced activities are kept.
+	// Disconnect the Strava account, revoking the app's access on Strava.
+	// Strava's API agreement only lets the app keep the data it got from
+	// Strava with the user's agreement, so the activities from Strava are
+	// deleted unless keep_activities is set. The user does this in the web
+	// app.
 	DisconnectStrava(context.Context, *v1.DisconnectStravaRequest) (*v1.DisconnectStravaResponse, error)
+	// Record whether the user agrees to keep their activities from Strava on
+	// trailrunn.ing if Strava is disconnected, including by revoking the
+	// app's access on Strava, when there's no chance to ask. The user's own
+	// agreement, so only the user sets it, in the web app.
+	SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error)
 }
 
 // NewStravaServiceClient constructs a client for the strava.v1.StravaService service. Multiple
@@ -103,8 +122,17 @@ type StravaServiceHandler interface {
 	// them right away, ahead of the other activities. If Strava's rate limit
 	// is reached, the activity is synced first once it resets.
 	SyncActivity(context.Context, *v1.SyncActivityRequest) (*v1.SyncActivityResponse, error)
-	// Disconnect the Strava account. Synced activities are kept.
+	// Disconnect the Strava account, revoking the app's access on Strava.
+	// Strava's API agreement only lets the app keep the data it got from
+	// Strava with the user's agreement, so the activities from Strava are
+	// deleted unless keep_activities is set. The user does this in the web
+	// app.
 	DisconnectStrava(context.Context, *v1.DisconnectStravaRequest) (*v1.DisconnectStravaResponse, error)
+	// Record whether the user agrees to keep their activities from Strava on
+	// trailrunn.ing if Strava is disconnected, including by revoking the
+	// app's access on Strava, when there's no chance to ask. The user's own
+	// agreement, so only the user sets it, in the web app.
+	SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error)
 }
 
 // RegisterStravaServiceHandler registers svc as the strava.v1.StravaService implementation on
@@ -116,6 +144,7 @@ func RegisterStravaServiceHandler(server *connect.Server, svc StravaServiceHandl
 		connect.Method{Spec: stravaServiceSyncStravaSpec(), Handler: adapter.syncStrava},
 		connect.Method{Spec: stravaServiceSyncActivitySpec(), Handler: adapter.syncActivity},
 		connect.Method{Spec: stravaServiceDisconnectStravaSpec(), Handler: adapter.disconnectStrava},
+		connect.Method{Spec: stravaServiceSetStravaKeepActivitiesSpec(), Handler: adapter.setStravaKeepActivities},
 	)
 }
 
@@ -136,6 +165,10 @@ func (UnimplementedStravaServiceHandler) SyncActivity(context.Context, *v1.SyncA
 
 func (UnimplementedStravaServiceHandler) DisconnectStrava(context.Context, *v1.DisconnectStravaRequest) (*v1.DisconnectStravaResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "strava.v1.StravaService.DisconnectStrava is not implemented")
+}
+
+func (UnimplementedStravaServiceHandler) SetStravaKeepActivities(context.Context, *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "strava.v1.StravaService.SetStravaKeepActivities is not implemented")
 }
 
 type stravaServiceClient struct {
@@ -169,6 +202,14 @@ func (c *stravaServiceClient) SyncActivity(ctx context.Context, req *v1.SyncActi
 func (c *stravaServiceClient) DisconnectStrava(ctx context.Context, req *v1.DisconnectStravaRequest) (*v1.DisconnectStravaResponse, error) {
 	var res v1.DisconnectStravaResponse
 	if err := c.client.CallUnary(ctx, stravaServiceDisconnectStravaSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *stravaServiceClient) SetStravaKeepActivities(ctx context.Context, req *v1.SetStravaKeepActivitiesRequest) (*v1.SetStravaKeepActivitiesResponse, error) {
+	var res v1.SetStravaKeepActivitiesResponse
+	if err := c.client.CallUnary(ctx, stravaServiceSetStravaKeepActivitiesSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -218,6 +259,18 @@ func (h stravaServiceHandler) disconnectStrava(ctx context.Context, _ connect.Sp
 		return err
 	}
 	res, err := h.svc.DisconnectStrava(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h stravaServiceHandler) setStravaKeepActivities(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetStravaKeepActivitiesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetStravaKeepActivities(ctx, &req)
 	if err != nil {
 		return err
 	}

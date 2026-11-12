@@ -31,8 +31,22 @@ export const syncStrava = StravaService.method.syncStrava;
 export const syncActivity = StravaService.method.syncActivity;
 
 /**
- * Disconnect the Strava account. Synced activities are kept.
+ * Disconnect the Strava account, revoking the app's access on Strava.
+ * Strava's API agreement only lets the app keep the data it got from
+ * Strava with the user's agreement, so the activities from Strava are
+ * deleted unless keep_activities is set. The user does this in the web
+ * app.
  *
  * @generated from rpc strava.v1.StravaService.DisconnectStrava
  */
 export const disconnectStrava = StravaService.method.disconnectStrava;
+
+/**
+ * Record whether the user agrees to keep their activities from Strava on
+ * trailrunn.ing if Strava is disconnected, including by revoking the
+ * app's access on Strava, when there's no chance to ask. The user's own
+ * agreement, so only the user sets it, in the web app.
+ *
+ * @generated from rpc strava.v1.StravaService.SetStravaKeepActivities
+ */
+export const setStravaKeepActivities = StravaService.method.setStravaKeepActivities;

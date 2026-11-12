@@ -59,7 +59,7 @@ const (
 // WebhookRepository finds the connections webhook events are for.
 type WebhookRepository interface {
 	ListStravaConnectionsByAthlete(ctx context.Context, athleteID int64) ([]*activities.StravaConnection, error)
-	DeleteStravaConnection(ctx context.Context, userID pgtype.UUID) error
+	DisconnectStrava(ctx context.Context, userID pgtype.UUID, keep bool) error
 }
 
 // SubscriptionClient manages the application's push subscription.
@@ -339,7 +339,8 @@ func (h *Webhook) syncActivity(ctx context.Context, log *slog.Logger, report *er
 	}
 }
 
-// deauthorize removes the connection if the athlete revoked access.
+// deauthorize removes the connection if the athlete revoked access, and
+// deletes their activities from Strava unless they agreed to keep them.
 func (h *Webhook) deauthorize(ctx context.Context, log *slog.Logger, report *errreport.Reporter, conn *activities.StravaConnection) {
 	user := slog.String("user_id", store.UUIDToString(conn.UserID))
 	log, report = log.With(user), report.With(user)
@@ -352,11 +353,20 @@ func (h *Webhook) deauthorize(ctx context.Context, log *slog.Logger, report *err
 	case authorized:
 		log.WarnContext(ctx, "Ignoring a Strava deauthorization event of an athlete who is still authorized")
 	default:
-		if err := h.repo.DeleteStravaConnection(ctx, conn.UserID); err != nil && !errors.Is(err, store.ErrNotFound) {
+		// There's no asking the user now, so their earlier agreement, if
+		// any, decides whether their activities from Strava stay.
+		err := h.repo.DisconnectStrava(ctx, conn.UserID, conn.KeepActivities)
+		if errors.Is(err, store.ErrNotFound) {
+			return
+		}
+		if err != nil {
 			report.Report(ctx, "Failed to disconnect Strava", err)
 			return
 		}
-		log.InfoContext(ctx, "Disconnected Strava, as the athlete revoked access")
+		if !conn.KeepActivities {
+			h.syncer.RequestPurge(ctx, conn.UserID)
+		}
+		log.InfoContext(ctx, "Disconnected Strava, as the athlete revoked access", slog.Bool("keep_activities", conn.KeepActivities))
 	}
 }
 

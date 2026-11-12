@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file strava/v1/strava.proto.
  */
 export const file_strava_v1_strava: GenFile = /*@__PURE__*/
-  fileDesc("ChZzdHJhdmEvdjEvc3RyYXZhLnByb3RvEglzdHJhdmEudjEi0wIKEFN0cmF2YUNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhQKDGF0aGxldGVfbmFtZRgCIAEoCRISCgphdGhsZXRlX2lkGAMgASgJEigKCnN5bmNfc3RhdGUYBCABKA4yFC5zdHJhdmEudjEuU3luY1N0YXRlEhQKDHN5bmNfbWVzc2FnZRgFIAEoCRIyCg5sYXN0X3N5bmNfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLcmVzdW1lX3RpbWUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmFjdGl2aXR5X2NvdW50GAggASgFEhwKFHBlbmRpbmdfc3RyZWFtX2NvdW50GAkgASgFEhIKCmNvbmZpZ3VyZWQYCiABKAgSEwoLYXRobGV0ZV91cmwYCyABKAkiHAoaR2V0U3RyYXZhQ29ubmVjdGlvblJlcXVlc3QiTgobR2V0U3RyYXZhQ29ubmVjdGlvblJlc3BvbnNlEi8KCmNvbm5lY3Rpb24YASABKAsyGy5zdHJhdmEudjEuU3RyYXZhQ29ubmVjdGlvbiIhChFTeW5jU3RyYXZhUmVxdWVzdBIMCgRmdWxsGAEgASgIIkUKElN5bmNTdHJhdmFSZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuc3RyYXZhLnYxLlN0cmF2YUNvbm5lY3Rpb24iKgoTU3luY0FjdGl2aXR5UmVxdWVzdBITCgthY3Rpdml0eV9pZBgBIAEoCSJXChRTeW5jQWN0aXZpdHlSZXNwb25zZRIOCgZzeW5jZWQYASABKAgSLwoLcmVzdW1lX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhkKF0Rpc2Nvbm5lY3RTdHJhdmFSZXF1ZXN0IhoKGERpc2Nvbm5lY3RTdHJhdmFSZXNwb25zZSqIAQoJU3luY1N0YXRlEhoKFlNZTkNfU1RBVEVfVU5TUEVDSUZJRUQQABITCg9TWU5DX1NUQVRFX0lETEUQARIWChJTWU5DX1NUQVRFX1JVTk5JTkcQAhIbChdTWU5DX1NUQVRFX1JBVEVfTElNSVRFRBADEhUKEVNZTkNfU1RBVEVfRkFJTEVEEAQy/gIKDVN0cmF2YVNlcnZpY2USZAoTR2V0U3RyYXZhQ29ubmVjdGlvbhIlLnN0cmF2YS52MS5HZXRTdHJhdmFDb25uZWN0aW9uUmVxdWVzdBomLnN0cmF2YS52MS5HZXRTdHJhdmFDb25uZWN0aW9uUmVzcG9uc2USSQoKU3luY1N0cmF2YRIcLnN0cmF2YS52MS5TeW5jU3RyYXZhUmVxdWVzdBodLnN0cmF2YS52MS5TeW5jU3RyYXZhUmVzcG9uc2USVwoMU3luY0FjdGl2aXR5Eh4uc3RyYXZhLnYxLlN5bmNBY3Rpdml0eVJlcXVlc3QaHy5zdHJhdmEudjEuU3luY0FjdGl2aXR5UmVzcG9uc2UiBqKfGQIIARJjChBEaXNjb25uZWN0U3RyYXZhEiIuc3RyYXZhLnYxLkRpc2Nvbm5lY3RTdHJhdmFSZXF1ZXN0GiMuc3RyYXZhLnYxLkRpc2Nvbm5lY3RTdHJhdmFSZXNwb25zZSIGop8ZAggBQqQBCg1jb20uc3RyYXZhLnYxQgtTdHJhdmFQcm90b1ABWkFnaXRodWIuY29tL2JzLXRvb2xzL3RyYWlscnVubi5pbmcvaW50ZXJuYWwvZ2VuL3N0cmF2YS92MTtzdHJhdmF2MaICA1NYWKoCCVN0cmF2YS5WMcoCCVN0cmF2YVxWMeICFVN0cmF2YVxWMVxHUEJNZXRhZGF0YeoCClN0cmF2YTo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_mcp_v1_options]);
+  fileDesc("ChZzdHJhdmEvdjEvc3RyYXZhLnByb3RvEglzdHJhdmEudjEiiQMKEFN0cmF2YUNvbm5lY3Rpb24SEQoJY29ubmVjdGVkGAEgASgIEhQKDGF0aGxldGVfbmFtZRgCIAEoCRISCgphdGhsZXRlX2lkGAMgASgJEigKCnN5bmNfc3RhdGUYBCABKA4yFC5zdHJhdmEudjEuU3luY1N0YXRlEhQKDHN5bmNfbWVzc2FnZRgFIAEoCRIyCg5sYXN0X3N5bmNfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLcmVzdW1lX3RpbWUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmFjdGl2aXR5X2NvdW50GAggASgFEhwKFHBlbmRpbmdfc3RyZWFtX2NvdW50GAkgASgFEhIKCmNvbmZpZ3VyZWQYCiABKAgSEwoLYXRobGV0ZV91cmwYCyABKAkSFwoPa2VlcF9hY3Rpdml0aWVzGAwgASgIEhsKE2RlbGV0aW5nX2FjdGl2aXRpZXMYDSABKAgiHAoaR2V0U3RyYXZhQ29ubmVjdGlvblJlcXVlc3QiTgobR2V0U3RyYXZhQ29ubmVjdGlvblJlc3BvbnNlEi8KCmNvbm5lY3Rpb24YASABKAsyGy5zdHJhdmEudjEuU3RyYXZhQ29ubmVjdGlvbiIhChFTeW5jU3RyYXZhUmVxdWVzdBIMCgRmdWxsGAEgASgIIkUKElN5bmNTdHJhdmFSZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuc3RyYXZhLnYxLlN0cmF2YUNvbm5lY3Rpb24iKgoTU3luY0FjdGl2aXR5UmVxdWVzdBITCgthY3Rpdml0eV9pZBgBIAEoCSJXChRTeW5jQWN0aXZpdHlSZXNwb25zZRIOCgZzeW5jZWQYASABKAgSLwoLcmVzdW1lX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjIKF0Rpc2Nvbm5lY3RTdHJhdmFSZXF1ZXN0EhcKD2tlZXBfYWN0aXZpdGllcxgBIAEoCCJLChhEaXNjb25uZWN0U3RyYXZhUmVzcG9uc2USLwoKY29ubmVjdGlvbhgBIAEoCzIbLnN0cmF2YS52MS5TdHJhdmFDb25uZWN0aW9uIjkKHlNldFN0cmF2YUtlZXBBY3Rpdml0aWVzUmVxdWVzdBIXCg9rZWVwX2FjdGl2aXRpZXMYASABKAgiUgofU2V0U3RyYXZhS2VlcEFjdGl2aXRpZXNSZXNwb25zZRIvCgpjb25uZWN0aW9uGAEgASgLMhsuc3RyYXZhLnYxLlN0cmF2YUNvbm5lY3Rpb24qiAEKCVN5bmNTdGF0ZRIaChZTWU5DX1NUQVRFX1VOU1BFQ0lGSUVEEAASEwoPU1lOQ19TVEFURV9JRExFEAESFgoSU1lOQ19TVEFURV9SVU5OSU5HEAISGwoXU1lOQ19TVEFURV9SQVRFX0xJTUlURUQQAxIVChFTWU5DX1NUQVRFX0ZBSUxFRBAEMvgDCg1TdHJhdmFTZXJ2aWNlEmQKE0dldFN0cmF2YUNvbm5lY3Rpb24SJS5zdHJhdmEudjEuR2V0U3RyYXZhQ29ubmVjdGlvblJlcXVlc3QaJi5zdHJhdmEudjEuR2V0U3RyYXZhQ29ubmVjdGlvblJlc3BvbnNlEkkKClN5bmNTdHJhdmESHC5zdHJhdmEudjEuU3luY1N0cmF2YVJlcXVlc3QaHS5zdHJhdmEudjEuU3luY1N0cmF2YVJlc3BvbnNlElcKDFN5bmNBY3Rpdml0eRIeLnN0cmF2YS52MS5TeW5jQWN0aXZpdHlSZXF1ZXN0Gh8uc3RyYXZhLnYxLlN5bmNBY3Rpdml0eVJlc3BvbnNlIgainxkCCAESYwoQRGlzY29ubmVjdFN0cmF2YRIiLnN0cmF2YS52MS5EaXNjb25uZWN0U3RyYXZhUmVxdWVzdBojLnN0cmF2YS52MS5EaXNjb25uZWN0U3RyYXZhUmVzcG9uc2UiBqKfGQIIARJ4ChdTZXRTdHJhdmFLZWVwQWN0aXZpdGllcxIpLnN0cmF2YS52MS5TZXRTdHJhdmFLZWVwQWN0aXZpdGllc1JlcXVlc3QaKi5zdHJhdmEudjEuU2V0U3RyYXZhS2VlcEFjdGl2aXRpZXNSZXNwb25zZSIGop8ZAggBQqQBCg1jb20uc3RyYXZhLnYxQgtTdHJhdmFQcm90b1ABWkFnaXRodWIuY29tL2JzLXRvb2xzL3RyYWlscnVubi5pbmcvaW50ZXJuYWwvZ2VuL3N0cmF2YS92MTtzdHJhdmF2MaICA1NYWKoCCVN0cmF2YS5WMcoCCVN0cmF2YVxWMeICFVN0cmF2YVxWMVxHUEJNZXRhZGF0YeoCClN0cmF2YTo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_mcp_v1_options]);
 
 /**
  * The status of the Strava connection.
@@ -97,6 +97,25 @@ export type StravaConnection = Message<"strava.v1.StravaConnection"> & {
    * @generated from field: string athlete_url = 11;
    */
   athleteUrl: string;
+
+  /**
+   * Whether the user agreed to keep their activities from Strava if Strava
+   * is disconnected. Without it, disconnecting deletes the activities that
+   * came from Strava: those also on Garmin Connect keep Garmin's data, and
+   * those imported from the user's own Strava archive stay.
+   *
+   * @generated from field: bool keep_activities = 12;
+   */
+  keepActivities: boolean;
+
+  /**
+   * Whether the activities from an earlier connection are being deleted, as
+   * Strava was disconnected without keeping them. It takes a few minutes
+   * for a long history.
+   *
+   * @generated from field: bool deleting_activities = 13;
+   */
+  deletingActivities: boolean;
 };
 
 /**
@@ -228,6 +247,14 @@ export const SyncActivityResponseSchema: GenMessage<SyncActivityResponse> = /*@_
  * @generated from message strava.v1.DisconnectStravaRequest
  */
 export type DisconnectStravaRequest = Message<"strava.v1.DisconnectStravaRequest"> & {
+  /**
+   * Whether the user agrees to keep their activities from Strava on
+   * trailrunn.ing. If not, they're deleted, as described in
+   * StravaConnection.keep_activities.
+   *
+   * @generated from field: bool keep_activities = 1;
+   */
+  keepActivities: boolean;
 };
 
 /**
@@ -241,6 +268,12 @@ export const DisconnectStravaRequestSchema: GenMessage<DisconnectStravaRequest> 
  * @generated from message strava.v1.DisconnectStravaResponse
  */
 export type DisconnectStravaResponse = Message<"strava.v1.DisconnectStravaResponse"> & {
+  /**
+   * The connection status after disconnecting.
+   *
+   * @generated from field: strava.v1.StravaConnection connection = 1;
+   */
+  connection?: StravaConnection | undefined;
 };
 
 /**
@@ -249,6 +282,45 @@ export type DisconnectStravaResponse = Message<"strava.v1.DisconnectStravaRespon
  */
 export const DisconnectStravaResponseSchema: GenMessage<DisconnectStravaResponse> = /*@__PURE__*/
   messageDesc(file_strava_v1_strava, 8);
+
+/**
+ * @generated from message strava.v1.SetStravaKeepActivitiesRequest
+ */
+export type SetStravaKeepActivitiesRequest = Message<"strava.v1.SetStravaKeepActivitiesRequest"> & {
+  /**
+   * Whether the user agrees to keep their activities from Strava if Strava
+   * is disconnected.
+   *
+   * @generated from field: bool keep_activities = 1;
+   */
+  keepActivities: boolean;
+};
+
+/**
+ * Describes the message strava.v1.SetStravaKeepActivitiesRequest.
+ * Use `create(SetStravaKeepActivitiesRequestSchema)` to create a new message.
+ */
+export const SetStravaKeepActivitiesRequestSchema: GenMessage<SetStravaKeepActivitiesRequest> = /*@__PURE__*/
+  messageDesc(file_strava_v1_strava, 9);
+
+/**
+ * @generated from message strava.v1.SetStravaKeepActivitiesResponse
+ */
+export type SetStravaKeepActivitiesResponse = Message<"strava.v1.SetStravaKeepActivitiesResponse"> & {
+  /**
+   * The connection status.
+   *
+   * @generated from field: strava.v1.StravaConnection connection = 1;
+   */
+  connection?: StravaConnection | undefined;
+};
+
+/**
+ * Describes the message strava.v1.SetStravaKeepActivitiesResponse.
+ * Use `create(SetStravaKeepActivitiesResponseSchema)` to create a new message.
+ */
+export const SetStravaKeepActivitiesResponseSchema: GenMessage<SetStravaKeepActivitiesResponse> = /*@__PURE__*/
+  messageDesc(file_strava_v1_strava, 10);
 
 /**
  * SyncState is the state of a Strava sync.
@@ -340,7 +412,11 @@ export const StravaService: GenService<{
     output: typeof SyncActivityResponseSchema;
   },
   /**
-   * Disconnect the Strava account. Synced activities are kept.
+   * Disconnect the Strava account, revoking the app's access on Strava.
+   * Strava's API agreement only lets the app keep the data it got from
+   * Strava with the user's agreement, so the activities from Strava are
+   * deleted unless keep_activities is set. The user does this in the web
+   * app.
    *
    * @generated from rpc strava.v1.StravaService.DisconnectStrava
    */
@@ -348,6 +424,19 @@ export const StravaService: GenService<{
     methodKind: "unary";
     input: typeof DisconnectStravaRequestSchema;
     output: typeof DisconnectStravaResponseSchema;
+  },
+  /**
+   * Record whether the user agrees to keep their activities from Strava on
+   * trailrunn.ing if Strava is disconnected, including by revoking the
+   * app's access on Strava, when there's no chance to ask. The user's own
+   * agreement, so only the user sets it, in the web app.
+   *
+   * @generated from rpc strava.v1.StravaService.SetStravaKeepActivities
+   */
+  setStravaKeepActivities: {
+    methodKind: "unary";
+    input: typeof SetStravaKeepActivitiesRequestSchema;
+    output: typeof SetStravaKeepActivitiesResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_strava_v1_strava, 0);

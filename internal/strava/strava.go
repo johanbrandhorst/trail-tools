@@ -88,6 +88,8 @@ type Client struct {
 	oauth      *oauth2.Config
 	httpClient *http.Client
 	baseURL    string
+	// The base URL of the OAuth endpoints, e.g. https://www.strava.com/oauth.
+	oauthBaseURL string
 
 	mu      sync.Mutex
 	usage   rateUsage
@@ -152,9 +154,10 @@ func New(conf Config) *Client {
 				AuthStyle: oauth2.AuthStyleInParams,
 			},
 		},
-		httpClient: conf.HTTPClient,
-		baseURL:    conf.BaseURL,
-		nowFn:      time.Now,
+		httpClient:   conf.HTTPClient,
+		baseURL:      conf.BaseURL,
+		oauthBaseURL: conf.OAuthBaseURL,
+		nowFn:        time.Now,
 		// Leave a little headroom below the limit.
 		margin:  2,
 		reserve: conf.BackgroundReserve,
@@ -211,6 +214,29 @@ func (c *Client) Refresh(ctx context.Context, refreshToken string) (*Token, erro
 		return nil, fmt.Errorf("failed to refresh token: %w", err)
 	}
 	return &Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, Expiry: token.Expiry}, nil
+}
+
+// Deauthorize revokes the application's access to the athlete's account,
+// as when they disconnect Strava in the app. A token Strava no longer
+// accepts, as the athlete already revoked access, isn't an error.
+func (c *Client) Deauthorize(ctx context.Context, accessToken string) error {
+	form := url.Values{"access_token": {accessToken}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURL+"/deauthorize", strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to deauthorize: %w", err)
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusUnauthorized:
+		return nil
+	}
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	return fmt.Errorf("failed to deauthorize: %s: %s", resp.Status, body)
 }
 
 // fault is the body of Strava's error responses.

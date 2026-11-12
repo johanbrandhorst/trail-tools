@@ -26,7 +26,9 @@ var _ stravav1connect.StravaServiceHandler = (*Service)(nil)
 type ConnectionRepository interface {
 	GetStravaConnection(ctx context.Context, userID pgtype.UUID) (*activities.StravaConnection, error)
 	UpsertStravaConnection(ctx context.Context, conn *activities.StravaConnection) (*activities.StravaConnection, error)
-	DeleteStravaConnection(ctx context.Context, userID pgtype.UUID) error
+	DisconnectStrava(ctx context.Context, userID pgtype.UUID, keep bool) error
+	SetStravaKeepActivities(ctx context.Context, userID pgtype.UUID, keep bool) error
+	PurgingStravaActivities(ctx context.Context, userID pgtype.UUID) (bool, error)
 	CountActivities(ctx context.Context, userID pgtype.UUID, window time.Duration) (total, pendingStreams int64, err error)
 }
 
@@ -137,13 +139,53 @@ func (s *Service) DisconnectStrava(ctx context.Context, req *stravav1.Disconnect
 	if !ok {
 		return nil, connect.NewError(connect.CodeUnauthenticated, "")
 	}
-	if err := s.repo.DeleteStravaConnection(ctx, userID); err != nil {
+	conn, err := s.repo.GetStravaConnection(ctx, userID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, connect.NewError(connect.CodeNotFound, "no Strava account is connected")
+	}
+	if err != nil {
+		return nil, s.internalError(ctx, "failed to get Strava connection", err)
+	}
+	// Strava is told first, so it no longer lists the app as authorized.
+	// Its deauthorization event then finds no connection.
+	if s.syncer != nil {
+		if err := s.syncer.Deauthorize(ctx, conn); err != nil && !errors.Is(err, strava.ErrUnauthorized) {
+			s.report.Report(ctx, "Failed to revoke the app's access on Strava, disconnecting anyway", err)
+		}
+	}
+	keep := req.GetKeepActivities()
+	if err := s.repo.DisconnectStrava(ctx, userID, keep); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return nil, connect.NewError(connect.CodeNotFound, "no Strava account is connected")
 		}
 		return nil, s.internalError(ctx, "failed to disconnect Strava", err)
 	}
-	return stravav1.DisconnectStravaResponse_builder{}.Build(), nil
+	if !keep && s.syncer != nil {
+		s.syncer.RequestPurge(ctx, userID)
+	}
+	status, err := s.connection(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return stravav1.DisconnectStravaResponse_builder{Connection: status}.Build(), nil
+}
+
+func (s *Service) SetStravaKeepActivities(ctx context.Context, req *stravav1.SetStravaKeepActivitiesRequest) (*stravav1.SetStravaKeepActivitiesResponse, error) {
+	userID, ok := authn.GetUserID(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+	}
+	if err := s.repo.SetStravaKeepActivities(ctx, userID, req.GetKeepActivities()); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, "no Strava account is connected; connect it at /strava/connect first")
+		}
+		return nil, s.internalError(ctx, "failed to set whether to keep Strava activities", err)
+	}
+	status, err := s.connection(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return stravav1.SetStravaKeepActivitiesResponse_builder{Connection: status}.Build(), nil
 }
 
 func (s *Service) connection(ctx context.Context, userID pgtype.UUID) (*stravav1.StravaConnection, error) {
@@ -154,10 +196,18 @@ func (s *Service) connection(ctx context.Context, userID pgtype.UUID) (*stravav1
 	conn, err := s.repo.GetStravaConnection(ctx, userID)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
+		// Connecting again stops deleting the activities, so only users
+		// without a connection can have them deleting.
+		deleting, err := s.repo.PurgingStravaActivities(ctx, userID)
+		if err != nil {
+			return nil, s.internalError(ctx, "failed to get Strava connection", err)
+		}
+		b.DeletingActivities = deleting
 	case err != nil:
 		return nil, s.internalError(ctx, "failed to get Strava connection", err)
 	default:
 		b.Connected = true
+		b.KeepActivities = conn.KeepActivities
 		b.AthleteName = conn.AthleteName
 		b.AthleteId = fmt.Sprint(conn.AthleteID)
 		b.AthleteUrl = fmt.Sprintf("%s/athletes/%d", s.webURL, conn.AthleteID)
