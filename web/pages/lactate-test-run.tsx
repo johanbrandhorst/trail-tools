@@ -45,9 +45,10 @@ import {
   LactateTestService,
 } from "gen/lactate/v1/lactate_pb";
 import { today } from "helpers/dates";
+import { useWakeLock } from "helpers/hooks";
 import { invalidateServices } from "helpers/query";
 import { readStorage, writeStorage } from "helpers/storage";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 /**
@@ -114,36 +115,6 @@ const workoutURL = (settings: Settings): string => {
     step: String(settings.stepBpm),
   });
   return `/lactate-tests/workout.fit?${query.toString()}`;
-};
-
-/**
- * UseWakeLock keeps the screen on while active, so a phone doesn't lock
- * between readings. Browsers without the Screen Wake Lock API are left alone.
- */
-const useWakeLock = (active: boolean): void => {
-  useEffect(() => {
-    if (!active || !("wakeLock" in navigator)) {
-      return undefined;
-    }
-    let lock: WakeLockSentinel | undefined = undefined;
-    let released = false;
-    navigator.wakeLock
-      .request("screen")
-      .then((sentinel) => {
-        if (released) {
-          void sentinel.release();
-        } else {
-          lock = sentinel;
-        }
-      })
-      .catch(() => {
-        // The screen may turn off; the test still works.
-      });
-    return () => {
-      released = true;
-      void lock?.release();
-    };
-  }, [active]);
 };
 
 /**

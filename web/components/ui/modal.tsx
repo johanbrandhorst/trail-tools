@@ -100,6 +100,9 @@ interface DiscardDialogProps {
   onKeepEditing: () => void;
   // Called to throw the unsaved changes away.
   onDiscard: () => void;
+  // The buttons' labels, for what's lost other than unsaved changes.
+  keepLabel?: string | undefined;
+  discardLabel?: string | undefined;
 }
 
 /**
@@ -112,6 +115,8 @@ export const DiscardDialog: React.FC<DiscardDialogProps> = ({
   message,
   onKeepEditing,
   onDiscard,
+  keepLabel = "Keep editing",
+  discardLabel = "Discard changes",
 }) => (
   <Modal open={open} onClose={onKeepEditing} title={title}>
     <div className="flex flex-col gap-4">
@@ -122,10 +127,10 @@ export const DiscardDialog: React.FC<DiscardDialogProps> = ({
           className={secondaryButton}
           onClick={onKeepEditing}
         >
-          Keep editing
+          {keepLabel}
         </button>
         <button type="button" className={dangerButton} onClick={onDiscard}>
-          Discard changes
+          {discardLabel}
         </button>
       </div>
     </div>

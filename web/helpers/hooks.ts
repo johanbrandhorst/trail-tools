@@ -38,3 +38,46 @@ export const useFragmentToken = (): string => {
     return fragment;
   }
 };
+
+/**
+ * UseWakeLock keeps the screen on while active and the page is shown, so a
+ * phone doesn't lock and pause the page, e.g. between sets or during an
+ * import. The browser releases the lock when the page is hidden, so it's
+ * taken again when the page is shown. Browsers without the Screen Wake Lock
+ * API, and low battery modes that refuse it, lock as usual.
+ */
+export const useWakeLock = (active: boolean): void => {
+  useEffect(() => {
+    if (!active) {
+      return undefined;
+    }
+    let lock: WakeLockSentinel | undefined = undefined;
+    let released = false;
+    const acquire = async () => {
+      if (
+        document.visibilityState !== "visible" ||
+        !("wakeLock" in navigator)
+      ) {
+        return;
+      }
+      try {
+        lock = await navigator.wakeLock.request("screen");
+        if (released) {
+          await lock.release();
+        }
+      } catch {
+        // The screen locks as usual.
+      }
+    };
+    const onVisibility = () => {
+      void acquire();
+    };
+    void acquire();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      released = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      void lock?.release();
+    };
+  }, [active]);
+};

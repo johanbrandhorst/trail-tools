@@ -1,5 +1,6 @@
 import Card from "@components/ui/card";
 import { primaryButton, secondaryButton } from "@components/ui/styles";
+import UnsavedChangesGuard from "@components/ui/unsaved-changes-guard";
 import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useTransport } from "@connectrpc/connect-query";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
@@ -8,6 +9,7 @@ import { ActivityService } from "gen/activities/v1/activities_pb";
 import { GeoService } from "gen/geo/v1/geo_pb";
 import type { StravaArchiveActivity } from "gen/strava/v1/strava_pb";
 import { StravaService } from "gen/strava/v1/strava_pb";
+import { useWakeLock } from "helpers/hooks";
 import { invalidateServices } from "helpers/query";
 import { readZipEntries, readZipEntry } from "helpers/zip";
 import type { ZipEntry } from "helpers/zip";
@@ -174,8 +176,21 @@ const StravaArchiveImport: React.FC = () => {
     </label>
   );
 
+  /*
+   * Leaving the page stops the import, so it asks first, and keeps the
+   * screen on, as a locked phone pauses the page.
+   */
+  const running = state.step === "reading" || state.step === "importing";
+  useWakeLock(running);
   return (
     <Card title="Import from a Strava archive">
+      <UnsavedChangesGuard
+        dirty={running}
+        title="Stop importing?"
+        message="Leaving this page stops the import. The activities imported so far are kept, and importing the archive again adds the rest."
+        keepLabel="Keep importing"
+        leaveLabel="Leave and stop"
+      />
       <div className="flex flex-col gap-3 text-sm text-gray-700">
         <p>
           Import your whole history from the archive of your data that Strava
