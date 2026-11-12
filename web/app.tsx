@@ -69,8 +69,7 @@ const App: React.FC = () => {
     {},
     {
       retry: (failureCount, err) => {
-        // Disable automatic retries on Unauthenticated errors
-        // Since we expect it if the user is not logged in.
+        // Retrying won't sign the user in.
         if (err.code === Code.Unauthenticated) {
           return false;
         }
@@ -95,24 +94,15 @@ const App: React.FC = () => {
     return null;
   }
 
-  // We got a response, let's check if it's an error
-  // User is null if the user is not logged in.
+  /*
+   * The response has no user when signed out. On an error, like the server
+   * being unreachable, the app shows the sign in page.
+   */
   let user: User | null = null;
   if (isError) {
-    if (error.code !== Code.Unauthenticated) {
-      // Some other error, lets pretend the user is not logged in
-      console.error("Failed to get current user:", error);
-    }
-    user = null;
-  } else if (data.user === undefined) {
-    // This is a programmer error, the user should always be set in the response.
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <h1>Error: No user data, please report this bug!</h1>
-      </div>
-    );
+    console.error("Failed to get current user:", error);
   } else {
-    ({ user } = data);
+    user = data.user ?? null;
   }
 
   /**

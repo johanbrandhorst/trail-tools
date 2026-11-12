@@ -207,6 +207,8 @@ export const GetCurrentUserRequestSchema: GenMessage<GetCurrentUserRequest> = /*
  */
 export type GetCurrentUserResponse = Message<"users.v1.GetCurrentUserResponse"> & {
   /**
+   * The signed in user, unset when signed out.
+   *
    * @generated from field: users.v1.User user = 1;
    */
   user?: User | undefined;
@@ -448,7 +450,8 @@ export const DeleteAvatarResponseSchema: GenMessage<DeleteAvatarResponse> = /*@_
  */
 export const UserService: GenService<{
   /**
-   * Get the signed in user.
+   * Get the signed in user. Without credentials, the response has no user,
+   * rather than an Unauthenticated error.
    *
    * @generated from rpc users.v1.UserService.GetCurrentUser
    */

@@ -8,7 +8,8 @@ import "mcp/v1/options.proto";
 // UserService provides information about the signed in user, and their
 // settings.
 service UserService {
-  // Get the signed in user.
+  // Get the signed in user. Without credentials, the response has no user,
+  // rather than an Unauthenticated error.
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
   // Create an API token. API tokens authenticate MCP clients and other API
   // clients with an "Authorization: Bearer <token>" header.
@@ -94,6 +95,7 @@ message User {
 message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
+  // The signed in user, unset when signed out.
   User user = 1;
 }
 

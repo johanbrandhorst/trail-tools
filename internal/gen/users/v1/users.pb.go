@@ -612,6 +612,7 @@ func (x *GetCurrentUserResponse) ClearUser() {
 type GetCurrentUserResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	// The signed in user, unset when signed out.
 	User *User
 }
 
