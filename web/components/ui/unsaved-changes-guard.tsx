@@ -23,6 +23,14 @@ const isLeavingUnsaved = (state: unknown): boolean =>
 interface UnsavedChangesGuardProps {
   // Whether there are unsaved changes. Saving must clear it.
   dirty: boolean;
+  /*
+   * The dialog's text and buttons, for work that leaving loses other than
+   * unsaved changes, like an import in progress.
+   */
+  title?: string | undefined;
+  message?: string | undefined;
+  keepLabel?: string | undefined;
+  leaveLabel?: string | undefined;
 }
 
 /**
@@ -31,7 +39,13 @@ interface UnsavedChangesGuardProps {
  * browser's own prompt when closing or reloading the tab. Navigations that
  * stay on the page, like changing its search parameters, go through.
  */
-const UnsavedChangesGuard: React.FC<UnsavedChangesGuardProps> = ({ dirty }) => {
+const UnsavedChangesGuard: React.FC<UnsavedChangesGuardProps> = ({
+  dirty,
+  title = "Leave without saving?",
+  message = "Your changes haven't been saved, and are lost if you leave this page.",
+  keepLabel,
+  leaveLabel,
+}) => {
   const shouldBlock = useCallback<BlockerFunction>(
     ({ currentLocation, nextLocation }) =>
       dirty &&
@@ -60,8 +74,10 @@ const UnsavedChangesGuard: React.FC<UnsavedChangesGuardProps> = ({ dirty }) => {
   return (
     <DiscardDialog
       open
-      title="Leave without saving?"
-      message="Your changes haven't been saved, and are lost if you leave this page."
+      title={title}
+      message={message}
+      keepLabel={keepLabel}
+      discardLabel={leaveLabel}
       onKeepEditing={() => {
         blocker.reset();
       }}

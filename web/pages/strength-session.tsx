@@ -35,6 +35,7 @@ import {
   Stiffness,
   TrainingPlanService,
 } from "gen/plans/v1/plans_pb";
+import { useWakeLock } from "helpers/hooks";
 import { invalidateServices } from "helpers/query";
 import { readStorage, writeStorage } from "helpers/storage";
 import {
@@ -99,48 +100,6 @@ interface Draft {
   effort: SessionEffort;
   notes: string;
 }
-
-/**
- * UseWakeLock keeps the screen on while the page is shown, so the phone
- * doesn't lock between sets. Browsers without the Screen Wake Lock API just
- * lock as usual.
- */
-const useWakeLock = (): void => {
-  useEffect(() => {
-    let lock: WakeLockSentinel | undefined = undefined;
-    let released = false;
-    const acquire = async () => {
-      if (
-        document.visibilityState !== "visible" ||
-        !("wakeLock" in navigator)
-      ) {
-        return;
-      }
-      try {
-        lock = await navigator.wakeLock.request("screen");
-        if (released) {
-          await lock.release();
-        }
-      } catch {
-        // Low battery modes refuse the lock; the screen locks as usual.
-      }
-    };
-    /*
-     * The lock is released when the page is hidden, so it's taken again
-     * when it's shown.
-     */
-    const onVisibility = () => {
-      void acquire();
-    };
-    void acquire();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      released = true;
-      document.removeEventListener("visibilitychange", onVisibility);
-      void lock?.release();
-    };
-  }, []);
-};
 
 // IsNetworkError reports whether a request failed for want of a connection.
 const isNetworkError = (error: ConnectError): boolean =>
@@ -359,7 +318,7 @@ const Session: React.FC<SessionProps> = ({
     writeStorage(draftKey(workoutId), JSON.stringify(draft));
   }, [workoutId, draft]);
 
-  useWakeLock();
+  useWakeLock(true);
   const save = useMutation(setStrengthLog, {
     onSuccess: async () => {
       writeStorage(draftKey(workoutId), "");
