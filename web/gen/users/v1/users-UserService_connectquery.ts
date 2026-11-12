@@ -5,7 +5,8 @@
 import { UserService } from "./users_pb";
 
 /**
- * Get the signed in user.
+ * Get the signed in user. Without credentials, the response has no user,
+ * rather than an Unauthenticated error.
  *
  * @generated from rpc users.v1.UserService.GetCurrentUser
  */

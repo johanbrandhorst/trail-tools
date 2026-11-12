@@ -114,8 +114,13 @@ func (b *browser) login(t *testing.T, a *authenticator, credentialID []byte) err
 // wantSignedOut fails the test unless the browser is signed out.
 func (b *browser) wantSignedOut(t *testing.T) {
 	t.Helper()
-	_, err := b.users.GetCurrentUser(context.Background(), usersv1.GetCurrentUserRequest_builder{}.Build())
-	wantCode(t, err, connect.CodeUnauthenticated)
+	resp, err := b.users.GetCurrentUser(context.Background(), usersv1.GetCurrentUserRequest_builder{}.Build())
+	if err != nil {
+		t.Fatalf("GetCurrentUser: %v", err)
+	}
+	if resp.HasUser() {
+		t.Errorf("signed in as %q, want signed out", resp.GetUser().GetName())
+	}
 }
 
 func (b *browser) currentUser(t *testing.T) *usersv1.User {

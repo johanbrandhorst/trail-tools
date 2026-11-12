@@ -13,7 +13,11 @@ import (
 func (s *Service) GetCurrentUser(ctx context.Context, req *usersv1.GetCurrentUserRequest) (*usersv1.GetCurrentUserResponse, error) {
 	user, ok := authn.GetUser(ctx)
 	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, "")
+		// Being signed out is an answer to who is signed in, not an error:
+		// the web app asks on every page load, and Cloud Run logs every 401
+		// as a warning. Invalid credentials are still rejected, by the
+		// authentication middleware.
+		return usersv1.GetCurrentUserResponse_builder{}.Build(), nil
 	}
 	u, err := userToProto(user)
 	if err != nil {
