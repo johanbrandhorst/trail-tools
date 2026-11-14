@@ -437,17 +437,6 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                     }}
                   />
                 </div>
-                {hasRoute && previewError !== "" && (
-                  <p className="pointer-events-auto max-w-md rounded-md bg-red-50 px-2 py-1 text-xs text-red-800 shadow ring-1 ring-red-200">
-                    {previewError}
-                  </p>
-                )}
-                {hasRoute &&
-                  previewError === "" &&
-                  shownPreview !== undefined &&
-                  shownPreview.warnings.length > 0 && (
-                    <RouteWarnings warnings={shownPreview.warnings} />
-                  )}
               </div>
             )}
             {geometryEditable && (
@@ -526,6 +515,22 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
             )}
           </MapView>
         </div>
+        {/*
+         * Below the map rather than over it: a few warnings would cover
+         * much of the map on a phone.
+         */}
+        {geometryEditable && hasRoute && previewError !== "" && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800 ring-1 ring-red-200">
+            {previewError}
+          </p>
+        )}
+        {geometryEditable &&
+          hasRoute &&
+          previewError === "" &&
+          shownPreview !== undefined &&
+          shownPreview.warnings.length > 0 && (
+            <RouteWarnings warnings={shownPreview.warnings} />
+          )}
         {geometryEditable && (
           <p className="text-xs text-gray-500">
             Click the map to add a waypoint using the selected mode. Click the

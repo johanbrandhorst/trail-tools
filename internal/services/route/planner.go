@@ -203,7 +203,9 @@ func (s *Service) routeLeg(ctx context.Context, heat *heatmap, from, to routes.L
 		return routes.Leg{}, fmt.Errorf("%w: unknown profile %q", errInvalidRoute, profile)
 	}
 	if errors.Is(err, routing.ErrNotRoutable) {
-		return routes.Leg{}, fmt.Errorf("%w: %w; try moving the waypoints closer to a trail or road, or use the STRAIGHT profile", errInvalidRoute, err)
+		// The message names the way out for both its readers: the route
+		// editor calls the straight profile Manual.
+		return routes.Leg{}, fmt.Errorf("%w: %w; move the waypoints closer to a trail or road, or draw that section as a straight line: the Manual mode in the route editor, the STRAIGHT profile in the API", errInvalidRoute, err)
 	}
 	if err != nil {
 		return routes.Leg{}, err
